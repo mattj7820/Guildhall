@@ -2,6 +2,7 @@
   "name": "guildhall",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "A personal D&D campaign hub: links to table tools and a read-only wiki over an Obsidian vault.",
   "type": "module",
   "engines": {

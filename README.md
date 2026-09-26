@@ -1,6 +1,6 @@
 # Guildhall
 
-[![CI](https://github.com/OWNER/guildhall/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/guildhall/actions/workflows/ci.yml)
+[![CI](https://github.com/mattj7820/Guildhall/actions/workflows/ci.yml/badge.svg)](https://github.com/mattj7820/Guildhall/actions/workflows/ci.yml)
 
 A personal hub for running a Dungeons & Dragons campaign. It links out to the tools used at the
 table and hosts its own modules, starting with a **read-only wiki over an Obsidian vault**, with a
@@ -116,3 +116,7 @@ docs/              Roadmap, decisions, testing strategy
 - **The story is human-written.** Guildhall has no AI-generated story, lore or narrative content.
 - **Built for more than one user.** Every visibility decision takes an explicit viewer, and
   entities have stable IDs, so multiplayer and real roles can be added without a rewrite.
+
+## License
+
+[MIT](LICENSE)
