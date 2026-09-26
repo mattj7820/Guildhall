@@ -112,3 +112,86 @@ render as a native `<audio controls>` player with a download link inside as a fa
 Content-Type and answers HTTP `Range` requests (206), which browsers use to stream and seek
 media. Audio follows the same visibility rule as images: players can load it only if a note they
 can see embeds it.
+
+## 13. Combat encounters live in the browser, behind a pure reducer
+
+**Date:** 2026-09-26
+
+**Context.** The combat tracker's encounter must survive a page reload, the vault can't be written
+to, and this slice has no database or real-time infrastructure. A future player view will need the
+same encounter shared live.
+
+**Options considered.**
+
+- **Browser localStorage (chosen):** instant updates, survives reloads and server restarts, and
+  needs no server state or exception to the no-fs-writes lint rule. Tied to one browser.
+- **Server memory store:** closest to the eventual shared design, but every click is a round trip,
+  and a server restart loses the fight.
+- **Server store plus a JSON file outside the vault:** survives restarts, but needs a carve-out in
+  the read-only lint rule and a guard that the file can't be inside the vault. Too much for now.
+
+**Decision.** Every change is a plain, serialisable action applied by `encounterReducer`. Action
+creators roll the dice and put the results in the action, so the reducer is pure. `perform()`
+adds automatic monster rerolls for ties, as further recorded actions. The page keeps the encounter
+in memory with an undo history (not persisted), saves it to localStorage after each change, and
+validates it with zod when loading, so bad data is reported rather than crashing the page.
+
+**Path to sharing.** An `EncounterStore` among the server's long-lived services runs the same
+reducer; the DM page sends actions; a websocket on the same Express server pushes
+`encounterForViewer(encounter, viewer)` to each connection; and the server rolls, which also allows
+hidden DM rolls. localStorage then becomes a cache or goes away.
+
+## 14. Who controls a combatant: PC notes' `player`, and `Viewer.playerId`
+
+**Date:** 2026-09-26
+
+Player characters are vault notes with `type: pc`, and a new `player` frontmatter field names the
+person who plays them. `playerFromName` turns that into a `Player` with a case- and
+spacing-insensitive ID. Player-controlled combatants record their controller. Companions (like a
+shared blink dog) are assigned to a player per battle, and may link to their statblock. `Viewer`
+gains an optional `playerId`. `canSeeCombatantDetails` follows `canView`: the DM sees everything,
+and a player sees conditions and notes only for combatants they control. `encounterForViewer` gives
+players the turn order (names and whose turn it is), their own combatants' details, and nothing
+while the DM is still setting up. No page uses it yet; the tracker is DM-only.
+
+## 15. Initiative ties are broken by rerolling
+
+**Date:** 2026-09-26
+
+A table rule rather than the rulebook's: tied combatants each reroll a d20, highest first, and any
+still level reroll again until they differ (three-way ties included). Monsters reroll
+automatically; for a player combatant the DM types in their reroll, and combat can't start until
+it's in. Rerolls are stored per combatant (`tiebreaks`) and compared in order, so a combatant who
+joins a tie that's already been settled just rolls against the rerolls on record. Mid-fight, a
+newcomer is placed without reshuffling anyone else, so the DM's manual reordering survives.
+Automatic rerolls stop after 10 identical rounds, a guard against a broken random source.
+
+Other table-flow choices from the same slice: monsters at 0 HP stay in the order but are skipped;
+player combatants never are (players track their own HP and death saves). Monster HP is rolled from
+the statblock's hit dice. Temporary HP absorbs damage first and doesn't stack.
+
+## 16. Dice: an isomorphic module with an injected random source
+
+**Date:** 2026-09-26
+
+`app/dice` parses expressions such as `2d6+3` (including the Fantasy Statblocks plugin's
+`5d6 + -1` hit dice) and rolls them, with advantage and disadvantage on d20s. All randomness goes
+through an `Rng`, a function that rolls one die (`(sides) => face`), so unit tests script exact
+faces with `sequenceRng`. The real `Rng` reads `Math.random` when called. End-to-end tests replace
+`Math.random` inside the loaded page just before an action that rolls. An init script wouldn't do:
+React and React Router also call `Math.random` while starting up and navigating, and would use up
+the scripted values. So no test hooks are needed in app code. IDs use `crypto.getRandomValues`,
+never `Math.random`, and not `randomUUID`, which browsers only offer on HTTPS or localhost.
+
+## 17. Statblocks reach the browser as a pre-rendered catalogue
+
+**Date:** 2026-09-26
+
+The statblock parser stays server-only. The vault lists every readable statblock (per role, with
+`%%comments%%` stripped for players, like search), and `combatCatalogue` turns them into
+browser-safe `CreatureOption`s: a stable reference (the note's entity ID plus the statblock's
+name), the numbers the tracker needs (AC, average HP, rollable hit dice, DEX modifier), and the
+statblock rendered to HTML by the wiki's own renderer. When a monster joins an encounter its
+numbers are copied into it, so editing the note mid-fight can't change a live fight. The panel
+still shows the current statblock. Sending every statblock with the page suits a campaign vault;
+if that grows large, a per-statblock resource route can replace it.

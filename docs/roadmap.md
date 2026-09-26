@@ -8,6 +8,9 @@ locations, maps, characters, sessions).
 
 - **Hub shell:** a home page linking to table tools (Roll20) and to Guildhall's own modules.
 - **Campaign wiki (read-only):** browse and search the Obsidian vault, with DM/player preview.
+- **Combat tracker (first slice, DM only):** encounters built from vault statblocks and PC notes,
+  initiative with reroll tie-breaks, turns and rounds, monster HP and conditions, the statblock
+  alongside, a dice roller and undo. The encounter is kept in the browser.
 
 ## Parking lot
 
@@ -18,9 +21,16 @@ locations, maps, characters, sessions).
 - **Character sheets:** create a character in-app (D&D Beyond style), view the sheet, and click
   stats to roll.
 - **Dice:** shared dice rolling, including DM hidden rolls. Complements physical dice on camera.
-- **Combat tracker:** initiative order, turns and monster HP, with quick access to stat blocks to
-  cut rule lookups. Could start standalone, and later become an overlay on the battle map, with
-  flashy turn transitions and, one day, attack animations.
+- **Combat tracker, next steps:**
+  - **Prepared encounters:** build several encounters before a session, list them, and start one
+    at the table. (The DM wants this soon.)
+  - **Click-to-roll** from statblock actions (`+4 to hit`, `5 (1d6 + 2)`) into the dice roller.
+  - **Player view:** the turn order for everyone, with details only for your own PC and
+    companions. The model and filter exist (`encounterForViewer`); this needs real player
+    identities and a server-held, shared encounter (websockets on the same Express server).
+  - Hidden combatants (ambushers), condition durations, a tablet layout.
+  - Later: an overlay on the battle map, with flashy turn transitions and, one day, attack
+    animations.
 - **Interactive maps:** upload maps and link them together. Click a point of interest on the
   world map to open the town map, then a building to open its interior. Map pins link to wiki
   entities.

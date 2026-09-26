@@ -6,12 +6,12 @@ specification of the behaviour.
 
 ## Layers
 
-| Layer       | Tool                    | Location                             | What it covers                                                                                                                                                              |
-| ----------- | ----------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit        | Vitest                  | `app/**/*.test.ts`, next to the code | Pure logic: frontmatter parsing, wikilink parsing and resolution, `%%comment%%` handling, markdown rendering and sanitising, visibility rules, config validation, hub links |
-| Integration | Vitest                  | `app/.server/vault/vault.test.ts`    | The `Vault` over the real fixture vault on disk: reading, folder tree, search, visibility filtering, asset access                                                           |
-| End-to-end  | Playwright              | `tests/e2e/*.spec.ts`                | User journeys against the production build: hub, wikilink navigation, search, the player view hiding DM content                                                             |
-| Static      | ESLint, Prettier, `tsc` | whole repo                           | Types, style, and a lint rule that bans filesystem write APIs in app code                                                                                                   |
+| Layer       | Tool                    | Location                                                                  | What it covers                                                                                                                                                                                                                                                                                    |
+| ----------- | ----------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit        | Vitest                  | `app/**/*.test.ts`, next to the code                                      | Pure logic: frontmatter parsing, wikilink parsing and resolution, `%%comment%%` handling, markdown rendering and sanitising, visibility rules, config validation, hub links; combat rules (initiative and tie-breaks, turns, HP, undo, what players may see, saved-encounter validation) and dice |
+| Integration | Vitest                  | `app/.server/vault/vault.test.ts`, `app/.server/combat/catalogue.test.ts` | The `Vault` over the real fixture vault on disk: reading, folder tree, search, visibility filtering, asset access, statblocks and the party; the combat catalogue built from it                                                                                                                   |
+| End-to-end  | Playwright              | `tests/e2e/*.spec.ts`                                                     | User journeys against the production build: hub, wikilink navigation, search, the player view hiding DM content, running a fight in the combat tracker                                                                                                                                            |
+| Static      | ESLint, Prettier, `tsc` | whole repo                                                                | Types, style, and a lint rule that bans filesystem write APIs in app code                                                                                                                                                                                                                         |
 
 Most behaviour is pinned down at the unit level, where it's fast and precise. End-to-end tests
 prove the pieces are wired together and cover what only a browser can show: client-side
@@ -31,6 +31,11 @@ its body says which, for example:
 - `Locations/Old Mill.md` and `Locations/Brindleford/Old Mill.md`: an ambiguous name.
 - `NPCs/Mira Stonehand.md`: image and audio embeds, and inline and block `%%DM comments%%`.
 - `Bestiary/Test Creature.md`: a statblock in the plugin format, plus an unreadable one.
+- `Bestiary/Fixture Minion.md`: the combat tracker's test monster, with known DEX, AC and hit dice.
+- `Bestiary/Fixture Companion.md`: a player-visible companion statblock, plus one hidden in a DM
+  comment that players must never get.
+- `Bestiary/Fixture Bare Statblock.md`: a statblock with only a name (no HP, no ability scores).
+- `Party/Fixture PC One.md`, `Party/Fixture PC Two.md`: `type: pc` notes with a `player`.
 - `.obsidian/` and `.trash/`: must be ignored.
 
 Pure unit tests build their inputs inline (for example, a string of markdown and a stub resolver)
@@ -59,6 +64,22 @@ The app must never modify the vault. Three independent checks:
 - Each Playwright test starts in a fresh browser context, so it begins in the DM view with no
   cookies.
 - Table-driven cases (`it.each`) for input/output rules such as link parsing and invalid config.
+- Combat unit tests build combatants with the helpers in `app/combat/test-builders.ts`, so each
+  test states only the fields it depends on.
+
+## Randomness
+
+Dice decide initiative, tie-breaks and monster HP, so tests must control them.
+
+- **Unit tests** pass an `Rng` into whatever rolls. `sequenceRng([14, 3, 5])` returns those faces
+  in order, and throws if a face can't be on the die or the script runs out, so a test can't
+  silently roll more dice than it expects.
+- **End-to-end tests** call `scriptDice(page, [face(20, 14), face(6, 3)])` just before the click
+  that rolls. It replaces `Math.random` inside the loaded page. It isn't done in an init script
+  because React and React Router also call `Math.random` while starting up and navigating. Specs
+  document the order dice are rolled in (for new monsters: initiative, then hit dice).
+- The encounter is saved in localStorage, and each Playwright test gets a fresh browser context,
+  so every test starts with an empty tracker.
 
 ## Running
 

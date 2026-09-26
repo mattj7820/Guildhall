@@ -6,7 +6,8 @@ Guildhall links out to those tools and grows its own modules. The point of build
 **interconnection**: eventually wiki, maps, characters, combat and dice all link through a shared
 campaign model (NPCs, locations, maps, characters, sessions). See `docs/roadmap.md`.
 
-Current slice: hub home page + read-only Obsidian wiki with a DM/player preview.
+Built so far: hub home page, read-only Obsidian wiki with a DM/player preview, and a DM-only
+combat tracker (encounter state in the browser).
 
 ## Hard constraints
 
@@ -59,8 +60,13 @@ First e2e run needs `npx playwright install chromium`.
   React Router through `servicesContext`.
 - `app/root.tsx`: middleware sets `viewerContext` from the view cookie (`app/.server/viewer.ts`).
   **Loaders read the viewer from context and pass it into every vault query.**
-- `app/campaign/`: shared model (isomorphic): `Viewer`, `Visibility`, `EntityId`, entity types,
-  `canView`.
+- `app/campaign/`: shared model (isomorphic): `Viewer` (with optional `playerId`), `Player`,
+  `Visibility`, `EntityId`, entity types, `canView`.
+- `app/dice/`: dice expressions (`parseDice`, `rollText`) and the `Rng` type (isomorphic).
+- `app/combat/`: the combat tracker's model (isomorphic): `types.ts`, `encounter.ts` (reducer,
+  action creators, `perform`), `initiative.ts` (ordering, reroll tie-breaks), `turns.ts`, `hp.ts`,
+  `history.ts` (undo), `visibility.ts` (`encounterForViewer`), `storage.ts` (localStorage + zod),
+  and the `useEncounter` hook.
 - `app/.server/vault/`:
   - `read-vault.ts`: the only reader of vault files. Skips dotfolders.
   - `parse-note.ts`: frontmatter → `Note`. Visibility fails closed to `dm`.
@@ -68,20 +74,31 @@ First e2e run needs `npx playwright install chromium`.
   - `comments.ts`: `%%comments%%` stripped for players, highlighted for the DM.
   - `remark-wikilinks.ts` + `render.ts`: markdown → sanitised HTML.
   - `search.ts`: MiniSearch, one index per role, built from role-appropriate text.
-  - `statblock/`: parses ` ```statblock ` YAML (Fantasy Statblocks plugin format) and renders it
-    book-style, after sanitising, with vault values inserted only as text nodes.
-  - `vault.ts`: immutable snapshot. `live-vault.ts` rebuilds it on file changes.
+  - `statblock/`: parses ` ```statblock ` YAML (Fantasy Statblocks plugin format), including the
+    numbers the tracker uses, and renders it book-style, after sanitising, with vault values
+    inserted only as text nodes. `extract-statblocks.ts` finds them in a note.
+  - `vault.ts`: immutable snapshot (also `statblocks()` and `party()`). `live-vault.ts` rebuilds
+    it on file changes.
+- `app/.server/combat/catalogue.ts`: vault statblocks and PCs as browser-safe shapes, with
+  statblocks pre-rendered.
 - `app/wiki/`: URL helpers and types shared with the browser.
 - `app/routes/`: `home`, `wiki` (layout + sidebar), `wiki-home` (landing page + `?q=` search),
-  `wiki-note` (`/wiki/*`), `vault-asset` (resource route), `view-mode` (toggle action).
+  `wiki-note` (`/wiki/*`), `combat` (DM-only tracker; server `loader` + hydrating `clientLoader`),
+  `vault-asset` (resource route), `view-mode` (toggle action).
+- `app/components/combat/`: the tracker's UI (`CombatTracker` lays it out).
 
 ## Conventions
 
 - Vault paths are POSIX, vault-relative, with extension (`NPCs/Mira.md`). The slug drops `.md`.
   Note URLs come from `noteUrl()` in `app/wiki/urls.ts`.
 - Server-only code lives under `app/.server/`. Browser code must not import from it (types
-  included; put shared shapes in `app/wiki/` or `app/campaign/`).
-- Frontmatter: `visibility` (`players`|`dm`, default `dm`), `type`, `aliases`, `tags`, `id`.
+  included; put shared shapes in `app/wiki/`, `app/campaign/` or `app/combat/`).
+- Frontmatter: `visibility` (`players`|`dm`, default `dm`), `type`, `aliases`, `tags`, `id`, and
+  `player` on `type: pc` notes (who plays the character).
+- Combat: every encounter change is an `EncounterAction` through the pure `encounterReducer`.
+  Dice are rolled in action creators (or `perform`) and carried in the action. All randomness goes
+  through an injected `Rng`; never call `Math.random` directly. IDs come from `newId()`.
+  Combatants reference vault statblocks by `StatblockRef` (entity ID plus statblock name).
 - Hidden content must be indistinguishable from missing content in player view (same 404, links
   become plain text, excluded from search and the tree).
 - Unit tests sit next to the code (`*.test.ts`); e2e specs in `tests/e2e/` use accessible

@@ -3,8 +3,9 @@
 [![CI](https://github.com/mattj7820/Guildhall/actions/workflows/ci.yml/badge.svg)](https://github.com/mattj7820/Guildhall/actions/workflows/ci.yml)
 
 A personal hub for running a Dungeons & Dragons campaign. It links out to the tools used at the
-table and hosts its own modules, starting with a **read-only wiki over an Obsidian vault**, with a
-preview of what the players are allowed to see.
+table and hosts its own modules: a **read-only wiki over an Obsidian vault**, with a preview of
+what the players are allowed to see, and a **combat tracker** that runs monsters straight from the
+vault's statblocks.
 
 The long-term goal is interconnection: wiki, maps, characters, combat and dice all linking through
 one shared model of the campaign (NPCs, locations, sessions…). See [the roadmap](docs/roadmap.md).
@@ -24,6 +25,19 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
     laid out like the 5e books.
   - Folder-tree navigation and full-text search (prefix and fuzzy, boosted by title and aliases).
   - Picks up edits made in Obsidian on the next page load.
+- **Combat tracker** (DM only), made for a second screen next to the VTT and voice chat:
+  - Builds an encounter from the vault: monsters from any statblock (numbered "Goblin 1",
+    "Goblin 2"…, with hit points rolled from their hit dice), the party from PC notes, and
+    companions assigned to a player for the battle.
+  - Initiative: monsters roll d20 + DEX, and players' physical rolls are typed in. Ties are broken
+    by rerolls until they differ: automatically for monsters, with a prompt for players. The order
+    can be changed by hand.
+  - Turns and rounds, adding and removing combatants mid-fight, and monster HP with damage,
+    healing, temporary HP, and bloodied and down states (down monsters are skipped). Condition
+    tags and short notes for anyone.
+  - The current monster's statblock alongside, in the same book layout as the wiki.
+  - A dice roller (`2d6+3`, advantage and disadvantage), undo, and an encounter that survives a
+    page reload (kept in the browser's local storage).
 - **DM / player preview.** Notes are DM-only unless their frontmatter says `visibility: players`.
   The player view hides DM-only notes from navigation, search, links and direct URLs, and strips
   Obsidian `%%comments%%`, so DMs can keep inline secrets inside shared notes.
@@ -57,6 +71,7 @@ type: npc # optional entity type: npc, pc, location, faction, item, session, lor
 aliases: [Mira] # standard Obsidian aliases; also searchable
 tags: [brindleford]
 id: npc-mira # optional stable ID that survives renaming the file
+player: Sam # on type: pc notes, who plays the character (used by the combat tracker)
 ---
 ```
 
@@ -77,9 +92,10 @@ Before running the end-to-end tests for the first time: `npx playwright install 
 
 ## Testing
 
-Unit tests cover vault parsing, Obsidian link resolution, rendering and visibility rules.
-Playwright covers the user journeys: the hub, wikilink navigation, search, and the player view
-hiding DM content everywhere. All tests run against an invented fixture vault, and the e2e run
+Unit tests cover vault parsing, Obsidian link resolution, rendering and visibility rules, and the
+combat rules (initiative and reroll tie-breaks, turns and rounds, HP, dice, what a player may see)
+with scripted dice. Playwright covers the user journeys: the hub, wikilink navigation, search, the
+player view hiding DM content everywhere, and running a fight in the combat tracker. All tests run against an invented fixture vault, and the e2e run
 fails if that vault is modified in any way. CI runs lint, typecheck, unit tests (Linux and
 Windows) and e2e tests on every push. See [docs/testing.md](docs/testing.md) for the strategy.
 
@@ -93,13 +109,16 @@ reasons are in [docs/decisions.md](docs/decisions.md).
 
 ```
 app/
-  campaign/        Shared campaign model: roles, visibility, entity types (isomorphic)
+  campaign/        Shared campaign model: roles, players, visibility, entity types (isomorphic)
+  combat/          Combat tracker model and rules: encounters, initiative, turns, HP (isomorphic)
+  dice/            Dice expressions and rolling, with injectable randomness (isomorphic)
   hub/             Hub links configuration
   wiki/            Wiki types and URL helpers shared by server and browser
   .server/         Server-only code: config, viewer cookie
-    vault/         Vault reading, parsing, link resolution, rendering, search
+    vault/         Vault reading, parsing, link resolution, rendering, search, statblocks
+    combat/        The combat tracker's catalogue of vault statblocks and PCs
   routes/          Pages and resource routes
-  components/      UI components
+  components/      UI components (combat/ holds the tracker's)
 server/app.ts      Express app: creates long-lived services, mounts React Router
 server.js          HTTP entry point (dev: Vite middleware; prod: static + build)
 tests/
