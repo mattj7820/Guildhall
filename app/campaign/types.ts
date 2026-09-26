@@ -8,6 +8,11 @@ export type Role = "dm" | "player";
 
 export interface Viewer {
   role: Role;
+  /**
+   * Which player is looking, once players have their own views. A player viewer without one
+   * controls nothing, so sees only what's shared with every player.
+   */
+  playerId?: PlayerId;
 }
 
 export const DM_VIEWER: Viewer = { role: "dm" };
