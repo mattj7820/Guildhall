@@ -9,6 +9,14 @@ import { readVault, type VaultSnapshot } from "./read-vault";
 import { renderMarkdown } from "./render";
 import type { ResolvedTarget } from "./remark-wikilinks";
 import { SearchIndex, type SearchResult } from "./search";
+import { extractStatblocks } from "./statblock/extract-statblocks";
+import type { Statblock } from "./statblock/parse-statblock";
+
+/** A statblock and the note it's written in. */
+export interface NoteStatblock {
+  note: Note;
+  statblock: Statblock;
+}
 
 interface RenderedBody {
   html: string;
@@ -27,6 +35,7 @@ export class Vault {
   private readonly resolver: LinkResolver;
   private readonly renderCache = new Map<string, RenderedBody>();
   private readonly searchIndexes = new Map<Role, SearchIndex>();
+  private readonly statblockLists = new Map<Role, NoteStatblock[]>();
   private playerAssets?: ReadonlySet<string>;
 
   static async load(root: string): Promise<Vault> {
@@ -90,6 +99,28 @@ export class Vault {
       this.searchIndexes.set(viewer.role, index);
     }
     return index.search(query);
+  }
+
+  /**
+   * Every readable statblock in notes the viewer may see, in note order. Players' copies come from
+   * the note with `%%comments%%` removed, so a statblock hidden in a comment stays secret.
+   */
+  statblocks(viewer: Viewer): NoteStatblock[] {
+    let list = this.statblockLists.get(viewer.role);
+    if (!list) {
+      list = this.notes(viewer).flatMap((note) =>
+        extractStatblocks(
+          viewer.role === "dm" ? note.body : applyComments(note.body, "player"),
+        ).map((statblock) => ({ note, statblock })),
+      );
+      this.statblockLists.set(viewer.role, list);
+    }
+    return list;
+  }
+
+  /** Player characters: notes with `type: pc` that the viewer may see. */
+  party(viewer: Viewer): Note[] {
+    return this.notes(viewer).filter((note) => note.type === "pc");
   }
 
   /**

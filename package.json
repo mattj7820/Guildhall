@@ -28,6 +28,7 @@
     "express": "^5.2.1",
     "github-slugger": "^2.0.0",
     "gray-matter": "^4.0.3",
+    "hast-util-to-html": "^9.0.5",
     "hastscript": "^9.0.1",
     "isbot": "^5.2.2",
     "mdast-util-find-and-replace": "^3.0.2",

@@ -74,6 +74,18 @@ describe("parseNote", () => {
     });
   });
 
+  describe("player", () => {
+    it("reads who controls a PC", () => {
+      const note = parseNote("a.md", withFrontmatter("type: pc\nplayer: Player One"));
+      expect(note.player).toBe("Player One");
+    });
+
+    it("is undefined when absent or blank", () => {
+      expect(parseNote("a.md", withFrontmatter("type: pc")).player).toBeUndefined();
+      expect(parseNote("a.md", withFrontmatter('player: ""')).player).toBeUndefined();
+    });
+  });
+
   it("notices when the body supplies its own title heading", () => {
     expect(parseNote("a.md", "# Title\n\nText").hasOwnTitle).toBe(true);
     expect(parseNote("a.md", "Text\n\n# Later heading").hasOwnTitle).toBe(false);

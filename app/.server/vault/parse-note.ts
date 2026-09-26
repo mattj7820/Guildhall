@@ -18,6 +18,8 @@ export interface Note {
   type?: string;
   aliases: string[];
   tags: string[];
+  /** For `type: pc` notes: the name of the player who controls the character. */
+  player?: string;
   /** Markdown body with frontmatter removed. */
   body: string;
   /** True when the body opens with its own `# Heading`, so the page needn't repeat the title. */
@@ -52,6 +54,7 @@ export function parseNote(path: string, source: string): Note {
     type: nonEmptyString(data.type)?.toLowerCase(),
     aliases: stringList(data.aliases ?? data.alias),
     tags: stringList(data.tags ?? data.tag).map((tag) => tag.replace(/^#/, "")),
+    player: nonEmptyString(data.player),
     body,
     hasOwnTitle: /^\s*# /.test(body),
     frontmatterError,

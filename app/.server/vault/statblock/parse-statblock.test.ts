@@ -81,6 +81,36 @@ describe("parseStatblock", () => {
       bonusActions: [],
       reactions: [],
       legendaryActions: [],
+      numbers: { armorClass: 17, hitPoints: 17, hitDice: "5d6 − 1", dexterityModifier: 2 },
+    });
+  });
+
+  describe("numbers for the combat tracker", () => {
+    it.each([
+      ["a plain number", "ac: 15", 15],
+      ["armour in brackets", 'ac: "15 (leather armor)"', 15],
+      ["text with no number", "ac: varies", undefined],
+    ])("reads the armour class from %s", (_label, line, expected) => {
+      expect(parsed(yaml("name: X", line)).numbers.armorClass).toBe(expected);
+    });
+
+    it.each([
+      ["8d8 + 16", "8d8 + 16"],
+      ["1d4 + -2", "1d4 − 2"],
+      ["2d6", "2d6"],
+      ["lots", undefined],
+    ])("normalises hit dice %j to a rollable expression", (dice, expected) => {
+      expect(parsed(yaml("name: X", `hit_dice: ${dice}`)).numbers.hitDice).toBe(expected);
+    });
+
+    it("rounds a negative DEX modifier down", () => {
+      expect(parsed(yaml("name: X", "stats: [10, 7, 10, 10, 10, 10]")).numbers).toMatchObject({
+        dexterityModifier: -2,
+      });
+    });
+
+    it("has no HP or AC, and a zero DEX modifier, when the statblock omits them", () => {
+      expect(parsed(yaml("name: X")).numbers).toEqual({ dexterityModifier: 0 });
     });
   });
 

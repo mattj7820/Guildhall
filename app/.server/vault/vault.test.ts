@@ -87,7 +87,14 @@ describe("Vault", () => {
 
     it("lists folders and root notes in natural order", () => {
       const tree = vault.folderTree(DM_VIEWER);
-      expect(folderNames(tree)).toEqual(["Bestiary", "Locations", "NPCs", "Secrets", "Sessions"]);
+      expect(folderNames(tree)).toEqual([
+        "Bestiary",
+        "Locations",
+        "NPCs",
+        "Party",
+        "Secrets",
+        "Sessions",
+      ]);
       expect(tree.notes.map((note) => note.title)).toEqual(["Home", "README"]);
     });
 
@@ -134,6 +141,50 @@ describe("Vault", () => {
 
     it("returns nothing for an empty query", () => {
       expect(vault.search("  ", DM_VIEWER)).toEqual([]);
+    });
+  });
+
+  describe("statblocks", () => {
+    const names = (viewer = DM_VIEWER) =>
+      vault.statblocks(viewer).map(({ statblock }) => statblock.name);
+
+    it("lists every readable statblock with the note it's in", () => {
+      expect(names()).toEqual(
+        expect.arrayContaining([
+          "Fixture Minion",
+          "Fixture Companion",
+          "Fixture Secret Form",
+          "Fixture Bare",
+          "Test Creature",
+        ]),
+      );
+      const minion = vault.statblocks(DM_VIEWER).find((s) => s.statblock.name === "Fixture Minion");
+      expect(minion?.note.slug).toBe("Bestiary/Fixture Minion");
+      expect(minion?.statblock.numbers).toEqual({
+        armorClass: 13,
+        hitPoints: 7,
+        hitDice: "2d6",
+        dexterityModifier: 2,
+      });
+    });
+
+    it("skips the unreadable statblock in a note that also has a readable one", () => {
+      expect(names().filter((name) => name === "Test Creature")).toHaveLength(1);
+    });
+
+    it("gives players only statblocks from notes they can see, outside DM comments", () => {
+      expect(names(PLAYER_VIEWER)).toContain("Fixture Companion");
+      expect(names(PLAYER_VIEWER)).not.toContain("Fixture Minion");
+      expect(names(PLAYER_VIEWER)).not.toContain("Fixture Secret Form");
+    });
+  });
+
+  describe("party", () => {
+    it("lists notes with type: pc, with who controls them", () => {
+      expect(vault.party(DM_VIEWER).map((note) => [note.title, note.player])).toEqual([
+        ["Fixture PC One", "Player One"],
+        ["Fixture PC Two", "Player Two"],
+      ]);
     });
   });
 

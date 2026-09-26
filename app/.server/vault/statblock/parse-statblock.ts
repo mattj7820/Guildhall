@@ -1,4 +1,5 @@
 import { parse as parseYaml } from "yaml";
+import { formatDice, parseDice } from "~/dice/parse";
 
 /**
  * A creature statblock, parsed from the YAML inside a ```statblock code block. The YAML format is
@@ -28,6 +29,19 @@ export interface Statblock {
   reactions: Feature[];
   legendaryActions: Feature[];
   legendaryDescription?: string;
+  /** The values tools calculate with (the combat tracker), as opposed to display text. */
+  numbers: StatblockNumbers;
+}
+
+export interface StatblockNumbers {
+  /** The leading number of `ac`, e.g. 15 from "15 (leather armor)". */
+  armorClass?: number;
+  /** The average hit points, e.g. 7. */
+  hitPoints?: number;
+  /** Hit dice as a canonical dice expression, e.g. "5d6 − 1". Absent if unreadable. */
+  hitDice?: string;
+  /** The DEX modifier, which is also the initiative bonus. 0 without ability scores. */
+  dexterityModifier: number;
 }
 
 export interface AbilityScore {
@@ -90,6 +104,7 @@ export function parseStatblock(source: string): StatblockResult {
   }
   if (!name) return { ok: false, error: "The statblock has no name." };
 
+  const scores = abilities(data.stats);
   return {
     ok: true,
     statblock: {
@@ -98,7 +113,7 @@ export function parseStatblock(source: string): StatblockResult {
       armorClass: text(data.ac),
       hitPoints: hitPoints(data.hp, data.hit_dice),
       speed: text(data.speed),
-      abilities: abilities(data.stats),
+      abilities: scores,
       savingThrows: bonuses(
         data.saves,
         (key) => ABILITY_NAMES[key.toLowerCase()] ?? titleCase(key),
@@ -117,6 +132,12 @@ export function parseStatblock(source: string): StatblockResult {
       reactions: features(data.reactions),
       legendaryActions: features(data.legendary_actions),
       legendaryDescription: text(data.legendary_description),
+      numbers: {
+        armorClass: leadingNumber(data.ac),
+        hitPoints: leadingNumber(data.hp),
+        hitDice: diceExpression(data.hit_dice),
+        dexterityModifier: scores ? Math.floor((scores[1].score - 10) / 2) : 0,
+      },
     },
   };
 }
@@ -158,6 +179,16 @@ function hitPoints(hp: unknown, hitDice: unknown): string | undefined {
     .replace(/\s*-\s*(?=\d)/g, " − ");
   if (points && dice) return `${points} (${dice})`;
   return points ?? dice;
+}
+
+function leadingNumber(value: unknown): number | undefined {
+  const match = /^\d+/.exec(text(value) ?? "");
+  return match ? Number(match[0]) : undefined;
+}
+
+function diceExpression(value: unknown): string | undefined {
+  const parsed = parseDice(text(value) ?? "");
+  return parsed.ok ? formatDice(parsed.expression) : undefined;
 }
 
 function abilities(stats: unknown): AbilityScore[] | undefined {

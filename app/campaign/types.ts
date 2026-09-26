@@ -14,6 +14,24 @@ export const DM_VIEWER: Viewer = { role: "dm" };
 export const PLAYER_VIEWER: Viewer = { role: "player" };
 
 /**
+ * Identifies a player (a person at the table, not their character). Derived from the name the DM
+ * writes in PC notes' `player` frontmatter, so "Sam" and " sam " are the same player.
+ */
+export type PlayerId = string;
+
+export interface Player {
+  id: PlayerId;
+  /** As first written, for display. */
+  name: string;
+}
+
+/** A player from a name as written in frontmatter or typed in; undefined for a blank name. */
+export function playerFromName(name: string): Player | undefined {
+  const trimmed = name.trim().replace(/\s+/g, " ");
+  return trimmed ? { id: trimmed.toLowerCase(), name: trimmed } : undefined;
+}
+
+/**
  * Who a piece of campaign content is visible to.
  * - `dm`: only the DM (the default for anything not explicitly shared).
  * - `players`: the DM and all players.
