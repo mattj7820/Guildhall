@@ -6,4 +6,4 @@ coverage/
 .agents/
 package-lock.json
 tests/fixtures/vault/
-docs/brain-dump.md
+docs/personal/
