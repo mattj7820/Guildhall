@@ -1,3 +1,5 @@
+import type { Role } from "~/campaign/types";
+
 /**
  * What the hub home page links to: external tools used at the table, and Guildhall's own modules.
  * A plain list on purpose; modules are added here by hand as they're built.
@@ -18,7 +20,8 @@ export interface HubLinks {
   modules: HubLink[];
 }
 
-export function hubLinks(config: { roll20CampaignUrl?: string }): HubLinks {
+/** DM-only modules are left out of the player preview. */
+export function hubLinks(config: { roll20CampaignUrl?: string }, role: Role = "dm"): HubLinks {
   return {
     tools: [
       {
@@ -38,6 +41,17 @@ export function hubLinks(config: { roll20CampaignUrl?: string }): HubLinks {
         href: "/wiki",
         external: false,
       },
+      ...(role === "dm"
+        ? [
+            {
+              id: "combat",
+              title: "Combat tracker",
+              description: "Initiative, turns, monster HP and statblocks. DM only.",
+              href: "/combat",
+              external: false,
+            },
+          ]
+        : []),
     ],
   };
 }

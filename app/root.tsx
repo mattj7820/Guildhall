@@ -54,6 +54,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <NavLink to="/wiki" className={navLinkClass}>
                 Wiki
               </NavLink>
+              {role === "dm" && (
+                <NavLink to="/combat" className={navLinkClass}>
+                  Combat
+                </NavLink>
+              )}
             </nav>
             <div className="ml-auto">
               <ViewToggle role={role} />

@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { servicesContext } from "~/context";
+import { servicesContext, viewerContext } from "~/context";
 import { hubLinks, type HubLink } from "~/hub/links";
 import type { Route } from "./+types/home";
 
@@ -11,7 +11,7 @@ export function meta(_: Route.MetaArgs) {
 }
 
 export function loader({ context }: Route.LoaderArgs) {
-  return hubLinks(context.get(servicesContext).config);
+  return hubLinks(context.get(servicesContext).config, context.get(viewerContext).role);
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {

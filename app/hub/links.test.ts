@@ -19,4 +19,14 @@ describe("hubLinks", () => {
       expect.objectContaining({ id: "wiki", href: "/wiki", external: false }),
     );
   });
+
+  it("lists the combat tracker for the DM", () => {
+    expect(hubLinks({}, "dm").modules).toContainEqual(
+      expect.objectContaining({ id: "combat", href: "/combat", external: false }),
+    );
+  });
+
+  it("leaves the DM-only combat tracker out of the player preview", () => {
+    expect(hubLinks({}, "player").modules.map((m) => m.id)).not.toContain("combat");
+  });
 });

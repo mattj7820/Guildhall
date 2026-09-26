@@ -7,6 +7,7 @@ export default [
     // Every other /wiki/* path is a vault note, so note names can never clash with app pages.
     route("*", "routes/wiki-note.tsx"),
   ]),
+  route("combat", "routes/combat.tsx"),
   route("vault-asset/*", "routes/vault-asset.ts"),
   route("view-mode", "routes/view-mode.ts"),
 ] satisfies RouteConfig;

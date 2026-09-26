@@ -75,6 +75,15 @@ export function loadEncounter(storage: Pick<Storage, "getItem">): LoadResult {
   }
 }
 
+/** The browser's localStorage, or undefined where it's unavailable (even reading it can throw). */
+export function browserStorage(): Storage | undefined {
+  try {
+    return window.localStorage;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Returns false if the browser refused (storage full or disabled), so the page can say so. */
 export function saveEncounter(storage: Pick<Storage, "setItem">, encounter: Encounter): boolean {
   try {
