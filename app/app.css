@@ -1,0 +1,45 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+  }
+}
+
+/*
+ * Rendered note content (see app/.server/vault/render.ts for the classes). Deliberately unlayered
+ * so these rules win over the typography plugin's defaults.
+ */
+.note-body h1,
+.note-body h2,
+.note-body h3 {
+  font-family: var(--font-serif);
+  scroll-margin-top: 1rem;
+}
+
+.note-body a.wikilink {
+  @apply font-medium text-amber-800 decoration-amber-800/40 hover:decoration-amber-800 dark:text-amber-400 dark:decoration-amber-400/40;
+}
+
+.note-body .wikilink-missing {
+  @apply text-stone-400 italic underline decoration-dotted underline-offset-2 dark:text-stone-500;
+}
+
+.note-body .dm-comment {
+  @apply rounded bg-rose-50 px-1 text-rose-900 ring-1 ring-rose-200 dark:bg-rose-950/60 dark:text-rose-200 dark:ring-rose-900;
+}
+
+.note-body div.dm-comment {
+  @apply my-4 block px-3 py-2;
+}
+
+.note-body .dm-comment::before {
+  content: "DM note: ";
+  @apply font-semibold;
+}
