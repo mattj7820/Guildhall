@@ -28,7 +28,7 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
 
 ## Getting started
 
-Requires Node.js 22.22 or later (see `.nvmrc`).
+Requires Node.js 26 or later (see `.nvmrc`).
 
 ```sh
 npm install

@@ -80,3 +80,11 @@ conventional ones future modules will give behaviour to.
 Vitest for units (fast, native TypeScript/ESM), and Playwright for end-to-end runs against the
 production build. All tests use an invented fixture vault, never a real one, and the e2e run
 fails if the vault is modified. See [testing.md](testing.md).
+
+## 10. Node 26 for development and CI
+
+**Date:** 2026-09-26
+
+Local development moved to Node 26 (the newest release; it becomes LTS in October 2026), so
+`.nvmrc` and `engines` were raised to 26 to keep CI on the same version as development. This
+supersedes the Node 22 baseline in decision 1.

@@ -34,7 +34,7 @@ Current slice: hub home page + read-only Obsidian wiki with a DM/player preview.
 ## Stack
 
 TypeScript · React Router 8 framework mode (SSR) on Express · Tailwind v4 + typography ·
-unified/remark/rehype · MiniSearch · chokidar · zod · Vitest · Playwright. Node ≥ 22.22 (`.nvmrc`).
+unified/remark/rehype · MiniSearch · chokidar · zod · Vitest · Playwright. Node 26 (`.nvmrc`).
 React Router ships version-matched docs in `node_modules/react-router/docs/`, and there's an
 agent skill in `.agents/skills/react-router/`; check them before using router APIs, since v8
 differs from older versions.

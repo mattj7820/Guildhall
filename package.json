@@ -5,7 +5,7 @@
   "description": "A personal D&D campaign hub: links to table tools and a read-only wiki over an Obsidian vault.",
   "type": "module",
   "engines": {
-    "node": ">=22.22.0"
+    "node": ">=26"
   },
   "scripts": {
     "dev": "cross-env NODE_ENV=development node --conditions development --env-file-if-exists=.env server.js",
@@ -57,7 +57,7 @@
     "@types/hast": "^3.0.5",
     "@types/mdast": "^4.0.4",
     "@types/morgan": "^1.9.10",
-    "@types/node": "^22",
+    "@types/node": "^26.6.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "cross-env": "^10.1.0",
