@@ -45,3 +45,82 @@ export interface CombatCatalogue {
   creatures: CreatureOption[];
   party: PartyMember[];
 }
+
+/** The 5e conditions, as simple tags. */
+export const CONDITIONS = [
+  "blinded",
+  "charmed",
+  "deafened",
+  "exhaustion",
+  "frightened",
+  "grappled",
+  "incapacitated",
+  "invisible",
+  "paralyzed",
+  "petrified",
+  "poisoned",
+  "prone",
+  "restrained",
+  "stunned",
+  "unconscious",
+] as const;
+
+export type Condition = (typeof CONDITIONS)[number];
+
+/** Stable for the life of an encounter; keys the UI and any future real-time updates. */
+export type CombatantId = string;
+
+interface CombatantBase {
+  id: CombatantId;
+  /** "Goblin 2", "Aria" */
+  name: string;
+  /** The initiative total; null until rolled or entered. */
+  initiative: number | null;
+  /** d20 rerolls that broke ties, in order. Compared after `initiative`. */
+  tiebreaks: number[];
+  conditions: Condition[];
+  /** A short note. On a player combatant, its player will be able to see it. */
+  note: string;
+  /** Set when added after combat started, so tie-breaks place it without reshuffling others. */
+  joinedRound?: number;
+}
+
+/** A monster or NPC the DM runs: fully tracked. */
+export interface MonsterCombatant extends CombatantBase {
+  kind: "monster";
+  statblock: StatblockRef;
+  /** Snapshotted from the statblock when added, so editing the note can't change a live fight. */
+  initiativeBonus: number;
+  armorClass?: number;
+  hp: HitPoints;
+}
+
+/** A PC or companion a player runs: the players track their own stats. */
+export interface PlayerCombatant extends CombatantBase {
+  kind: "player";
+  controller: Player;
+  /** The PC's vault note, if it came from one. */
+  entityId?: EntityId;
+  /** Optional reference, e.g. a companion's statblock. */
+  statblock?: StatblockRef;
+}
+
+export type Combatant = MonsterCombatant | PlayerCombatant;
+
+export interface HitPoints {
+  current: number;
+  max: number;
+  temp: number;
+}
+
+export interface Encounter {
+  schemaVersion: 1;
+  id: string;
+  phase: "setup" | "active";
+  /** 0 during setup. */
+  round: number;
+  /** An ID rather than an index, so adding or removing combatants can't shift the turn. */
+  activeId: CombatantId | null;
+  /** In turn order. The DM can reorder by hand. */
+  combatants: Combatant[];
+}
