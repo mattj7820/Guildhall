@@ -29,7 +29,7 @@ its body says which, for example:
 - `Secrets/Villain Plan.md`: explicit `visibility: dm`, a stable `id`, and a DM-only image.
 - `Secrets/Broken Frontmatter.md`: invalid YAML that must fail closed to DM-only.
 - `Locations/Old Mill.md` and `Locations/Brindleford/Old Mill.md`: an ambiguous name.
-- `NPCs/Mira Stonehand.md`: image embeds and inline and block `%%DM comments%%`.
+- `NPCs/Mira Stonehand.md`: image and audio embeds, and inline and block `%%DM comments%%`.
 - `Bestiary/Test Creature.md`: a statblock in the plugin format, plus an unreadable one.
 - `.obsidian/` and `.trash/`: must be ignored.
 

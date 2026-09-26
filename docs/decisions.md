@@ -101,3 +101,14 @@ layout. The markup is generated after sanitising, with every vault value inserte
 Bestiary references (`monster: Goblin`) can't be resolved outside the plugin, so they show a
 notice asking for the full statblock. A statblock that can't be read shows a short explanation
 and the original block, rather than failing the page.
+
+## 12. Audio embeds play inline, served with range support
+
+**Date:** 2026-09-26
+
+NPC voice memos from Obsidian's audio recorder are embedded as `![[Voice.m4a]]`. Audio embeds
+render as a native `<audio controls>` player with a download link inside as a fallback, and
+`<audio>` is added to the sanitiser's allowlist. The asset route serves the right audio
+Content-Type and answers HTTP `Range` requests (206), which browsers use to stream and seek
+media. Audio follows the same visibility rule as images: players can load it only if a note they
+can see embeds it.

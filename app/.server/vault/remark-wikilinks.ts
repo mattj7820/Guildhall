@@ -4,6 +4,7 @@ import { findAndReplace } from "mdast-util-find-and-replace";
 import { parseWikilink, type WikilinkParts } from "./link-resolver";
 import type { Note } from "./parse-note";
 import { assetUrl, noteUrl } from "~/wiki/urls";
+import { mediaKind } from "./media";
 import { basename } from "./paths";
 
 /** What a wikilink target resolved to. */
@@ -21,10 +22,10 @@ export interface WikilinkOptions {
 }
 
 const WIKILINK = /(!?)\[\[([^[\]\n]+?)\]\]/g;
-const IMAGE_EXTENSION = /\.(png|jpe?g|gif|webp|svg|avif|bmp)$/i;
 
 /**
- * remark plugin: turns Obsidian `[[wikilinks]]` and `![[embeds]]` in text into links and images.
+ * remark plugin: turns Obsidian `[[wikilinks]]` and `![[embeds]]` in text into links, images and
+ * audio players.
  * Only text nodes are touched, so links inside code spans and code blocks stay literal.
  */
 export function remarkWikilinks(options: WikilinkOptions) {
@@ -54,7 +55,8 @@ function toNode(inner: string, isEmbed: boolean, options: WikilinkOptions): Phra
 
   if (resolved.kind === "asset") {
     options.onAsset?.(resolved.path);
-    if (isEmbed && IMAGE_EXTENSION.test(resolved.path)) return image(resolved.path, parts);
+    if (isEmbed && mediaKind(resolved.path) === "image") return image(resolved.path, parts);
+    if (isEmbed && mediaKind(resolved.path) === "audio") return audio(resolved.path);
     return wikilink(assetUrl(resolved.path), parts.alias ?? basename(resolved.path));
   }
 
@@ -102,5 +104,21 @@ function image(path: string, parts: WikilinkParts): Image {
     url: assetUrl(path),
     alt: size ? basename(path) : (parts.alias ?? basename(path)),
     data: size ? { hProperties: { width: size[1], ...(size[2] ? { height: size[2] } : {}) } } : {},
+  };
+}
+
+/**
+ * `![[voice.m4a]]` (e.g. from Obsidian's audio recorder) becomes an inline player, labelled with
+ * the file name. The link inside is the fallback for browsers that can't play the format.
+ */
+function audio(path: string): PhrasingContent {
+  const url = assetUrl(path);
+  return {
+    type: "emphasis",
+    children: [wikilink(url, basename(path))],
+    data: {
+      hName: "audio",
+      hProperties: { src: url, controls: true, preload: "metadata", ariaLabel: basename(path) },
+    },
   };
 }

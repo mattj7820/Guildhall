@@ -7,7 +7,10 @@ tags: [npc, brindleford]
 ---
 # Mira Stonehand
 
-Fixture: a player-visible NPC with an image embed, a sized image embed and DM comments.
+Fixture: a player-visible NPC with an image embed, a sized image embed, an audio embed and DM
+comments.
+
+Voice: ![[voice-sample.wav]]
 
 ![[mira-portrait.png]]
 

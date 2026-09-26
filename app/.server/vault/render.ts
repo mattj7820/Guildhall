@@ -17,11 +17,13 @@ import { rehypeStatblocks } from "./statblock/rehype-statblocks";
  */
 const schema: SanitizeSchema = {
   ...defaultSchema,
+  tagNames: [...(defaultSchema.tagNames ?? []), "audio"],
   attributes: {
     ...defaultSchema.attributes,
     a: allowClasses("a", ["wikilink", "wikilink-embed"]),
     span: allowClasses("span", ["wikilink-missing", "dm-comment"]),
     div: allowClasses("div", ["dm-comment"]),
+    audio: ["src", "controls", "preload", "ariaLabel"],
   },
 };
 

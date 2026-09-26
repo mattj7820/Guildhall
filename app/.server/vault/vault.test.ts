@@ -17,7 +17,11 @@ describe("readVault", () => {
   it("reads notes and attachments with POSIX vault paths", async () => {
     const snapshot = await readVault(FIXTURE_VAULT);
     expect(snapshot.notes.map((note) => note.path)).toContain("NPCs/Mira Stonehand.md");
-    expect(snapshot.assets).toEqual(["Attachments/dm-map.png", "Attachments/mira-portrait.png"]);
+    expect(snapshot.assets).toEqual([
+      "Attachments/dm-map.png",
+      "Attachments/mira-portrait.png",
+      "Attachments/voice-sample.wav",
+    ]);
   });
 
   it("skips Obsidian's config folder and trash", async () => {

@@ -12,6 +12,7 @@ const notes: Record<string, Note> = {
 const assets: Record<string, string> = {
   "map.png": "Attachments/map.png",
   "handout.pdf": "Attachments/handout.pdf",
+  "voice.m4a": "Voices/voice.m4a",
 };
 
 function render(markdown: string, role: Role = "dm") {
@@ -98,6 +99,28 @@ describe("renderMarkdown", () => {
 
     it("uses non-numeric text as alt text", () => {
       expect(render("![[map.png|The valley]]").html).toContain('alt="The valley"');
+    });
+  });
+
+  describe("audio embeds", () => {
+    it("renders an inline player labelled with the file name", () => {
+      const { html, seenAssets } = render("Voice: ![[voice.m4a]]");
+      expect(html).toContain(
+        '<p>Voice: <audio src="/vault-asset/Voices/voice.m4a" controls preload="metadata" aria-label="voice.m4a">',
+      );
+      expect(seenAssets).toEqual(["Voices/voice.m4a"]);
+    });
+
+    it("includes a download link as a fallback", () => {
+      expect(render("![[voice.m4a]]").html).toContain(
+        '<a href="/vault-asset/Voices/voice.m4a" class="wikilink">voice.m4a</a></audio>',
+      );
+    });
+
+    it("links to audio instead of embedding it when written without !", () => {
+      const { html } = render("[[voice.m4a]]");
+      expect(html).not.toContain("<audio");
+      expect(html).toContain('href="/vault-asset/Voices/voice.m4a"');
     });
   });
 
