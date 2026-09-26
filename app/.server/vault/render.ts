@@ -9,6 +9,7 @@ import { unified } from "unified";
 import type { Role } from "~/campaign/types";
 import { applyComments } from "./comments";
 import { remarkWikilinks, type WikilinkOptions } from "./remark-wikilinks";
+import { rehypeStatblocks } from "./statblock/rehype-statblocks";
 
 /**
  * Raw HTML in notes is allowed (Obsidian users write it), but sanitised: no scripts, no event
@@ -53,6 +54,8 @@ export function renderMarkdown(markdown: string, options: RenderOptions): string
     .use(rehypeSanitize, schema)
     // After sanitising, so heading IDs aren't prefixed and match the anchors wikilinks point at.
     .use(rehypeSlug)
+    // Also after sanitising: statblock markup is app-generated, with vault text as text nodes only.
+    .use(rehypeStatblocks)
     .use(rehypeStringify);
 
   return String(processor.processSync(applyComments(markdown, options.role)));

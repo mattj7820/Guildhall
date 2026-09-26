@@ -19,6 +19,8 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
 - **Campaign wiki**, read straight from an Obsidian vault folder, which stays the source of truth:
   - Obsidian-flavoured markdown: frontmatter, `[[wikilinks]]` (aliases, heading links, Obsidian's
     shortest-path resolution), `![[image]]` embeds with sizes, GitHub-flavoured markdown.
+  - Monster statblocks written for the Fantasy Statblocks plugin (` ```statblock ` blocks),
+    laid out like the 5e books.
   - Folder-tree navigation and full-text search (prefix and fuzzy, boosted by title and aliases).
   - Picks up edits made in Obsidian on the next page load.
 - **DM / player preview.** Notes are DM-only unless their frontmatter says `visibility: players`.

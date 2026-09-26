@@ -30,6 +30,7 @@ its body says which, for example:
 - `Secrets/Broken Frontmatter.md`: invalid YAML that must fail closed to DM-only.
 - `Locations/Old Mill.md` and `Locations/Brindleford/Old Mill.md`: an ambiguous name.
 - `NPCs/Mira Stonehand.md`: image embeds and inline and block `%%DM comments%%`.
+- `Bestiary/Test Creature.md`: a statblock in the plugin format, plus an unreadable one.
 - `.obsidian/` and `.trash/`: must be ignored.
 
 Pure unit tests build their inputs inline (for example, a string of markdown and a stub resolver)

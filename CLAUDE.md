@@ -68,6 +68,8 @@ First e2e run needs `npx playwright install chromium`.
   - `comments.ts`: `%%comments%%` stripped for players, highlighted for the DM.
   - `remark-wikilinks.ts` + `render.ts`: markdown → sanitised HTML.
   - `search.ts`: MiniSearch, one index per role, built from role-appropriate text.
+  - `statblock/`: parses ` ```statblock ` YAML (Fantasy Statblocks plugin format) and renders it
+    book-style, after sanitising, with vault values inserted only as text nodes.
   - `vault.ts`: immutable snapshot. `live-vault.ts` rebuilds it on file changes.
 - `app/wiki/`: URL helpers and types shared with the browser.
 - `app/routes/`: `home`, `wiki` (layout + sidebar), `wiki-home` (landing page + `?q=` search),

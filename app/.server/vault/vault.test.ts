@@ -83,7 +83,7 @@ describe("Vault", () => {
 
     it("lists folders and root notes in natural order", () => {
       const tree = vault.folderTree(DM_VIEWER);
-      expect(folderNames(tree)).toEqual(["Locations", "NPCs", "Secrets", "Sessions"]);
+      expect(folderNames(tree)).toEqual(["Bestiary", "Locations", "NPCs", "Secrets", "Sessions"]);
       expect(tree.notes.map((note) => note.title)).toEqual(["Home", "README"]);
     });
 

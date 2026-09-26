@@ -27,6 +27,7 @@
     "express": "^5.2.1",
     "github-slugger": "^2.0.0",
     "gray-matter": "^4.0.3",
+    "hastscript": "^9.0.1",
     "isbot": "^5.2.2",
     "mdast-util-find-and-replace": "^3.0.2",
     "minisearch": "^7.2.0",
@@ -43,6 +44,7 @@
     "remark-rehype": "^11.1.2",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.1.0",
+    "yaml": "^2.9.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {

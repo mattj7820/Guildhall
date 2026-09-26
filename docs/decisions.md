@@ -88,3 +88,16 @@ fails if the vault is modified. See [testing.md](testing.md).
 Local development moved to Node 26 (the newest release; it becomes LTS in October 2026), so
 `.nvmrc` and `engines` were raised to 26 to keep CI on the same version as development. This
 supersedes the Node 22 baseline in decision 1.
+
+## 11. Statblocks: render the Fantasy Statblocks plugin's YAML
+
+**Date:** 2026-09-26
+
+The vault already holds monster statblocks as ` ```statblock ` YAML from the Obsidian Fantasy
+Statblocks plugin, so Guildhall reads that format as-is rather than inventing its own: notes keep
+working in Obsidian, and nothing needs migrating. The YAML is parsed into a typed `Statblock` (the
+start of a creature model that a future combat tracker can reuse) and rendered in the 5e book
+layout. The markup is generated after sanitising, with every vault value inserted as a text node.
+Bestiary references (`monster: Goblin`) can't be resolved outside the plugin, so they show a
+notice asking for the full statblock. A statblock that can't be read shows a short explanation
+and the original block, rather than failing the page.
