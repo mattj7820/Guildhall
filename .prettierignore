@@ -1,0 +1,9 @@
+build/
+.react-router/
+playwright-report/
+test-results/
+coverage/
+.agents/
+package-lock.json
+tests/fixtures/vault/
+docs/brain-dump.md
