@@ -5,7 +5,9 @@ import {
   drawArea,
   editorAreas,
   expectSaved,
+  linkNewMap,
   mapCanvas,
+  openNote,
   switchToPlayerView,
   uniqueName,
   vertexHandles,
@@ -268,5 +270,84 @@ test.describe("Linking maps", () => {
     await page.goto("/maps");
     const list = page.getByRole("navigation", { name: "All maps" });
     await expect(list.getByRole("listitem").filter({ hasText: world })).toContainText("Riverside");
+  });
+});
+
+test.describe("Viewing maps", () => {
+  /** A world map with a "Riverside" area leading to a town map, open in the view. */
+  async function worldWithTown(page: Page) {
+    const world = uniqueName("World");
+    await createMap(page, { image: "Fixture World.png", name: world });
+    await drawArea(page, world, WORLD, HARBOUR);
+    await page.getByLabel("Area name").fill("Riverside");
+    await linkNewMap(page, "Fixture Town.png");
+    await page.getByRole("link", { name: "Done" }).click();
+    await expect(page.getByRole("link", { name: "Edit map" })).toBeVisible();
+    return world;
+  }
+
+  test("dives into an area's map from the keyboard", async ({ page }) => {
+    const world = await worldWithTown(page);
+    await mapCanvas(page, world).focus();
+    await page.keyboard.press("Tab");
+    await expect(mapCanvas(page, world).getByRole("link", { name: "Riverside" })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(mapCanvas(page, "Riverside")).toBeVisible();
+  });
+
+  test("opens an area that isn't mapped yet in the side panel, with a way to attach a map", async ({
+    page,
+  }) => {
+    const name = uniqueName("World");
+    await createMap(page, { image: "Fixture World.png", name });
+    await drawArea(page, name, WORLD, HARBOUR);
+    await page.getByLabel("Area name").fill("Old Quarry");
+    await page.getByLabel("Wiki note", { exact: true }).fill("Locations/Fixture Town");
+    await expectSaved(page);
+    await page.getByRole("link", { name: "Done" }).click();
+
+    await expect(page.getByText("Not mapped yet", { exact: true })).toBeVisible();
+    await mapCanvas(page, name).getByRole("button", { name: "Old Quarry, not mapped yet" }).click();
+    const panel = page.getByRole("region", { name: "Old Quarry" });
+    await expect(panel).toContainText("Not mapped yet.");
+    await expect(panel.getByRole("region", { name: "Note: Fixture Town" })).toBeVisible();
+
+    await panel.getByRole("link", { name: "Attach a map" }).click();
+    await expect(page.getByLabel("Area name")).toHaveValue("Old Quarry");
+    await expect(page.getByLabel("Leads to map")).toBeVisible();
+  });
+
+  test("follows links in the map's note without leaving the app", async ({ page }) => {
+    const name = uniqueName("World");
+    await createMap(page, { image: "Fixture World.png", name, note: "Locations/Fixture Town" });
+    await page.getByRole("link", { name: "Done" }).click();
+    await page
+      .getByRole("region", { name: "Note: Fixture Town" })
+      .getByRole("link", { name: "Brindleford" })
+      .click();
+    await expect(page).toHaveURL("/wiki/Locations/Brindleford");
+  });
+
+  test("links a wiki note to the maps of it, for the DM only", async ({ page }) => {
+    const name = uniqueName("Town");
+    await createMap(page, { image: "Fixture Town.png", name, note: "Locations/Fixture Town" });
+    await openNote(page, "Locations/Fixture Town");
+    await page.getByRole("link", { name: `Open map: ${name}` }).click();
+    await expect(mapCanvas(page, name)).toBeVisible();
+
+    await openNote(page, "Locations/Fixture Town");
+    await switchToPlayerView(page);
+    await expect(page.getByRole("link", { name: /Open map/ })).toHaveCount(0);
+  });
+
+  test("presents just the map", async ({ page }) => {
+    const world = await worldWithTown(page);
+    await page.getByRole("button", { name: "Present" }).click();
+    await expect(page.getByRole("button", { name: "Stop presenting" })).toBeVisible();
+    await expect(page.getByRole("complementary", { name: "Map details" })).toHaveCount(0);
+    await expect(mapCanvas(page, world).getByRole("link", { name: "Riverside" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Stop presenting" }).click();
+    await expect(page.getByRole("complementary", { name: "Map details" })).toBeVisible();
   });
 });

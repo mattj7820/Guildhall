@@ -56,6 +56,5 @@ export const campaignMapSchema: z.ZodType<CampaignMap> = z.object({
 export const mapChangesSchema: z.ZodType<MapChanges> = z.object({
   name: z.string().max(MAP_NAME_MAX),
   note: entityId.optional(),
-  image: mapImageSchema,
   areas,
 });

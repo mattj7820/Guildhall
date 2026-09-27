@@ -189,3 +189,15 @@ export async function vertexPosition(page: Page, areaName: string, point: number
   const [, x, y] = /at ([\d.]+)%, ([\d.]+)%$/.exec(label ?? "") ?? [];
   return { x: Number(x), y: Number(y) };
 }
+
+/** In the editor, makes a new map from a fixture image for the selected area to lead to. */
+export async function linkNewMap(page: Page, image: string) {
+  await page.getByRole("button", { name: "New map from image…" }).click();
+  const newMap = page.getByRole("group", { name: "New map for this area" });
+  await newMap.getByRole("searchbox", { name: "Find an image" }).fill(image);
+  await newMap.getByRole("radio", { name: new RegExp(`${image}$`) }).check();
+  await expect(newMap.getByText(/\d+ × \d+ pixels/)).toBeVisible();
+  await newMap.getByRole("button", { name: "Create and link" }).click();
+  await expect(newMap).toHaveCount(0);
+  await expectSaved(page);
+}

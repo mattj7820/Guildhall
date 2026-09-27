@@ -70,12 +70,12 @@ describe("campaignMapSchema", () => {
 
 describe("mapChangesSchema", () => {
   it("accepts what the editor saves", () => {
-    const { name, image, areas } = buildMap({ id: "m", areas: [buildArea({ id: "a" })] });
-    expect(mapChangesSchema.safeParse({ name, image, areas, note: "x" }).success).toBe(true);
+    const { name, areas } = buildMap({ id: "m", areas: [buildArea({ id: "a" })] });
+    expect(mapChangesSchema.safeParse({ name, areas, note: "x" }).success).toBe(true);
   });
 
   it("refuses an empty note ID rather than storing a link to nothing", () => {
-    const { name, image, areas } = buildMap({ id: "m" });
-    expect(mapChangesSchema.safeParse({ name, image, areas, note: "" }).success).toBe(false);
+    const { name, areas } = buildMap({ id: "m" });
+    expect(mapChangesSchema.safeParse({ name, areas, note: "" }).success).toBe(false);
   });
 });

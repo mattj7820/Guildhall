@@ -11,11 +11,12 @@ import {
 } from "~/maps/editor";
 import { normalise, svgPoints } from "~/maps/geometry";
 import { attachableMaps, type TreeMap } from "~/maps/tree";
-import type { Area, CampaignMap, MapView, Point } from "~/maps/types";
+import type { Area, CampaignMap, MapView, Point, Size } from "~/maps/types";
 import type { action } from "~/routes/map-edit";
 import { newId } from "~/shared/ids";
 import { AreaForm, type NoteOption } from "./AreaForm";
 import { DraftOutline } from "./DraftOutline";
+import { ImageHealth } from "./ImageHealth";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
 import { MapSettings } from "./MapSettings";
@@ -42,7 +43,7 @@ export function MapEditor(props: MapEditorProps) {
   const { map, view, viewUrl } = props;
   const [state, dispatch] = useReducer(
     editorReducer,
-    { name: map.name, note: map.note, image: map.image, areas: map.areas },
+    { name: map.name, note: map.note, areas: map.areas },
     (doc: EditorDoc) => startEditor(doc, props.selectedArea),
   );
   const doc = currentDoc(state);
@@ -51,6 +52,7 @@ export function MapEditor(props: MapEditorProps) {
   const { status, error, saveNow } = useAutosave(doc);
   const [pointer, setPointer] = useState<[number, number]>();
   const [drag, setDrag] = useState<VertexDrag | null>(null);
+  const [actualSize, setActualSize] = useState<Size>();
 
   const finish = () => dispatch({ type: "finishDrawing", id: newId() });
 
@@ -129,6 +131,7 @@ export function MapEditor(props: MapEditorProps) {
           </Link>
         </div>
       </div>
+      <ImageHealth map={view} images={props.images} actual={actualSize} />
       {error && (
         <p role="alert" className="bg-rose-100 px-4 py-2 text-sm text-rose-900">
           Couldn't save: {error}
@@ -149,6 +152,7 @@ export function MapEditor(props: MapEditorProps) {
             imageUrl={view.image.url}
             className={`flex-1 ${drawing ? "[&_[role=region]]:cursor-crosshair" : ""}`}
             onKeyDown={onCanvasKey}
+            onImageMeasured={setActualSize}
             onCanvasClick={([x, y]) => {
               if (drawing) dispatch({ type: "addDraftPoint", point: normalise(x, y, view.size) });
               else dispatch({ type: "select" });

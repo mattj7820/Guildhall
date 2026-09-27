@@ -27,7 +27,6 @@ const TOWN_IMAGE = { path: "Maps/Fixture Town.png", width: 200, height: 200 };
 /** The editor's save body for a map, with the given areas. */
 const changes = (map: CampaignMap, fields: Partial<MapChanges> = {}): MapChanges => ({
   name: map.name,
-  image: map.image,
   areas: map.areas,
   ...(map.note ? { note: map.note } : {}),
   ...fields,
@@ -170,7 +169,7 @@ describe("CampaignMaps", () => {
   it("returns undefined for maps that don't exist", async () => {
     const maps = store();
     expect(await maps.get("nope")).toBeUndefined();
-    expect(await maps.update("nope", { name: "x", image: WORLD_IMAGE, areas: [] })).toBeUndefined();
+    expect(await maps.update("nope", { name: "x", areas: [] })).toBeUndefined();
     expect(await maps.setImage("nope", WORLD_IMAGE)).toBeUndefined();
   });
 

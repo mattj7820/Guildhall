@@ -13,10 +13,8 @@ import { OUTLINE_MIN } from "./schema";
 import { buildArea, SQUARE } from "./test-builders";
 import type { Point } from "./types";
 
-const IMAGE = { path: "Maps/Fixture World.png", width: 400, height: 200 };
 const doc = (fields: Partial<EditorDoc> = {}): EditorDoc => ({
   name: "World",
-  image: IMAGE,
   areas: [],
   ...fields,
 });

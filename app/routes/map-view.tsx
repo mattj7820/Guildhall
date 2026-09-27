@@ -19,12 +19,12 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   // A map the viewer can't see gets the same 404 as one that doesn't exist.
   const view = map && (await loadMapView(services, map, maps, viewer));
   if (!view) throw data("Map not found", { status: 404 });
-  return { dmOnly: false as const, map: view };
+  return { dmOnly: false as const, map: view, images: services.vault.current.mapImages() };
 }
 
 export default function MapPage({ loaderData }: Route.ComponentProps) {
   if (loaderData.dmOnly) return <MapsDmOnlyNotice />;
-  return <MapViewer key={loaderData.map.id} map={loaderData.map} />;
+  return <MapViewer key={loaderData.map.id} map={loaderData.map} images={loaderData.images} />;
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

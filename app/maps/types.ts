@@ -46,8 +46,11 @@ export interface Area {
   visibility: Visibility;
 }
 
-/** What the editor saves: everything the DM can change about a map. */
-export type MapChanges = Pick<CampaignMap, "name" | "note" | "image" | "areas">;
+/**
+ * What the editor saves. The image is left out: it changes only through its own action (a moved
+ * or resized image), so an editor's autosave can't put back an image replaced meanwhile.
+ */
+export type MapChanges = Pick<CampaignMap, "name" | "note" | "areas">;
 
 /** A link to a map, as shown in breadcrumbs, lists and area panels. */
 export interface MapLink {

@@ -1,6 +1,9 @@
 import { data, isRouteErrorResponse, Link } from "react-router";
+import { DataFileError } from "~/.server/data/json-store";
+import type { CampaignMaps } from "~/.server/maps/campaign-maps";
 import { TypeBadge } from "~/components/TypeBadge";
 import { servicesContext, viewerContext } from "~/context";
+import { mapUrl } from "~/maps/urls";
 import { useWikilinkNavigation } from "~/wiki/useWikilinkNavigation";
 import type { Route } from "./+types/wiki-note";
 
@@ -8,8 +11,8 @@ export function meta({ loaderData }: Route.MetaArgs) {
   return [{ title: loaderData ? `${loaderData.title} · Guildhall` : "Not found · Guildhall" }];
 }
 
-export function loader({ params, context }: Route.LoaderArgs) {
-  const { vault } = context.get(servicesContext);
+export async function loader({ params, context }: Route.LoaderArgs) {
+  const { vault, maps } = context.get(servicesContext);
   const viewer = context.get(viewerContext);
   const note = vault.current.getNote(params["*"] ?? "", viewer);
 
@@ -26,7 +29,19 @@ export function loader({ params, context }: Route.LoaderArgs) {
     hasOwnTitle: note.hasOwnTitle,
     html: vault.current.render(note, viewer),
     showVisibility: viewer.role === "dm",
+    /** Maps of this place. DM-only, like the maps themselves for now. */
+    maps: viewer.role === "dm" ? await mapsOf(maps, note.id) : [],
   };
+}
+
+async function mapsOf(maps: CampaignMaps, noteId: string) {
+  try {
+    return (await maps.forNote(noteId)).map(({ id, name }) => ({ id, name }));
+  } catch (error) {
+    // A damaged maps file is reported on the maps pages; the note should still open.
+    if (error instanceof DataFileError) return [];
+    throw error;
+  }
 }
 
 export default function WikiNote({ loaderData: note }: Route.ComponentProps) {
@@ -50,6 +65,15 @@ export default function WikiNote({ loaderData: note }: Route.ComponentProps) {
         {note.aliases.length > 0 && (
           <span className="text-stone-500">Also known as {note.aliases.join(", ")}</span>
         )}
+        {note.maps.map((map) => (
+          <Link
+            key={map.id}
+            to={mapUrl(map.id)}
+            className="rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-900 hover:bg-amber-200 dark:bg-amber-950 dark:text-amber-200"
+          >
+            Open map: {map.name}
+          </Link>
+        ))}
         {note.tags.map((tag) => (
           <span key={tag} className="text-stone-500">
             #{tag}

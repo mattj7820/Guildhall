@@ -40,7 +40,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
 
 /**
  * JSON from the editor:
- * - `{ intent: "save", name, note, image, areas }` autosaves the map;
+ * - `{ intent: "save", name, note, areas }` autosaves the map;
  * - `{ intent: "createChild", name, image, note }` makes a new map for an area to lead to;
  * - `{ intent: "setImage", image }` records the image's new location or size.
  *
@@ -68,15 +68,6 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     case "save": {
       const changes = mapChangesSchema.safeParse(body);
       if (!changes.success) return data({ error: "These changes couldn't be saved." }, 400);
-      const existing = await maps.get(params.id);
-      // The recorded image may be missing from the vault; it just can't be changed to one that is.
-      if (
-        existing &&
-        changes.data.image.path !== existing.image.path &&
-        !inVault(changes.data.image.path)
-      ) {
-        return data({ error: "That image isn't in the vault." }, 400);
-      }
       const result = await maps.update(params.id, changes.data);
       if (!result) return gone();
       if ("problem" in result) return data({ error: result.problem }, 400);
