@@ -1,7 +1,7 @@
 import type { Player } from "~/campaign/types";
 import type { Rng } from "~/dice/rng";
 import { createEncounter, perform, rollMonsterInitiatives } from "./encounter";
-import { newId } from "./ids";
+import { newId } from "~/shared/ids";
 import type { Combatant, Encounter, PartyMember, PreparedEncounter } from "./types";
 
 /** A party member who can join a fight: one whose note says who plays them. */

@@ -1,7 +1,7 @@
 import { useId, useState, type FormEvent } from "react";
 import { playerFromName, type Player } from "~/campaign/types";
 import { addMonsters, type EncounterAction } from "~/combat/encounter";
-import { newId } from "~/combat/ids";
+import { newId } from "~/shared/ids";
 import type { CombatCatalogue, CreatureOption, Encounter } from "~/combat/types";
 import type { Rng } from "~/dice/rng";
 import { buttonClass, inputClass, labelClass, panelClass, primaryButtonClass } from "./styles";

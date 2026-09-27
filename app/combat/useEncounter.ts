@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { defaultRng, type Rng } from "~/dice/rng";
 import { createEncounter, perform, type EncounterAction } from "./encounter";
-import { record, startHistory, undo, type History } from "./history";
+import { record, startHistory, undo, type History } from "~/shared/history";
 import type { Encounter } from "./types";
 
 /**

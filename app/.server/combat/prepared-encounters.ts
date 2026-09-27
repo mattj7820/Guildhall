@@ -1,7 +1,7 @@
 import path from "node:path";
 import { z } from "zod";
 import { createEncounter } from "~/combat/encounter";
-import { newId } from "~/combat/ids";
+import { newId } from "~/shared/ids";
 import { PREPARED_NAME_MAX, preparedEncounterSchema } from "~/combat/schema";
 import type { Encounter, PreparedEncounter } from "~/combat/types";
 import { JsonFile } from "../data/json-store";

@@ -1,4 +1,4 @@
-/** Undo for the combat tracker: the states before recent changes. Kept in memory only. */
+/** Undo history: the states before recent changes. Kept in memory only. */
 export interface History<T> {
   past: T[];
   present: T;

@@ -64,12 +64,13 @@ First e2e run needs `npx playwright install chromium`.
   **Loaders read the viewer from context and pass it into every vault query.**
 - `app/campaign/`: shared model (isomorphic): `Viewer` (with optional `playerId`), `Player`,
   `Visibility`, `EntityId`, entity types, `canView`.
+- `app/shared/`: small generic helpers used by several modules: `newId()` and `history.ts` (undo).
 - `app/dice/`: dice expressions (`parseDice`, `rollText`, `critical`), the `Rng` type, and the
   roll log (`rollInto`: labelled rolls, one-roll advantage, Critical) with its `useRollLog` hook
   (isomorphic).
 - `app/combat/`: the combat tracker's model (isomorphic): `types.ts`, `encounter.ts` (reducer,
   action creators, `perform`), `initiative.ts` (ordering, reroll tie-breaks), `turns.ts`, `hp.ts`,
-  `history.ts` (undo), `visibility.ts` (`encounterForViewer`), `schema.ts` (zod),
+  `visibility.ts` (`encounterForViewer`), `schema.ts` (zod),
   `storage.ts` (localStorage), `prepared.ts` (`startPrepared`, `toPrepared`, `summarise`), and the
   `useEncounter` hook.
 - `app/.server/vault/`:
@@ -109,7 +110,8 @@ First e2e run needs `npx playwright install chromium`.
   `player` on `type: pc` notes (who plays the character).
 - Combat: every encounter change is an `EncounterAction` through the pure `encounterReducer`.
   Dice are rolled in action creators (or `perform`) and carried in the action. All randomness goes
-  through an injected `Rng`; never call `Math.random` directly. IDs come from `newId()`.
+  through an injected `Rng`; never call `Math.random` directly. IDs come from `newId()`
+  (`app/shared/ids.ts`).
   Combatants reference vault statblocks by `StatblockRef` (entity ID plus statblock name).
 - Hidden content must be indistinguishable from missing content in player view (same 404, links
   become plain text, excluded from search and the tree).

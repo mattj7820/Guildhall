@@ -2,7 +2,7 @@ import type { Player } from "~/campaign/types";
 import type { Rng } from "~/dice/rng";
 import { rollText } from "~/dice/roll";
 import { applyDamage, applyHealing, fullHp, gainTempHp, setMaxHp } from "./hp";
-import { newId } from "./ids";
+import { newId } from "~/shared/ids";
 import { awaitingReroll, placeCombatant, sortByInitiative } from "./initiative";
 import { firstTurn, nextTurn, previousTurn } from "./turns";
 import type {

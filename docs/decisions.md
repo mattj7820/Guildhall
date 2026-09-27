@@ -266,3 +266,37 @@ Table rules, chosen for a table that's new to D&D:
   hand.
 - Natural 20s and 1s are flagged on rolls with exactly one d20. Recharge rolls a d6 against the
   ability's threshold.
+
+## 21. Maps are Guildhall data that point at vault images and notes
+
+**Date:** 2026-09-27
+
+**Context.** Interactive maps turn vault images (Wonderdraft and Dungeondraft PNG exports) into
+maps with clickable outlined areas that lead to other maps and to wiki notes. Maps and areas are
+drawn and edited in the app, and the vault can't be written to.
+
+**Options considered.**
+
+- **All in the data folder (chosen):** a `maps.json` through `JsonFile` (decision 18). Editable in
+  the app, one source of truth, and the rules that link maps into a tree can be checked in one
+  atomic update.
+- **Hybrid:** a note's frontmatter (`type: map`, `image: X.png`) defines the map, and its areas live
+  in the data folder keyed by the note's ID. The map would "exist" in Obsidian, but creating one
+  means hand-editing a note, there are two sources of truth, and renaming a note without an `id`
+  orphans its areas.
+- **All in the vault** (areas as a YAML block in a note): the app couldn't draw or edit them.
+
+**Decision.**
+
+- A map references its image by vault path. If the file has moved, a single image with the same
+  name elsewhere in the vault is used, and the DM is offered to record the new location; with no
+  match or several, the map shows a placeholder and keeps its areas. (The wiki's link resolver
+  isn't used for this: it can pick a note, and quietly chooses between duplicates.)
+- Maps and areas reference notes by entity ID (decision 6), so pinning an `id` in a note's
+  frontmatter makes the link survive a rename. A link that no longer resolves is shown to the DM
+  as broken, never followed.
+- Outlines are stored as fractions of the image's width and height, so a map re-exported at a
+  different resolution still lines up. The map records the pixel size its areas were drawn
+  against; the browser measures the image when it loads and warns the DM only if the shape
+  (aspect ratio) has changed. Measuring in the browser handles every format and EXIF rotation,
+  needs no image library, and avoids reading a 15 MB file on the server.
