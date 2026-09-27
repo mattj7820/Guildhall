@@ -56,6 +56,20 @@ export function parseDice(source: string): ParseResult {
   return { ok: true, expression: { terms } };
 }
 
+/** Whether any term rolls a d20: advantage and disadvantage only matter for these. */
+export function hasD20(expression: DiceExpression): boolean {
+  return expression.terms.some((term) => term.kind === "dice" && term.sides === 20);
+}
+
+/** A critical hit's damage: every die rolled twice over, modifiers unchanged (2d6+2 → 4d6+2). */
+export function critical(expression: DiceExpression): DiceExpression {
+  return {
+    terms: expression.terms.map((term) =>
+      term.kind === "dice" ? { ...term, count: Math.min(term.count * 2, MAX_DICE) } : term,
+    ),
+  };
+}
+
 /** Canonical display form, e.g. `2d6 + 3`, `1d20 − 1`. */
 export function formatDice(expression: DiceExpression): string {
   return expression.terms

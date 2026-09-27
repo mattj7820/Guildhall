@@ -24,6 +24,8 @@ export interface RollResult {
   mode: RollMode;
   total: number;
   terms: TermResult[];
+  /** A natural 20 or 1, when exactly one d20 counted (an attack roll, check or save). */
+  natural?: 20 | 1;
 }
 
 export function roll(expression: DiceExpression, rng: Rng, mode: RollMode = "normal"): RollResult {
@@ -33,11 +35,14 @@ export function roll(expression: DiceExpression, rng: Rng, mode: RollMode = "nor
     const sum = rolls.filter((die) => die.kept).reduce((total, die) => total + die.value, 0);
     return { term, rolls, subtotal: term.sign * sum };
   });
+  const d20s = terms.flatMap((t) => t.rolls).filter((die) => die.kept && die.sides === 20);
+  const natural = d20s.length === 1 && (d20s[0].value === 20 || d20s[0].value === 1);
   return {
     expression: formatDice(expression),
     mode,
     total: terms.reduce((total, term) => total + term.subtotal, 0),
     terms,
+    ...(natural ? { natural: d20s[0].value as 20 | 1 } : {}),
   };
 }
 
