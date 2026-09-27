@@ -1,6 +1,7 @@
-import { useState, type FormEvent } from "react";
-import type { Rng } from "~/dice/rng";
-import { rollText, type RollMode, type RollResult } from "~/dice/roll";
+import type { FormEvent } from "react";
+import type { RollMode } from "~/dice/roll";
+import type { LoggedRoll } from "~/dice/roll-log";
+import type { RollLogControls } from "~/dice/useRollLog";
 import { inputClass, labelClass, panelClass, primaryButtonClass } from "./styles";
 
 const MODES: { value: RollMode; label: string }[] = [
@@ -9,31 +10,22 @@ const MODES: { value: RollMode; label: string }[] = [
   { value: "disadvantage", label: "Disadvantage" },
 ];
 
-const HISTORY_LENGTH = 8;
-
-/** A quick roller for dice expressions, e.g. `2d6+3`, with advantage and disadvantage on d20s. */
-export function DiceRoller({ rng }: { rng: Rng }) {
-  const [mode, setMode] = useState<RollMode>("normal");
-  const [results, setResults] = useState<{ id: number; result: RollResult }[]>([]);
-  const [error, setError] = useState<string>();
+/**
+ * Typed rolls (e.g. `2d6+3`) and the results of statblock clicks. Advantage and disadvantage
+ * last for one d20 roll; Critical doubles the next damage roll's dice.
+ */
+export function DiceRoller({ rolls }: { rolls: RollLogControls }) {
+  const { log } = rolls;
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const outcome = rollText(String(new FormData(event.currentTarget).get("dice")), rng, mode);
-    if (!outcome.ok) {
-      setError(outcome.error);
-      return;
-    }
-    setError(undefined);
-    setResults((previous) =>
-      [{ id: (previous[0]?.id ?? 0) + 1, result: outcome.result }, ...previous].slice(
-        0,
-        HISTORY_LENGTH,
-      ),
-    );
+    rolls.roll({
+      expression: String(new FormData(event.currentTarget).get("dice")),
+      kind: "custom",
+    });
   }
 
-  const [latest, ...earlier] = results;
+  const [latest, ...earlier] = log.rolls;
 
   return (
     <section aria-labelledby="dice-heading" className={panelClass}>
@@ -56,37 +48,53 @@ export function DiceRoller({ rng }: { rng: Rng }) {
             Roll
           </button>
         </div>
-        <fieldset className="flex gap-3 text-sm">
-          <legend className="sr-only">d20 rolls</legend>
-          {MODES.map(({ value, label }) => (
-            <label key={value} className="flex items-center gap-1">
-              <input
-                type="radio"
-                name="mode"
-                value={value}
-                checked={mode === value}
-                onChange={() => setMode(value)}
-              />
-              {label}
-            </label>
-          ))}
-        </fieldset>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          <fieldset className="flex gap-3">
+            <legend className="sr-only">Next d20 roll</legend>
+            {MODES.map(({ value, label }) => (
+              <label key={value} className="flex items-center gap-1">
+                <input
+                  type="radio"
+                  name="mode"
+                  value={value}
+                  checked={log.mode === value}
+                  onChange={() => rolls.setMode(value)}
+                />
+                {label}
+              </label>
+            ))}
+          </fieldset>
+          <label
+            className={`flex items-center gap-1 ${log.critical ? "font-semibold text-rose-700 dark:text-rose-400" : ""}`}
+          >
+            <input
+              type="checkbox"
+              checked={log.critical}
+              onChange={(event) => rolls.setCritical(event.target.checked)}
+            />
+            Critical
+          </label>
+        </div>
+        <p className="text-xs text-stone-500">
+          Or click a roll in the statblock. Advantage lasts one d20 roll; Critical doubles the next
+          damage dice, and turns on after a natural 20.
+        </p>
       </form>
-      {error && (
+      {rolls.error && (
         <p role="alert" className="mt-2 text-sm text-rose-700 dark:text-rose-400">
-          {error}
+          {rolls.error}
         </p>
       )}
       <output aria-live="polite" aria-label="Latest roll" className="mt-3 block">
-        {latest && <RollLine result={latest.result} large />}
+        {latest && <RollLine roll={latest} large />}
       </output>
       {earlier.length > 0 && (
         <>
           <h3 className={`${labelClass} mt-3`}>Earlier</h3>
-          <ul className="mt-1 flex flex-col gap-0.5">
-            {earlier.map(({ id, result }) => (
-              <li key={id}>
-                <RollLine result={result} />
+          <ul className="mt-1 flex flex-col gap-1">
+            {earlier.map((roll) => (
+              <li key={roll.id}>
+                <RollLine roll={roll} />
               </li>
             ))}
           </ul>
@@ -96,33 +104,59 @@ export function DiceRoller({ rng }: { rng: Rng }) {
   );
 }
 
-function RollLine({ result, large = false }: { result: RollResult; large?: boolean }) {
+function RollLine({ roll, large = false }: { roll: LoggedRoll; large?: boolean }) {
+  const { result } = roll;
   return (
-    <span className="flex items-baseline gap-2 font-mono text-sm">
-      <strong className={large ? "text-3xl" : "text-base"}>{result.total}</strong>
-      <span className="text-stone-500">
-        {result.expression}
-        {result.mode !== "normal" && ` (${result.mode})`}:{" "}
-        {result.terms.map((term, index) => (
-          <span key={index}>
-            {index > 0 && " "}
-            {term.term.kind === "constant" ? (
-              `${term.subtotal >= 0 ? "+" : "−"}${Math.abs(term.subtotal)}`
-            ) : (
-              <>
-                {term.subtotal < 0 && "−"}[
-                {term.rolls.map((die, dieIndex) => (
-                  <span key={dieIndex} className={die.kept ? "" : "line-through opacity-50"}>
-                    {dieIndex > 0 && ", "}
-                    {die.value}
-                  </span>
-                ))}
-                ]
-              </>
-            )}
-          </span>
-        ))}
+    <span className="block">
+      {roll.label && (
+        <span className={`block ${large ? "text-sm font-semibold" : "text-xs"}`}>{roll.label}</span>
+      )}
+      <span className="flex flex-wrap items-baseline gap-x-2 font-mono text-sm">
+        <strong className={large ? "text-3xl" : "text-base"}>{result.total}</strong>
+        {result.natural === 20 && <Badge tone="good">Natural 20!</Badge>}
+        {result.natural === 1 && <Badge tone="bad">Natural 1</Badge>}
+        {roll.critical && <Badge tone="good">Critical</Badge>}
+        {roll.recharged !== undefined && (
+          <Badge tone={roll.recharged ? "good" : "bad"}>
+            {roll.recharged ? "Recharged" : "Not recharged"}
+          </Badge>
+        )}
+        <span className="text-stone-500">
+          {result.expression}
+          {result.mode !== "normal" && ` (${result.mode})`}:{" "}
+          {result.terms.map((term, index) => (
+            <span key={index}>
+              {index > 0 && " "}
+              {term.term.kind === "constant" ? (
+                `${term.subtotal >= 0 ? "+" : "−"}${Math.abs(term.subtotal)}`
+              ) : (
+                <>
+                  {term.subtotal < 0 && "−"}[
+                  {term.rolls.map((die, dieIndex) => (
+                    <span key={dieIndex} className={die.kept ? "" : "line-through opacity-50"}>
+                      {dieIndex > 0 && ", "}
+                      {die.value}
+                    </span>
+                  ))}
+                  ]
+                </>
+              )}
+            </span>
+          ))}
+        </span>
       </span>
+    </span>
+  );
+}
+
+function Badge({ tone, children }: { tone: "good" | "bad"; children: string }) {
+  const colours =
+    tone === "good"
+      ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"
+      : "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200";
+  return (
+    <span className={`rounded px-1.5 py-0.5 font-sans text-xs font-semibold ${colours}`}>
+      {children}
     </span>
   );
 }

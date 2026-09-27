@@ -11,6 +11,7 @@ import {
   type PreparedEncounter,
 } from "~/combat/types";
 import { useEncounter } from "~/combat/useEncounter";
+import { useRollLog } from "~/dice/useRollLog";
 import { AddCombatants } from "./AddCombatants";
 import { CombatantRow } from "./CombatantRow";
 import { CombatNav } from "./CombatNav";
@@ -41,6 +42,7 @@ export function CombatTracker({
   });
   const tracker = useEncounter(initial, save);
   const { encounter, dispatch } = tracker;
+  const rolls = useRollLog(tracker.rng);
 
   const creatures = useMemo(
     () => new Map(catalogue.creatures.map((creature) => [creature.key, creature])),
@@ -156,12 +158,14 @@ export function CombatTracker({
         </div>
 
         <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-4 lg:self-start">
+          {/* Dice first, so a roll clicked in the statblock shows its result in view. */}
+          <DiceRoller rolls={rolls} />
           <StatblockPanel
             combatantName={shown?.name}
             creature={shown?.statblock ? creatures.get(statblockKey(shown.statblock)) : undefined}
             hasStatblock={Boolean(shown?.statblock)}
+            onRoll={rolls.roll}
           />
-          <DiceRoller rng={tracker.rng} />
         </div>
       </div>
     </main>

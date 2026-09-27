@@ -116,3 +116,23 @@
 .statblock-error {
   @apply my-4 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200;
 }
+
+/* Rolls in the combat tracker's statblocks: subtle, so the book look survives, but clearly
+   clickable on hover and focus. */
+.statblock-roll {
+  cursor: pointer;
+  border-radius: 0.2rem;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+.statblock-roll:hover,
+.statblock-roll:focus-visible {
+  background: color-mix(in srgb, var(--statblock-red) 15%, transparent);
+  text-decoration-style: solid;
+}
+[inert] .statblock-roll {
+  cursor: text;
+  text-decoration: none;
+}
