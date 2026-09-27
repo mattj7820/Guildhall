@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { expect, type Page } from "@playwright/test";
 
 /** Small helpers for the parts of the app every spec touches. */
@@ -72,4 +73,38 @@ export async function setInitiative(page: Page, name: string, value: number) {
   const input = combatant(page, name).getByLabel(`Initiative for ${name}`);
   await input.fill(String(value));
   await input.press("Enter");
+}
+
+/* Prepared encounters */
+
+/**
+ * A name no other test uses, since tests share the server's data folder. Random rather than from
+ * the test's ID, which repeats and retries share.
+ */
+export const uniqueName = (base: string) => `${base} ${randomUUID().slice(0, 8)}`;
+
+export const expectSaved = (page: Page) =>
+  expect(page.getByText("✓ All changes saved")).toBeVisible();
+
+export const preparedList = (page: Page) => page.getByRole("list", { name: "Prepared encounters" });
+
+export const preparedCombatant = (page: Page, name: string) =>
+  page
+    .getByRole("list", { name: "Monsters and companions" })
+    .getByRole("listitem", { name, exact: true });
+
+/** Creates a prepared encounter from the list page and names it; ends in the editor. */
+export async function createPrepared(page: Page, name: string) {
+  await page.goto("/combat/prepared");
+  await page.getByRole("button", { name: "New encounter" }).click();
+  await expect(page).toHaveURL(/\/combat\/prepared\/\w+/);
+  await page.getByLabel("Encounter name").fill(name);
+  await expectSaved(page);
+}
+
+export async function addCompanion(page: Page, controller: string, statblock: string) {
+  const form = page.getByRole("form", { name: "Add a companion or other player combatant" });
+  await form.getByLabel("Controlled by").fill(controller);
+  await form.getByLabel("Linked statblock (optional)").selectOption({ label: statblock });
+  await form.getByRole("button", { name: "Add player combatant" }).click();
 }

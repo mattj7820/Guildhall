@@ -30,6 +30,8 @@ export default defineConfig({
       NODE_ENV: "production",
       PORT: String(PORT),
       VAULT_PATH: "./tests/fixtures/vault",
+      // Inside the output folder, which Playwright empties before starting the server each run.
+      DATA_PATH: "./test-results/e2e-data",
       ROLL20_CAMPAIGN_URL: "https://app.roll20.net/campaigns/details/0000000/fixture",
     },
   },
