@@ -38,6 +38,10 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
   - The current monster's statblock alongside, in the same book layout as the wiki.
   - A dice roller (`2d6+3`, advantage and disadvantage), undo, and an encounter that survives a
     page reload (kept in the browser's local storage).
+  - **Prepared encounters:** set up fights before the session (monsters with their HP rolled,
+    companions, notes), then start one at the table. Just untick anyone absent and type the
+    players' initiative. They're reusable templates you can edit, duplicate and delete, saved in
+    Guildhall's data folder.
 - **DM / player preview.** Notes are DM-only unless their frontmatter says `visibility: players`.
   The player view hides DM-only notes from navigation, search, links and direct URLs, and strips
   Obsidian `%%comments%%`, so DMs can keep inline secrets inside shared notes.
@@ -56,11 +60,12 @@ npm run dev             # http://localhost:3000
 With no vault of your own, the default `.env.example` points at the fixture vault in
 `tests/fixtures/vault`, so the app runs out of the box.
 
-| Variable              | Required | Description                                                    |
-| --------------------- | -------- | -------------------------------------------------------------- |
-| `VAULT_PATH`          | yes      | Path to the Obsidian vault. **Only ever read, never written.** |
-| `ROLL20_CAMPAIGN_URL` | no       | Roll20 campaign link shown on the hub.                         |
-| `PORT`                | no       | Web server port (default `3000`).                              |
+| Variable              | Required | Description                                                                                   |
+| --------------------- | -------- | --------------------------------------------------------------------------------------------- |
+| `VAULT_PATH`          | yes      | Path to the Obsidian vault. **Only ever read, never written.**                                |
+| `DATA_PATH`           | no       | Where Guildhall keeps its own data (default `./data`). Must be outside the vault; back it up. |
+| `ROLL20_CAMPAIGN_URL` | no       | Roll20 campaign link shown on the hub.                                                        |
+| `PORT`                | no       | Web server port (default `3000`).                                                             |
 
 ### Frontmatter conventions
 
@@ -116,7 +121,8 @@ app/
   wiki/            Wiki types and URL helpers shared by server and browser
   .server/         Server-only code: config, viewer cookie
     vault/         Vault reading, parsing, link resolution, rendering, search, statblocks
-    combat/        The combat tracker's catalogue of vault statblocks and PCs
+    combat/        The combat tracker's catalogue and the prepared-encounter store
+    data/          The JSON store: the only code that writes files, and only in DATA_PATH
   routes/          Pages and resource routes
   components/      UI components (combat/ holds the tracker's)
 server/app.ts      Express app: creates long-lived services, mounts React Router
@@ -130,8 +136,9 @@ docs/              Roadmap, decisions, testing strategy
 ## Principles
 
 - **The vault is read-only.** The app never writes, moves or deletes vault files. This is enforced
-  by an ESLint rule banning filesystem write APIs in app code, and by a test-run check that the
-  fixture vault is byte-identical before and after.
+  by an ESLint rule banning filesystem write APIs in app code (the one exception is the JSON store
+  for Guildhall's own data folder, which config refuses to place inside the vault), and by a
+  test-run check that the fixture vault is byte-identical before and after.
 - **The story is human-written.** Guildhall has no AI-generated story, lore or narrative content.
 - **Built for more than one user.** Every visibility decision takes an explicit viewer, and
   entities have stable IDs, so multiplayer and real roles can be added without a rewrite.

@@ -6,12 +6,12 @@ specification of the behaviour.
 
 ## Layers
 
-| Layer       | Tool                    | Location                                                                  | What it covers                                                                                                                                                                                                                                                                                    |
-| ----------- | ----------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit        | Vitest                  | `app/**/*.test.ts`, next to the code                                      | Pure logic: frontmatter parsing, wikilink parsing and resolution, `%%comment%%` handling, markdown rendering and sanitising, visibility rules, config validation, hub links; combat rules (initiative and tie-breaks, turns, HP, undo, what players may see, saved-encounter validation) and dice |
-| Integration | Vitest                  | `app/.server/vault/vault.test.ts`, `app/.server/combat/catalogue.test.ts` | The `Vault` over the real fixture vault on disk: reading, folder tree, search, visibility filtering, asset access, statblocks and the party; the combat catalogue built from it                                                                                                                   |
-| End-to-end  | Playwright              | `tests/e2e/*.spec.ts`                                                     | User journeys against the production build: hub, wikilink navigation, search, the player view hiding DM content, running a fight in the combat tracker                                                                                                                                            |
-| Static      | ESLint, Prettier, `tsc` | whole repo                                                                | Types, style, and a lint rule that bans filesystem write APIs in app code                                                                                                                                                                                                                         |
+| Layer       | Tool                    | Location                                                                                        | What it covers                                                                                                                                                                                                                                                                                    |
+| ----------- | ----------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit        | Vitest                  | `app/**/*.test.ts`, next to the code                                                            | Pure logic: frontmatter parsing, wikilink parsing and resolution, `%%comment%%` handling, markdown rendering and sanitising, visibility rules, config validation, hub links; combat rules (initiative and tie-breaks, turns, HP, undo, what players may see, saved-encounter validation) and dice |
+| Integration | Vitest                  | `app/.server/vault/vault.test.ts`, `app/.server/combat/*.test.ts`, `app/.server/data/*.test.ts` | The `Vault` over the real fixture vault on disk: reading, folder tree, search, visibility filtering, asset access, statblocks and the party; the combat catalogue built from it; the JSON store and prepared encounters in temporary folders (restarts, simultaneous writes, damaged files)       |
+| End-to-end  | Playwright              | `tests/e2e/*.spec.ts`                                                                           | User journeys against the production build: hub, wikilink navigation, search, the player view hiding DM content, running a fight in the combat tracker, preparing and starting encounters                                                                                                         |
+| Static      | ESLint, Prettier, `tsc` | whole repo                                                                                      | Types, style, and a lint rule that bans filesystem write APIs in app code                                                                                                                                                                                                                         |
 
 Most behaviour is pinned down at the unit level, where it's fast and precise. End-to-end tests
 prove the pieces are wired together and cover what only a browser can show: client-side
@@ -46,13 +46,15 @@ on it. Keep fixture text short and functional.
 
 ## Guarding the read-only rule
 
-The app must never modify the vault. Three independent checks:
+The app must never modify the vault. Four independent checks:
 
 1. **Lint:** ESLint's `no-restricted-imports`/`no-restricted-properties` ban `fs` write APIs
    (`writeFile`, `rename`, `rm`, `mkdir`…) and namespace imports of `fs` in `app/` and `server/`.
-2. **Construction:** the asset route can only serve files the vault index discovered, so a
+2. **Config:** `DATA_PATH`, the only place Guildhall writes (through `app/.server/data/json-store.ts`,
+   the single exception to the lint rule), is refused if it overlaps the vault.
+3. **Construction:** the asset route can only serve files the vault index discovered, so a
    crafted path can't reach outside the vault.
-3. **E2E fingerprint:** Playwright's global setup hashes every fixture file (path, size, mtime,
+4. **E2E fingerprint:** Playwright's global setup hashes every fixture file (path, size, mtime,
    contents) before the run, and fails the run if anything changed afterwards.
 
 ## Conventions
@@ -80,6 +82,14 @@ Dice decide initiative, tie-breaks and monster HP, so tests must control them.
   document the order dice are rolled in (for new monsters: initiative, then hit dice).
 - The encounter is saved in localStorage, and each Playwright test gets a fresh browser context,
   so every test starts with an empty tracker.
+
+## Data written by tests
+
+- Unit and integration tests of the JSON store and prepared encounters use a fresh temporary
+  folder each (`mkdtemp`), deleted afterwards.
+- The e2e server's `DATA_PATH` is `test-results/e2e-data`, which Playwright empties before it
+  starts the server on each run. Tests share that server, so they give prepared encounters
+  random names (`uniqueName()`) and never assert on the whole list.
 
 ## Running
 

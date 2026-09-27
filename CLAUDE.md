@@ -7,12 +7,14 @@ Guildhall links out to those tools and grows its own modules. The point of build
 campaign model (NPCs, locations, maps, characters, sessions). See `docs/roadmap.md`.
 
 Built so far: hub home page, read-only Obsidian wiki with a DM/player preview, and a DM-only
-combat tracker (encounter state in the browser).
+combat tracker (the live fight is kept in the browser; prepared encounters in the data folder).
 
 ## Hard constraints
 
 - **Never write to, move or delete anything in the vault.** Read-only access only. An ESLint rule
   bans fs write APIs (and namespace `fs` imports) in `app/` and `server/`; don't work around it.
+  The single exception is `app/.server/data/json-store.ts`, which writes only inside `DATA_PATH`
+  (config refuses a data folder that overlaps the vault). New persistent data goes through it.
 - **Public repo:** never commit real vault content, personal file paths or secrets. Config lives in
   a gitignored `.env`; keep `.env.example` in sync when adding variables.
 - **Tests use only the fixture vault** in `tests/fixtures/vault` (invented, minimal test data).
@@ -56,8 +58,8 @@ First e2e run needs `npx playwright install chromium`.
 ## Architecture map
 
 - `server.js`: HTTP entry (Vite middleware in dev, static and build in prod).
-- `server/app.ts`: creates long-lived services once (config, `LiveVault`) and passes them to
-  React Router through `servicesContext`.
+- `server/app.ts`: creates long-lived services once (config, `LiveVault`, `PreparedEncounters`)
+  and passes them to React Router through `servicesContext`.
 - `app/root.tsx`: middleware sets `viewerContext` from the view cookie (`app/.server/viewer.ts`).
   **Loaders read the viewer from context and pass it into every vault query.**
 - `app/campaign/`: shared model (isomorphic): `Viewer` (with optional `playerId`), `Player`,
@@ -65,8 +67,9 @@ First e2e run needs `npx playwright install chromium`.
 - `app/dice/`: dice expressions (`parseDice`, `rollText`) and the `Rng` type (isomorphic).
 - `app/combat/`: the combat tracker's model (isomorphic): `types.ts`, `encounter.ts` (reducer,
   action creators, `perform`), `initiative.ts` (ordering, reroll tie-breaks), `turns.ts`, `hp.ts`,
-  `history.ts` (undo), `visibility.ts` (`encounterForViewer`), `storage.ts` (localStorage + zod),
-  and the `useEncounter` hook.
+  `history.ts` (undo), `visibility.ts` (`encounterForViewer`), `schema.ts` (zod),
+  `storage.ts` (localStorage), `prepared.ts` (`startPrepared`, `toPrepared`, `summarise`), and the
+  `useEncounter` hook.
 - `app/.server/vault/`:
   - `read-vault.ts`: the only reader of vault files. Skips dotfolders.
   - `parse-note.ts`: frontmatter → `Note`. Visibility fails closed to `dm`.
@@ -80,12 +83,16 @@ First e2e run needs `npx playwright install chromium`.
   - `vault.ts`: immutable snapshot (also `statblocks()` and `party()`). `live-vault.ts` rebuilds
     it on file changes.
 - `app/.server/combat/catalogue.ts`: vault statblocks and PCs as browser-safe shapes, with
-  statblocks pre-rendered.
+  statblocks pre-rendered. `prepared-encounters.ts`: the prepared-encounter repository.
+- `app/.server/data/json-store.ts`: `JsonFile`, a validated, queued, atomically written JSON file.
 - `app/wiki/`: URL helpers and types shared with the browser.
 - `app/routes/`: `home`, `wiki` (layout + sidebar), `wiki-home` (landing page + `?q=` search),
-  `wiki-note` (`/wiki/*`), `combat` (DM-only tracker; server `loader` + hydrating `clientLoader`),
-  `vault-asset` (resource route), `view-mode` (toggle action).
-- `app/components/combat/`: the tracker's UI (`CombatTracker` lays it out).
+  `wiki-note` (`/wiki/*`), `combat` (DM-only tracker; server `loader` + hydrating `clientLoader`;
+  `?start=<id>` starts a prepared encounter), `combat-prepared` (list; create, duplicate and delete
+  actions), `combat-prepared-edit` (editor; autosave action), `vault-asset` (resource route),
+  `view-mode` (toggle action).
+- `app/components/combat/`: the tracker's UI (`CombatTracker` lays it out), and the prepared
+  encounter editor (`PreparedEditor`). `CombatantRow` and `AddCombatants` have a `"prep"` mode.
 
 ## Conventions
 

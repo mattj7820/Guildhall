@@ -195,3 +195,50 @@ statblock rendered to HTML by the wiki's own renderer. When a monster joins an e
 numbers are copied into it, so editing the note mid-fight can't change a live fight. The panel
 still shows the current statblock. Sending every statblock with the page suits a campaign vault;
 if that grows large, a per-statblock resource route can replace it.
+
+## 18. Guildhall's own data lives in a JSON file in a data folder
+
+**Date:** 2026-09-27
+
+**Context.** Prepared combat encounters must survive browser reloads and server restarts, and
+must be editable in the app. The vault can't be written to, so the app needs storage of its own.
+
+**Options considered.**
+
+- **JSON file on the server (chosen):** human-readable, backed up by copying one file, no new
+  dependency, and a first step towards server-held state for a future shared player view.
+- **Browser localStorage:** smallest change, but tied to one browser profile, and lost when site
+  data is cleared, which is too fragile for prep work.
+- **Obsidian `encounter` blocks (the Initiative Tracker plugin's format):** keeps the vault as the
+  only source of truth, but then editing and deleting happen in Obsidian, not the app.
+- **SQLite (`node:sqlite`):** robust, but a database with a schema and migrations, which is too
+  much for a handful of records.
+
+**Decision.** `DATA_PATH` (default `./data`, gitignored) holds Guildhall's own data. Config refuses
+to start if it overlaps the vault in either direction, case-insensitively on Windows.
+`app/.server/data/json-store.ts` is the only module exempt from the no-fs-writes lint rule. It
+validates the file with zod on every read (read fresh each time, so the file stays the single
+source of truth), queues updates so they can't interleave, writes atomically (a temp file, then a
+rename, retried on Windows), and never overwrites a file it can't read. It reports the problem
+instead. Decision 13's live fight stays in the browser for now.
+
+## 19. Prepared encounters are templates; HP is rolled when prepared, initiative when started
+
+**Date:** 2026-09-27
+
+A prepared encounter is a name, notes, timestamps and an ordinary setup-phase `Encounter`, so the
+reducer, schema and tracker components are reused. The schema rejects one that has started.
+
+- **When dice roll:** monster HP is rolled when monsters are added during prep, so the DM can see
+  it and tweak or reroll it. Initiative is rolled when the fight starts.
+- **Who's playing:** the party isn't stored. The start panel lists every PC (all ticked) so absent
+  players can be unticked. Companions can be pre-assigned to a player in the prepared encounter.
+- **Templates:** starting copies the encounter with fresh IDs, and the prepared one is unchanged
+  apart from "last run", so it can be run again or duplicated for a variant.
+- **Replacing a fight:** starting goes through the tracker's undo history, so a fight already in
+  the tracker can be brought back with Undo.
+- **Saving:** the editor autosaves the whole encounter shortly after each change, and on blur and
+  before leaving by its own links, with a visible saved status. The browser warns before closing
+  the tab with a save pending.
+- **Save as prepared:** a fight set up in the tracker can be kept this way, minus the party and
+  rolls.
