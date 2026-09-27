@@ -221,3 +221,52 @@ test.describe("Reshaping areas", () => {
     await expect(vertexHandles(page, "Harbour")).toHaveCount(3);
   });
 });
+
+test.describe("Linking maps", () => {
+  test("links an area to a new map, clicks through, and comes back up", async ({ page }) => {
+    const world = uniqueName("World");
+    await createMap(page, { image: "Fixture World.png", name: world });
+    await drawArea(page, world, WORLD, HARBOUR);
+    await page.getByLabel("Area name").fill("Riverside");
+    await page.getByLabel("Wiki note", { exact: true }).fill("Locations/Fixture Town");
+
+    await page.getByRole("button", { name: "New map from image…" }).click();
+    const newMap = page.getByRole("group", { name: "New map for this area" });
+    await newMap.getByRole("searchbox", { name: "Find an image" }).fill("Fixture Town");
+    await newMap.getByRole("radio", { name: /Fixture Town\.png$/ }).check();
+    await expect(newMap.getByText("200 × 200 pixels")).toBeVisible();
+    await newMap.getByRole("button", { name: "Create and link" }).click();
+    await expect(page.getByLabel("Leads to map").locator("option:checked")).toHaveText("Riverside");
+    await expectSaved(page);
+    await page.getByRole("link", { name: "Done" }).click();
+
+    // Down into the new map, which starts with the area's note.
+    await mapCanvas(page, world).getByRole("link", { name: "Riverside" }).click();
+    await expect(mapCanvas(page, "Riverside")).toBeVisible();
+    await expect(breadcrumbs(page).getByRole("link", { name: world })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Note: Fixture Town" })).toBeVisible();
+
+    // An area on the child map, so there are three levels.
+    await page.getByRole("link", { name: "Edit map" }).click();
+    await drawArea(page, "Riverside", { width: 200, height: 200 }, [
+      [0.3, 0.4],
+      [0.6, 0.4],
+      [0.6, 0.7],
+    ]);
+    await page.getByLabel("Area name").fill("Keep");
+    await expectSaved(page);
+    await page.getByRole("link", { name: "Done" }).click();
+    await expect(
+      mapCanvas(page, "Riverside").getByRole("button", { name: "Keep, not mapped yet" }),
+    ).toBeVisible();
+
+    // Back up by the breadcrumbs, and everything is still there after a reload.
+    await breadcrumbs(page).getByRole("link", { name: world }).click();
+    await expect(mapCanvas(page, world)).toBeVisible();
+    await page.reload();
+    await expect(mapCanvas(page, world).getByRole("link", { name: "Riverside" })).toBeVisible();
+    await page.goto("/maps");
+    const list = page.getByRole("navigation", { name: "All maps" });
+    await expect(list.getByRole("listitem").filter({ hasText: world })).toContainText("Riverside");
+  });
+});

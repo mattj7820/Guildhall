@@ -10,15 +10,15 @@ import {
   type EditorDoc,
 } from "~/maps/editor";
 import { normalise, svgPoints } from "~/maps/geometry";
-import type { TreeMap } from "~/maps/tree";
+import { attachableMaps, type TreeMap } from "~/maps/tree";
 import type { Area, CampaignMap, MapView, Point } from "~/maps/types";
 import type { action } from "~/routes/map-edit";
 import { newId } from "~/shared/ids";
-import type { NoteSummary } from "~/wiki/types";
-import { AreaForm } from "./AreaForm";
+import { AreaForm, type NoteOption } from "./AreaForm";
 import { DraftOutline } from "./DraftOutline";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
+import { MapSettings } from "./MapSettings";
 import { VertexHandles, type VertexDrag } from "./VertexHandles";
 
 /** Wait this long after the last change before saving, so typing doesn't save every key. */
@@ -28,7 +28,7 @@ export interface MapEditorProps {
   map: CampaignMap;
   view: MapView;
   maps: TreeMap[];
-  notes: Pick<NoteSummary, "id" | "slug" | "title">[];
+  notes: NoteOption[];
   images: string[];
   selectedArea?: string;
   viewUrl: string;
@@ -53,6 +53,23 @@ export function MapEditor(props: MapEditorProps) {
   const [drag, setDrag] = useState<VertexDrag | null>(null);
 
   const finish = () => dispatch({ type: "finishDrawing", id: newId() });
+
+  // Maps the selected area may lead to, judged with this map's unsaved areas, not the stored ones.
+  const attachable = useMemo(() => {
+    if (!selected) return [];
+    const others = props.maps.filter((other) => other.id !== map.id);
+    const withEdits = [...others, { id: map.id, name: doc.name, areas: doc.areas }];
+    return attachableMaps(map.id, selected.id, withEdits).map(({ id, name }) => ({ id, name }));
+  }, [props.maps, map.id, doc.name, doc.areas, selected]);
+
+  // A map made for an area ("New map from image…") is linked to it once the server has made it.
+  const child = useFetcher<typeof action>();
+  const createdId = child.data && "created" in child.data ? child.data.created?.id : undefined;
+  const [awaitingChild, setAwaitingChild] = useState<{ areaId: string; before?: string }>();
+  if (awaitingChild && createdId && createdId !== awaitingChild.before) {
+    setAwaitingChild(undefined);
+    dispatch({ type: "linkArea", id: awaitingChild.areaId, map: createdId });
+  }
 
   // Undo and redo work anywhere on the page except while typing, where the field's own undo wins.
   useEffect(() => {
@@ -187,13 +204,36 @@ export function MapEditor(props: MapEditorProps) {
           className="flex w-full flex-col gap-5 overflow-y-auto border-stone-200 p-4 md:w-96 md:border-l dark:border-stone-800"
         >
           {selected && (
-            <AreaForm key={selected.id} area={selected} dispatch={dispatch} onBlur={saveNow} />
+            <AreaForm
+              key={selected.id}
+              area={selected}
+              attachable={attachable}
+              notes={props.notes}
+              images={props.images}
+              dispatch={dispatch}
+              onBlur={saveNow}
+              creatingChild={child.state !== "idle"}
+              onCreateChild={(name, image) => {
+                saveNow();
+                setAwaitingChild({ areaId: selected.id, before: createdId });
+                void child.submit(
+                  {
+                    intent: "createChild",
+                    name,
+                    image: { path: image.path, width: image.width, height: image.height },
+                    note: selected.note ?? "",
+                  },
+                  { method: "post", encType: "application/json" },
+                );
+              }}
+            />
           )}
           <EditorAreaList
             areas={doc.areas}
             selectedId={state.selectedId}
             onSelect={(id) => dispatch({ type: "select", id })}
           />
+          <MapSettings doc={doc} notes={props.notes} dispatch={dispatch} onBlur={saveNow} />
         </aside>
       </div>
     </main>

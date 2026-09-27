@@ -41,7 +41,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
 /**
  * JSON from the editor:
  * - `{ intent: "save", name, note, image, areas }` autosaves the map;
- * - `{ intent: "createChild", name, image }` makes a new map for an area to lead to;
+ * - `{ intent: "createChild", name, image, note }` makes a new map for an area to lead to;
  * - `{ intent: "setImage", image }` records the image's new location or size.
  *
  * A form with `intent=delete` deletes the map.
@@ -58,7 +58,12 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     return redirect("/maps");
   }
 
-  const body = (await request.json()) as { intent?: unknown; name?: unknown; image?: unknown };
+  const body = (await request.json()) as {
+    intent?: unknown;
+    name?: unknown;
+    image?: unknown;
+    note?: unknown;
+  };
   switch (body.intent) {
     case "save": {
       const changes = mapChangesSchema.safeParse(body);
@@ -83,7 +88,9 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         return data({ error: "Choose an image from the vault." }, 400);
       }
       const name = typeof body.name === "string" ? body.name : undefined;
-      const created = await maps.create({ name, image: image.data });
+      // The new map illustrates the same place as the area, so it starts with the area's note.
+      const note = typeof body.note === "string" && body.note ? body.note : undefined;
+      const created = await maps.create({ name, image: image.data, note });
       return { created: { id: created.id, name: created.name } };
     }
     case "setImage": {

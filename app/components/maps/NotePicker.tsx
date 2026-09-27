@@ -19,20 +19,23 @@ interface Props {
 export function NotePicker({ label, notes, value, onChange, name, onBlur }: Props) {
   const listId = useId();
   const known = !value || notes.some((note) => note.slug === value);
+  // The suggestions and the warning sit outside the label, so they aren't read as its name.
   return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="font-medium">{label}</span>
-      <input
-        type="text"
-        name={name}
-        list={listId}
-        value={value}
-        placeholder="Start typing a note's name"
-        aria-invalid={!known}
-        className={inputClass}
-        onChange={(event) => onChange(event.target.value)}
-        onBlur={onBlur}
-      />
+    <div className="flex flex-col gap-1 text-sm">
+      <label className="flex flex-col gap-1">
+        <span className="font-medium">{label}</span>
+        <input
+          type="text"
+          name={name}
+          list={listId}
+          value={value}
+          placeholder="Start typing a note's name"
+          aria-invalid={!known}
+          className={inputClass}
+          onChange={(event) => onChange(event.target.value)}
+          onBlur={onBlur}
+        />
+      </label>
       <datalist id={listId}>
         {notes.map((note) => (
           <option key={note.slug} value={note.slug}>
@@ -41,6 +44,6 @@ export function NotePicker({ label, notes, value, onChange, name, onBlur }: Prop
         ))}
       </datalist>
       {!known && <span className="text-xs text-rose-700 dark:text-rose-400">No such note.</span>}
-    </label>
+    </div>
   );
 }

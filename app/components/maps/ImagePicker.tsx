@@ -10,13 +10,15 @@ interface Props {
   images: readonly string[];
   /** The chosen image and its measured size, once it has loaded. */
   onChange: (image: MapImage | undefined, path: string) => void;
+  /** One column, for narrow spaces such as the editor's side panel. */
+  compact?: boolean;
 }
 
 /**
  * Chooses a vault image to make a map from, with a preview. The preview also measures the image,
  * since the browser knows its real size (EXIF rotation included) without any image library.
  */
-export function ImagePicker({ images, onChange }: Props) {
+export function ImagePicker({ images, onChange, compact = false }: Props) {
   const [query, setQuery] = useState("");
   const [chosen, setChosen] = useState<string>();
   const [size, setSize] = useState<{ width: number; height: number }>();
@@ -41,11 +43,11 @@ export function ImagePicker({ images, onChange }: Props) {
         onChange={(event) => setQuery(event.target.value)}
         className={inputClass}
       />
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className={`grid gap-3 ${compact ? "" : "md:grid-cols-2"}`}>
         <div
           role="radiogroup"
           aria-label="Vault images"
-          className="flex max-h-72 flex-col overflow-y-auto rounded-md border border-stone-200 p-1 dark:border-stone-800"
+          className={`flex ${compact ? "max-h-40" : "max-h-72"} flex-col overflow-y-auto rounded-md border border-stone-200 p-1 dark:border-stone-800`}
         >
           {matches.length === 0 && (
             <p className="p-2 text-sm text-stone-500">No images match “{query}”.</p>
