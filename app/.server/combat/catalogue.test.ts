@@ -50,6 +50,12 @@ describe("combatCatalogue", () => {
     expect(html).toContain("Fixture Jab");
   });
 
+  it("makes the tracker's statblocks clickable to roll", () => {
+    expect(creature("Fixture Minion")?.html).toContain(
+      'data-roll="1d20 + 4" data-roll-kind="attack" data-roll-label="Fixture Jab attack"',
+    );
+  });
+
   it("lists the party with the player who controls each character", () => {
     expect(catalogue.party).toEqual([
       {

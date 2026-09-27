@@ -2,6 +2,7 @@ import type { Element, ElementContent, Root } from "hast";
 import { h } from "hastscript";
 import { visit } from "unist-util-visit";
 import { parseStatblock, type Feature, type Statblock } from "./parse-statblock";
+import { dice, findBonuses, findRolls } from "./rolls";
 
 /**
  * rehype plugin: replaces ```statblock code blocks with a formatted statblock.
@@ -27,13 +28,32 @@ export function rehypeStatblocks() {
   };
 }
 
-export function renderStatblock(statblock: Statblock): Element {
+export interface RenderStatblockOptions {
+  /**
+   * Mark attack bonuses, dice, checks, saves, skills and recharges as buttons with the roll in
+   * `data-*` attributes, for the combat tracker to handle. The wiki leaves this off.
+   */
+  rollable?: boolean;
+}
+
+type RollKind = "attack" | "damage" | "check" | "recharge";
+
+export function renderStatblock(
+  statblock: Statblock,
+  { rollable = false }: RenderStatblockOptions = {},
+): Element {
   const rule = () => h("hr.statblock-rule");
 
-  const properties = (entries: [string, string | undefined][]) =>
+  const properties = (entries: [string, string | undefined, ("save" | "skill")?][]) =>
     entries
-      .filter((entry): entry is [string, string] => Boolean(entry[1]))
-      .map(([label, value]) => h("p.statblock-property", [h("strong", label), ` ${value}`]));
+      .filter((entry): entry is [string, string, ("save" | "skill")?] => Boolean(entry[1]))
+      .map(([label, value, bonuses]) =>
+        h("p.statblock-property", [
+          h("strong", label),
+          " ",
+          ...(rollable && bonuses ? bonusLine(value, bonuses) : [value]),
+        ]),
+      );
 
   const basics = properties([
     ["Armor Class", statblock.armorClass],
@@ -42,8 +62,8 @@ export function renderStatblock(statblock: Statblock): Element {
   ]);
 
   const details = properties([
-    ["Saving Throws", statblock.savingThrows],
-    ["Skills", statblock.skills],
+    ["Saving Throws", statblock.savingThrows, "save"],
+    ["Skills", statblock.skills, "skill"],
     ["Damage Vulnerabilities", statblock.damageVulnerabilities],
     ["Damage Resistances", statblock.damageResistances],
     ["Damage Immunities", statblock.damageImmunities],
@@ -59,13 +79,14 @@ export function renderStatblock(statblock: Statblock): Element {
     ["Reactions", statblock.reactions],
     ["Legendary Actions", statblock.legendaryActions, statblock.legendaryDescription],
   ];
+  const feature = (f: Feature) => renderFeature(f, rollable);
 
   // `not-prose` opts out of the typography plugin, whose spacing would fight the book layout.
   return h("section.statblock.not-prose", { ariaLabel: `Statblock: ${statblock.name}` }, [
     h("h3.statblock-name", statblock.name),
     statblock.description ? h("p.statblock-description", statblock.description) : null,
     ...(basics.length ? [rule(), ...basics] : []),
-    ...(statblock.abilities ? [rule(), abilityTable(statblock)] : []),
+    ...(statblock.abilities ? [rule(), abilityTable(statblock, rollable)] : []),
     ...(details.length ? [rule(), ...details] : []),
     ...(statblock.traits.length ? [rule(), ...statblock.traits.map(feature)] : []),
     ...sections
@@ -78,7 +99,7 @@ export function renderStatblock(statblock: Statblock): Element {
   ]);
 }
 
-function abilityTable(statblock: Statblock): Element {
+function abilityTable(statblock: Statblock, rollable: boolean): Element {
   const abilities = statblock.abilities ?? [];
   return h("table.statblock-abilities", [
     h(
@@ -92,17 +113,42 @@ function abilityTable(statblock: Statblock): Element {
       "tbody",
       h(
         "tr",
-        abilities.map(({ score, modifier }) => h("td", `${score} (${modifier})`)),
+        abilities.map(({ ability, score, modifier }) => {
+          const text = `${score} (${modifier})`;
+          const expression = rollable ? dice(`1d20 ${modifier}`) : undefined;
+          return h(
+            "td",
+            expression ? rollButton(text, expression, "check", `${ability} check`) : text,
+          );
+        }),
       ),
     ),
   ]);
 }
 
-function feature({ name, description }: Feature): Element {
+/** "Dex +4, Stealth +6" with each bonus as a button: saves for saving throws, checks for skills. */
+function bonusLine(line: string, kind: "save" | "skill"): ElementContent[] {
+  const bonuses = findBonuses(line);
+  if (bonuses.length === 0) return [{ type: "text", value: line }];
+  return bonuses.flatMap((bonus, index) => [
+    ...(index > 0 ? [{ type: "text" as const, value: ", " }] : []),
+    rollButton(
+      bonus.text,
+      bonus.expression,
+      "check",
+      `${bonus.name} ${kind === "save" ? "save" : "check"}`,
+    ),
+  ]);
+}
+
+function renderFeature({ name, description }: Feature, rollable: boolean): Element {
+  // The label names the feature without its recharge note: "Fire Breath recharge".
+  const title = name?.replace(/\.$/, "");
+  const labelName = title?.replace(/\s*\(Recharge[^)]*\)/i, "") || "Roll";
   return h("p.statblock-feature", [
-    name ? h("strong", h("em", `${name.replace(/\.$/, "")}.`)) : null,
-    name ? " " : null,
-    ...formatDescription(description),
+    title ? h("strong", h("em", [...withRolls(title, rollable, labelName), "."])) : null,
+    title ? " " : null,
+    ...formatDescription(description, rollable, labelName),
   ]);
 }
 
@@ -110,16 +156,59 @@ function feature({ name, description }: Feature): Element {
 const ATTACK_LABEL =
   /((?:Melee or Ranged|Melee|Ranged) (?:Weapon|Spell) Attack:|Hit:|Miss:|Failure:|Success:)/;
 
-function formatDescription(description: string): ElementContent[] {
+function formatDescription(
+  description: string,
+  rollable: boolean,
+  featureName: string,
+): ElementContent[] {
   return description.split("\n").flatMap((line, lineIndex) => [
     ...(lineIndex > 0 ? [h("br")] : []),
     ...line
       .split(ATTACK_LABEL)
       .filter(Boolean)
-      .map((part): ElementContent =>
-        ATTACK_LABEL.test(part) ? h("em", part) : { type: "text", value: part },
+      .flatMap((part): ElementContent[] =>
+        ATTACK_LABEL.test(part) ? [h("em", part)] : withRolls(part, rollable, featureName),
       ),
   ]);
+}
+
+/** Text, with any rolls in it as buttons when the statblock is rollable. */
+function withRolls(text: string, rollable: boolean, featureName: string): ElementContent[] {
+  if (!rollable) return [{ type: "text", value: text }];
+  return findRolls(text).map((token) =>
+    token.type === "text"
+      ? { type: "text", value: token.text }
+      : rollButton(
+          token.text,
+          token.expression,
+          token.kind,
+          `${featureName} ${token.kind}`,
+          token.rechargeOn,
+        ),
+  );
+}
+
+/** The roll travels in data attributes, generated by the app; vault text is only ever text. */
+function rollButton(
+  text: string,
+  expression: string,
+  kind: RollKind,
+  label: string,
+  rechargeOn?: number,
+): Element {
+  const rolls = kind === "recharge" ? `1d6, recharging on ${rechargeOn} or more` : expression;
+  return h(
+    "button.statblock-roll",
+    {
+      type: "button",
+      dataRoll: expression,
+      dataRollKind: kind,
+      dataRollLabel: label,
+      dataRechargeOn: rechargeOn,
+      ariaLabel: `Roll ${label}: ${rolls}`,
+    },
+    text,
+  );
 }
 
 function classNames(element: Element): string[] {

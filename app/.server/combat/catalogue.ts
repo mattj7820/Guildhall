@@ -28,7 +28,7 @@ export function combatCatalogue(vault: Vault, viewer: Viewer): CombatCatalogue {
       hitPoints: statblock.numbers.hitPoints,
       hitDice: statblock.numbers.hitDice,
       initiativeBonus: statblock.numbers.dexterityModifier,
-      html: toHtml(renderStatblock(statblock)),
+      html: toHtml(renderStatblock(statblock, { rollable: true })),
     });
   }
 

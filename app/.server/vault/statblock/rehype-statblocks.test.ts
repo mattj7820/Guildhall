@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { toHtml } from "hast-util-to-html";
+import { visit } from "unist-util-visit";
 import { renderMarkdown } from "../render";
+import { parseStatblock } from "./parse-statblock";
+import { renderStatblock } from "./rehype-statblocks";
 
 const render = (markdown: string) =>
   renderMarkdown(markdown, { role: "dm", resolve: () => undefined, canSee: () => true });
@@ -74,5 +78,101 @@ describe("statblocks in rendered notes", () => {
 
   it("leaves other code blocks alone", () => {
     expect(render("```yaml\nname: X\n```")).toContain('<code class="language-yaml">');
+  });
+});
+
+describe("rollable statblocks (combat tracker)", () => {
+  const parsed = parseStatblock(
+    [
+      "name: Test Creature",
+      "stats: [12, 15, 11, 1, 5, 1]",
+      "saves:",
+      "  - dexterity: 4",
+      "skillsaves:",
+      "  - stealth: 6",
+      "actions:",
+      "  - name: Test Slam",
+      '    desc: "Melee Weapon Attack: +3 to hit. Hit: 5 (1d8 + 1) damage plus 3 (1d6) fire."',
+      "  - name: Test Breath (Recharge 5–6)",
+      "    desc: Fixture breath text.",
+    ].join("\n"),
+  );
+  if (!parsed.ok) throw new Error(parsed.error);
+  const rollable = toHtml(renderStatblock(parsed.statblock, { rollable: true }));
+
+  const button = (text: string, roll: string, kind: string, label: string, extra = "") =>
+    `<button class="statblock-roll" type="button" data-roll="${roll}" data-roll-kind="${kind}" data-roll-label="${label}"${extra}>${text}</button>`;
+
+  it("makes attack bonuses and damage dice clickable, labelled with the action", () => {
+    expect(rollable).toContain(
+      button(
+        "+3",
+        "1d20 + 3",
+        "attack",
+        "Test Slam attack",
+        ' aria-label="Roll Test Slam attack: 1d20 + 3"',
+      ),
+    );
+    expect(rollable).toContain('data-roll="1d8 + 1" data-roll-kind="damage"');
+    expect(rollable).toContain('data-roll="1d6" data-roll-kind="damage"');
+    expect(rollable).toContain("<em>Hit:</em> 5 (");
+  });
+
+  it("makes ability scores, saving throws and skills clickable", () => {
+    expect(rollable).toContain(
+      'data-roll="1d20 + 2" data-roll-kind="check" data-roll-label="DEX check"',
+    );
+    expect(rollable).toContain(
+      'data-roll-label="Dex save" aria-label="Roll Dex save: 1d20 + 4">Dex +4<',
+    );
+    expect(rollable).toContain(
+      'data-roll-label="Stealth check" aria-label="Roll Stealth check: 1d20 + 6">Stealth +6<',
+    );
+  });
+
+  it("makes a recharge clickable, labelled without the recharge note", () => {
+    expect(rollable).toContain(
+      button(
+        "Recharge 5–6",
+        "1d6",
+        "recharge",
+        "Test Breath recharge",
+        ' data-recharge-on="5" aria-label="Roll Test Breath recharge: 1d6, recharging on 5 or more"',
+      ),
+    );
+  });
+
+  it("keeps vault text out of the markup, even in roll labels", () => {
+    const hostile = parseStatblock(
+      [
+        "name: X",
+        "actions:",
+        `  - name: '<img src=x onerror=alert(1)> x" onmouseover="alert(1)'`,
+        '    desc: "Hit: 2 (1d4)."',
+      ].join("\n"),
+    );
+    if (!hostile.ok) throw new Error(hostile.error);
+    const tree = renderStatblock(hostile.statblock, { rollable: true });
+
+    const tags: string[] = [];
+    visit(tree, "element", (node) => void tags.push(node.tagName));
+    expect(tags).not.toContain("img");
+    // Quotes in the label are escaped, so it can't break out of its attribute.
+    const html = toHtml(tree);
+    expect(html).toContain('x&#x22; onmouseover=&#x22;alert(1) damage"');
+  });
+
+  it("leaves wiki statblocks without roll buttons", () => {
+    expect(toHtml(renderStatblock(parsed.statblock))).not.toContain("statblock-roll");
+    const inNote = render(
+      statblock(
+        "name: X",
+        "actions:",
+        "  - name: Y",
+        '    desc: "Melee Weapon Attack: +3 to hit."',
+      ),
+    );
+    expect(inNote).toContain("+3 to hit");
+    expect(inNote).not.toContain("statblock-roll");
   });
 });
