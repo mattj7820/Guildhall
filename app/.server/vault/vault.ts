@@ -1,10 +1,11 @@
-import type { Role, Viewer } from "~/campaign/types";
+import type { EntityId, Role, Viewer } from "~/campaign/types";
 import type { FolderNode, NoteSummary } from "~/wiki/types";
 import { canView } from "~/campaign/visibility";
 import { applyComments } from "./comments";
 import { createLinkResolver, type LinkResolver } from "./link-resolver";
 import { parseNote, type Note } from "./parse-note";
-import { dirname, isMarkdown } from "./paths";
+import { isMapImage } from "./media";
+import { basename, dirname, isMarkdown } from "./paths";
 import { readVault, type VaultSnapshot } from "./read-vault";
 import { renderMarkdown } from "./render";
 import type { ResolvedTarget } from "./remark-wikilinks";
@@ -16,6 +17,12 @@ import type { Statblock } from "./statblock/parse-statblock";
 export interface NoteStatblock {
   note: Note;
   statblock: Statblock;
+}
+
+/** Where a map's image was found: at its recorded path, or moved elsewhere in the vault. */
+export interface FoundImage {
+  path: string;
+  moved: boolean;
 }
 
 interface RenderedBody {
@@ -31,6 +38,7 @@ interface RenderedBody {
 export class Vault {
   private readonly notesByPath = new Map<string, Note>();
   private readonly notesBySlug = new Map<string, Note>();
+  private readonly notesById = new Map<EntityId, Note>();
   private readonly assets: ReadonlySet<string>;
   private readonly resolver: LinkResolver;
   private readonly renderCache = new Map<string, RenderedBody>();
@@ -47,6 +55,8 @@ export class Vault {
       const note = parseNote(path, source);
       this.notesByPath.set(path, note);
       this.notesBySlug.set(note.slug.toLowerCase(), note);
+      // Notes are read in path order, so if two share an `id` the first path wins, consistently.
+      if (!this.notesById.has(note.id)) this.notesById.set(note.id, note);
     }
     this.assets = new Set(snapshot.assets);
     this.resolver = createLinkResolver([...this.notesByPath.keys(), ...snapshot.assets]);
@@ -60,6 +70,12 @@ export class Vault {
   /** Looks a note up by URL slug. Hidden notes are indistinguishable from missing ones. */
   getNote(slug: string, viewer: Viewer): Note | undefined {
     const note = this.notesBySlug.get(slug.toLowerCase());
+    return note && canView(viewer, note.visibility) ? note : undefined;
+  }
+
+  /** Looks a note up by entity ID. Hidden notes are indistinguishable from missing ones. */
+  noteById(id: EntityId, viewer: Viewer): Note | undefined {
+    const note = this.notesById.get(id);
     return note && canView(viewer, note.visibility) ? note : undefined;
   }
 
@@ -132,6 +148,24 @@ export class Vault {
     if (!this.assets.has(vaultPath)) return undefined;
     if (viewer.role === "dm") return vaultPath;
     return this.assetsVisibleToPlayers().has(vaultPath) ? vaultPath : undefined;
+  }
+
+  /** Every image that can be made into a map, by path. For the DM's map picker. */
+  mapImages(): string[] {
+    return [...this.assets].filter(isMapImage);
+  }
+
+  /**
+   * Finds a map's image: at its recorded path, or, if that file has gone, the one image elsewhere
+   * with the same file name (ignoring case). Undefined if there's none, or several to choose
+   * from. This is not a visibility check: the caller decides whether the map may be seen.
+   */
+  findImage(vaultPath: string): FoundImage | undefined {
+    if (this.assets.has(vaultPath) && isMapImage(vaultPath))
+      return { path: vaultPath, moved: false };
+    const name = basename(vaultPath).toLowerCase();
+    const matches = this.mapImages().filter((path) => basename(path).toLowerCase() === name);
+    return matches.length === 1 ? { path: matches[0], moved: true } : undefined;
   }
 
   private assetsVisibleToPlayers(): ReadonlySet<string> {

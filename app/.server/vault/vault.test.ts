@@ -211,4 +211,47 @@ describe("Vault", () => {
       },
     );
   });
+
+  describe("noteById", () => {
+    it("finds a note by its frontmatter id, or by its path when it has none", () => {
+      expect(vault.noteById("location-fixture-town", PLAYER_VIEWER)?.title).toBe("Fixture Town");
+      expect(vault.noteById("Locations/Brindleford", PLAYER_VIEWER)?.title).toBe("Brindleford");
+    });
+
+    it("treats a hidden note as missing", () => {
+      expect(vault.noteById("lore-villain-plan", DM_VIEWER)?.title).toBe("Villain Plan");
+      expect(vault.noteById("lore-villain-plan", PLAYER_VIEWER)).toBeUndefined();
+      expect(vault.noteById("no-such-note", DM_VIEWER)).toBeUndefined();
+    });
+  });
+
+  describe("maps", () => {
+    it("lists every raster image as a possible map, but no audio", () => {
+      expect(vault.mapImages()).toEqual(
+        expect.arrayContaining(["Maps/Fixture World.png", "Attachments/dm-map.png"]),
+      );
+      expect(vault.mapImages()).not.toContain("Attachments/voice-sample.wav");
+    });
+
+    it("finds a map's image where it was recorded", () => {
+      expect(vault.findImage("Maps/Fixture World.png")).toEqual({
+        path: "Maps/Fixture World.png",
+        moved: false,
+      });
+    });
+
+    it("finds an image that has moved to another folder by its unique file name", () => {
+      expect(vault.findImage("Old Folder/fixture town.PNG")).toEqual({
+        path: "Maps/Fixture Town.png",
+        moved: true,
+      });
+    });
+
+    it.each(["Old Folder/Fixture Duplicate.png", "Maps/Deleted.png", "Home.md"])(
+      "doesn't guess when there's no single match: %s",
+      (path) => {
+        expect(vault.findImage(path)).toBeUndefined();
+      },
+    );
+  });
 });

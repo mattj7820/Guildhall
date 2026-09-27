@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { contentType, mediaKind } from "./media";
+import { contentType, isMapImage, mediaKind } from "./media";
 
 describe("media types", () => {
   it.each([
@@ -13,5 +13,16 @@ describe("media types", () => {
   ])("%s is served as %s (%s)", (file, type, kind) => {
     expect(contentType(file)).toBe(type);
     expect(mediaKind(file)).toBe(kind);
+  });
+
+  it.each([
+    ["World.png", true],
+    ["Town.JPEG", true],
+    ["Keep.webp", true],
+    ["Icon.svg", false],
+    ["Voice.m4a", false],
+    ["Handout.pdf", false],
+  ])("%s can be a map: %s", (file, expected) => {
+    expect(isMapImage(file)).toBe(expected);
   });
 });

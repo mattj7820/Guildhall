@@ -48,3 +48,56 @@ export interface Area {
 
 /** What the editor saves: everything the DM can change about a map. */
 export type MapChanges = Pick<CampaignMap, "name" | "note" | "image" | "areas">;
+
+/** A link to a map, as shown in breadcrumbs, lists and area panels. */
+export interface MapLink {
+  id: MapId;
+  name: string;
+}
+
+/** A wiki note linked from a map or area, rendered for the viewer. */
+export interface NoteLink {
+  id: EntityId;
+  title: string;
+  url: string;
+  html: string;
+}
+
+/**
+ * The map's image as the browser sees it. `missing` means it's no longer in the vault; `moved`
+ * means a single image with the same name was found elsewhere (DM only, with its new path).
+ */
+export interface MapImageView {
+  url?: string;
+  status: "ok" | "moved" | "missing";
+  /** DM only: where the image is recorded, and where it was found instead. */
+  path?: string;
+  movedTo?: string;
+}
+
+/** An area as the viewer may see it: hidden targets are simply absent. */
+export interface AreaView {
+  id: AreaId;
+  name: string;
+  outline: Point[];
+  map?: MapLink;
+  note?: NoteLink;
+  /** DM only: links that no longer lead anywhere. */
+  broken: ("map" | "note")[];
+}
+
+/** A map prepared for one viewer, safe to send to the browser. */
+export interface MapView {
+  id: MapId;
+  name: string;
+  /** The pixel size the areas were drawn against. */
+  size: Size;
+  image: MapImageView;
+  note?: NoteLink;
+  /** DM only: the map's note link no longer leads anywhere. */
+  noteBroken: boolean;
+  /** Ancestors, outermost first, then this map. */
+  breadcrumbs: MapLink[];
+  /** Largest first, so smaller areas inside larger ones are drawn on top and can be clicked. */
+  areas: AreaView[];
+}

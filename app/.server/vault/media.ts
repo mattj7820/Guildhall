@@ -36,3 +36,11 @@ export function mediaKind(vaultPath: string): MediaKind {
   if (type.startsWith("audio/")) return "audio";
   return "other";
 }
+
+/**
+ * Whether a file can be a map: a raster image. SVGs are left out, since they have no reliable
+ * pixel size to draw areas against.
+ */
+export function isMapImage(vaultPath: string): boolean {
+  return mediaKind(vaultPath) === "image" && extension(vaultPath) !== "svg";
+}
