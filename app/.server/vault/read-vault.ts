@@ -12,9 +12,12 @@ export interface VaultSnapshot {
   assets: string[];
 }
 
-/** Obsidian's own folders and other hidden entries are never part of the campaign. */
+/**
+ * Obsidian's own folders and other hidden entries are never part of the campaign, and nor are
+ * half-copied files: rclone downloads to `name.<hash>.partial`, then renames it into place.
+ */
 function isIgnored(name: string): boolean {
-  return name.startsWith(".") || name === "node_modules";
+  return name.startsWith(".") || name === "node_modules" || name.endsWith(".partial");
 }
 
 /** Obsidian files we don't render yet. */
@@ -22,13 +25,26 @@ function isUnsupported(name: string): boolean {
   return /\.(canvas|excalidraw\.md)$/i.test(name);
 }
 
-export async function readVault(root: string): Promise<VaultSnapshot> {
+/** The file-reading calls used, replaceable in tests. */
+export interface VaultFiles {
+  readdir: typeof readdir;
+  readFile: typeof readFile;
+}
+
+/**
+ * Reads the whole vault. A file or folder that disappears while it's being read (a sync tool
+ * replacing it, say) is skipped rather than failing the read; the next change reads it again.
+ */
+export async function readVault(
+  root: string,
+  files: VaultFiles = { readdir, readFile },
+): Promise<VaultSnapshot> {
   const absoluteRoot = path.resolve(root);
   const snapshot: VaultSnapshot = { notes: [], assets: [] };
 
   async function walk(directory: string): Promise<void> {
-    const entries = await readdir(directory, { withFileTypes: true });
-    for (const entry of entries) {
+    const entries = await skipIfGone(() => files.readdir(directory, { withFileTypes: true }));
+    for (const entry of entries ?? []) {
       if (isIgnored(entry.name) || isUnsupported(entry.name)) continue;
       const absolute = path.join(directory, entry.name);
       if (entry.isDirectory()) {
@@ -36,7 +52,8 @@ export async function readVault(root: string): Promise<VaultSnapshot> {
       } else if (entry.isFile()) {
         const vaultPath = toVaultPath(absoluteRoot, absolute);
         if (isMarkdown(entry.name)) {
-          snapshot.notes.push({ path: vaultPath, source: await readFile(absolute, "utf8") });
+          const source = await skipIfGone(() => files.readFile(absolute, "utf8"));
+          if (source !== undefined) snapshot.notes.push({ path: vaultPath, source });
         } else {
           snapshot.assets.push(vaultPath);
         }
@@ -48,4 +65,13 @@ export async function readVault(root: string): Promise<VaultSnapshot> {
   snapshot.notes.sort((a, b) => a.path.localeCompare(b.path));
   snapshot.assets.sort();
   return snapshot;
+}
+
+async function skipIfGone<T>(read: () => Promise<T>): Promise<T | undefined> {
+  try {
+    return await read();
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    throw error;
+  }
 }
