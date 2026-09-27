@@ -25,6 +25,26 @@ describe("loadConfig", () => {
     expect(loadConfig({ VAULT_PATH: FIXTURE_VAULT, DATA_PATH: dataPath }).dataPath).toBe(dataPath);
   });
 
+  it("is reached at localhost on its port unless told otherwise", () => {
+    expect(loadConfig({ VAULT_PATH: FIXTURE_VAULT }).publicUrl).toBe("http://localhost:3000");
+    expect(loadConfig({ VAULT_PATH: FIXTURE_VAULT, PORT: "4173" }).publicUrl).toBe(
+      "http://localhost:4173",
+    );
+  });
+
+  it("reads its public address as an origin", () => {
+    const config = loadConfig({
+      VAULT_PATH: FIXTURE_VAULT,
+      PUBLIC_URL: "https://Guildhall.Example.com/",
+    });
+    expect(config.publicUrl).toBe("https://guildhall.example.com");
+  });
+
+  it("trusts no proxy unless told how many there are", () => {
+    expect(loadConfig({ VAULT_PATH: FIXTURE_VAULT }).trustProxy).toBe(0);
+    expect(loadConfig({ VAULT_PATH: FIXTURE_VAULT, TRUST_PROXY: "1" }).trustProxy).toBe(1);
+  });
+
   it("treats an empty Roll20 URL as not configured", () => {
     expect(
       loadConfig({ VAULT_PATH: FIXTURE_VAULT, ROLL20_CAMPAIGN_URL: "" }).roll20CampaignUrl,
@@ -69,6 +89,26 @@ describe("loadConfig", () => {
       "the Roll20 URL is not http(s)",
       { VAULT_PATH: FIXTURE_VAULT, ROLL20_CAMPAIGN_URL: "javascript:alert(1)" },
       /ROLL20_CAMPAIGN_URL/,
+    ],
+    [
+      "the public address has a path",
+      { VAULT_PATH: FIXTURE_VAULT, PUBLIC_URL: "https://example.com/guildhall" },
+      /PUBLIC_URL must be just the address/,
+    ],
+    [
+      "the public address is not http(s)",
+      { VAULT_PATH: FIXTURE_VAULT, PUBLIC_URL: "ftp://example.com" },
+      /PUBLIC_URL must be an http\(s\) URL/,
+    ],
+    [
+      "the proxy count is not a number",
+      { VAULT_PATH: FIXTURE_VAULT, TRUST_PROXY: "true" },
+      /TRUST_PROXY must be the number of proxies/,
+    ],
+    [
+      "the proxy count is negative",
+      { VAULT_PATH: FIXTURE_VAULT, TRUST_PROXY: "-1" },
+      /TRUST_PROXY must be the number of proxies/,
     ],
   ])("fails clearly when %s", (_label, env, message) => {
     expect(() => loadConfig(env)).toThrow(ConfigError);

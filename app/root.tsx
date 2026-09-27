@@ -28,7 +28,8 @@ export function loader({ context }: Route.LoaderArgs) {
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const data = useRouteLoaderData<typeof loader>("root");
-  const role = data?.role ?? "dm";
+  // No root data means the root itself failed (an error page): show the least, not the DM's view.
+  const role = data?.role;
 
   return (
     <html lang="en">
@@ -65,9 +66,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </>
               )}
             </nav>
-            <div className="ml-auto">
-              <ViewToggle role={role} />
-            </div>
+            <div className="ml-auto">{role && <ViewToggle role={role} />}</div>
           </div>
           {role === "player" && (
             <p

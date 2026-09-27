@@ -9,6 +9,11 @@ const DEVELOPMENT = process.env.NODE_ENV === "development";
 const PORT = Number.parseInt(process.env.PORT || "3000");
 
 const app = express();
+/**
+ * Set in production: stops the app's long-lived services (the vault watcher).
+ * @type {(() => Promise<void>) | undefined}
+ */
+let closeApp;
 
 app.use(compression());
 app.disable("x-powered-by");
@@ -34,12 +39,28 @@ if (DEVELOPMENT) {
   });
 } else {
   console.log("Starting production server");
+  const build = await import(BUILD_PATH);
   app.use("/assets", express.static("build/client/assets", { immutable: true, maxAge: "1y" }));
   app.use(morgan("tiny"));
   app.use(express.static("build/client", { maxAge: "1h" }));
-  app.use(await import(BUILD_PATH).then((mod) => mod.app));
+  app.use(build.app);
+  closeApp = build.close;
 }
 
-app.listen(PORT, () => {
-  console.log(`Guildhall is running on http://localhost:${PORT}`);
+const server = app.listen(PORT, () => {
+  console.log(`Guildhall is running on port ${PORT}`);
 });
+
+// Hosts stop containers with SIGTERM (Ctrl+C sends SIGINT): finish open requests, stop watching
+// the vault, then exit, rather than being killed mid-write after a timeout.
+for (const signal of ["SIGTERM", "SIGINT"]) {
+  process.once(signal, () => {
+    console.log(`${signal} received; shutting down`);
+    server.close(async () => {
+      await closeApp?.();
+      process.exit(0);
+    });
+    server.closeIdleConnections();
+    setTimeout(() => process.exit(1), 10_000).unref();
+  });
+}

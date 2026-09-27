@@ -6,6 +6,7 @@ import { loadConfig } from "~/.server/config";
 import { CampaignMaps } from "~/.server/maps/campaign-maps";
 import { LiveVault } from "~/.server/vault/live-vault";
 import { servicesContext, type Services } from "~/context";
+import { prepareApp } from "./http";
 
 /**
  * Creates the long-lived services once per process. In development Vite may re-evaluate this
@@ -31,6 +32,7 @@ const services = await (globalForServices.__guildhallServices ??= createServices
 
 export const app = express();
 
+prepareApp(app, services.config);
 app.use(
   createRequestHandler({
     build: () => import("virtual:react-router/server-build"),
@@ -41,3 +43,8 @@ app.use(
     },
   }),
 );
+
+/** Stops watching the vault, so the process can exit cleanly when the host stops it. */
+export async function close(): Promise<void> {
+  await services.vault.close();
+}
