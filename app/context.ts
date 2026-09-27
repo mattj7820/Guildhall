@@ -2,6 +2,7 @@ import { createContext } from "react-router";
 import type { PreparedEncounters } from "~/.server/combat/prepared-encounters";
 import type { Config } from "~/.server/config";
 import type { CampaignMaps } from "~/.server/maps/campaign-maps";
+import type { Members } from "~/.server/members/members";
 import type { LiveVault } from "~/.server/vault/live-vault";
 import { DM_VIEWER, type Viewer } from "~/campaign/types";
 
@@ -13,6 +14,8 @@ export interface Services {
   preparedEncounters: PreparedEncounters;
   /** Interactive maps and their areas, kept in the data folder. */
   maps: CampaignMaps;
+  /** Everyone who has signed in, approved or waiting, kept in the data folder. */
+  members: Members;
 }
 
 export const servicesContext = createContext<Services>();

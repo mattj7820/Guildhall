@@ -4,6 +4,7 @@ import { RouterContextProvider } from "react-router";
 import { PreparedEncounters } from "~/.server/combat/prepared-encounters";
 import { loadConfig } from "~/.server/config";
 import { CampaignMaps } from "~/.server/maps/campaign-maps";
+import { Members } from "~/.server/members/members";
 import { LiveVault } from "~/.server/vault/live-vault";
 import { servicesContext, type Services } from "~/context";
 import { prepareApp } from "./http";
@@ -22,6 +23,7 @@ async function createServices(): Promise<Services> {
     vault,
     preparedEncounters: PreparedEncounters.inFolder(config.dataPath),
     maps: CampaignMaps.inFolder(config.dataPath),
+    members: Members.inFolder(config.dataPath),
   };
 }
 
