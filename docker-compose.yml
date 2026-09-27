@@ -1,0 +1,65 @@
+# Guildhall on a Docker host such as Dokploy (see docs/deployment.md):
+#
+#   app         the website, behind the host's reverse proxy (Traefik), which adds HTTPS
+#   vault-sync  copies the Obsidian vault from Google Drive every minute, read-only
+#
+# Settings come from a .env file next to this one (Dokploy's Environment tab writes it); they
+# are named here explicitly because Dokploy doesn't pass them to containers by itself.
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    # Node doesn't handle signals as process 1; a tiny init passes SIGTERM on, for a clean stop.
+    init: true
+    # Reached only through the proxy on the shared network, never on the server's public IP.
+    expose:
+      - "3000"
+    environment:
+      PUBLIC_URL: ${PUBLIC_URL}
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      SESSION_SECRET: ${SESSION_SECRET}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
+      DM_DISCORD_IDS: ${DM_DISCORD_IDS}
+      ROLL20_CAMPAIGN_URL: ${ROLL20_CAMPAIGN_URL:-}
+    volumes:
+      # Read-only: Guildhall never writes to the vault, and here it couldn't if it tried.
+      - vault:/vault:ro
+      - data:/data
+    networks:
+      - dokploy-network
+
+  vault-sync:
+    image: rclone/rclone:1
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    # sync mirrors Drive exactly (deletions included), but never deletes more than 50 files in
+    # one go, so a mis-shared or emptied Drive folder can't wipe the copy. Obsidian's own
+    # folders aren't campaign content. Google Docs files have no plain-file form, so are skipped.
+    # (Folded into one line: every line here must have the same indent.)
+    command:
+      - >-
+        while true; do
+        rclone sync gdrive: /vault
+        --checksum --max-delete 50 --drive-skip-gdocs
+        --exclude ".obsidian/**" --exclude ".trash/**"
+        --stats 0 -v;
+        sleep 60;
+        done
+    environment:
+      RCLONE_CONFIG_GDRIVE_TYPE: drive
+      # Read-only access, granted by sharing only the vault folder with the service account.
+      RCLONE_CONFIG_GDRIVE_SCOPE: drive.readonly
+      RCLONE_CONFIG_GDRIVE_ROOT_FOLDER_ID: ${GDRIVE_FOLDER_ID}
+      RCLONE_CONFIG_GDRIVE_SERVICE_ACCOUNT_CREDENTIALS: ${GDRIVE_SERVICE_ACCOUNT_JSON}
+    volumes:
+      - vault:/vault
+
+volumes:
+  vault:
+  data:
+
+networks:
+  dokploy-network:
+    external: true

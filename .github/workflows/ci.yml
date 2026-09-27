@@ -39,6 +39,43 @@ jobs:
       - run: npm ci
       - run: npm test
 
+  docker:
+    # The image that gets deployed: it builds, starts with a vault mounted read-only, answers its
+    # health check, runs as an unprivileged user, and refuses dev sign-in from outside itself.
+    name: Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build --tag guildhall .
+      - name: Start it with the fixture vault
+        run: >-
+          docker run --detach --name guildhall --publish 3000:3000
+          --volume "$PWD/tests/fixtures/vault:/vault:ro"
+          --env DEV_LOGIN=true --env PUBLIC_URL=http://localhost:3000
+          guildhall
+      - name: Wait until it's healthy
+        run: |
+          for attempt in $(seq 30); do
+            curl --fail --silent http://localhost:3000/healthz && exit 0
+            sleep 2
+          done
+          docker logs guildhall
+          exit 1
+      - name: Check it runs as a normal user, and that signing in is required
+        run: |
+          test "$(docker exec guildhall id -u)" != "0"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            --header 'Accept: text/html' http://localhost:3000/wiki)" = "302"
+      - name: Check dev sign-in is refused, since requests come from outside the container
+        run: |
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            --header 'Origin: http://localhost:3000' --data 'intent=dev&who=dm' \
+            http://localhost:3000/login)
+          echo "Dev sign-in answered $status"
+          test "$status" = "404"
+      - if: failure()
+        run: docker logs guildhall
+
   e2e:
     name: End-to-end tests
     runs-on: ubuntu-latest
