@@ -4,6 +4,9 @@
 /.react-router/
 *.tsbuildinfo
 
+# Guildhall's own data (prepared encounters…): personal, never committed
+/data/
+
 # Local configuration and secrets (never commit)
 .env
 .env.*

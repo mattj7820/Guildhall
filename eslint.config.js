@@ -64,8 +64,10 @@ export default tseslint.config(
   {
     // Read-only guarantee: app and server code may not write to disk. Named imports of write
     // APIs are banned, and so are namespace imports of fs (which would bypass that check).
+    // The single exception is the JSON store, which writes only inside DATA_PATH; config
+    // refuses to start if that folder overlaps the vault.
     files: ["app/**/*.{ts,tsx}", "server/**/*.ts"],
-    ignores: ["**/*.test.ts"],
+    ignores: ["**/*.test.ts", "app/.server/data/json-store.ts"],
     rules: {
       "no-restricted-imports": [
         "error",

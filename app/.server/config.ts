@@ -5,6 +5,8 @@ import { z } from "zod";
 export interface Config {
   /** Absolute path to the Obsidian vault. Read-only. */
   vaultPath: string;
+  /** Absolute path to the folder where Guildhall keeps its own data. Never inside the vault. */
+  dataPath: string;
   roll20CampaignUrl?: string;
 }
 
@@ -20,6 +22,7 @@ const envSchema = z.object({
     emptyAsUndefined,
     z.string({ error: "VAULT_PATH is not set. Point it at your Obsidian vault folder." }),
   ),
+  DATA_PATH: z.preprocess(emptyAsUndefined, z.string().default("./data")),
   ROLL20_CAMPAIGN_URL: z.preprocess(
     emptyAsUndefined,
     z
@@ -45,5 +48,23 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     throw new ConfigError(`VAULT_PATH does not point to a folder: ${vaultPath}`);
   }
 
-  return { vaultPath, roll20CampaignUrl: parsed.data.ROLL20_CAMPAIGN_URL };
+  const dataPath = path.resolve(parsed.data.DATA_PATH);
+  if (isWithin(dataPath, vaultPath) || isWithin(vaultPath, dataPath)) {
+    throw new ConfigError(
+      `DATA_PATH and VAULT_PATH must not overlap: Guildhall writes to its data folder and the ` +
+        `vault is read-only. DATA_PATH: ${dataPath}`,
+    );
+  }
+  if (statSync(dataPath, { throwIfNoEntry: false })?.isFile()) {
+    throw new ConfigError(`DATA_PATH points to a file, not a folder: ${dataPath}`);
+  }
+
+  return { vaultPath, dataPath, roll20CampaignUrl: parsed.data.ROLL20_CAMPAIGN_URL };
+}
+
+/** Whether `inner` is `outer` or inside it. Case-insensitive on Windows, like its file system. */
+function isWithin(inner: string, outer: string): boolean {
+  const fold = (p: string) => (process.platform === "win32" ? p.toLowerCase() : p);
+  const relative = path.relative(fold(outer), fold(inner));
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }

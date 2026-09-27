@@ -16,6 +16,15 @@ describe("loadConfig", () => {
     });
   });
 
+  it("keeps its own data in ./data by default", () => {
+    expect(loadConfig({ VAULT_PATH: FIXTURE_VAULT }).dataPath).toBe(path.resolve("data"));
+  });
+
+  it("reads a data folder that doesn't exist yet", () => {
+    const dataPath = path.resolve("test-results", "not-created-yet");
+    expect(loadConfig({ VAULT_PATH: FIXTURE_VAULT, DATA_PATH: dataPath }).dataPath).toBe(dataPath);
+  });
+
   it("treats an empty Roll20 URL as not configured", () => {
     expect(
       loadConfig({ VAULT_PATH: FIXTURE_VAULT, ROLL20_CAMPAIGN_URL: "" }).roll20CampaignUrl,
@@ -30,6 +39,26 @@ describe("loadConfig", () => {
       "VAULT_PATH is a file",
       { VAULT_PATH: path.join(FIXTURE_VAULT, "Home.md") },
       /does not point to a folder/,
+    ],
+    [
+      "the data folder is inside the vault",
+      { VAULT_PATH: FIXTURE_VAULT, DATA_PATH: path.join(FIXTURE_VAULT, "Guildhall") },
+      /must not overlap/,
+    ],
+    [
+      "the data folder is the vault",
+      { VAULT_PATH: FIXTURE_VAULT, DATA_PATH: FIXTURE_VAULT },
+      /must not overlap/,
+    ],
+    [
+      "the vault is inside the data folder",
+      { VAULT_PATH: FIXTURE_VAULT, DATA_PATH: path.dirname(FIXTURE_VAULT) },
+      /must not overlap/,
+    ],
+    [
+      "the data folder is a file",
+      { VAULT_PATH: FIXTURE_VAULT, DATA_PATH: path.resolve("package.json") },
+      /points to a file/,
     ],
     [
       "the Roll20 URL is not a URL",
