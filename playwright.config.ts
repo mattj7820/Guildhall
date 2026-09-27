@@ -20,10 +20,20 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     trace: "retain-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    // Signs in once and saves the cookies; every other test then starts signed in as the DM
+    // unless it chooses otherwise (see tests/e2e/support/sign-in.ts).
+    { name: "sign-in", testMatch: /sign-in\.setup\.ts/ },
+    {
+      name: "chromium",
+      dependencies: ["sign-in"],
+      // SIGNED_IN.dm in tests/e2e/support/sign-in.ts (not imported: this file is built apart).
+      use: { ...devices["Desktop Chrome"], storageState: "test-results/.auth/dm.json" },
+    },
+  ],
   webServer: {
     command: "npm run build && node server.js",
-    url: `http://localhost:${PORT}`,
+    url: `http://localhost:${PORT}/healthz`,
     reuseExistingServer: !isCI,
     timeout: 120_000,
     env: {

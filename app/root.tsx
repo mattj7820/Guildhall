@@ -30,7 +30,9 @@ export function loader({ context }: Route.LoaderArgs) {
 export function Layout({ children }: { children: React.ReactNode }) {
   const data = useRouteLoaderData<typeof loader>("root");
   // No root data means the root itself failed (an error page): show the least, not the DM's view.
-  const role = data?.role;
+  const user = data?.user;
+  const role = user && data.role;
+  const previewing = user?.isDm && role === "player";
 
   return (
     <html lang="en">
@@ -49,35 +51,39 @@ export function Layout({ children }: { children: React.ReactNode }) {
             >
               Guildhall
             </Link>
-            <nav aria-label="Main" className="flex gap-4 text-sm">
-              <NavLink to="/" end className={navLinkClass}>
-                Hub
-              </NavLink>
-              <NavLink to="/wiki" className={navLinkClass}>
-                Wiki
-              </NavLink>
-              {role === "dm" && (
-                <>
-                  <NavLink to="/combat" className={navLinkClass}>
-                    Combat
-                  </NavLink>
-                  <NavLink to="/maps" className={navLinkClass}>
-                    Maps
-                  </NavLink>
-                </>
-              )}
-            </nav>
-            <div className="ml-auto flex items-center gap-4">
-              {role && <ViewToggle role={role} />}
-              {data?.user && <SignedIn name={data.user.name} />}
-            </div>
+            {user && (
+              <nav aria-label="Main" className="flex gap-4 text-sm">
+                <NavLink to="/" end className={navLinkClass}>
+                  Hub
+                </NavLink>
+                <NavLink to="/wiki" className={navLinkClass}>
+                  Wiki
+                </NavLink>
+                {role === "dm" && (
+                  <>
+                    <NavLink to="/combat" className={navLinkClass}>
+                      Combat
+                    </NavLink>
+                    <NavLink to="/maps" className={navLinkClass}>
+                      Maps
+                    </NavLink>
+                  </>
+                )}
+              </nav>
+            )}
+            {user && (
+              <div className="ml-auto flex items-center gap-4">
+                {user.isDm && role && <ViewToggle role={role} />}
+                <SignedIn name={user.name} />
+              </div>
+            )}
           </div>
-          {role === "player" && (
+          {previewing && (
             <p
               role="status"
               className="bg-sky-100 px-4 py-1.5 text-center text-sm text-sky-900 dark:bg-sky-950 dark:text-sky-200"
             >
-              Player preview: showing only what players can see. This is not a security boundary.
+              Previewing as a player: showing only what players can see.
             </p>
           )}
         </header>

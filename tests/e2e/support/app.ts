@@ -15,7 +15,7 @@ export async function openNote(page: Page, slug: string) {
 
 export async function switchToPlayerView(page: Page) {
   await page.getByRole("button", { name: "Preview as player" }).click();
-  await expect(page.getByRole("status")).toContainText("Player preview");
+  await expect(page.getByRole("status")).toContainText("Previewing as a player");
 }
 
 export async function switchToDmView(page: Page) {

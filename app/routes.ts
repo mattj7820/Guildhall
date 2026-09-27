@@ -18,4 +18,5 @@ export default [
   route("view-mode", "routes/view-mode.ts"),
   route("login", "routes/login.tsx"),
   route("logout", "routes/logout.ts"),
+  route("waiting", "routes/waiting.tsx"),
 ] satisfies RouteConfig;

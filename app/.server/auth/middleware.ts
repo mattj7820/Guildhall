@@ -1,7 +1,8 @@
-import { data, type MiddlewareFunction } from "react-router";
-import { DM_VIEWER, PLAYER_VIEWER } from "~/campaign/types";
+import { data, redirect, type MiddlewareFunction } from "react-router";
+import { PLAYER_VIEWER } from "~/campaign/types";
 import { accountContext, servicesContext, viewerContext, type Services } from "~/context";
 import { previewingAsPlayer } from "../viewer";
+import { access } from "./access";
 import { resolveAccount, viewerFor } from "./account";
 import { DEV_DM } from "./dev-login";
 import { isSameOrigin } from "./origin";
@@ -12,7 +13,10 @@ import { REFRESH_AFTER_MS } from "./sessions";
  * come from Guildhall's own pages, reads the session, and sets the account and the viewer that
  * every visibility decision takes. Refreshes the session cookie once a day while it's in use.
  */
-export const authMiddleware: MiddlewareFunction<Response> = async ({ request, context }, next) => {
+export const authMiddleware: MiddlewareFunction<Response> = async (
+  { request, context, url },
+  next,
+) => {
   const services = context.get(servicesContext);
   if (!isSameOrigin(request, services.config)) {
     throw data("This request didn't come from Guildhall's own pages.", { status: 403 });
@@ -28,9 +32,15 @@ export const authMiddleware: MiddlewareFunction<Response> = async ({ request, co
   );
   context.set(accountContext, account);
 
-  const preview = await previewingAsPlayer(request);
-  // Not enforced yet: someone not signed in still gets the old preview toggle's view.
-  context.set(viewerContext, viewerFor(account, preview) ?? (preview ? PLAYER_VIEWER : DM_VIEWER));
+  const verdict = access(account, url, { wantsPage: wantsPage(request) });
+  if ("redirect" in verdict) throw redirect(verdict.redirect);
+  if ("status" in verdict) throw data("Sign in to Guildhall first.", { status: verdict.status });
+
+  // Pages open to everyone (signing in) get the least a viewer can see.
+  context.set(
+    viewerContext,
+    viewerFor(account, await previewingAsPlayer(request)) ?? PLAYER_VIEWER,
+  );
 
   const response = await next();
 
@@ -56,6 +66,17 @@ export const authMiddleware: MiddlewareFunction<Response> = async ({ request, co
 export function dmDiscordIds({ config }: Pick<Services, "config">): ReadonlySet<string> {
   return new Set(
     config.devLogin ? [...config.dmDiscordIds, DEV_DM.discordId] : config.dmDiscordIds,
+  );
+}
+
+/**
+ * Whether the browser is showing a page (a page load, or React Router fetching a page's data),
+ * so it can be sent somewhere else, rather than loading an image or other file.
+ */
+function wantsPage(request: Request): boolean {
+  return (
+    new URL(request.url).pathname.endsWith(".data") ||
+    (request.headers.get("Accept") ?? "").includes("text/html")
   );
 }
 
