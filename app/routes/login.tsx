@@ -1,7 +1,7 @@
 import { data, Form, redirect, useActionData, useSearchParams } from "react-router";
 import { DEV_DM, devProfile, isLoopback } from "~/.server/auth/dev-login";
+import { partyPlayers } from "~/.server/members/players";
 import { safeRedirect } from "~/.server/safe-redirect";
-import { playerFromName } from "~/campaign/types";
 import { buttonClass, inputClass, panelClass, primaryButtonClass } from "~/components/styles";
 import { accountContext, clientAddressContext, servicesContext, type Services } from "~/context";
 import type { DiscordProfile } from "~/members/types";
@@ -64,16 +64,6 @@ async function signInAsPlayer(services: Services, profile: DiscordProfile, playe
   if (!("member" in result)) return result;
   const member = await services.members.assignPlayer(profile.discordId, playerId);
   return member ? { member } : result;
-}
-
-/** Everyone named as a PC's player, once each. */
-function partyPlayers(vault: Services["vault"]["current"]) {
-  const players = new Map<string, { id: string; name: string }>();
-  for (const note of vault.party({ role: "dm" })) {
-    const player = note.player ? playerFromName(note.player) : undefined;
-    if (player && !players.has(player.id)) players.set(player.id, player);
-  }
-  return [...players.values()];
 }
 
 export default function Login({ loaderData }: Route.ComponentProps) {

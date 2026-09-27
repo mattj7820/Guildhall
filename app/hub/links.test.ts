@@ -32,9 +32,16 @@ describe("hubLinks", () => {
     );
   });
 
+  it("lists the members page for the DM", () => {
+    expect(hubLinks({}, "dm").modules).toContainEqual(
+      expect.objectContaining({ id: "members", href: "/members" }),
+    );
+  });
+
   it("leaves DM-only modules out of the player preview", () => {
     const ids = hubLinks({}, "player").modules.map((m) => m.id);
     expect(ids).not.toContain("combat");
     expect(ids).not.toContain("maps");
+    expect(ids).not.toContain("members");
   });
 });

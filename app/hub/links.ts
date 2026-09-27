@@ -59,6 +59,13 @@ export function hubLinks(config: { roll20CampaignUrl?: string }, role: Role = "d
               href: "/maps",
               external: false,
             },
+            {
+              id: "members",
+              title: "Members",
+              description: "Let your players in, and say which characters they play. DM only.",
+              href: "/members",
+              external: false,
+            },
           ]
         : []),
     ],

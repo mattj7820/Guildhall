@@ -19,4 +19,5 @@ export default [
   route("login", "routes/login.tsx"),
   route("logout", "routes/logout.ts"),
   route("waiting", "routes/waiting.tsx"),
+  route("members", "routes/members.tsx"),
 ] satisfies RouteConfig;

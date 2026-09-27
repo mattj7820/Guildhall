@@ -69,6 +69,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     </NavLink>
                   </>
                 )}
+                {user.isDm && (
+                  <NavLink to="/members" className={navLinkClass}>
+                    Members
+                  </NavLink>
+                )}
               </nav>
             )}
             {user && (
