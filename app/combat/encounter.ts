@@ -34,12 +34,16 @@ export type EncounterAction =
     }
   | { type: "remove"; id: CombatantId }
   | { type: "setInitiative"; id: CombatantId; initiative: number | null }
+  /** Monsters' d20 faces; each monster's bonus is added. */
+  | { type: "rollInitiatives"; rolls: { id: CombatantId; roll: number }[] }
   | { type: "recordTiebreaks"; rolls: { id: CombatantId; roll: number }[] }
   | { type: "move"; id: CombatantId; offset: -1 | 1 }
   | { type: "start" }
   | { type: "nextTurn" }
   | { type: "previousTurn" }
   | { type: "damage" | "heal" | "gainTempHp" | "setMaxHp"; id: CombatantId; amount: number }
+  /** Back to full health with a new maximum, e.g. after rerolling a prepared monster's HP. */
+  | { type: "resetHp"; id: CombatantId; maxHp: number }
   | { type: "toggleCondition"; id: CombatantId; condition: Condition }
   | { type: "setNote"; id: CombatantId; note: string };
 
@@ -48,8 +52,8 @@ type MonsterSource = Pick<CreatureOption, "ref" | "name" | "armorClass" | "initi
 interface NewMonster {
   id: CombatantId;
   maxHp: number;
-  /** The d20 face; the statblock's bonus is added when the monster joins. */
-  initiativeRoll: number;
+  /** The d20 face; the statblock's bonus is added when the monster joins. Null when preparing. */
+  initiativeRoll: number | null;
 }
 
 export function createEncounter(id: string = newId()): Encounter {
@@ -65,7 +69,10 @@ export function encounterReducer(state: Encounter, action: EncounterAction): Enc
         kind: "monster",
         id: monster.id,
         name: `${creature.name} ${++number}`,
-        initiative: monster.initiativeRoll + creature.initiativeBonus,
+        initiative:
+          monster.initiativeRoll === null
+            ? null
+            : monster.initiativeRoll + creature.initiativeBonus,
         tiebreaks: [],
         conditions: [],
         note: "",
@@ -119,6 +126,17 @@ export function encounterReducer(state: Encounter, action: EncounterAction): Enc
       return arrange(state, combatants, [action.id]);
     }
 
+    case "rollInitiatives": {
+      const rolls = new Map(action.rolls.map(({ id, roll }) => [id, roll]));
+      const combatants = state.combatants.map((c) => {
+        const roll = rolls.get(c.id);
+        return c.kind === "monster" && roll !== undefined
+          ? { ...c, initiative: roll + c.initiativeBonus, tiebreaks: [] }
+          : c;
+      });
+      return arrange(state, combatants, [...rolls.keys()]);
+    }
+
     case "recordTiebreaks": {
       let combatants = state.combatants;
       for (const { id, roll } of action.rolls) {
@@ -165,6 +183,14 @@ export function encounterReducer(state: Encounter, action: EncounterAction): Enc
       };
     }
 
+    case "resetHp":
+      return {
+        ...state,
+        combatants: update(state.combatants, action.id, (c) =>
+          c.kind === "monster" ? { ...c, hp: fullHp(action.maxHp) } : c,
+        ),
+      };
+
     case "toggleCondition":
       return {
         ...state,
@@ -203,20 +229,23 @@ export function perform(state: Encounter, action: EncounterAction, rng: Rng): En
   return next;
 }
 
+type HpSource = Pick<CreatureOption, "hitDice" | "hitPoints">;
+
 /**
- * Rolls for new monsters: for each in turn, its initiative d20, then its hit dice. Max HP is the
- * DM's `maxHp` if given, else rolled from the statblock's hit dice (at least 1), else the
- * statblock's average HP, else 1.
+ * Rolls for new monsters: for each in turn, its initiative d20 (unless preparing, when
+ * initiative waits until the fight starts), then its hit dice. Max HP is the DM's `maxHp` if
+ * given, else rolled from the statblock's hit dice (at least 1), else the statblock's average HP,
+ * else 1.
  */
 export function addMonsters(
-  creature: MonsterSource & Pick<CreatureOption, "hitDice" | "hitPoints">,
+  creature: MonsterSource & HpSource,
   quantity: number,
   rng: Rng,
-  options: { maxHp?: number; createId?: () => string } = {},
+  options: { maxHp?: number; rollInitiative?: boolean; createId?: () => string } = {},
 ): EncounterAction {
   const createId = options.createId ?? newId;
   const monsters = Array.from({ length: Math.max(1, Math.floor(quantity)) }, () => {
-    const initiativeRoll = rng(20);
+    const initiativeRoll = options.rollInitiative === false ? null : rng(20);
     return { id: createId(), initiativeRoll, maxHp: options.maxHp ?? rollMaxHp(creature, rng) };
   });
   const { ref, name, armorClass, initiativeBonus } = creature;
@@ -227,7 +256,22 @@ export function addMonsters(
   };
 }
 
-function rollMaxHp(creature: Pick<CreatureOption, "hitDice" | "hitPoints">, rng: Rng): number {
+/** Fresh HP for one monster, rolled the same way as when it was added. */
+export function rerollHp(creature: HpSource, id: CombatantId, rng: Rng): EncounterAction {
+  return { type: "resetHp", id, maxHp: rollMaxHp(creature, rng) };
+}
+
+/** A d20 for every monster that has no initiative yet, in turn order. */
+export function rollMonsterInitiatives(state: Encounter, rng: Rng): EncounterAction {
+  return {
+    type: "rollInitiatives",
+    rolls: state.combatants
+      .filter((c) => c.kind === "monster" && c.initiative === null)
+      .map((c) => ({ id: c.id, roll: rng(20) })),
+  };
+}
+
+function rollMaxHp(creature: HpSource, rng: Rng): number {
   const rolled = creature.hitDice ? rollText(creature.hitDice, rng) : undefined;
   if (rolled?.ok) return Math.max(1, rolled.result.total);
   return creature.hitPoints ?? 1;
