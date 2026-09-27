@@ -242,3 +242,27 @@ reducer, schema and tracker components are reused. The schema rejects one that h
   the tab with a save pending.
 - **Save as prepared:** a fight set up in the tracker can be kept this way, minus the party and
   rolls.
+
+## 20. Click-to-roll: rolls marked up on the server, handled in the tracker only
+
+**Date:** 2026-09-27
+
+Statblock rolls (attack bonuses, dice, ability checks, saving throws, skills and recharges) are
+found when the statblock is rendered: a small tokenizer keeps every character of the text and marks
+the rolls. `renderStatblock(statblock, { rollable: true })` then renders them as `<button>`s with
+the roll, its kind and a label in `data-*` attributes. The roll is normalised by the dice parser,
+and vault text only ever ends up in text nodes or escaped attribute values, as before. The combat
+catalogue turns this on; the wiki doesn't, so wiki statblocks are unchanged. The tracker's
+statblock panel handles every click in one place (the HTML arrives pre-rendered) and rolls into the
+shared dice log, labelled "Goblin 1 · Scimitar attack". Where there's no roller (the
+prepared-encounter editor), the statblock is `inert`.
+
+Table rules, chosen for a table that's new to D&D:
+
+- Advantage and disadvantage last one d20 roll, then reset, so they can't carry over to the next
+  monster's attack by mistake.
+- A natural 20 on an attack arms **Critical**, which doubles the dice (not the modifiers) of the
+  next damage roll and then switches off. Any other attack disarms it, and it can be toggled by
+  hand.
+- Natural 20s and 1s are flagged on rolls with exactly one d20. Recharge rolls a d6 against the
+  ability's threshold.

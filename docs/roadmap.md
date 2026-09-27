@@ -14,6 +14,8 @@ locations, maps, characters, sessions).
 - **Prepared encounters:** set up fights before a session (monsters with rolled HP, companions,
   notes), then start them at the table by picking who's playing. Kept in the server's data folder,
   and reusable.
+- **Click-to-roll:** attacks, damage, checks, saves, skills and recharges roll straight from the
+  tracker's statblocks, labelled, with natural 20s arming a critical-damage roll.
 
 ## Parking lot
 
@@ -25,7 +27,8 @@ locations, maps, characters, sessions).
   stats to roll.
 - **Dice:** shared dice rolling, including DM hidden rolls. Complements physical dice on camera.
 - **Combat tracker, next steps:**
-  - **Click-to-roll** from statblock actions (`+4 to hit`, `5 (1d6 + 2)`) into the dice roller.
+  - **Target and apply:** after a hit, click the target to apply the rolled damage.
+  - Click-to-roll in wiki statblocks, and in the prepared-encounter editor.
   - **Player view:** the turn order for everyone, with details only for your own PC and
     companions. The model and filter exist (`encounterForViewer`); this needs real player
     identities and a server-held, shared encounter (websockets on the same Express server).

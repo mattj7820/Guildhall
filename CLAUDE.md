@@ -64,7 +64,9 @@ First e2e run needs `npx playwright install chromium`.
   **Loaders read the viewer from context and pass it into every vault query.**
 - `app/campaign/`: shared model (isomorphic): `Viewer` (with optional `playerId`), `Player`,
   `Visibility`, `EntityId`, entity types, `canView`.
-- `app/dice/`: dice expressions (`parseDice`, `rollText`) and the `Rng` type (isomorphic).
+- `app/dice/`: dice expressions (`parseDice`, `rollText`, `critical`), the `Rng` type, and the
+  roll log (`rollInto`: labelled rolls, one-roll advantage, Critical) with its `useRollLog` hook
+  (isomorphic).
 - `app/combat/`: the combat tracker's model (isomorphic): `types.ts`, `encounter.ts` (reducer,
   action creators, `perform`), `initiative.ts` (ordering, reroll tie-breaks), `turns.ts`, `hp.ts`,
   `history.ts` (undo), `visibility.ts` (`encounterForViewer`), `schema.ts` (zod),
@@ -79,7 +81,10 @@ First e2e run needs `npx playwright install chromium`.
   - `search.ts`: MiniSearch, one index per role, built from role-appropriate text.
   - `statblock/`: parses ` ```statblock ` YAML (Fantasy Statblocks plugin format), including the
     numbers the tracker uses, and renders it book-style, after sanitising, with vault values
-    inserted only as text nodes. `extract-statblocks.ts` finds them in a note.
+    inserted only as text nodes. `extract-statblocks.ts` finds them in a note. With
+    `{ rollable: true }` (the combat catalogue only), `rolls.ts` finds attack bonuses, dice,
+    saves, skills and recharges, which are rendered as `button.statblock-roll` with `data-roll*`
+    attributes.
   - `vault.ts`: immutable snapshot (also `statblocks()` and `party()`). `live-vault.ts` rebuilds
     it on file changes.
 - `app/.server/combat/catalogue.ts`: vault statblocks and PCs as browser-safe shapes, with

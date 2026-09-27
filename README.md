@@ -36,6 +36,9 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
     healing, temporary HP, and bloodied and down states (down monsters are skipped). Condition
     tags and short notes for anyone.
   - The current monster's statblock alongside, in the same book layout as the wiki.
+  - **Click to roll** from the statblock: attacks (`+4 to hit`), damage (`5 (1d6 + 2)`), ability
+    checks, saves, skills and recharges, labelled "Goblin 1 · Scimitar attack". A natural 20 arms
+    a critical-damage roll with doubled dice, and advantage applies to one roll at a time.
   - A dice roller (`2d6+3`, advantage and disadvantage), undo, and an encounter that survives a
     page reload (kept in the browser's local storage).
   - **Prepared encounters:** set up fights before the session (monsters with their HP rolled,
