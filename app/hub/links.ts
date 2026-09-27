@@ -46,7 +46,8 @@ export function hubLinks(config: { roll20CampaignUrl?: string }, role: Role = "d
             {
               id: "combat",
               title: "Combat tracker",
-              description: "Initiative, turns, monster HP and statblocks. DM only.",
+              description:
+                "Initiative, turns, monster HP and statblocks, with fights prepared ahead. DM only.",
               href: "/combat",
               external: false,
             },

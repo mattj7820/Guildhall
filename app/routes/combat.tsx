@@ -1,5 +1,6 @@
 import { combatCatalogue } from "~/.server/combat/catalogue";
 import { browserStorage, loadEncounter } from "~/combat/storage";
+import { DmOnlyNotice } from "~/components/combat/CombatNav";
 import { CombatTracker } from "~/components/combat/CombatTracker";
 import { servicesContext, viewerContext } from "~/context";
 import type { Route } from "./+types/combat";
@@ -36,16 +37,6 @@ export function HydrateFallback() {
 }
 
 export default function Combat({ loaderData }: Route.ComponentProps) {
-  if (loaderData.dmOnly) {
-    return (
-      <main className="mx-auto max-w-3xl px-4 py-10">
-        <h1 className="font-serif text-3xl font-bold">Combat tracker</h1>
-        <p className="mt-2">
-          The combat tracker is DM-only for now. A player view, showing the turn order and your own
-          characters, is planned.
-        </p>
-      </main>
-    );
-  }
+  if (loaderData.dmOnly) return <DmOnlyNotice />;
   return <CombatTracker catalogue={loaderData.catalogue} saved={loaderData.saved} />;
 }

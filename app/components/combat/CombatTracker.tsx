@@ -1,10 +1,16 @@
 import { useMemo, useState } from "react";
 import { createEncounter } from "~/combat/encounter";
-import { browserStorage, type LoadResult } from "~/combat/storage";
-import { statblockKey, type CombatantId, type CombatCatalogue } from "~/combat/types";
+import { browserStorage, saveEncounter, type LoadResult } from "~/combat/storage";
+import {
+  statblockKey,
+  type CombatantId,
+  type CombatCatalogue,
+  type Encounter,
+} from "~/combat/types";
 import { useEncounter } from "~/combat/useEncounter";
 import { AddCombatants } from "./AddCombatants";
 import { CombatantRow } from "./CombatantRow";
+import { CombatNav } from "./CombatNav";
 import { DiceRoller } from "./DiceRoller";
 import { StatblockPanel } from "./StatblockPanel";
 import { panelClass } from "./styles";
@@ -21,8 +27,11 @@ export function CombatTracker({
   const [initial] = useState(() =>
     saved.status === "restored" ? saved.encounter : createEncounter(),
   );
-  const [storage] = useState(browserStorage);
-  const tracker = useEncounter(initial, storage);
+  const [save] = useState(() => {
+    const storage = browserStorage();
+    return (encounter: Encounter) => (storage ? saveEncounter(storage, encounter) : false);
+  });
+  const tracker = useEncounter(initial, save);
   const { encounter, dispatch } = tracker;
 
   const creatures = useMemo(
@@ -47,6 +56,7 @@ export function CombatTracker({
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6">
+      <CombatNav />
       <h1 className="sr-only">Combat tracker</h1>
       {saved.status === "unreadable" && (
         <p role="alert" className="mb-4 rounded-md bg-amber-100 px-3 py-2 text-sm text-amber-900">

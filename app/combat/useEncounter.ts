@@ -2,17 +2,16 @@ import { useCallback, useRef, useState } from "react";
 import { defaultRng, type Rng } from "~/dice/rng";
 import { createEncounter, perform, type EncounterAction } from "./encounter";
 import { record, startHistory, undo, type History } from "./history";
-import { saveEncounter } from "./storage";
 import type { Encounter } from "./types";
 
 /**
- * The live encounter for the tracker page: every change goes through the reducer, can be undone,
- * and is saved straight away. Nothing is saved until the DM changes something, so an unreadable
- * saved encounter isn't overwritten just by opening the page.
+ * An encounter being edited: every change goes through the reducer and can be undone. `save`
+ * runs after each change (returning false if it couldn't save). Nothing is saved until something
+ * changes, so an unreadable saved encounter isn't overwritten just by opening the page.
  */
 export function useEncounter(
   initial: Encounter,
-  storage: Pick<Storage, "setItem"> | undefined,
+  save?: (encounter: Encounter) => boolean,
   rng: Rng = defaultRng,
 ) {
   const [history, setHistory] = useState(() => startHistory(initial));
@@ -25,9 +24,9 @@ export function useEncounter(
       if (next === latest.current) return;
       latest.current = next;
       setHistory(next);
-      setSaveFailed(!storage || !saveEncounter(storage, next.present));
+      if (save) setSaveFailed(!save(next.present));
     },
-    [storage],
+    [save],
   );
 
   const dispatch = useCallback(
@@ -36,14 +35,20 @@ export function useEncounter(
     [commit, rng],
   );
 
+  /** Swaps in a whole encounter (a new one, or a prepared one starting). Undo brings the old back. */
+  const replace = useCallback(
+    (encounter: Encounter) => commit(record(latest.current, encounter)),
+    [commit],
+  );
+
   return {
     encounter: history.present,
     dispatch,
     rng,
     canUndo: history.past.length > 0,
     undo: useCallback(() => commit(undo(latest.current)), [commit]),
-    /** Starts over. Undo brings the old encounter back. */
-    startNew: useCallback(() => commit(record(latest.current, createEncounter())), [commit]),
+    replace,
+    startNew: useCallback(() => replace(createEncounter()), [replace]),
     saveFailed,
   };
 }

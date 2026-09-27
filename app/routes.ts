@@ -8,6 +8,8 @@ export default [
     route("*", "routes/wiki-note.tsx"),
   ]),
   route("combat", "routes/combat.tsx"),
+  route("combat/prepared", "routes/combat-prepared.tsx"),
+  route("combat/prepared/:id", "routes/combat-prepared-edit.tsx"),
   route("vault-asset/*", "routes/vault-asset.ts"),
   route("view-mode", "routes/view-mode.ts"),
 ] satisfies RouteConfig;

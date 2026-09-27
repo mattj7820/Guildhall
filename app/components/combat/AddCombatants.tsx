@@ -8,24 +8,32 @@ import { buttonClass, inputClass, labelClass, panelClass, primaryButtonClass } f
 
 type Dispatch = (action: EncounterAction) => void;
 
-/** Adding monsters from the vault, the party, and companions. Collapsed once combat starts. */
+/**
+ * Adding monsters from the vault, the party, and companions. When preparing an encounter the
+ * party is left out (it's chosen when the fight starts) and monsters don't roll initiative yet.
+ * Collapsed once combat starts.
+ */
 export function AddCombatants({
   catalogue,
   encounter,
   dispatch,
   rng,
+  mode = "live",
 }: {
   catalogue: CombatCatalogue;
   encounter: Encounter;
   dispatch: Dispatch;
   rng: Rng;
+  mode?: "live" | "prep";
 }) {
   const players = knownPlayers(catalogue);
   const body = (
     <div className="grid gap-6 md:grid-cols-2">
-      <AddMonsters creatures={catalogue.creatures} dispatch={dispatch} rng={rng} />
+      <AddMonsters creatures={catalogue.creatures} dispatch={dispatch} rng={rng} mode={mode} />
       <div className="flex flex-col gap-6">
-        <AddParty catalogue={catalogue} encounter={encounter} dispatch={dispatch} />
+        {mode === "live" && (
+          <AddParty catalogue={catalogue} encounter={encounter} dispatch={dispatch} />
+        )}
         <AddPlayerCombatant creatures={catalogue.creatures} players={players} dispatch={dispatch} />
       </div>
     </div>
@@ -50,10 +58,12 @@ function AddMonsters({
   creatures,
   dispatch,
   rng,
+  mode,
 }: {
   creatures: CreatureOption[];
   dispatch: Dispatch;
   rng: Rng;
+  mode: "live" | "prep";
 }) {
   const ids = useId();
   const [filter, setFilter] = useState("");
@@ -73,7 +83,7 @@ function AddMonsters({
     const quantity = Number(form.get("quantity")) || 1;
     const hp = String(form.get("hp") ?? "").trim();
     const maxHp = hp === "" ? undefined : Number(hp);
-    dispatch(addMonsters(selected, quantity, rng, { maxHp }));
+    dispatch(addMonsters(selected, quantity, rng, { maxHp, rollInitiative: mode === "live" }));
   }
 
   if (creatures.length === 0) {
@@ -150,7 +160,10 @@ function AddMonsters({
         </button>
       </div>
       <p className="text-xs text-stone-500">
-        Each rolls initiative (d20 + DEX) and hit points. Leave Max HP blank to roll.
+        {mode === "live"
+          ? "Each rolls initiative (d20 + DEX) and hit points."
+          : "Each rolls hit points now, and initiative when the fight starts."}{" "}
+        Leave Max HP blank to roll.
       </p>
     </form>
   );

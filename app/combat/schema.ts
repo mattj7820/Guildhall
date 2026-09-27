@@ -50,7 +50,7 @@ export const PREPARED_NAME_MAX = 100;
 export const PREPARED_NOTES_MAX = 2000;
 
 /** A prepared encounter's fight is always waiting to start: setup phase, no turn yet. */
-const unstartedEncounterSchema = encounterSchema.refine(
+export const unstartedEncounterSchema = encounterSchema.refine(
   (encounter) =>
     encounter.phase === "setup" && encounter.round === 0 && encounter.activeId === null,
   { message: "A prepared encounter can't have started." },
@@ -63,5 +63,12 @@ export const preparedEncounterSchema: z.ZodType<PreparedEncounter> = z.object({
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
   lastRunAt: z.iso.datetime().optional(),
+  encounter: unstartedEncounterSchema,
+});
+
+/** What the prepared-encounter editor sends when it saves. */
+export const preparedChangesSchema = z.object({
+  name: z.string().max(PREPARED_NAME_MAX),
+  notes: z.string().max(PREPARED_NOTES_MAX),
   encounter: unstartedEncounterSchema,
 });

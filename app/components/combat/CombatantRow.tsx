@@ -6,25 +6,35 @@ import { buttonClass, iconButtonClass, inputClass } from "./styles";
 
 type Dispatch = (action: EncounterAction) => void;
 
+/**
+ * One combatant. In "prep" mode (a prepared encounter) there's no initiative or turn order yet,
+ * so it shows max HP to adjust or reroll instead of the in-fight HP controls.
+ */
 export function CombatantRow({
   combatant,
-  isActive,
+  mode = "live",
+  isActive = false,
   isShown,
-  isFirst,
-  isLast,
+  isFirst = false,
+  isLast = false,
   dispatch,
   onShowStatblock,
+  onRerollHp,
 }: {
   combatant: Combatant;
-  isActive: boolean;
+  mode?: "live" | "prep";
+  isActive?: boolean;
   isShown: boolean;
-  isFirst: boolean;
-  isLast: boolean;
+  isFirst?: boolean;
+  isLast?: boolean;
   dispatch: Dispatch;
   onShowStatblock: () => void;
+  /** Prep mode: rolls the monster's HP again; absent when its statblock is gone. */
+  onRerollHp?: () => void;
 }) {
   const { id, name } = combatant;
   const down = isDown(combatant);
+  const live = mode === "live";
 
   return (
     <li
@@ -37,12 +47,14 @@ export function CombatantRow({
       } ${down ? "opacity-50" : ""}`}
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <InitiativeInput
-          key={String(combatant.initiative)}
-          name={name}
-          value={combatant.initiative}
-          onCommit={(initiative) => dispatch({ type: "setInitiative", id, initiative })}
-        />
+        {live && (
+          <InitiativeInput
+            key={String(combatant.initiative)}
+            name={name}
+            value={combatant.initiative}
+            onCommit={(initiative) => dispatch({ type: "setInitiative", id, initiative })}
+          />
+        )}
         <div className="mr-auto min-w-0">
           <p className="font-semibold">
             {isActive && <span className="sr-only">Current turn: </span>}
@@ -69,24 +81,28 @@ export function CombatantRow({
             📜
           </button>
         )}
-        <button
-          type="button"
-          className={iconButtonClass}
-          aria-label={`Move ${name} up`}
-          disabled={isFirst}
-          onClick={() => dispatch({ type: "move", id, offset: -1 })}
-        >
-          ↑
-        </button>
-        <button
-          type="button"
-          className={iconButtonClass}
-          aria-label={`Move ${name} down`}
-          disabled={isLast}
-          onClick={() => dispatch({ type: "move", id, offset: 1 })}
-        >
-          ↓
-        </button>
+        {live && (
+          <>
+            <button
+              type="button"
+              className={iconButtonClass}
+              aria-label={`Move ${name} up`}
+              disabled={isFirst}
+              onClick={() => dispatch({ type: "move", id, offset: -1 })}
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              className={iconButtonClass}
+              aria-label={`Move ${name} down`}
+              disabled={isLast}
+              onClick={() => dispatch({ type: "move", id, offset: 1 })}
+            >
+              ↓
+            </button>
+          </>
+        )}
         <button
           type="button"
           className={iconButtonClass}
@@ -97,7 +113,12 @@ export function CombatantRow({
         </button>
       </div>
 
-      {combatant.kind === "monster" && <HpControls monster={combatant} dispatch={dispatch} />}
+      {combatant.kind === "monster" &&
+        (live ? (
+          <HpControls monster={combatant} dispatch={dispatch} />
+        ) : (
+          <PrepHp monster={combatant} dispatch={dispatch} onReroll={onRerollHp} />
+        ))}
 
       <div className="flex flex-wrap items-center gap-2">
         {combatant.conditions.map((condition) => (
@@ -135,6 +156,52 @@ export function CombatantRow({
         />
       </div>
     </li>
+  );
+}
+
+function PrepHp({
+  monster,
+  dispatch,
+  onReroll,
+}: {
+  monster: MonsterCombatant;
+  dispatch: Dispatch;
+  onReroll?: () => void;
+}) {
+  const { id, name, hp } = monster;
+  function commit(raw: string) {
+    const max = Math.trunc(Number(raw));
+    if (Number.isFinite(max) && max >= 1 && max !== hp.max)
+      dispatch({ type: "resetHp", id, maxHp: max });
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-sm">
+      <label className="flex items-center gap-2">
+        Max HP
+        <input
+          key={hp.max}
+          type="number"
+          min={1}
+          defaultValue={hp.max}
+          aria-label={`Max HP for ${name}`}
+          className={`${inputClass} w-20`}
+          onBlur={(event) => commit(event.currentTarget.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") commit(event.currentTarget.value);
+          }}
+        />
+      </label>
+      {onReroll && (
+        <button
+          type="button"
+          className={`${buttonClass} py-0.5 text-xs`}
+          aria-label={`Reroll HP for ${name}`}
+          onClick={onReroll}
+        >
+          Reroll HP
+        </button>
+      )}
+    </div>
   );
 }
 
