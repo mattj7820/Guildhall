@@ -14,7 +14,7 @@ import { AddCombatants } from "./AddCombatants";
 import { CombatantRow } from "./CombatantRow";
 import { CombatNav } from "./CombatNav";
 import { StatblockPanel } from "./StatblockPanel";
-import { buttonClass, inputClass, panelClass, primaryButtonClass } from "./styles";
+import { buttonClass, inputClass, panelClass, primaryButtonClass } from "~/components/styles";
 
 /** Wait this long after the last change before saving, so typing doesn't save every key. */
 const AUTOSAVE_DELAY_MS = 500;

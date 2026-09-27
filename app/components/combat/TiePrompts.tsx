@@ -2,7 +2,7 @@ import type { FormEvent } from "react";
 import type { EncounterAction } from "~/combat/encounter";
 import { pendingTies } from "~/combat/initiative";
 import type { Combatant } from "~/combat/types";
-import { buttonClass, inputClass } from "./styles";
+import { buttonClass, inputClass } from "~/components/styles";
 
 /**
  * Ties still to be broken. Monsters reroll by themselves; for a player combatant the DM types in

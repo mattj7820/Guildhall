@@ -61,6 +61,8 @@ export interface NoteLink {
   title: string;
   url: string;
   html: string;
+  /** The body opens with its own `# Heading`, so the panel doesn't repeat the title. */
+  hasOwnTitle: boolean;
 }
 
 /**

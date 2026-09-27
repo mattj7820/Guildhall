@@ -1,7 +1,7 @@
-import type { MouseEvent } from "react";
-import { data, isRouteErrorResponse, Link, useNavigate } from "react-router";
+import { data, isRouteErrorResponse, Link } from "react-router";
 import { TypeBadge } from "~/components/TypeBadge";
 import { servicesContext, viewerContext } from "~/context";
+import { useWikilinkNavigation } from "~/wiki/useWikilinkNavigation";
 import type { Route } from "./+types/wiki-note";
 
 export function meta({ loaderData }: Route.MetaArgs) {
@@ -30,23 +30,7 @@ export function loader({ params, context }: Route.LoaderArgs) {
 }
 
 export default function WikiNote({ loaderData: note }: Route.ComponentProps) {
-  const navigate = useNavigate();
-
-  /** Wikilinks arrive as plain HTML; route in-app ones client-side instead of reloading the page. */
-  function handleBodyClick(event: MouseEvent<HTMLDivElement>) {
-    const link = (event.target as Element).closest<HTMLAnchorElement>("a.wikilink");
-    const isPlainClick =
-      event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
-    if (
-      !link ||
-      !isPlainClick ||
-      !link.pathname.startsWith("/wiki/") ||
-      link.origin !== location.origin
-    )
-      return;
-    event.preventDefault();
-    navigate(link.pathname + link.hash);
-  }
+  const handleBodyClick = useWikilinkNavigation();
 
   return (
     <article data-entity-id={note.id}>

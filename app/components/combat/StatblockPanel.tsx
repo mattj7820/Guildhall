@@ -2,7 +2,7 @@ import type { MouseEvent } from "react";
 import { Link } from "react-router";
 import type { CreatureOption } from "~/combat/types";
 import type { RollKind, RollRequest } from "~/dice/roll-log";
-import { panelClass } from "./styles";
+import { panelClass } from "~/components/styles";
 
 const ROLL_KINDS: RollKind[] = ["attack", "damage", "check", "recharge"];
 

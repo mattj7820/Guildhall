@@ -108,3 +108,33 @@ export async function addCompanion(page: Page, controller: string, statblock: st
   await form.getByLabel("Linked statblock (optional)").selectOption({ label: statblock });
   await form.getByRole("button", { name: "Add player combatant" }).click();
 }
+
+/* Maps */
+
+/** The map canvas, labelled with the map's name. */
+export const mapCanvas = (page: Page, name: string) =>
+  page.getByRole("region", { name: `Map: ${name}`, exact: true });
+
+export const zoomLevel = (page: Page) => page.getByRole("status", { name: "Zoom level" });
+
+export const breadcrumbs = (page: Page) => page.getByRole("navigation", { name: "Breadcrumbs" });
+
+/**
+ * Makes a map from a fixture image through the "New map" form and waits for the page it opens.
+ * The image's preview has to load (it measures the image) before the form can be sent.
+ */
+export async function createMap(
+  page: Page,
+  { image, name, note }: { image: string; name: string; note?: string },
+) {
+  await page.goto("/maps");
+  await page.getByRole("button", { name: "New map" }).click();
+  const form = page.getByRole("form", { name: "New map" });
+  await form.getByRole("searchbox", { name: "Find an image" }).fill(image);
+  await form.getByRole("radio", { name: new RegExp(`${image}$`) }).check();
+  await expect(form.getByText(/\d+ × \d+ pixels/)).toBeVisible();
+  await form.getByLabel("Name").fill(name);
+  if (note) await form.getByLabel("Wiki note (optional)").fill(note);
+  await form.getByRole("button", { name: "Create map" }).click();
+  await expect(mapCanvas(page, name)).toBeVisible();
+}

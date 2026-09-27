@@ -2,7 +2,7 @@ import type { FormEvent } from "react";
 import type { EncounterAction } from "~/combat/encounter";
 import { isBloodied, isDown } from "~/combat/turns";
 import { CONDITIONS, type Combatant, type MonsterCombatant } from "~/combat/types";
-import { buttonClass, iconButtonClass, inputClass } from "./styles";
+import { buttonClass, iconButtonClass, inputClass } from "~/components/styles";
 
 type Dispatch = (action: EncounterAction) => void;
 

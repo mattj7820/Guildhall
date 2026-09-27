@@ -10,6 +10,9 @@ export default [
   route("combat", "routes/combat.tsx"),
   route("combat/prepared", "routes/combat-prepared.tsx"),
   route("combat/prepared/:id", "routes/combat-prepared-edit.tsx"),
+  route("maps", "routes/maps.tsx"),
+  route("maps/:id", "routes/map-view.tsx"),
+  route("maps/:id/image", "routes/map-image.ts"),
   route("vault-asset/*", "routes/vault-asset.ts"),
   route("view-mode", "routes/view-mode.ts"),
 ] satisfies RouteConfig;

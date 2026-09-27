@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { summarise, type PartyChoice } from "~/combat/prepared";
 import type { PartyMember, PreparedEncounter } from "~/combat/types";
-import { buttonClass, primaryButtonClass } from "./styles";
+import { buttonClass, primaryButtonClass } from "~/components/styles";
 
 /**
  * Starting a prepared encounter: pick who's playing (everyone, unless someone's absent), then its

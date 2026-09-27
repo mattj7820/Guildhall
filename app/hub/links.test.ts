@@ -26,7 +26,15 @@ describe("hubLinks", () => {
     );
   });
 
-  it("leaves the DM-only combat tracker out of the player preview", () => {
-    expect(hubLinks({}, "player").modules.map((m) => m.id)).not.toContain("combat");
+  it("lists maps for the DM", () => {
+    expect(hubLinks({}, "dm").modules).toContainEqual(
+      expect.objectContaining({ id: "maps", href: "/maps", external: false }),
+    );
+  });
+
+  it("leaves DM-only modules out of the player preview", () => {
+    const ids = hubLinks({}, "player").modules.map((m) => m.id);
+    expect(ids).not.toContain("combat");
+    expect(ids).not.toContain("maps");
   });
 });

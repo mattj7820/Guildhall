@@ -9,6 +9,7 @@ const note = (id: string, title = id): NoteLink => ({
   title,
   url: `/wiki/${title}`,
   html: `<p>${title}</p>`,
+  hasOwnTitle: false,
 });
 
 /** Notes that exist, by who may see them. */

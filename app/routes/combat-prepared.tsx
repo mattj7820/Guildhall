@@ -4,7 +4,7 @@ import { DataFileError } from "~/.server/data/json-store";
 import { summarise } from "~/combat/prepared";
 import { encounterSchema } from "~/combat/schema";
 import { CombatNav, DmOnlyNotice } from "~/components/combat/CombatNav";
-import { buttonClass, panelClass, primaryButtonClass } from "~/components/combat/styles";
+import { buttonClass, panelClass, primaryButtonClass } from "~/components/styles";
 import { servicesContext, viewerContext } from "~/context";
 import type { Route } from "./+types/combat-prepared";
 

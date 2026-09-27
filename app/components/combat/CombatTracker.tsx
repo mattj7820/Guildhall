@@ -19,7 +19,7 @@ import { SaveAsPrepared } from "./SaveAsPrepared";
 import { StartPrepared } from "./StartPrepared";
 import { DiceRoller } from "./DiceRoller";
 import { StatblockPanel } from "./StatblockPanel";
-import { panelClass } from "./styles";
+import { panelClass } from "~/components/styles";
 import { TiePrompts } from "./TiePrompts";
 import { TurnBar } from "./TurnBar";
 

@@ -1,4 +1,4 @@
-/** Tailwind classes shared by the combat tracker's controls. */
+/** Tailwind classes shared by module controls (the combat tracker, maps). */
 
 export const buttonClass =
   "rounded-md border border-stone-300 bg-white px-2.5 py-1 text-sm font-medium hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-stone-700 dark:bg-stone-900 dark:hover:bg-stone-800";

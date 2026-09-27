@@ -2,7 +2,7 @@ import type { FormEvent } from "react";
 import type { RollMode } from "~/dice/roll";
 import type { LoggedRoll } from "~/dice/roll-log";
 import type { RollLogControls } from "~/dice/useRollLog";
-import { inputClass, labelClass, panelClass, primaryButtonClass } from "./styles";
+import { inputClass, labelClass, panelClass, primaryButtonClass } from "~/components/styles";
 
 const MODES: { value: RollMode; label: string }[] = [
   { value: "normal", label: "Normal" },

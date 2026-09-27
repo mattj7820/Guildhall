@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type KeyboardEvent,
@@ -38,7 +39,9 @@ interface Press {
  * `+`, `-` and `0`. Until the canvas has been measured (and while the DM hasn't moved it) the
  * whole image is fitted, which is also what the server renders, so nothing jumps on hydration.
  */
-export function usePanZoom(image: Size) {
+export function usePanZoom({ width, height }: Size) {
+  // Callers pass a fresh object each render; keep one per size so callbacks stay stable.
+  const image = useMemo(() => ({ width, height }), [width, height]);
   const containerRef = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<{ viewport: Size | null; moved: View | null }>({
     viewport: null,

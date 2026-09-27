@@ -55,9 +55,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 Wiki
               </NavLink>
               {role === "dm" && (
-                <NavLink to="/combat" className={navLinkClass}>
-                  Combat
-                </NavLink>
+                <>
+                  <NavLink to="/combat" className={navLinkClass}>
+                    Combat
+                  </NavLink>
+                  <NavLink to="/maps" className={navLinkClass}>
+                    Maps
+                  </NavLink>
+                </>
               )}
             </nav>
             <div className="ml-auto">

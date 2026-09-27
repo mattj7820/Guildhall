@@ -1,7 +1,7 @@
 import { startBlockers, type EncounterAction } from "~/combat/encounter";
 import { awaitingReroll } from "~/combat/initiative";
 import type { Encounter } from "~/combat/types";
-import { buttonClass, panelClass, primaryButtonClass } from "./styles";
+import { buttonClass, panelClass, primaryButtonClass } from "~/components/styles";
 
 /** Round and turn, stepping through turns, starting combat, undo and starting over. */
 export function TurnBar({

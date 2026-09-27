@@ -4,7 +4,7 @@ import { toPrepared } from "~/combat/prepared";
 import { PREPARED_NAME_MAX } from "~/combat/schema";
 import type { Encounter } from "~/combat/types";
 import type { action } from "~/routes/combat-prepared";
-import { buttonClass, inputClass, panelClass } from "./styles";
+import { buttonClass, inputClass, panelClass } from "~/components/styles";
 
 /** Keeps the monsters and companions of a fight being set up as a prepared encounter. */
 export function SaveAsPrepared({ encounter }: { encounter: Encounter }) {
