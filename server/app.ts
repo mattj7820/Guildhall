@@ -1,6 +1,7 @@
 import { createRequestHandler } from "@react-router/express";
 import express from "express";
 import { RouterContextProvider } from "react-router";
+import { PreparedEncounters } from "~/.server/combat/prepared-encounters";
 import { loadConfig } from "~/.server/config";
 import { LiveVault } from "~/.server/vault/live-vault";
 import { servicesContext, type Services } from "~/context";
@@ -13,7 +14,8 @@ async function createServices(): Promise<Services> {
   const config = loadConfig();
   const vault = await LiveVault.open(config.vaultPath);
   console.log(`[vault] Serving ${vault.current.notes({ role: "dm" }).length} notes (read-only)`);
-  return { config, vault };
+  console.log(`[data] Keeping Guildhall's own data in ${config.dataPath}`);
+  return { config, vault, preparedEncounters: PreparedEncounters.inFolder(config.dataPath) };
 }
 
 const globalForServices = globalThis as typeof globalThis & {

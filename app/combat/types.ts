@@ -124,3 +124,20 @@ export interface Encounter {
   /** In turn order. The DM can reorder by hand. */
   combatants: Combatant[];
 }
+
+/**
+ * A fight set up ahead of a session. Its encounter holds the monsters (HP already rolled) and any
+ * companions; initiative is rolled and the party chosen when it starts. Starting copies it, so
+ * the prepared encounter stays as a reusable template.
+ */
+export interface PreparedEncounter {
+  id: string;
+  name: string;
+  /** The DM's notes on the fight, e.g. where it happens or how the monsters behave. */
+  notes: string;
+  /** ISO 8601 timestamps. */
+  createdAt: string;
+  updatedAt: string;
+  lastRunAt?: string;
+  encounter: Encounter;
+}
