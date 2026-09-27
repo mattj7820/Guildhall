@@ -5,7 +5,8 @@
 A personal hub for running a Dungeons & Dragons campaign. It links out to the tools used at the
 table and hosts its own modules: a **read-only wiki over an Obsidian vault**, with a preview of
 what the players are allowed to see, a **combat tracker** that runs monsters straight from the
-vault's statblocks, and **interactive maps** made from the vault's map images.
+vault's statblocks, and **interactive maps** made from the vault's map images. Players sign in
+with Discord, and it's built to be hosted, with the vault copied read-only from Google Drive.
 
 The long-term goal is interconnection: wiki, maps, characters, combat and dice all linking through
 one shared model of the campaign (NPCs, locations, sessions…). See [the roadmap](docs/roadmap.md).
@@ -59,10 +60,16 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
     them lined up; the DM is warned if the image has moved, gone or changed shape.
   - Maps and areas are kept in Guildhall's data folder; the vault is only read. Wiki notes link to
     their maps.
-- **DM / player preview.** Notes are DM-only unless their frontmatter says `visibility: players`.
-  The player view hides DM-only notes from navigation, search, links and direct URLs, and strips
-  Obsidian `%%comments%%`, so DMs can keep inline secrets inside shared notes.
-  _This is a preview, not access control. Real authentication comes with multiplayer._
+- **What players see.** Notes are DM-only unless their frontmatter says `visibility: players`.
+  Players never get DM-only notes: they're left out of navigation, search and links, and a direct
+  URL gives the same 404 as a missing note. Obsidian `%%comments%%` are stripped for players, so the
+  DM can keep inline secrets inside shared notes. The DM can preview the players' view at any time.
+- **Sign in with Discord.** Everyone signs in with their Discord account; newcomers wait until the
+  DM lets them in on the Members page and says which player they are, which links them to their
+  characters. Removing someone signs them out everywhere. Only the Discord name is asked for.
+- **Ready to host:** a Docker image, and a companion container that copies the vault from Google
+  Drive every minute, read-only, so Obsidian stays the place you write. See
+  [docs/deployment.md](docs/deployment.md).
 
 ## Getting started
 
@@ -75,7 +82,8 @@ npm run dev             # http://localhost:3000
 ```
 
 With no vault of your own, the default `.env.example` points at the fixture vault in
-`tests/fixtures/vault`, so the app runs out of the box.
+`tests/fixtures/vault`, and turns on dev sign-in (one-click pretend accounts, this computer only),
+so the app runs out of the box.
 
 | Variable              | Required | Description                                                                                   |
 | --------------------- | -------- | --------------------------------------------------------------------------------------------- |
@@ -83,6 +91,10 @@ With no vault of your own, the default `.env.example` points at the fixture vaul
 | `DATA_PATH`           | no       | Where Guildhall keeps its own data (default `./data`). Must be outside the vault; back it up. |
 | `ROLL20_CAMPAIGN_URL` | no       | Roll20 campaign link shown on the hub.                                                        |
 | `PORT`                | no       | Web server port (default `3000`).                                                             |
+| `DEV_LOGIN`           | no       | `true` for one-click sign-in as the DM or a player, on this computer only.                    |
+
+Hosting adds a few more settings (the public address, the session secret and the Discord
+application); see `.env.example` and [docs/deployment.md](docs/deployment.md).
 
 ### Frontmatter conventions
 
@@ -136,18 +148,25 @@ app/
   dice/            Dice expressions and rolling, with injectable randomness (isomorphic)
   hub/             Hub links configuration
   wiki/            Wiki types and URL helpers shared by server and browser
-  .server/         Server-only code: config, viewer cookie
+  maps/            Interactive maps model: areas, geometry, pan and zoom, the editor (isomorphic)
+  members/         Who can sign in: member shapes shared with the browser
+  .server/         Server-only code: config, the DM's preview cookie
+    auth/          Sessions, who may reach what, Discord sign-in, dev sign-in
+    members/       The member list and waiting list
     vault/         Vault reading, parsing, link resolution, rendering, search, statblocks
     combat/        The combat tracker's catalogue and the prepared-encounter store
+    maps/          The map store, and maps prepared for a viewer
     data/          The JSON store: the only code that writes files, and only in DATA_PATH
   routes/          Pages and resource routes
   components/      UI components (combat/ holds the tracker's)
 server/app.ts      Express app: creates long-lived services, mounts React Router
+server/http.ts     Proxy trust, security headers, health check
 server.js          HTTP entry point (dev: Vite middleware; prod: static + build)
 tests/
   fixtures/vault/  Invented Obsidian vault used by all tests
   e2e/             Playwright specs
-docs/              Roadmap, decisions, testing strategy
+docs/              Roadmap, decisions, testing strategy, deployment
+Dockerfile, docker-compose.yml   The image, and the app beside its Google Drive sync
 ```
 
 ## Principles
@@ -157,8 +176,8 @@ docs/              Roadmap, decisions, testing strategy
   for Guildhall's own data folder, which config refuses to place inside the vault), and by a
   test-run check that the fixture vault is byte-identical before and after.
 - **The story is human-written.** Guildhall has no AI-generated story, lore or narrative content.
-- **Built for more than one user.** Every visibility decision takes an explicit viewer, and
-  entities have stable IDs, so multiplayer and real roles can be added without a rewrite.
+- **Built for more than one user.** Everyone signs in, and every visibility decision takes an
+  explicit viewer worked out on the server for each request, so players never receive DM content.
 
 ## License
 

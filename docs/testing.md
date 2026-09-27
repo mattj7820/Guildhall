@@ -6,12 +6,13 @@ specification of the behaviour.
 
 ## Layers
 
-| Layer       | Tool                    | Location                                                                                                                      | What it covers                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| ----------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit        | Vitest                  | `app/**/*.test.ts`, next to the code                                                                                          | Pure logic: frontmatter parsing, wikilink parsing and resolution, `%%comment%%` handling, markdown rendering and sanitising, visibility rules, config validation, hub links; combat rules (initiative and tie-breaks, turns, HP, undo, what players may see, saved-encounter validation) and dice, including the roll log and finding rolls in statblock text; maps (geometry, pan and zoom, the map tree, validation, the editor reducer, and what players may see) |
-| Integration | Vitest                  | `app/.server/vault/vault.test.ts`, `app/.server/combat/*.test.ts`, `app/.server/maps/*.test.ts`, `app/.server/data/*.test.ts` | The `Vault` over the real fixture vault on disk: reading, folder tree, search, visibility filtering, asset access, statblocks, the party, notes by ID and finding map images; the combat catalogue built from it; the JSON store, prepared encounters and maps in temporary folders (restarts, simultaneous writes, damaged files, refused tree changes)                                                                                                             |
-| End-to-end  | Playwright              | `tests/e2e/*.spec.ts`                                                                                                         | User journeys against the production build: hub, wikilink navigation, search, the player view hiding DM content, running a fight in the combat tracker, preparing and starting encounters, click-to-roll; making maps, drawing and reshaping areas, linking maps and clicking through them                                                                                                                                                                           |
-| Static      | ESLint, Prettier, `tsc` | whole repo                                                                                                                    | Types, style, and a lint rule that bans filesystem write APIs in app code                                                                                                                                                                                                                                                                                                                                                                                            |
+| Layer       | Tool                    | Location                                                                                                                                                                                                                          | What it covers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ----------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit        | Vitest                  | `app/**/*.test.ts`, next to the code                                                                                                                                                                                              | Pure logic: frontmatter parsing, wikilink parsing and resolution, `%%comment%%` handling, markdown rendering and sanitising, visibility rules, config validation, hub links; combat rules (initiative and tie-breaks, turns, HP, undo, what players may see, saved-encounter validation) and dice, including the roll log and finding rolls in statblock text; maps (geometry, pan and zoom, the map tree, validation, the editor reducer, and what players may see); signing in (who a session belongs to, who may reach which page, the same-origin check, the Discord adapter against a stand-in for Discord, dev sign-in's guards) |
+| Integration | Vitest                  | `app/.server/vault/vault.test.ts`, `app/.server/combat/*.test.ts`, `app/.server/maps/*.test.ts`, `app/.server/members/*.test.ts`, `app/.server/data/*.test.ts`, `app/.server/vault/{live,read}-vault.test.ts`, `server/*.test.ts` | The `Vault` over the real fixture vault on disk: reading, folder tree, search, visibility filtering, asset access, statblocks, the party, notes by ID and finding map images; the combat catalogue built from it; the JSON store, prepared encounters and maps in temporary folders (restarts, simultaneous writes, damaged files, refused tree changes); members and the waiting list; reading a vault while a sync tool changes it; the HTTP settings on a real Express server (trusting the proxy, headers, health check)                                                                                                           |
+| End-to-end  | Playwright              | `tests/e2e/*.spec.ts`                                                                                                                                                                                                             | User journeys against the production build: hub, wikilink navigation, search, the player view hiding DM content, running a fight in the combat tracker, preparing and starting encounters, click-to-roll; making maps, drawing and reshaping areas, linking maps and clicking through them; signing in and out, newcomers waiting and being let in, removed members signed out, players kept from DM pages, forms from other sites refused, the way to Discord and back                                                                                                                                                                |
+| Container   | Docker, in CI           | `.github/workflows/ci.yml` (job `docker`)                                                                                                                                                                                         | The image that gets deployed: it builds, becomes healthy with a vault mounted read-only, runs as a normal user, requires sign-in, and refuses dev sign-in from outside the container                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Static      | ESLint, Prettier, `tsc` | whole repo                                                                                                                                                                                                                        | Types, style, and a lint rule that bans filesystem write APIs in app code                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
 Most behaviour is pinned down at the unit level, where it's fast and precise. End-to-end tests
 prove the pieces are wired together and cover what only a browser can show: client-side
@@ -69,11 +70,27 @@ The app must never modify the vault. Four independent checks:
 - E2E tests use accessible locators (`getByRole`, `getByText`, labelled landmarks) rather than
   test IDs or CSS selectors, so they also check that the UI is accessible. Shared helpers live in
   `tests/e2e/support/app.ts`.
-- Each Playwright test starts in a fresh browser context, so it begins in the DM view with no
-  cookies.
+- Each Playwright test starts in a fresh browser context, signed in as the DM (see below).
 - Table-driven cases (`it.each`) for input/output rules such as link parsing and invalid config.
 - Combat unit tests build combatants with the helpers in `app/combat/test-builders.ts`, so each
   test states only the fields it depends on.
+
+## Signing in
+
+- **Dev sign-in instead of Discord.** The e2e server turns on `DEV_LOGIN`, which offers
+  one-click pretend accounts: the DM, each player named in the fixture PC notes, and "someone new"
+  with any name. They go through the real member list and session code, so tests exercise the
+  same checks as production.
+- **Saved sign-ins.** A Playwright setup project (`tests/e2e/sign-in.setup.ts`) signs in once as
+  the DM and once as Player One, and saves the cookies. Every test then starts signed in as the
+  DM; a spec can choose `SIGNED_IN.playerOne` or `SIGNED_OUT` from `tests/e2e/support/sign-in.ts`
+  instead. Each test still gets its own browser context, so tests can run in parallel.
+- **Two people at once.** Tests of letting someone in open a second browser context for the
+  newcomer (`browser.newContext`), while the DM uses the test's own page.
+- **Discord.** The e2e server has a made-up Discord application. Tests check that sign-in sends
+  people to Discord with the right request, and that bad answers coming back are refused. They
+  never reach Discord. The adapter's exchange with Discord is unit-tested against a stand-in, and
+  a real sign-in is checked by hand (see `docs/deployment.md`).
 
 ## Randomness
 
@@ -109,8 +126,9 @@ Dice decide initiative, tie-breaks and monster HP, so tests must control them.
 - Unit and integration tests of the JSON store and prepared encounters use a fresh temporary
   folder each (`mkdtemp`), deleted afterwards.
 - The e2e server's `DATA_PATH` is `test-results/e2e-data`, which Playwright empties before it
-  starts the server on each run. Tests share that server, so they give prepared encounters and
-  maps random names (`uniqueName()`) and never assert on the whole list.
+  starts the server on each run. Tests share that server, so they give prepared encounters,
+  maps and newcomers random names (`uniqueName()`) and never assert on the whole list. The saved
+  sign-ins are kept in `test-results/.auth`.
 
 ## Running
 
@@ -130,6 +148,7 @@ used in tests.
 
 - **checks** (Ubuntu): lint, typecheck, unit tests
 - **unit-windows**: unit tests on Windows, since vault paths are normalised across OSes
+- **docker** (Ubuntu): builds the image and checks it (see Layers)
 - **e2e** (Ubuntu): Playwright (Chromium); the HTML report is uploaded when it fails
 
 ## Next steps

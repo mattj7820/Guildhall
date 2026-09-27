@@ -368,3 +368,73 @@ or makes the sibling images next to it reachable. It's also independent of the w
 rule (decision 3): a player-visible map doesn't make its image loadable through `vault-asset`. In
 this slice every map page and image requires the DM, and there's no control for visibility yet;
 the filter is covered by unit tests.
+
+## 25. Signing in with Discord, and sessions checked on every request
+
+**Date:** 2026-09-28
+
+**Context.** To replace Roll20, the group has to use Guildhall from their own machines, so "who
+is the DM" can no longer be a cookie anyone can flip (decision 5). The group already talks on
+Discord.
+
+**Options considered.**
+
+- **Discord OAuth (chosen):** no new passwords, and everyone has an account already. Guildhall
+  asks for the `identify` scope only (ID and name), through a small `fetch` adapter rather than an
+  OAuth library.
+- **Usernames and passwords:** no third party, but Guildhall would have to store passwords safely
+  and handle resets.
+- **Email sign-in links:** no passwords, but needs an email-sending service.
+
+**Decision.**
+
+- A signed cookie session holds only the member's Discord ID and a random session key. Everything
+  else is looked up on every request: whether they're still a member, whether they're waiting,
+  and whether they're the DM (from `DM_DISCORD_IDS`, never stored). Removing a member, or giving
+  them a new key, signs them out everywhere at once, with no server-side session store. The
+  cookie is refreshed once a day while in use, and several secrets can be listed to rotate them.
+- The root middleware decides access before any loader runs. Signed-out visitors are sent to sign
+  in (images and other files get a bare 401 instead); people waiting only see the waiting page.
+- The preview toggle (decision 5) remains, as the DM's alone: for anyone else the view comes from
+  who they are, so a player can't give themselves the DM's view.
+- Every form post must come from Guildhall's own address. React Router checks this for its
+  routes, but not for resource routes such as sign-out, so Guildhall checks it for all. Behind a
+  proxy, `TRUST_PROXY` is required for the check to see the browser's real address.
+- For development and tests, `DEV_LOGIN` offers one-click pretend accounts. It's refused unless
+  `PUBLIC_URL` is this computer, and each sign-in is refused unless the connection comes from this
+  computer too, so a misconfigured server can't be taken over with it.
+
+## 26. Newcomers wait for the DM, who says which player they are
+
+**Date:** 2026-09-28
+
+Anyone can sign in with Discord, but a newcomer sees "waiting for the DM" until the DM lets them in
+on the Members page. There the DM also picks which player they are, from the names in PC notes'
+`player:` field, which gives `Viewer.playerId` its first real use. Members are kept in
+`members.json` in the data folder, like the rest of Guildhall's data (decision 18). The waiting
+list is capped, since anyone can join it. Removing a member deletes them; if they sign in again
+they're a newcomer with a new session key, so their old cookies never work again.
+
+## 27. Hosting: Docker on a shared server, with the vault copied from Google Drive
+
+**Date:** 2026-09-28
+
+**Context.** The DM edits the vault in Obsidian on several devices, synced through Google Drive.
+The hosted Guildhall needs its own copy, and the vault must stay read-only.
+
+**Options considered.**
+
+- **Obsidian Git to a private repository, pulled by the server:** version history, but a `.git`
+  folder inside a Drive-synced folder risks corruption, and re-exported map images make the
+  repository grow for ever.
+- **Running it on the DM's PC behind a tunnel:** no copy needed, but it's only up while the PC is.
+- **A one-way copy from Google Drive (chosen):** an rclone container mirrors one folder every
+  minute, using a service account that can only read that folder, so Google itself enforces the
+  read-only rule. Nothing changes in how the DM works.
+
+**Decision.** Guildhall runs as a Docker Compose app on a housemate's server managed by Dokploy,
+which puts Traefik in front for HTTPS. The app mounts the vault copy read-only. The vault reader
+skips rclone's half-downloaded `.partial` files and files that vanish mid-read, and reloads one at
+a time, so a sync in progress can't break or roll back what's served. There's no database: the
+copy plus the in-memory index is Guildhall's own copy of the vault. The image is built and checked
+in CI; `docs/deployment.md` is the runbook.

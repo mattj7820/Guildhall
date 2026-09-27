@@ -19,11 +19,21 @@ locations, maps, characters, sessions).
 - **Interactive maps (first slice, DM only):** maps from vault images, with outlined areas that
   lead to deeper maps and wiki notes, nesting to any depth with breadcrumbs. Drawn and reshaped in
   an editor with undo; a clean view for the table. Kept in the data folder.
+- **Sign-in and hosting:** everyone signs in with Discord; newcomers wait for the DM, who lets
+  them in and says which player they are. A Docker image with a Google Drive companion container
+  that copies the vault read-only, ready for a Dokploy server (see `docs/deployment.md`).
 
 ## Parking lot
 
-- **Roles and multiplayer:** real DM and player accounts replacing the preview toggle; the DM has
-  higher permissions (hidden rolls, moving monster tokens, seeing all notes).
+- **Player view polish (next):** go through the wiki, combat tracker and maps as a signed-in
+  player: map visibility controls and a player map view, the turn order for everyone, and each
+  player's own characters shown as theirs (`Viewer.playerId` is now set).
+- **Counters on maps (after that):** tokens the DM and players can move on a map, shared live, which
+  brings websockets on the same Express server.
+- **Hosting, next steps:** backups of the data folder (Dokploy volume backups, or a nightly copy to
+  a separate Drive folder), a "last synced" indicator and "Sync now" for the vault copy, and
+  Discord avatars.
+- **Roles, more:** DM-only powers such as hidden rolls, and perhaps co-DMs.
 - **Wiki, next steps:** backlinks, note transclusion (`![[Note]]`), Obsidian callouts,
   section-level visibility, browsing by entity type, and perhaps Obsidian plugins later.
 - **Character sheets:** create a character in-app (D&D Beyond style), view the sheet, and click

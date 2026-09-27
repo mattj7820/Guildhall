@@ -6,10 +6,12 @@ Guildhall links out to those tools and grows its own modules. The point of build
 **interconnection**: eventually wiki, maps, characters, combat and dice all link through a shared
 campaign model (NPCs, locations, maps, characters, sessions). See `docs/roadmap.md`.
 
-Built so far: hub home page, read-only Obsidian wiki with a DM/player preview, a DM-only combat
-tracker (the live fight is kept in the browser; prepared encounters in the data folder), and
-DM-only interactive maps (vault images with outlined areas leading to deeper maps and notes; kept
-in the data folder).
+Built so far: hub home page, read-only Obsidian wiki with a DM preview of the players' view, a
+DM-only combat tracker (the live fight is kept in the browser; prepared encounters in the data
+folder), DM-only interactive maps (vault images with outlined areas leading to deeper maps and
+notes; kept in the data folder), and sign-in with Discord, where the DM lets players in and says
+who they play. It's built to be hosted: a Docker image, with the vault copied read-only from
+Google Drive (see `docs/deployment.md`).
 
 ## Hard constraints
 
@@ -24,9 +26,12 @@ in the data folder).
 - **No AI-generated story, lore or narrative content** anywhere in the app or fixtures. Writing
   the story is the owner's job. Fixture text stays functional ("Fixture: tests X"). AI for maps
   and images may come later.
-- **Keep multiplayer possible, don't build it yet:** stable entity IDs, an explicit `Viewer` in
-  every visibility decision, no single-user assumptions. No auth, database or real-time
-  infrastructure until asked.
+- **Every request is someone:** sign-in is required everywhere except the sign-in pages, and every
+  visibility decision takes the explicit `Viewer` the root middleware sets. Never trust the client
+  for who someone is or what they may see; players must never get DM content, including through
+  files, search or data requests. No database or real-time infrastructure until asked.
+- **Never loosen dev sign-in's guards** (`DEV_LOGIN`: local `PUBLIC_URL` and local connections
+  only). It signs anyone in as anyone.
 
 ## Working style
 
@@ -52,19 +57,31 @@ npm run lint         # eslint + prettier --check   (npm run format to fix)
 npm run typecheck    # react-router typegen && tsc -b
 npm test             # vitest unit/integration
 npm run test:e2e     # playwright: builds, serves on :4173 with the fixture vault
-npm run check        # everything CI runs
+npm run check        # everything CI runs (CI also builds and checks the Docker image)
 ```
+
+Locally, `DEV_LOGIN=true` in `.env` gives one-click sign-in as the DM or a player (see
+`.env.example`).
 
 First e2e run needs `npx playwright install chromium`.
 
 ## Architecture map
 
-- `server.js`: HTTP entry (Vite middleware in dev, static and build in prod).
+- `server.js`: HTTP entry (Vite middleware in dev, static and build in prod), and a clean shutdown
+  on SIGTERM.
 - `server/app.ts`: creates long-lived services once (config, `LiveVault`, `PreparedEncounters`,
-  `CampaignMaps`)
-  and passes them to React Router through `servicesContext`.
-- `app/root.tsx`: middleware sets `viewerContext` from the view cookie (`app/.server/viewer.ts`).
-  **Loaders read the viewer from context and pass it into every vault query.**
+  `CampaignMaps`, `Members`, sessions, Discord sign-in) and passes them to React Router through
+  `servicesContext`; also the connection's address, for dev sign-in. `server/http.ts`: trusting
+  the proxy, security headers, `/healthz`.
+- `app/root.tsx`: its middleware is `authMiddleware` (`app/.server/auth/middleware.ts`), which
+  checks the Origin of posts, reads the session, decides access, and sets `accountContext` and
+  `viewerContext`. **Loaders read the viewer from context and pass it into every vault query.**
+- `app/.server/auth/`: `sessions.ts` (signed cookie session), `account.ts` (`resolveAccount`,
+  `viewerFor`: pure), `access.ts` (who may reach which path: pure), `origin.ts`, `discord.ts`
+  (OAuth adapter over `fetch`), `discord-sign-in.ts` (the attempt cookie, `checkCallback`),
+  `dev-login.ts`. `app/.server/viewer.ts` is the DM's preview-as-player cookie.
+- `app/.server/members/`: `members.ts` (repository over `members.json`: waiting list, approval,
+  session keys), `players.ts` (`partyPlayers`). Shared shapes in `app/members/`.
 - `app/campaign/`: shared model (isomorphic): `Viewer` (with optional `playerId`), `Player`,
   `Visibility`, `EntityId`, entity types, `canView`.
 - `app/shared/`: small generic helpers used by several modules: `newId()` and `history.ts` (undo).
@@ -110,7 +127,10 @@ First e2e run needs `npx playwright install chromium`.
   actions), `combat-prepared-edit` (editor; autosave action), `maps` (tree of maps; create action),
   `map-view` (`/maps/:id`, the table view), `map-edit` (editor; save, createChild, setImage and
   delete actions; `?area=` preselects an area), `map-image` (resource route: a map's image by map
-  ID), `vault-asset` (resource route), `view-mode` (toggle action).
+  ID), `vault-asset` (resource route), `view-mode` (the DM's preview toggle), `login` (sign-in
+  page; dev sign-in action), `logout` (POST), `auth-discord` (starts Discord sign-in) and
+  `auth-discord-callback`, `waiting` (for newcomers), `members` (DM-only: approve, assign,
+  remove).
 - `app/components/combat/`: the tracker's UI (`CombatTracker` lays it out), and the prepared
   encounter editor (`PreparedEditor`). `CombatantRow` and `AddCombatants` have a `"prep"` mode.
 - `app/components/maps/`: `MapCanvas` (the SVG canvas), `MapViewer` and `MapEditor` (the two
@@ -123,7 +143,8 @@ First e2e run needs `npx playwright install chromium`.
 - Vault paths are POSIX, vault-relative, with extension (`NPCs/Mira.md`). The slug drops `.md`.
   Note URLs come from `noteUrl()` in `app/wiki/urls.ts`.
 - Server-only code lives under `app/.server/`. Browser code must not import from it (types
-  included; put shared shapes in `app/wiki/`, `app/campaign/` or `app/combat/`).
+  included; put shared shapes in `app/wiki/`, `app/campaign/`, `app/combat/`, `app/maps/` or
+  `app/members/`).
 - Frontmatter: `visibility` (`players`|`dm`, default `dm`), `type`, `aliases`, `tags`, `id`, and
   `player` on `type: pc` notes (who plays the character).
 - Combat: every encounter change is an `EncounterAction` through the pure `encounterReducer`.
@@ -138,7 +159,14 @@ First e2e run needs `npx playwright install chromium`.
   `editorReducer`; the image changes only through its own action.
 - Hidden content must be indistinguishable from missing content in player view (same 404, links
   become plain text, excluded from search and the tree).
+- Signing in: who someone is comes from `accountContext` (DM, member or waiting), what they may
+  see from `viewerContext`. DM-only pages check `viewer.role` (the DM previewing as a player sees
+  the players' view); pages about the DM's own account, such as Members, check the account.
+  Every form post must come from `PUBLIC_URL` (the Origin check); state-changing requests are
+  POSTs, sign-out included. New public (signed-out) pages must be added to `access.ts`.
 - Unit tests sit next to the code (`*.test.ts`); e2e specs in `tests/e2e/` use accessible
-  locators (`getByRole`) and the helpers in `tests/e2e/support/app.ts`. New behaviour gets a
+  locators (`getByRole`) and the helpers in `tests/e2e/support/app.ts`. E2E tests start signed in
+  as the DM; use `SIGNED_IN.playerOne` or `SIGNED_OUT` (`tests/e2e/support/sign-in.ts`) for
+  others. New behaviour gets a
   fixture note whose body states what it tests. See `docs/testing.md`.
 - Prettier formats everything (print width 100). Keep comments short and about _why_.
