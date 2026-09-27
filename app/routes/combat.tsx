@@ -9,12 +9,20 @@ export function meta(_: Route.MetaArgs) {
   return [{ title: "Combat tracker · Guildhall" }];
 }
 
-/** The vault's statblocks and party. DM only: nothing is sent to the player preview. */
-export function loader({ context }: Route.LoaderArgs) {
+/**
+ * The vault's statblocks and party, and with `?start=<id>` the prepared encounter to start.
+ * DM only: nothing is sent to the player preview.
+ */
+export async function loader({ request, context }: Route.LoaderArgs) {
   const viewer = context.get(viewerContext);
   if (viewer.role !== "dm") return { dmOnly: true as const };
-  const { vault } = context.get(servicesContext);
-  return { dmOnly: false as const, catalogue: combatCatalogue(vault.current, viewer) };
+  const { vault, preparedEncounters } = context.get(servicesContext);
+  const startId = new URL(request.url).searchParams.get("start");
+  return {
+    dmOnly: false as const,
+    catalogue: combatCatalogue(vault.current, viewer),
+    starting: startId ? ((await preparedEncounters.get(startId)) ?? null) : undefined,
+  };
 }
 
 /** Adds the encounter saved in this browser, which the server never sees. */
@@ -38,5 +46,11 @@ export function HydrateFallback() {
 
 export default function Combat({ loaderData }: Route.ComponentProps) {
   if (loaderData.dmOnly) return <DmOnlyNotice />;
-  return <CombatTracker catalogue={loaderData.catalogue} saved={loaderData.saved} />;
+  return (
+    <CombatTracker
+      catalogue={loaderData.catalogue}
+      saved={loaderData.saved}
+      starting={loaderData.starting}
+    />
+  );
 }

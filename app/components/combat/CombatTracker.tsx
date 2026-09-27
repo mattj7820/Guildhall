@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { Link, useFetcher, useNavigate } from "react-router";
+import { startPrepared, type PartyChoice } from "~/combat/prepared";
 import { createEncounter } from "~/combat/encounter";
 import { browserStorage, saveEncounter, type LoadResult } from "~/combat/storage";
 import {
@@ -6,11 +8,14 @@ import {
   type CombatantId,
   type CombatCatalogue,
   type Encounter,
+  type PreparedEncounter,
 } from "~/combat/types";
 import { useEncounter } from "~/combat/useEncounter";
 import { AddCombatants } from "./AddCombatants";
 import { CombatantRow } from "./CombatantRow";
 import { CombatNav } from "./CombatNav";
+import { SaveAsPrepared } from "./SaveAsPrepared";
+import { StartPrepared } from "./StartPrepared";
 import { DiceRoller } from "./DiceRoller";
 import { StatblockPanel } from "./StatblockPanel";
 import { panelClass } from "./styles";
@@ -20,9 +25,12 @@ import { TurnBar } from "./TurnBar";
 export function CombatTracker({
   catalogue,
   saved,
+  starting,
 }: {
   catalogue: CombatCatalogue;
   saved: LoadResult;
+  /** A prepared encounter to start (`?start=`); null if it no longer exists. */
+  starting?: PreparedEncounter | null;
 }) {
   const [initial] = useState(() =>
     saved.status === "restored" ? saved.encounter : createEncounter(),
@@ -44,6 +52,17 @@ export function CombatTracker({
   const shownId = picked && picked.during === encounter.activeId ? picked.id : encounter.activeId;
   const shown = encounter.combatants.find((c) => c.id === shownId);
 
+  const navigate = useNavigate();
+  const markRun = useFetcher();
+  function start(prepared: PreparedEncounter, party: PartyChoice[]) {
+    tracker.replace(startPrepared(prepared, party, tracker.rng));
+    void markRun.submit(
+      { intent: "markRun" },
+      { method: "post", action: `/combat/prepared/${prepared.id}`, encType: "application/json" },
+    );
+    void navigate("/combat", { replace: true });
+  }
+
   const settingUp = encounter.phase === "setup";
   const addCombatants = (
     <AddCombatants
@@ -58,6 +77,23 @@ export function CombatTracker({
     <main className="mx-auto max-w-7xl px-4 py-6">
       <CombatNav />
       <h1 className="sr-only">Combat tracker</h1>
+      {starting && (
+        <StartPrepared
+          key={starting.id}
+          prepared={starting}
+          party={catalogue.party}
+          replacesFight={encounter.combatants.length > 0}
+          onStart={(party) => start(starting, party)}
+        />
+      )}
+      {starting === null && (
+        <p role="alert" className="mb-4 rounded-md bg-amber-100 px-3 py-2 text-sm text-amber-900">
+          That prepared encounter doesn't exist any more.{" "}
+          <Link to="/combat/prepared" className="underline">
+            See the prepared encounters
+          </Link>
+        </p>
+      )}
       {saved.status === "unreadable" && (
         <p role="alert" className="mb-4 rounded-md bg-amber-100 px-3 py-2 text-sm text-amber-900">
           Couldn't restore the saved encounter (it may be from an older version), so this is a new
@@ -116,6 +152,7 @@ export function CombatTracker({
           </section>
 
           {!settingUp && addCombatants}
+          {settingUp && encounter.combatants.length > 0 && <SaveAsPrepared encounter={encounter} />}
         </div>
 
         <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-4 lg:self-start">
