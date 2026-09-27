@@ -36,6 +36,12 @@ its body says which, for example:
   comment that players must never get.
 - `Bestiary/Fixture Bare Statblock.md`: a statblock with only a name (no HP, no ability scores).
 - `Party/Fixture PC One.md`, `Party/Fixture PC Two.md`: `type: pc` notes with a `player`.
+- `Maps/`: placeholder map images (colour fields and a grid, never real maps), explained in
+  `Maps/Fixture Maps.md`. `Fixture World.png` is 400×200, deliberately not square;
+  `Fixture Town.png` and `Fixture Keep.png` are child maps; `Fixture Duplicate.png` shares its
+  name with one in `Attachments/`, so a moved image can't be matched by name.
+- `Locations/Fixture Town.md`: a player-visible note with a stable `id`, linked from maps.
+- `Secrets/Fixture Hidden Place.md`: a DM-only note linked from a map area.
 - `.obsidian/` and `.trash/`: must be ignored.
 
 Pure unit tests build their inputs inline (for example, a string of markdown and a stub resolver)

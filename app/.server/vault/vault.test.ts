@@ -18,9 +18,14 @@ describe("readVault", () => {
     const snapshot = await readVault(FIXTURE_VAULT);
     expect(snapshot.notes.map((note) => note.path)).toContain("NPCs/Mira Stonehand.md");
     expect(snapshot.assets).toEqual([
+      "Attachments/Fixture Duplicate.png",
       "Attachments/dm-map.png",
       "Attachments/mira-portrait.png",
       "Attachments/voice-sample.wav",
+      "Maps/Fixture Duplicate.png",
+      "Maps/Fixture Keep.png",
+      "Maps/Fixture Town.png",
+      "Maps/Fixture World.png",
     ]);
   });
 
@@ -90,6 +95,7 @@ describe("Vault", () => {
       expect(folderNames(tree)).toEqual([
         "Bestiary",
         "Locations",
+        "Maps",
         "NPCs",
         "Party",
         "Secrets",
