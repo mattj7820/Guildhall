@@ -49,7 +49,6 @@ export function MapEditor(props: MapEditorProps) {
   const doc = currentDoc(state);
   const drawing = state.draft !== null;
   const selected = doc.areas.find((area) => area.id === state.selectedId);
-  const { status, error, saveNow } = useAutosave(doc);
   const [pointer, setPointer] = useState<[number, number]>();
   const [drag, setDrag] = useState<VertexDrag | null>(null);
   const [actualSize, setActualSize] = useState<Size>();
@@ -66,12 +65,16 @@ export function MapEditor(props: MapEditorProps) {
 
   // A map made for an area ("New map from image…") is linked to it once the server has made it.
   const child = useFetcher<typeof action>();
-  const createdId = child.data && "created" in child.data ? child.data.created?.id : undefined;
-  const [awaitingChild, setAwaitingChild] = useState<{ areaId: string; before?: string }>();
-  if (awaitingChild && createdId && createdId !== awaitingChild.before) {
+  /** The area waiting for its new map, and the server's last answer before this request. */
+  const [awaitingChild, setAwaitingChild] = useState<{ areaId: string; since: unknown }>();
+  if (awaitingChild && child.state === "idle" && child.data !== awaitingChild.since) {
     setAwaitingChild(undefined);
-    dispatch({ type: "linkArea", id: awaitingChild.areaId, map: createdId });
+    const createdId = child.data && "created" in child.data ? child.data.created?.id : undefined;
+    if (createdId) dispatch({ type: "linkArea", id: awaitingChild.areaId, map: createdId });
   }
+  const childError = child.data && "error" in child.data ? child.data.error : undefined;
+  // Until the new map is linked, the link isn't saved: say so, and don't leave yet.
+  const { status, error, saveNow } = useAutosave(doc, { pending: !!awaitingChild });
 
   // Undo and redo work anywhere on the page except while typing, where the field's own undo wins.
   useEffect(() => {
@@ -126,15 +129,24 @@ export function MapEditor(props: MapEditorProps) {
           >
             Redo
           </button>
-          <Link to={viewUrl} onClick={saveNow} className={primaryButtonClass}>
+          <Link
+            to={viewUrl}
+            aria-disabled={!!awaitingChild}
+            onClick={(event) => {
+              // The new map's link isn't saved until the server has made the map.
+              if (awaitingChild) event.preventDefault();
+              else saveNow();
+            }}
+            className={`${primaryButtonClass} aria-disabled:cursor-wait aria-disabled:opacity-50`}
+          >
             Done
           </Link>
         </div>
       </div>
       <ImageHealth map={view} images={props.images} actual={actualSize} />
-      {error && (
+      {(error || childError) && (
         <p role="alert" className="bg-rose-100 px-4 py-2 text-sm text-rose-900">
-          Couldn't save: {error}
+          {error ? `Couldn't save: ${error}` : `Couldn't make the new map: ${childError}`}
         </p>
       )}
 
@@ -219,7 +231,7 @@ export function MapEditor(props: MapEditorProps) {
               creatingChild={child.state !== "idle"}
               onCreateChild={(name, image) => {
                 saveNow();
-                setAwaitingChild({ areaId: selected.id, before: createdId });
+                setAwaitingChild({ areaId: selected.id, since: child.data });
                 void child.submit(
                   {
                     intent: "createChild",
@@ -383,7 +395,11 @@ function EditorAreaList({
  * Saves the map shortly after each change. Keeps the last snapshot sent, so nothing is sent twice
  * and the status can say whether everything has reached the server.
  */
-function useAutosave(doc: EditorDoc) {
+function useAutosave(
+  doc: EditorDoc,
+  /** Something else is on its way to the server that will change the map (a new child map). */
+  { pending }: { pending: boolean },
+) {
   const fetcher = useFetcher<typeof action>();
   // Memoised on the document, so pointer moves and drags don't re-serialise the map every frame.
   const snapshot = useMemo(() => JSON.stringify({ intent: "save", ...doc }), [doc]);
@@ -406,18 +422,15 @@ function useAutosave(doc: EditorDoc) {
   }, [dirty, save]);
 
   // Closing the tab mid-save is the one way to lose a change, so the browser asks first.
+  const saving = dirty || pending || fetcher.state !== "idle";
   useEffect(() => {
-    if (!dirty && fetcher.state === "idle") return;
+    if (!saving) return;
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty, fetcher.state]);
+  }, [saving]);
 
   const error = fetcher.data && "error" in fetcher.data ? fetcher.data.error : undefined;
-  const status = error
-    ? undefined
-    : dirty || fetcher.state !== "idle"
-      ? "Saving…"
-      : "All changes saved";
+  const status = error ? undefined : saving ? "Saving…" : "All changes saved";
   return { status, error, saveNow };
 }
