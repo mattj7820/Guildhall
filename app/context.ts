@@ -1,4 +1,6 @@
 import { createContext } from "react-router";
+import type { Account } from "~/.server/auth/account";
+import type { Sessions } from "~/.server/auth/sessions";
 import type { PreparedEncounters } from "~/.server/combat/prepared-encounters";
 import type { Config } from "~/.server/config";
 import type { CampaignMaps } from "~/.server/maps/campaign-maps";
@@ -16,12 +18,20 @@ export interface Services {
   maps: CampaignMaps;
   /** Everyone who has signed in, approved or waiting, kept in the data folder. */
   members: Members;
+  /** Signed session cookies. */
+  sessions: Sessions;
 }
 
 export const servicesContext = createContext<Services>();
 
 /**
- * Who is making this request. Set by the root middleware from the view-mode cookie today;
- * the natural seam for real authentication later.
+ * What this request may see. Set by the root middleware from who is signed in (and, for the DM,
+ * the preview toggle); every visibility decision takes it.
  */
 export const viewerContext = createContext<Viewer>(DM_VIEWER);
+
+/** Who is signed in, if anyone. Set by the root middleware. */
+export const accountContext = createContext<Account>({ kind: "anonymous" });
+
+/** The address the request's connection came from, set by the server. Used for dev sign-in. */
+export const clientAddressContext = createContext<string | undefined>(undefined);

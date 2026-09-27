@@ -36,6 +36,7 @@ describe("loadConfig", () => {
     const config = loadConfig({
       VAULT_PATH: FIXTURE_VAULT,
       PUBLIC_URL: "https://Guildhall.Example.com/",
+      SESSION_SECRET: "x".repeat(32),
     });
     expect(config.publicUrl).toBe("https://guildhall.example.com");
   });
@@ -43,6 +44,28 @@ describe("loadConfig", () => {
   it("trusts no proxy unless told how many there are", () => {
     expect(loadConfig({ VAULT_PATH: FIXTURE_VAULT }).trustProxy).toBe(0);
     expect(loadConfig({ VAULT_PATH: FIXTURE_VAULT, TRUST_PROXY: "1" }).trustProxy).toBe(1);
+  });
+
+  it("reads session secrets and DM Discord IDs as comma-separated lists", () => {
+    const secret = "x".repeat(32);
+    const config = loadConfig({
+      VAULT_PATH: FIXTURE_VAULT,
+      SESSION_SECRET: `${secret}, ${"y".repeat(40)}`,
+      DM_DISCORD_IDS: "123456789012345678,234567890123456789",
+    });
+    expect(config.sessionSecrets).toEqual([secret, "y".repeat(40)]);
+    expect(config.dmDiscordIds).toEqual(["123456789012345678", "234567890123456789"]);
+  });
+
+  it("has dev sign-in off unless asked for, and allows it on this computer", () => {
+    expect(loadConfig({ VAULT_PATH: FIXTURE_VAULT }).devLogin).toBe(false);
+    expect(
+      loadConfig({
+        VAULT_PATH: FIXTURE_VAULT,
+        DEV_LOGIN: "true",
+        PUBLIC_URL: "http://127.0.0.1:3000",
+      }).devLogin,
+    ).toBe(true);
   });
 
   it("treats an empty Roll20 URL as not configured", () => {
@@ -109,6 +132,36 @@ describe("loadConfig", () => {
       "the proxy count is negative",
       { VAULT_PATH: FIXTURE_VAULT, TRUST_PROXY: "-1" },
       /TRUST_PROXY must be the number of proxies/,
+    ],
+    [
+      "dev sign-in is on for a hosted address",
+      {
+        VAULT_PATH: FIXTURE_VAULT,
+        DEV_LOGIN: "true",
+        PUBLIC_URL: "https://guildhall.example.com",
+        SESSION_SECRET: "x".repeat(32),
+      },
+      /DEV_LOGIN is for local development only/,
+    ],
+    [
+      "dev sign-in is misspelt",
+      { VAULT_PATH: FIXTURE_VAULT, DEV_LOGIN: "yes" },
+      /DEV_LOGIN must be true or false/,
+    ],
+    [
+      "a session secret is too short",
+      { VAULT_PATH: FIXTURE_VAULT, SESSION_SECRET: "short" },
+      /SESSION_SECRET must be at least 32 characters/,
+    ],
+    [
+      "there's no session secret for an HTTPS address",
+      { VAULT_PATH: FIXTURE_VAULT, PUBLIC_URL: "https://guildhall.example.com" },
+      /SESSION_SECRET must be set/,
+    ],
+    [
+      "a DM ID isn't a Discord ID",
+      { VAULT_PATH: FIXTURE_VAULT, DM_DISCORD_IDS: "mattj" },
+      /DM_DISCORD_IDS must be Discord user IDs/,
     ],
   ])("fails clearly when %s", (_label, env, message) => {
     expect(() => loadConfig(env)).toThrow(ConfigError);

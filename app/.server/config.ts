@@ -19,6 +19,17 @@ export interface Config {
    * 0 means none.
    */
   trustProxy: number;
+  /** Whether PUBLIC_URL was set, rather than defaulting to localhost. */
+  publicUrlIsSet: boolean;
+  /**
+   * Secrets that sign session cookies, newest first; older ones still verify, so a secret can be
+   * rotated without signing everyone out. Undefined when not set (local use only).
+   */
+  sessionSecrets?: string[];
+  /** Discord user IDs of the DM(s), who are let straight in with the DM's view. */
+  dmDiscordIds: string[];
+  /** One-click sign-in as the DM or a player, for local development and tests only. */
+  devLogin: boolean;
 }
 
 export class ConfigError extends Error {
@@ -30,6 +41,14 @@ const emptyAsUndefined = (value: unknown) =>
 
 const TRUST_PROXY_ERROR =
   "TRUST_PROXY must be the number of proxies in front of Guildhall (0 for none).";
+
+const list = (value: unknown) =>
+  typeof value === "string"
+    ? value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean)
+    : value;
 
 const envSchema = z.object({
   VAULT_PATH: z.preprocess(
@@ -49,6 +68,31 @@ const envSchema = z.object({
       .int({ error: TRUST_PROXY_ERROR })
       .min(0, { error: TRUST_PROXY_ERROR })
       .default(0),
+  ),
+  SESSION_SECRET: z.preprocess(
+    (value) => list(emptyAsUndefined(value)),
+    z
+      .array(
+        z.string().min(32, {
+          error: "SESSION_SECRET must be at least 32 characters (see .env.example to make one).",
+        }),
+      )
+      .optional(),
+  ),
+  DM_DISCORD_IDS: z.preprocess(
+    (value) => list(emptyAsUndefined(value)) ?? [],
+    z.array(
+      z.string().regex(/^\d{17,20}$/, {
+        error: "DM_DISCORD_IDS must be Discord user IDs (long numbers), separated by commas.",
+      }),
+    ),
+  ),
+  DEV_LOGIN: z.preprocess(
+    emptyAsUndefined,
+    z
+      .enum(["true", "false"], { error: "DEV_LOGIN must be true or false." })
+      .default("false")
+      .transform((value) => value === "true"),
   ),
   ROLL20_CAMPAIGN_URL: z.preprocess(
     emptyAsUndefined,
@@ -93,14 +137,31 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     );
   }
 
+  // Dev sign-in lets anyone in as the DM, so it only works on this computer.
+  if (parsed.data.DEV_LOGIN && !LOOPBACK_HOSTS.has(publicUrl.hostname)) {
+    throw new ConfigError(
+      `DEV_LOGIN is for local development only, but PUBLIC_URL is ${publicUrl.origin}. ` +
+        `Turn DEV_LOGIN off when hosting.`,
+    );
+  }
+  if (publicUrl.protocol === "https:" && !parsed.data.SESSION_SECRET) {
+    throw new ConfigError("SESSION_SECRET must be set when Guildhall is hosted over HTTPS.");
+  }
+
   return {
     vaultPath,
     dataPath,
     roll20CampaignUrl: parsed.data.ROLL20_CAMPAIGN_URL,
     publicUrl: publicUrl.origin,
     trustProxy: parsed.data.TRUST_PROXY,
+    publicUrlIsSet: parsed.data.PUBLIC_URL !== undefined,
+    sessionSecrets: parsed.data.SESSION_SECRET,
+    dmDiscordIds: parsed.data.DM_DISCORD_IDS,
+    devLogin: parsed.data.DEV_LOGIN,
   };
 }
+
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 /** Whether `inner` is `outer` or inside it. Case-insensitive on Windows, like its file system. */
 function isWithin(inner: string, outer: string): boolean {

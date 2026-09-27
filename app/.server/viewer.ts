@@ -1,9 +1,9 @@
 import { createCookie } from "react-router";
-import { DM_VIEWER, PLAYER_VIEWER, type Role, type Viewer } from "~/campaign/types";
+import type { Role } from "~/campaign/types";
 
 /**
- * The DM/player toggle. This is a preview of what players would see, NOT access control:
- * anyone can flip the cookie. Real authentication will replace this when multiplayer arrives.
+ * The DM's "preview as player" setting. It only changes what the DM sees: for anyone else the
+ * view comes from who they signed in as (see `viewerFor` in `auth/account.ts`).
  */
 const viewCookie = createCookie("guildhall-view", {
   path: "/",
@@ -12,9 +12,8 @@ const viewCookie = createCookie("guildhall-view", {
   maxAge: 60 * 60 * 24 * 365,
 });
 
-export async function viewerFromRequest(request: Request): Promise<Viewer> {
-  const role: unknown = await viewCookie.parse(request.headers.get("Cookie"));
-  return role === "player" ? PLAYER_VIEWER : DM_VIEWER;
+export async function previewingAsPlayer(request: Request): Promise<boolean> {
+  return (await viewCookie.parse(request.headers.get("Cookie"))) === "player";
 }
 
 export function serializeViewCookie(role: Role): Promise<string> {

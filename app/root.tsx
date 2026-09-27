@@ -1,4 +1,5 @@
 import {
+  Form,
   isRouteErrorResponse,
   Link,
   Links,
@@ -9,21 +10,21 @@ import {
   ScrollRestoration,
   useRouteLoaderData,
 } from "react-router";
-import { viewerFromRequest } from "~/.server/viewer";
+import { authMiddleware } from "~/.server/auth/middleware";
 import { ViewToggle } from "~/components/ViewToggle";
-import { viewerContext } from "~/context";
+import { accountContext, viewerContext } from "~/context";
 import type { Route } from "./+types/root";
 import "./app.css";
 
-/** Resolves who is viewing once per request; every loader reads it from context. */
-export const middleware: Route.MiddlewareFunction[] = [
-  async ({ request, context }) => {
-    context.set(viewerContext, await viewerFromRequest(request));
-  },
-];
+/** Resolves who is signed in once per request; every loader reads it from context. */
+export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
 
 export function loader({ context }: Route.LoaderArgs) {
-  return { role: context.get(viewerContext).role };
+  const account = context.get(accountContext);
+  return {
+    role: context.get(viewerContext).role,
+    user: account.kind === "member" ? { name: account.member.name, isDm: account.isDm } : undefined,
+  };
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -66,7 +67,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </>
               )}
             </nav>
-            <div className="ml-auto">{role && <ViewToggle role={role} />}</div>
+            <div className="ml-auto flex items-center gap-4">
+              {role && <ViewToggle role={role} />}
+              {data?.user && <SignedIn name={data.user.name} />}
+            </div>
           </div>
           {role === "player" && (
             <p
@@ -82,6 +86,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Scripts />
       </body>
     </html>
+  );
+}
+
+function SignedIn({ name }: { name: string }) {
+  return (
+    <Form method="post" action="/logout" className="flex items-center gap-2 text-sm">
+      <span className="text-stone-600 dark:text-stone-400">{name}</span>
+      <button
+        type="submit"
+        className="rounded-md px-2 py-1 text-stone-600 hover:bg-stone-100 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-100"
+      >
+        Sign out
+      </button>
+    </Form>
   );
 }
 

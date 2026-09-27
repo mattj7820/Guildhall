@@ -16,4 +16,6 @@ export default [
   route("maps/:id/image", "routes/map-image.ts"),
   route("vault-asset/*", "routes/vault-asset.ts"),
   route("view-mode", "routes/view-mode.ts"),
+  route("login", "routes/login.tsx"),
+  route("logout", "routes/logout.ts"),
 ] satisfies RouteConfig;
