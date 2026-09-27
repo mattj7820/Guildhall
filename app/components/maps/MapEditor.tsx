@@ -11,7 +11,7 @@ import {
 } from "~/maps/editor";
 import { normalise, svgPoints } from "~/maps/geometry";
 import type { TreeMap } from "~/maps/tree";
-import type { Area, CampaignMap, MapView } from "~/maps/types";
+import type { Area, CampaignMap, MapView, Point } from "~/maps/types";
 import type { action } from "~/routes/map-edit";
 import { newId } from "~/shared/ids";
 import type { NoteSummary } from "~/wiki/types";
@@ -19,6 +19,7 @@ import { AreaForm } from "./AreaForm";
 import { DraftOutline } from "./DraftOutline";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
+import { VertexHandles, type VertexDrag } from "./VertexHandles";
 
 /** Wait this long after the last change before saving, so typing doesn't save every key. */
 const AUTOSAVE_DELAY_MS = 500;
@@ -49,6 +50,7 @@ export function MapEditor(props: MapEditorProps) {
   const selected = doc.areas.find((area) => area.id === state.selectedId);
   const { status, error, saveNow } = useAutosave(doc);
   const [pointer, setPointer] = useState<[number, number]>();
+  const [drag, setDrag] = useState<VertexDrag | null>(null);
 
   const finish = () => dispatch({ type: "finishDrawing", id: newId() });
 
@@ -136,24 +138,41 @@ export function MapEditor(props: MapEditorProps) {
             }}
             onCanvasPointerMove={drawing ? setPointer : undefined}
           >
-            {(scale) => (
+            {(canvas) => (
               <>
                 {doc.areas.map((area) => (
                   <EditableArea
                     key={area.id}
-                    area={area}
+                    area={
+                      drag && area.id === selected?.id
+                        ? { ...area, outline: replacePoint(area.outline, drag) }
+                        : area
+                    }
                     view={view}
                     selected={area.id === state.selectedId}
                     // While drawing, clicks inside an area place points instead.
                     onSelect={drawing ? undefined : () => dispatch({ type: "select", id: area.id })}
                   />
                 ))}
+                {selected && !drawing && (
+                  <VertexHandles
+                    area={
+                      drag
+                        ? { ...selected, outline: replacePoint(selected.outline, drag) }
+                        : selected
+                    }
+                    size={view.size}
+                    canvas={canvas}
+                    dispatch={dispatch}
+                    onDrag={setDrag}
+                  />
+                )}
                 {state.draft && (
                   <DraftOutline
                     points={state.draft}
                     pointer={pointer}
                     size={view.size}
-                    scale={scale}
+                    scale={canvas.scale}
                     canFinish={canFinish(state)}
                     onFinish={finish}
                   />
@@ -179,6 +198,10 @@ export function MapEditor(props: MapEditorProps) {
       </div>
     </main>
   );
+}
+
+function replacePoint(outline: Point[], { index, point }: VertexDrag): Point[] {
+  return outline.map((existing, i) => (i === index ? point : existing));
 }
 
 function DrawingToolbar({

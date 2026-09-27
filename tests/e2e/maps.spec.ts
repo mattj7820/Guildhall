@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import {
   breadcrumbs,
   createMap,
@@ -8,6 +8,8 @@ import {
   mapCanvas,
   switchToPlayerView,
   uniqueName,
+  vertexHandles,
+  vertexPosition,
   zoomLevel,
 } from "./support/app";
 
@@ -146,5 +148,76 @@ test.describe("Drawing areas", () => {
     await expectSaved(page);
     await page.reload();
     await expect(page.getByText("None yet.")).toBeVisible();
+  });
+});
+
+test.describe("Reshaping areas", () => {
+  async function mapWithArea(page: Page) {
+    const name = uniqueName("Shape");
+    await createMap(page, { image: "Fixture World.png", name });
+    await drawArea(page, name, WORLD, HARBOUR);
+    await page.getByLabel("Area name").fill("Harbour");
+    await expect(vertexHandles(page, "Harbour")).toHaveCount(4);
+    return name;
+  }
+
+  test("nudges a point with the arrow keys, and undoes the nudges in one step", async ({
+    page,
+  }) => {
+    await mapWithArea(page);
+    const before = await vertexPosition(page, "Harbour", 1);
+
+    const handle = vertexHandles(page, "Harbour").first();
+    await handle.focus();
+    await handle.press("Shift+ArrowRight");
+    await vertexHandles(page, "Harbour").first().press("Shift+ArrowRight");
+    await vertexHandles(page, "Harbour").first().press("ArrowDown");
+    const after = await vertexPosition(page, "Harbour", 1);
+    expect(after.x).toBeCloseTo(before.x + 2, 1);
+    expect(after.y).toBeCloseTo(before.y + 0.1, 1);
+
+    await page.getByRole("button", { name: "Undo" }).click();
+    expect(await vertexPosition(page, "Harbour", 1)).toEqual(before);
+  });
+
+  test("drags a point to a new place", async ({ page }) => {
+    const name = await mapWithArea(page);
+    const before = await vertexPosition(page, "Harbour", 3);
+    const box = (await vertexHandles(page, "Harbour").nth(2).boundingBox())!;
+    const canvas = (await mapCanvas(page, name).boundingBox())!;
+
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + canvas.width / 10, box.y + box.height / 2, {
+      steps: 5,
+    });
+    await page.mouse.up();
+
+    const after = await vertexPosition(page, "Harbour", 3);
+    expect(after.x).toBeGreaterThan(before.x + 5);
+    expect(after.y).toBeCloseTo(before.y, 0);
+    await expectSaved(page);
+    await page.reload();
+    await editorAreas(page)
+      .getByRole("button", { name: /Harbour/ })
+      .click();
+    expect(await vertexPosition(page, "Harbour", 3)).toEqual(after);
+  });
+
+  test("adds a point between two others, and removes one", async ({ page }) => {
+    await mapWithArea(page);
+    await page.getByRole("button", { name: "Add a point to Harbour after point 1" }).click();
+    await expect(vertexHandles(page, "Harbour")).toHaveCount(5);
+
+    await vertexHandles(page, "Harbour").nth(1).press("Delete");
+    await expect(vertexHandles(page, "Harbour")).toHaveCount(4);
+  });
+
+  test("never removes points below a triangle", async ({ page }) => {
+    await mapWithArea(page);
+    await vertexHandles(page, "Harbour").first().press("Delete");
+    await expect(vertexHandles(page, "Harbour")).toHaveCount(3);
+    await vertexHandles(page, "Harbour").first().press("Delete");
+    await expect(vertexHandles(page, "Harbour")).toHaveCount(3);
   });
 });

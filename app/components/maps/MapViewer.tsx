@@ -31,7 +31,7 @@ export function MapViewer({ map }: { map: MapView }) {
           imageUrl={map.image.url}
           className="min-h-[50vh] flex-1"
         >
-          {(scale) => (
+          {({ scale }) => (
             <g aria-label="Map areas" role="group">
               {map.areas.map((area) => (
                 <AreaShape

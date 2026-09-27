@@ -176,3 +176,16 @@ export async function drawArea(
   await mapCanvas(page, mapName).press("Enter");
   await expect(page.getByLabel("Area name")).toBeFocused();
 }
+
+/** The handles of the selected area's points, in order, e.g. "Point 2 of Harbour at 40.0%, 40.0%". */
+export const vertexHandles = (page: Page, areaName: string) =>
+  page.getByRole("button", { name: new RegExp(`^Point \\d+ of ${areaName} at `) });
+
+/** A point handle's position as percentages of the image, read from its label. */
+export async function vertexPosition(page: Page, areaName: string, point: number) {
+  const label = await vertexHandles(page, areaName)
+    .nth(point - 1)
+    .getAttribute("aria-label");
+  const [, x, y] = /at ([\d.]+)%, ([\d.]+)%$/.exec(label ?? "") ?? [];
+  return { x: Number(x), y: Number(y) };
+}

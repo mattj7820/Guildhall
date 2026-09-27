@@ -2,13 +2,21 @@ import { useEffect, type KeyboardEvent, type ReactNode } from "react";
 import type { Size } from "~/maps/types";
 import { usePanZoom } from "~/maps/usePanZoom";
 
+/** What the canvas's contents need: the zoom, and a way to place a pointer on the image. */
+export interface CanvasTools {
+  /** Screen pixels per image pixel, for keeping handles and labels the same size on screen. */
+  scale: number;
+  /** A pointer position in image pixels. */
+  clientToImage: (clientX: number, clientY: number) => [number, number] | undefined;
+}
+
 interface Props {
   name: string;
   /** The size the areas were drawn against: the canvas's coordinate system, in image pixels. */
   size: Size;
   imageUrl?: string;
   /** Areas, handles and anything else drawn over the image, in image pixels. */
-  children?: (scale: number) => ReactNode;
+  children?: (canvas: CanvasTools) => ReactNode;
   /** Called with the image's real size once it has loaded. */
   onImageMeasured?: (actual: Size) => void;
   /** A click on the map (not on an area or handle), in image pixels. */
@@ -108,7 +116,7 @@ export function MapCanvas({
               className="fill-stone-300 dark:fill-stone-700"
             />
           )}
-          {children?.(scale)}
+          {children?.({ scale, clientToImage })}
         </svg>
       </div>
       <div className="absolute right-3 bottom-3 flex items-center gap-1 rounded-md bg-white/90 p-1 text-sm shadow dark:bg-stone-900/90">
