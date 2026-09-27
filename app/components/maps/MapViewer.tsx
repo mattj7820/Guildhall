@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import type { AreaView, MapView } from "~/maps/types";
-import { mapUrl } from "~/maps/urls";
+import { buttonClass } from "~/components/styles";
+import { mapEditUrl, mapUrl } from "~/maps/urls";
 import { AreaShape } from "./AreaShape";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
@@ -17,6 +18,11 @@ export function MapViewer({ map }: { map: MapView }) {
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-stone-200 px-4 py-2 dark:border-stone-800">
         <MapBreadcrumbs crumbs={map.breadcrumbs} />
         <h1 className="sr-only">{map.name}</h1>
+        <div className="ml-auto flex gap-2">
+          <Link to={mapEditUrl(map.id)} className={buttonClass}>
+            Edit map
+          </Link>
+        </div>
       </div>
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <MapCanvas

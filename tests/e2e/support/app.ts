@@ -138,3 +138,41 @@ export async function createMap(
   await form.getByRole("button", { name: "Create map" }).click();
   await expect(mapCanvas(page, name)).toBeVisible();
 }
+
+/** The editor's list of areas in its side panel. */
+export const editorAreas = (page: Page) =>
+  page.getByRole("complementary", { name: "Editing" }).getByRole("list", { name: "Areas" });
+
+/**
+ * Where a point on the image is on screen, given as fractions of the image's width and height.
+ * The canvas fits the whole image and centres it, so this allows for the space around it.
+ */
+async function onImage(
+  page: Page,
+  mapName: string,
+  image: { width: number; height: number },
+  [fx, fy]: [number, number],
+) {
+  const box = await mapCanvas(page, mapName).boundingBox();
+  if (!box) throw new Error("The map canvas isn't on screen");
+  const scale = Math.min(box.width / image.width, box.height / image.height);
+  return {
+    x: (box.width - image.width * scale) / 2 + fx * image.width * scale,
+    y: (box.height - image.height * scale) / 2 + fy * image.height * scale,
+  };
+}
+
+/** Draws an area in the editor by clicking its corners, then presses Enter to close it. */
+export async function drawArea(
+  page: Page,
+  mapName: string,
+  image: { width: number; height: number },
+  corners: [number, number][],
+) {
+  await page.getByRole("button", { name: "Draw area" }).click();
+  for (const corner of corners) {
+    await mapCanvas(page, mapName).click({ position: await onImage(page, mapName, image, corner) });
+  }
+  await mapCanvas(page, mapName).press("Enter");
+  await expect(page.getByLabel("Area name")).toBeFocused();
+}

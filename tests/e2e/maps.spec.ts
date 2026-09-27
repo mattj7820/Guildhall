@@ -2,6 +2,9 @@ import { expect, test } from "@playwright/test";
 import {
   breadcrumbs,
   createMap,
+  drawArea,
+  editorAreas,
+  expectSaved,
   mapCanvas,
   switchToPlayerView,
   uniqueName,
@@ -18,6 +21,7 @@ test.describe("Maps", () => {
   test("makes a map from a vault image, and keeps it after a reload", async ({ page }) => {
     const name = uniqueName("World");
     await createMap(page, { image: "Fixture World.png", name, note: "Locations/Fixture Town" });
+    await page.getByRole("link", { name: "Done" }).click();
 
     await expect(breadcrumbs(page)).toContainText(name);
     await expect(zoomLevel(page)).toHaveText("100%");
@@ -27,7 +31,10 @@ test.describe("Maps", () => {
     await page.reload();
     await expect(mapCanvas(page, name)).toBeVisible();
     await page.goto("/maps");
-    await page.getByRole("navigation", { name: "All maps" }).getByRole("link", { name }).click();
+    await page
+      .getByRole("navigation", { name: "All maps" })
+      .getByRole("link", { name, exact: true })
+      .click();
     await expect(mapCanvas(page, name)).toBeVisible();
   });
 
@@ -75,5 +82,69 @@ test.describe("Maps", () => {
     await page.goto(mapPage);
     await expect(page.getByText("Maps are DM-only for now.")).toBeVisible();
     expect((await page.request.get(src!)).status()).toBe(404);
+  });
+});
+
+const WORLD = { width: 400, height: 200 };
+/** A rectangle in the world map's left half, clear of the drawing toolbar. */
+const HARBOUR: [number, number][] = [
+  [0.2, 0.4],
+  [0.4, 0.4],
+  [0.4, 0.8],
+  [0.2, 0.8],
+];
+
+test.describe("Drawing areas", () => {
+  test("draws an area, names it, and keeps it after a reload", async ({ page }) => {
+    const name = uniqueName("World");
+    await createMap(page, { image: "Fixture World.png", name });
+    await expect(page.getByRole("heading", { name: `Editing ${name}` })).toBeAttached();
+
+    await drawArea(page, name, WORLD, HARBOUR);
+    await page.getByLabel("Area name").fill("Harbour");
+    await expectSaved(page);
+
+    await page.reload();
+    await expect(editorAreas(page).getByRole("button", { name: /Harbour/ })).toBeVisible();
+
+    await page.getByRole("link", { name: "Done" }).click();
+    await page.getByRole("button", { name: "Harbour, not mapped yet" }).click();
+    await expect(page.getByRole("region", { name: "Harbour" })).toContainText("Not mapped yet");
+  });
+
+  test("undoes and redoes a new area", async ({ page }) => {
+    const name = uniqueName("Undo");
+    await createMap(page, { image: "Fixture World.png", name });
+    await drawArea(page, name, WORLD, HARBOUR);
+    await expect(editorAreas(page).getByRole("button")).toHaveCount(1);
+
+    await page.getByRole("button", { name: "Undo" }).click();
+    await expect(editorAreas(page)).toHaveCount(0);
+    await page.getByRole("button", { name: "Redo" }).click();
+    await expect(editorAreas(page).getByRole("button", { name: /New area/ })).toBeVisible();
+  });
+
+  test("cancels a half-drawn area with Escape, and saves nothing", async ({ page }) => {
+    const name = uniqueName("Cancel");
+    await createMap(page, { image: "Fixture World.png", name });
+    await page.getByRole("button", { name: "Draw area" }).click();
+    await mapCanvas(page, name).click({ position: { x: 100, y: 200 } });
+    await expect(page.getByRole("button", { name: "Finish area" })).toBeDisabled();
+    await mapCanvas(page, name).press("Escape");
+
+    await expect(page.getByRole("button", { name: "Draw area" })).toBeVisible();
+    await page.reload();
+    await expect(page.getByText("None yet.")).toBeVisible();
+  });
+
+  test("deletes an area", async ({ page }) => {
+    const name = uniqueName("Delete");
+    await createMap(page, { image: "Fixture World.png", name });
+    await drawArea(page, name, WORLD, HARBOUR);
+    await page.getByRole("button", { name: "Delete area…" }).click();
+    await page.getByRole("button", { name: "Delete New area" }).click();
+    await expectSaved(page);
+    await page.reload();
+    await expect(page.getByText("None yet.")).toBeVisible();
   });
 });

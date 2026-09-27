@@ -9,7 +9,7 @@ import { servicesContext, viewerContext } from "~/context";
 import { mapImageSchema, MAP_NAME_MAX } from "~/maps/schema";
 import { mapTree, type MapTreeNode } from "~/maps/tree";
 import type { MapImage } from "~/maps/types";
-import { mapUrl } from "~/maps/urls";
+import { mapEditUrl, mapUrl } from "~/maps/urls";
 import type { Route } from "./+types/maps";
 
 export function meta(_: Route.MetaArgs) {
@@ -65,7 +65,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     image: image.data,
     note: note?.id,
   });
-  return redirect(mapUrl(created.id));
+  return redirect(mapEditUrl(created.id));
 }
 
 type Loaded = Extract<Route.ComponentProps["loaderData"], { dmOnly: false }>;
@@ -122,6 +122,13 @@ function MapList({ nodes }: { nodes: MapTreeNode<Loaded["tree"][number]["map"]>[
             <span className="text-xs text-stone-500">
               {map.areas.length === 1 ? "1 area" : `${map.areas.length} areas`}
             </span>
+            <Link
+              to={mapEditUrl(map.id)}
+              aria-label={`Edit ${map.name}`}
+              className="text-xs text-stone-500 hover:underline"
+            >
+              Edit
+            </Link>
             {map.imageMissing && (
               <span className="text-xs font-semibold text-rose-700 dark:text-rose-400">
                 Image not found
