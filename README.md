@@ -4,8 +4,8 @@
 
 A personal hub for running a Dungeons & Dragons campaign. It links out to the tools used at the
 table and hosts its own modules: a **read-only wiki over an Obsidian vault**, with a preview of
-what the players are allowed to see, and a **combat tracker** that runs monsters straight from the
-vault's statblocks.
+what the players are allowed to see, a **combat tracker** that runs monsters straight from the
+vault's statblocks, and **interactive maps** made from the vault's map images.
 
 The long-term goal is interconnection: wiki, maps, characters, combat and dice all linking through
 one shared model of the campaign (NPCs, locations, sessions…). See [the roadmap](docs/roadmap.md).
@@ -45,6 +45,20 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
     companions, notes), then start one at the table. Just untick anyone absent and type the
     players' initiative. They're reusable templates you can edit, duplicate and delete, saved in
     Guildhall's data folder.
+- **Interactive maps** (DM only), made from the map images already in the vault (Wonderdraft or
+  Dungeondraft exports, say):
+  - Outline anything on a map (a region, a town, one building) by clicking round it, then name it
+    and reshape it by dragging its points, or with the keyboard. Undo and redo, and every change
+    saves itself.
+  - An area can lead to a more detailed map, a wiki note, or both. Maps nest to any depth (world,
+    region, town, building), with breadcrumbs back up. An area with no map yet is shown dashed,
+    with its note and a one-click way to attach a map, never a dead end.
+  - Large images (a 4K, 15 MB export) fit the screen, then pan and zoom smoothly and stay sharp.
+    Present mode shows just the map, for sharing on a call.
+  - Outlines are stored relative to the image, so re-exporting a map at a new resolution keeps
+    them lined up; the DM is warned if the image has moved, gone or changed shape.
+  - Maps and areas are kept in Guildhall's data folder; the vault is only read. Wiki notes link to
+    their maps.
 - **DM / player preview.** Notes are DM-only unless their frontmatter says `visibility: players`.
   The player view hides DM-only notes from navigation, search, links and direct URLs, and strips
   Obsidian `%%comments%%`, so DMs can keep inline secrets inside shared notes.

@@ -300,3 +300,71 @@ drawn and edited in the app, and the vault can't be written to.
   against; the browser measures the image when it loads and warns the DM only if the shape
   (aspect ratio) has changed. Measuring in the browser handles every format and EXIF rotation,
   needs no image library, and avoids reading a 15 MB file on the server.
+
+## 22. Maps render as one SVG, panned and zoomed through its viewBox
+
+**Date:** 2026-09-27
+
+**Context.** A world map can be a 3840×2160, 15 MB PNG. It has to fit the screen at first, pan and
+zoom smoothly, and carry clickable outlines that are accessible and testable.
+
+**Options considered.**
+
+- **Leaflet with a simple coordinate system:** handles pan, zoom and overlays, but it needs a
+  client-only setup under server rendering, its drawing plugins are dated, and its polygons have
+  no accessible names.
+- **OpenSeadragon or tiling:** made for gigapixel images; it needs a tile pyramid, and so an image
+  library with native code (`sharp`). Overkill for one 4K image on a desktop.
+- **An image and an SVG overlay under a CSS transform:** simple, but Chromium rasterises a
+  transformed layer once, so it blurs when zoomed in, and strokes scale with the zoom.
+- **One inline SVG holding the image and the outlines, zoomed by its viewBox (chosen):** the
+  browser redraws the image at every zoom, so it stays sharp; strokes keep their width
+  (`non-scaling-stroke`); and the server renders the whole-image viewBox, which is already "fit to
+  screen", so nothing moves on hydration.
+
+**Decision.** The viewport maths is pure and unit-tested (`app/maps/viewport.ts`); a hook adds
+wheel, drag and keyboard controls. A press becomes a pan only after it moves a few pixels, so
+clicks still reach areas and handles. Areas that lead to a map are real links; others are buttons
+that open the side panel, and a list in the panel is a second way in. The image is sent whole, with
+ETag revalidation and a version in its URL; a downscaled preview can be added later without
+changing the page.
+
+## 23. Maps form a tree through their areas
+
+**Date:** 2026-09-27
+
+A map's parent is never stored: it's the map with an area that leads to it. Each map may have only
+one parent, so breadcrumbs are always unambiguous and there are no cycles. The repository refuses a
+save that would give a map a second parent or put it inside itself, checking inside the write so
+two tabs can't race past it; the editor only offers maps that keep the tree intact. A link to a map
+that has been deleted, perhaps in another tab, is dropped rather than refused, so a stale editor
+can't block every later save; deleting a map clears the areas that led to it, and its own child
+maps become top-level. The tree functions still cope with a hand-edited file that breaks the rule,
+listing every map once and stopping breadcrumbs at a cycle.
+
+A new map made for an area starts with the area's note, since it's a map of the same place. The
+map's image is not part of what the editor autosaves; it changes only through its own action (a
+moved image's new location, or accepting a new shape), so an open editor can't put an old image
+back.
+
+## 24. Map visibility follows notes: explicit, failing closed, hidden looks missing
+
+**Date:** 2026-09-27
+
+Players will one day browse maps, seeing only what the DM has revealed, and reveals will change as
+the campaign goes on. So maps and areas each carry a `visibility` now, defaulting to `dm` (a
+missing or unrecognised value also means `dm`). `mapView` prepares a map for a `Viewer`, and for
+players:
+
+- a hidden map is `undefined`, so the page and its image give the same 404 as a missing map;
+- hidden areas are dropped entirely: no outline, no name;
+- links to hidden maps and notes are removed, so an area whose targets are secret looks exactly
+  like one that isn't mapped yet;
+- breadcrumbs start below the innermost hidden ancestor;
+- broken links and image file paths are reported to the DM only.
+
+The image is served by map ID, not file name, so a player-visible map never reveals its file name
+or makes the sibling images next to it reachable. It's also independent of the wiki's attachment
+rule (decision 3): a player-visible map doesn't make its image loadable through `vault-asset`. In
+this slice every map page and image requires the DM, and there's no control for visibility yet;
+the filter is covered by unit tests.

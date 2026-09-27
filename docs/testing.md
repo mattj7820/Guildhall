@@ -6,12 +6,12 @@ specification of the behaviour.
 
 ## Layers
 
-| Layer       | Tool                    | Location                                                                                        | What it covers                                                                                                                                                                                                                                                                                                                                                |
-| ----------- | ----------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit        | Vitest                  | `app/**/*.test.ts`, next to the code                                                            | Pure logic: frontmatter parsing, wikilink parsing and resolution, `%%comment%%` handling, markdown rendering and sanitising, visibility rules, config validation, hub links; combat rules (initiative and tie-breaks, turns, HP, undo, what players may see, saved-encounter validation) and dice, including the roll log and finding rolls in statblock text |
-| Integration | Vitest                  | `app/.server/vault/vault.test.ts`, `app/.server/combat/*.test.ts`, `app/.server/data/*.test.ts` | The `Vault` over the real fixture vault on disk: reading, folder tree, search, visibility filtering, asset access, statblocks and the party; the combat catalogue built from it; the JSON store and prepared encounters in temporary folders (restarts, simultaneous writes, damaged files)                                                                   |
-| End-to-end  | Playwright              | `tests/e2e/*.spec.ts`                                                                           | User journeys against the production build: hub, wikilink navigation, search, the player view hiding DM content, running a fight in the combat tracker, preparing and starting encounters, click-to-roll                                                                                                                                                      |
-| Static      | ESLint, Prettier, `tsc` | whole repo                                                                                      | Types, style, and a lint rule that bans filesystem write APIs in app code                                                                                                                                                                                                                                                                                     |
+| Layer       | Tool                    | Location                                                                                                                      | What it covers                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ----------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit        | Vitest                  | `app/**/*.test.ts`, next to the code                                                                                          | Pure logic: frontmatter parsing, wikilink parsing and resolution, `%%comment%%` handling, markdown rendering and sanitising, visibility rules, config validation, hub links; combat rules (initiative and tie-breaks, turns, HP, undo, what players may see, saved-encounter validation) and dice, including the roll log and finding rolls in statblock text; maps (geometry, pan and zoom, the map tree, validation, the editor reducer, and what players may see) |
+| Integration | Vitest                  | `app/.server/vault/vault.test.ts`, `app/.server/combat/*.test.ts`, `app/.server/maps/*.test.ts`, `app/.server/data/*.test.ts` | The `Vault` over the real fixture vault on disk: reading, folder tree, search, visibility filtering, asset access, statblocks, the party, notes by ID and finding map images; the combat catalogue built from it; the JSON store, prepared encounters and maps in temporary folders (restarts, simultaneous writes, damaged files, refused tree changes)                                                                                                             |
+| End-to-end  | Playwright              | `tests/e2e/*.spec.ts`                                                                                                         | User journeys against the production build: hub, wikilink navigation, search, the player view hiding DM content, running a fight in the combat tracker, preparing and starting encounters, click-to-roll; making maps, drawing and reshaping areas, linking maps and clicking through them                                                                                                                                                                           |
+| Static      | ESLint, Prettier, `tsc` | whole repo                                                                                                                    | Types, style, and a lint rule that bans filesystem write APIs in app code                                                                                                                                                                                                                                                                                                                                                                                            |
 
 Most behaviour is pinned down at the unit level, where it's fast and precise. End-to-end tests
 prove the pieces are wired together and cover what only a browser can show: client-side
@@ -89,13 +89,28 @@ Dice decide initiative, tie-breaks and monster HP, so tests must control them.
 - The encounter is saved in localStorage, and each Playwright test gets a fresh browser context,
   so every test starts with an empty tracker.
 
+## Maps
+
+- **Drawing in end-to-end tests** clicks positions on the map canvas, given as fractions of the
+  image (`drawArea` in `tests/e2e/support/app.ts` works out where the fitted image sits). Reshaping
+  is tested through the point handles' accessible labels ("Point 2 of Harbour at 40.0%, 40.0%"),
+  with the keyboard and with a mouse drag. Exact coordinates are left to the unit tests of
+  `geometry.ts` and `viewport.ts`; e2e checks positions only approximately.
+- **The player view of maps** isn't built yet, so what players may see (`mapView`) is covered by
+  unit tests only. The e2e tests check that every map page and image is DM-only.
+- **Image health** (a moved, missing or reshaped image) is covered at unit level (`findImage`,
+  `sameShape`, `mapView`): the e2e run can't move or change fixture files, which must stay
+  untouched.
+- The fixture map images are placeholders (colour fields and a grid), made once by a script that
+  isn't kept; they're described in `Maps/Fixture Maps.md`.
+
 ## Data written by tests
 
 - Unit and integration tests of the JSON store and prepared encounters use a fresh temporary
   folder each (`mkdtemp`), deleted afterwards.
 - The e2e server's `DATA_PATH` is `test-results/e2e-data`, which Playwright empties before it
-  starts the server on each run. Tests share that server, so they give prepared encounters
-  random names (`uniqueName()`) and never assert on the whole list.
+  starts the server on each run. Tests share that server, so they give prepared encounters and
+  maps random names (`uniqueName()`) and never assert on the whole list.
 
 ## Running
 

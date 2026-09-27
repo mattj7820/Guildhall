@@ -6,8 +6,10 @@ Guildhall links out to those tools and grows its own modules. The point of build
 **interconnection**: eventually wiki, maps, characters, combat and dice all link through a shared
 campaign model (NPCs, locations, maps, characters, sessions). See `docs/roadmap.md`.
 
-Built so far: hub home page, read-only Obsidian wiki with a DM/player preview, and a DM-only
-combat tracker (the live fight is kept in the browser; prepared encounters in the data folder).
+Built so far: hub home page, read-only Obsidian wiki with a DM/player preview, a DM-only combat
+tracker (the live fight is kept in the browser; prepared encounters in the data folder), and
+DM-only interactive maps (vault images with outlined areas leading to deeper maps and notes; kept
+in the data folder).
 
 ## Hard constraints
 
@@ -58,7 +60,8 @@ First e2e run needs `npx playwright install chromium`.
 ## Architecture map
 
 - `server.js`: HTTP entry (Vite middleware in dev, static and build in prod).
-- `server/app.ts`: creates long-lived services once (config, `LiveVault`, `PreparedEncounters`)
+- `server/app.ts`: creates long-lived services once (config, `LiveVault`, `PreparedEncounters`,
+  `CampaignMaps`)
   and passes them to React Router through `servicesContext`.
 - `app/root.tsx`: middleware sets `viewerContext` from the view cookie (`app/.server/viewer.ts`).
   **Loaders read the viewer from context and pass it into every vault query.**
@@ -73,6 +76,11 @@ First e2e run needs `npx playwright install chromium`.
   `visibility.ts` (`encounterForViewer`), `schema.ts` (zod),
   `storage.ts` (localStorage), `prepared.ts` (`startPrepared`, `toPrepared`, `summarise`), and the
   `useEncounter` hook.
+- `app/maps/`: the interactive maps model (isomorphic): `types.ts` (`CampaignMap`, `Area`, and the
+  browser-safe `MapView`), `schema.ts` (zod), `geometry.ts` (normalised outlines), `tree.ts`
+  (parents derived from area links: breadcrumbs, attachable maps, `treeProblem`), `viewport.ts`
+  (pan and zoom maths), `image-size.ts` (`sameShape`), `editor.ts` (the editor's reducer, with a
+  draft outline that's never saved), `urls.ts`, and the `usePanZoom` hook.
 - `app/.server/vault/`:
   - `read-vault.ts`: the only reader of vault files. Skips dotfolders.
   - `parse-note.ts`: frontmatter → `Note`. Visibility fails closed to `dm`.
@@ -86,19 +94,29 @@ First e2e run needs `npx playwright install chromium`.
     `{ rollable: true }` (the combat catalogue only), `rolls.ts` finds attack bonuses, dice,
     saves, skills and recharges, which are rendered as `button.statblock-roll` with `data-roll*`
     attributes.
-  - `vault.ts`: immutable snapshot (also `statblocks()` and `party()`). `live-vault.ts` rebuilds
-    it on file changes.
+  - `vault.ts`: immutable snapshot (also `statblocks()`, `party()`, `noteById()`, `mapImages()`
+    and `findImage()`, which finds a moved image by its unique file name). `live-vault.ts`
+    rebuilds it on file changes.
 - `app/.server/combat/catalogue.ts`: vault statblocks and PCs as browser-safe shapes, with
   statblocks pre-rendered. `prepared-encounters.ts`: the prepared-encounter repository.
+- `app/.server/maps/`: `campaign-maps.ts` (the map repository over `maps.json`; tree rules checked
+  inside the write), `view.ts` (`mapView`: a map for a `Viewer`, with hidden things left out), and
+  `load.ts` (finds the image, versions its URL, renders linked notes).
 - `app/.server/data/json-store.ts`: `JsonFile`, a validated, queued, atomically written JSON file.
 - `app/wiki/`: URL helpers and types shared with the browser.
 - `app/routes/`: `home`, `wiki` (layout + sidebar), `wiki-home` (landing page + `?q=` search),
   `wiki-note` (`/wiki/*`), `combat` (DM-only tracker; server `loader` + hydrating `clientLoader`;
   `?start=<id>` starts a prepared encounter), `combat-prepared` (list; create, duplicate and delete
-  actions), `combat-prepared-edit` (editor; autosave action), `vault-asset` (resource route),
-  `view-mode` (toggle action).
+  actions), `combat-prepared-edit` (editor; autosave action), `maps` (tree of maps; create action),
+  `map-view` (`/maps/:id`, the table view), `map-edit` (editor; save, createChild, setImage and
+  delete actions; `?area=` preselects an area), `map-image` (resource route: a map's image by map
+  ID), `vault-asset` (resource route), `view-mode` (toggle action).
 - `app/components/combat/`: the tracker's UI (`CombatTracker` lays it out), and the prepared
   encounter editor (`PreparedEditor`). `CombatantRow` and `AddCombatants` have a `"prep"` mode.
+- `app/components/maps/`: `MapCanvas` (the SVG canvas), `MapViewer` and `MapEditor` (the two
+  pages), `AreaShape`, `VertexHandles`, `DraftOutline`, `AreaForm`, `MapSettings`, `ImageHealth`,
+  `ImagePicker`, `NotePicker`, `NotePanel`, `MapBreadcrumbs`. Shared control classes are in
+  `app/components/styles.ts`.
 
 ## Conventions
 
@@ -113,6 +131,11 @@ First e2e run needs `npx playwright install chromium`.
   through an injected `Rng`; never call `Math.random` directly. IDs come from `newId()`
   (`app/shared/ids.ts`).
   Combatants reference vault statblocks by `StatblockRef` (entity ID plus statblock name).
+- Maps: outlines are stored as fractions of the image (0..1), never pixels; the map records the
+  pixel size they were drawn against. Maps and areas reference notes by entity ID and images by
+  vault path. A map's parent is derived from area links, never stored (one parent per map). Map
+  images are served by map ID through `map-image`, not `vault-asset`. Map changes go through
+  `editorReducer`; the image changes only through its own action.
 - Hidden content must be indistinguishable from missing content in player view (same 404, links
   become plain text, excluded from search and the tree).
 - Unit tests sit next to the code (`*.test.ts`); e2e specs in `tests/e2e/` use accessible

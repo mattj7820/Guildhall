@@ -16,6 +16,9 @@ locations, maps, characters, sessions).
   and reusable.
 - **Click-to-roll:** attacks, damage, checks, saves, skills and recharges roll straight from the
   tracker's statblocks, labelled, with natural 20s arming a critical-damage roll.
+- **Interactive maps (first slice, DM only):** maps from vault images, with outlined areas that
+  lead to deeper maps and wiki notes, nesting to any depth with breadcrumbs. Drawn and reshaped in
+  an editor with undo; a clean view for the table. Kept in the data folder.
 
 ## Parking lot
 
@@ -37,12 +40,21 @@ locations, maps, characters, sessions).
     session, import Initiative Tracker `encounter` blocks from Obsidian.
   - Later: an overlay on the battle map, with flashy turn transitions and, one day, attack
     animations.
-- **Interactive maps:** upload maps and link them together. Click a point of interest on the
-  world map to open the town map, then a building to open its interior. Map pins link to wiki
-  entities.
+- **Interactive maps, next steps:**
+  - **Player view:** players browse only the maps and areas the DM has revealed. The model, the
+    filter (`mapView`) and its tests exist; this needs visibility toggles in the editor and a
+    decision on whether revealing a map should also reveal its image to the wiki.
+  - Revealing as the party explores: fog of war, or a live reveal during a session (needs the
+    shared, server-held state from the multiplayer work).
+  - Touch: pinch zoom and touch-friendly handles, for a tablet at the table.
+  - A downscaled preview of very large images, for playing over a slow connection.
+  - Reading Wonderdraft or Dungeondraft files directly (their labels could suggest areas).
+  - Pins and labels as well as outlines; searching areas; an area's own short description.
 - **Map generation:** quick generated maps for inspiration or speed (dwellings, one-page dungeons,
   encounter terrain), in the spirit of watabou's generators. Ideally exportable to
-  Dungeondraft/Wonderdraft for editing. Possibly AI-assisted, with style rules for continuity.
+  Dungeondraft/Wonderdraft for editing. Possibly AI-assisted, with style rules for continuity. The
+  natural entry point is an interactive-map area that isn't mapped yet: "Generate a map" beside
+  "Attach a map", creating a map and linking the area the same way.
 - **Image generation:** portraits of villains and characters, and scenery to show at the table.
   AI is allowed here, or the hub just links to a tool.
 - **Virtual tabletop:** live shared battle maps with tokens, eventually replacing Roll20. Only
