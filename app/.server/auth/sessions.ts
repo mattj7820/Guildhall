@@ -16,17 +16,30 @@ export type Sessions = SessionStorage<SessionData>;
 const THIRTY_DAYS = 60 * 60 * 24 * 30;
 export const REFRESH_AFTER_MS = 24 * 60 * 60 * 1000;
 
+/** How Guildhall's cookies are signed and sent. */
+export interface CookieSettings {
+  /** Newest first; older ones still verify, so a secret can be rotated. */
+  secrets: string[];
+  /** Sent over HTTPS only. */
+  secure: boolean;
+}
+
 /**
- * Session cookies, signed with SESSION_SECRET. Without one (only allowed locally, over HTTP), a
- * random secret is made at startup, so everyone is signed out whenever the server restarts.
+ * The cookie settings for this server. Without SESSION_SECRET (only allowed locally, over HTTP),
+ * a random secret is made at startup, so everyone is signed out whenever the server restarts.
  */
-export function createSessions(config: Pick<Config, "publicUrl" | "sessionSecrets">): Sessions {
-  const secure = config.publicUrl.startsWith("https:");
+export function cookieSettings(
+  config: Pick<Config, "publicUrl" | "sessionSecrets">,
+): CookieSettings {
   let secrets = config.sessionSecrets;
   if (!secrets) {
     console.warn("[auth] SESSION_SECRET is not set; sign-ins will end when the server restarts.");
     secrets = [randomBytes(32).toString("base64url")];
   }
+  return { secrets, secure: config.publicUrl.startsWith("https:") };
+}
+
+export function createSessions({ secrets, secure }: CookieSettings): Sessions {
   return createCookieSessionStorage<SessionData>({
     cookie: {
       // The __Host- prefix makes the browser refuse the cookie unless it's secure, for this host

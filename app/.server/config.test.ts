@@ -57,6 +57,26 @@ describe("loadConfig", () => {
     expect(config.dmDiscordIds).toEqual(["123456789012345678", "234567890123456789"]);
   });
 
+  it("reads the Discord application, if there is one", () => {
+    expect(loadConfig({ VAULT_PATH: FIXTURE_VAULT }).discord).toBeUndefined();
+    expect(
+      loadConfig({
+        VAULT_PATH: FIXTURE_VAULT,
+        DISCORD_CLIENT_ID: "1234",
+        DISCORD_CLIENT_SECRET: "shh",
+      }).discord,
+    ).toEqual({ clientId: "1234", clientSecret: "shh" });
+  });
+
+  it.each([[{ DISCORD_CLIENT_ID: "1234" }], [{ DISCORD_CLIENT_SECRET: "shh" }]])(
+    "refuses half a Discord application: %j",
+    (discord) => {
+      expect(() => loadConfig({ VAULT_PATH: FIXTURE_VAULT, ...discord })).toThrow(
+        /Set both DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET/,
+      );
+    },
+  );
+
   it("has dev sign-in off unless asked for, and allows it on this computer", () => {
     expect(loadConfig({ VAULT_PATH: FIXTURE_VAULT }).devLogin).toBe(false);
     expect(

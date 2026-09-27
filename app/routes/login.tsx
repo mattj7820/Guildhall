@@ -14,12 +14,21 @@ export function meta(_: Route.MetaArgs) {
 export function loader({ request, context }: Route.LoaderArgs) {
   const redirectTo = safeRedirect(new URL(request.url).searchParams.get("redirectTo"));
   if (context.get(accountContext).kind === "member") throw redirect(redirectTo);
-  const { config, vault } = context.get(servicesContext);
+  const { config, vault, discord } = context.get(servicesContext);
   return {
+    discord: !!discord,
     devLogin: config.devLogin,
     devPlayers: config.devLogin ? partyPlayers(vault.current) : [],
   };
 }
+
+/** What went wrong with a Discord sign-in, from `?problem=` (see auth-discord-callback). */
+const PROBLEMS: Record<string, string> = {
+  cancelled: "Sign-in was cancelled at Discord.",
+  expired: "That sign-in took too long, or was started in another tab or browser. Try again.",
+  discord: "Discord couldn't confirm who you are just now. Try again in a moment.",
+  full: "Too many people are waiting to be let in. Ask the DM to clear the list, then try again.",
+};
 
 /**
  * Dev sign-in (form `intent=dev`): signs in as the DM, a player from the PC notes, or someone
@@ -70,14 +79,35 @@ export default function Login({ loaderData }: Route.ComponentProps) {
   const [params] = useSearchParams();
   const actionData = useActionData<typeof action>();
   const redirectTo = params.get("redirectTo") ?? "/";
+  const problem = PROBLEMS[params.get("problem") ?? ""];
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-6 px-4 py-12">
       <h1 className="font-serif text-3xl font-bold">Sign in to Guildhall</h1>
-      {!loaderData.devLogin && (
+      {problem && (
+        <p role="alert" className="rounded-md bg-amber-100 px-3 py-2 text-sm text-amber-950">
+          {problem}
+        </p>
+      )}
+      {!loaderData.devLogin && !loaderData.discord && (
         <p className="text-stone-600 dark:text-stone-400">
           Signing in isn't set up on this server yet.
         </p>
+      )}
+
+      {loaderData.discord && (
+        <Form method="post" action="/auth/discord" reloadDocument className="flex flex-col gap-2">
+          <input type="hidden" name="redirectTo" value={redirectTo} />
+          <button
+            type="submit"
+            className="rounded-md bg-[#5865F2] px-4 py-2.5 font-semibold text-white hover:bg-[#4752c4]"
+          >
+            Sign in with Discord
+          </button>
+          <p className="text-center text-xs text-stone-500">
+            Guildhall only learns your Discord name. New here? The DM lets you in after you sign in.
+          </p>
+        </Form>
       )}
 
       {loaderData.devLogin && (

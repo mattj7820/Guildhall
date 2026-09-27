@@ -18,6 +18,8 @@ export default [
   route("view-mode", "routes/view-mode.ts"),
   route("login", "routes/login.tsx"),
   route("logout", "routes/logout.ts"),
+  route("auth/discord", "routes/auth-discord.ts"),
+  route("auth/discord/callback", "routes/auth-discord-callback.ts"),
   route("waiting", "routes/waiting.tsx"),
   route("members", "routes/members.tsx"),
 ] satisfies RouteConfig;

@@ -46,6 +46,10 @@ export default defineConfig({
       // Pretend accounts instead of Discord; only possible because the server is on this machine.
       DEV_LOGIN: "true",
       SESSION_SECRET: "e2e-only-session-secret-not-for-real-use",
+      // A made-up Discord application: enough to test sending people to Discord and turning away
+      // bad answers. Tests never reach Discord itself.
+      DISCORD_CLIENT_ID: "e2e-fake-client-id",
+      DISCORD_CLIENT_SECRET: "e2e-fake-client-secret",
     },
   },
 });

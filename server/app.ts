@@ -3,7 +3,9 @@ import express from "express";
 import { RouterContextProvider } from "react-router";
 import { PreparedEncounters } from "~/.server/combat/prepared-encounters";
 import { loadConfig } from "~/.server/config";
-import { createSessions } from "~/.server/auth/sessions";
+import { discordAuth } from "~/.server/auth/discord";
+import { createAttemptCookie } from "~/.server/auth/discord-sign-in";
+import { cookieSettings, createSessions } from "~/.server/auth/sessions";
 import { CampaignMaps } from "~/.server/maps/campaign-maps";
 import { Members } from "~/.server/members/members";
 import { LiveVault } from "~/.server/vault/live-vault";
@@ -22,13 +24,24 @@ async function createServices(): Promise<Services> {
   if (config.devLogin) {
     console.warn("[auth] DEV_LOGIN is on: anyone on this computer can sign in as anyone.");
   }
+  if (!config.devLogin && !config.discord) {
+    console.warn("[auth] No way to sign in: set up Discord (see .env.example) or DEV_LOGIN.");
+  }
+  const cookies = cookieSettings(config);
   return {
     config,
     vault,
     preparedEncounters: PreparedEncounters.inFolder(config.dataPath),
     maps: CampaignMaps.inFolder(config.dataPath),
     members: Members.inFolder(config.dataPath),
-    sessions: createSessions(config),
+    sessions: createSessions(cookies),
+    signInAttempts: createAttemptCookie(cookies),
+    ...(config.discord && {
+      discord: discordAuth({
+        ...config.discord,
+        redirectUri: new URL("/auth/discord/callback", config.publicUrl).href,
+      }),
+    }),
   };
 }
 

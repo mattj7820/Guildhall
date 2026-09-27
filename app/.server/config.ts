@@ -30,6 +30,8 @@ export interface Config {
   dmDiscordIds: string[];
   /** One-click sign-in as the DM or a player, for local development and tests only. */
   devLogin: boolean;
+  /** The Discord application for "Sign in with Discord", when set up. */
+  discord?: { clientId: string; clientSecret: string };
 }
 
 export class ConfigError extends Error {
@@ -87,6 +89,8 @@ const envSchema = z.object({
       }),
     ),
   ),
+  DISCORD_CLIENT_ID: z.preprocess(emptyAsUndefined, z.string().optional()),
+  DISCORD_CLIENT_SECRET: z.preprocess(emptyAsUndefined, z.string().optional()),
   DEV_LOGIN: z.preprocess(
     emptyAsUndefined,
     z
@@ -144,6 +148,12 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
         `Turn DEV_LOGIN off when hosting.`,
     );
   }
+  const { DISCORD_CLIENT_ID: clientId, DISCORD_CLIENT_SECRET: clientSecret } = parsed.data;
+  if (Boolean(clientId) !== Boolean(clientSecret)) {
+    throw new ConfigError(
+      "Set both DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET for Discord sign-in, or neither.",
+    );
+  }
   if (publicUrl.protocol === "https:" && !parsed.data.SESSION_SECRET) {
     throw new ConfigError("SESSION_SECRET must be set when Guildhall is hosted over HTTPS.");
   }
@@ -158,6 +168,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     sessionSecrets: parsed.data.SESSION_SECRET,
     dmDiscordIds: parsed.data.DM_DISCORD_IDS,
     devLogin: parsed.data.DEV_LOGIN,
+    ...(clientId && clientSecret ? { discord: { clientId, clientSecret } } : {}),
   };
 }
 

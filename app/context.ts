@@ -1,5 +1,6 @@
-import { createContext } from "react-router";
+import { createContext, type Cookie } from "react-router";
 import type { Account } from "~/.server/auth/account";
+import type { DiscordAuth } from "~/.server/auth/discord";
 import type { Sessions } from "~/.server/auth/sessions";
 import type { PreparedEncounters } from "~/.server/combat/prepared-encounters";
 import type { Config } from "~/.server/config";
@@ -20,6 +21,10 @@ export interface Services {
   members: Members;
   /** Signed session cookies. */
   sessions: Sessions;
+  /** Remembers a Discord sign-in between leaving for Discord and coming back. */
+  signInAttempts: Cookie;
+  /** "Sign in with Discord", when a Discord application is set up. */
+  discord?: DiscordAuth;
 }
 
 export const servicesContext = createContext<Services>();
