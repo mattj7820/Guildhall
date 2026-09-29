@@ -20,3 +20,16 @@ export function isSameOrigin(
   const expected = config.publicUrlIsSet ? config.publicUrl : new URL(request.url).origin;
   return origin === expected;
 }
+
+/**
+ * Whether a live connection was opened by Guildhall's own pages. Opening a websocket is a GET, so
+ * `isSameOrigin` would let it through, and a page on another site could then act as the signed-in
+ * user over the socket. Browsers always send `Origin` when opening one, so it's required here.
+ */
+export function isOwnSocketOrigin(
+  request: Request,
+  config: Pick<Config, "publicUrl" | "publicUrlIsSet">,
+): boolean {
+  const expected = config.publicUrlIsSet ? config.publicUrl : new URL(request.url).origin;
+  return request.headers.get("Origin") === expected;
+}

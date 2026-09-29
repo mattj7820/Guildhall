@@ -17,6 +17,8 @@ export default [
   route("maps/:id/fog", "routes/map-fog.ts"),
   route("maps/:id/tiles/:x/:y", "routes/map-tile.ts"),
   route("maps/:id/version", "routes/map-version.ts"),
+  // PROTOTYPE (removed before the PR).
+  route("maps/:id/tokens-prototype", "routes/map-tokens-prototype.tsx"),
   route("vault-asset/*", "routes/vault-asset.ts"),
   route("view-mode", "routes/view-mode.ts"),
   route("login", "routes/login.tsx"),

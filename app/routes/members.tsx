@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { data, Form } from "react-router";
-import { dmDiscordIds } from "~/.server/auth/middleware";
+import { dmDiscordIds } from "~/.server/auth/identify";
 import { DataFileError } from "~/.server/data/json-store";
 import { partyPlayers } from "~/.server/members/players";
 import type { Player } from "~/campaign/types";

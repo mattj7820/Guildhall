@@ -1,10 +1,8 @@
 import { data, redirect, type MiddlewareFunction } from "react-router";
 import { PLAYER_VIEWER } from "~/campaign/types";
-import { accountContext, servicesContext, viewerContext, type Services } from "~/context";
-import { previewingAsPlayer } from "../viewer";
+import { accountContext, servicesContext, viewerContext } from "~/context";
 import { access } from "./access";
-import { resolveAccount, viewerFor } from "./account";
-import { DEV_DM } from "./dev-login";
+import { identify } from "./identify";
 import { isSameOrigin } from "./origin";
 import { REFRESH_AFTER_MS } from "./sessions";
 
@@ -22,14 +20,7 @@ export const authMiddleware: MiddlewareFunction<Response> = async (
     throw data("This request didn't come from Guildhall's own pages.", { status: 403 });
   }
 
-  const session = await services.sessions.getSession(request.headers.get("Cookie"));
-  const discordId = session.get("discordId");
-  const member = discordId ? await services.members.get(discordId) : undefined;
-  const account = resolveAccount(
-    { discordId, sessionKey: session.get("sessionKey") },
-    member,
-    dmDiscordIds(services),
-  );
+  const { session, account, viewer } = await identify(request, services);
   context.set(accountContext, account);
 
   const verdict = access(account, url, { wantsPage: wantsPage(request) });
@@ -37,10 +28,7 @@ export const authMiddleware: MiddlewareFunction<Response> = async (
   if ("status" in verdict) throw data("Sign in to Guildhall first.", { status: verdict.status });
 
   // Pages open to everyone (signing in) get the least a viewer can see.
-  context.set(
-    viewerContext,
-    viewerFor(account, await previewingAsPlayer(request)) ?? PLAYER_VIEWER,
-  );
+  context.set(viewerContext, viewer ?? PLAYER_VIEWER);
 
   const response = await next();
 
@@ -61,13 +49,6 @@ export const authMiddleware: MiddlewareFunction<Response> = async (
   }
   return response;
 };
-
-/** The DM's Discord IDs from the settings, plus the pretend DM when dev sign-in is on. */
-export function dmDiscordIds({ config }: Pick<Services, "config">): ReadonlySet<string> {
-  return new Set(
-    config.devLogin ? [...config.dmDiscordIds, DEV_DM.discordId] : config.dmDiscordIds,
-  );
-}
 
 /**
  * Whether the browser is showing a page (a page load, or React Router fetching a page's data),

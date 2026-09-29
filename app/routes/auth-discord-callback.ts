@@ -1,7 +1,7 @@
 import { data, redirect } from "react-router";
 import { checkCallback } from "~/.server/auth/discord-sign-in";
 import { DiscordError } from "~/.server/auth/discord";
-import { dmDiscordIds } from "~/.server/auth/middleware";
+import { dmDiscordIds } from "~/.server/auth/identify";
 import { servicesContext } from "~/context";
 import type { Route } from "./+types/auth-discord-callback";
 

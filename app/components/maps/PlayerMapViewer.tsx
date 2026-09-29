@@ -32,6 +32,10 @@ export function PlayerMapViewer({ map, version }: { map: MapView; version: strin
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-stone-200 px-4 py-2 dark:border-stone-800">
         <MapBreadcrumbs crumbs={map.breadcrumbs} />
         <h1 className="sr-only">{map.name}</h1>
+        {/* PROTOTYPE (removed before the PR) */}
+        <Link to={`${mapUrl(map.id)}/tokens-prototype`} className="ml-auto text-sm underline">
+          Tokens (prototype)
+        </Link>
       </div>
       <div className="flex min-h-0 flex-1 flex-col bg-stone-50 md:flex-row dark:bg-stone-950">
         <div className="relative flex min-h-[50vh] flex-1">
@@ -93,7 +97,7 @@ export function PlayerMapViewer({ map, version }: { map: MapView; version: strin
 }
 
 /** The tiles players may have, each at its place, over black. */
-function Tiles({ size, layer }: { size: Size; layer?: TileLayer }) {
+export function Tiles({ size, layer }: { size: Size; layer?: TileLayer }) {
   const scaleX = layer ? size.width / layer.width : 1;
   const scaleY = layer ? size.height / layer.height : 1;
   return (

@@ -57,6 +57,10 @@ export function MapViewer({ map, images }: { map: MapView; images: string[] }) {
           >
             Fog
           </button>
+          {/* PROTOTYPE (removed before the PR) */}
+          <Link to={`${mapUrl(map.id)}/tokens-prototype`} className={buttonClass}>
+            Tokens (prototype)
+          </Link>
           <button type="button" className={buttonClass} onClick={togglePresenting}>
             Present
           </button>

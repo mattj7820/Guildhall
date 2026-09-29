@@ -3,6 +3,7 @@ import type { Account } from "~/.server/auth/account";
 import type { DiscordAuth } from "~/.server/auth/discord";
 import type { Characters } from "~/.server/characters/characters";
 import type { Sessions } from "~/.server/auth/sessions";
+import type { LiveSockets } from "~/.server/live/sockets";
 import type { PreparedEncounters } from "~/.server/combat/prepared-encounters";
 import type { Config } from "~/.server/config";
 import type { CampaignMaps } from "~/.server/maps/campaign-maps";
@@ -28,6 +29,8 @@ export interface Services {
   characters: Characters;
   /** Everyone who has signed in, approved or waiting, kept in the data folder. */
   members: Members;
+  /** Live connections: websockets on the same server, signed in like pages. */
+  live: LiveSockets;
   /** Signed session cookies. */
   sessions: Sessions;
   /** Remembers a Discord sign-in between leaving for Discord and coming back. */
