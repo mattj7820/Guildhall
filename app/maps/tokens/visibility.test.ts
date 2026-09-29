@@ -88,11 +88,11 @@ describe("tokensForViewer", () => {
       expect(ids(DM_VIEWER, [pc("Party/Nobody")])).toEqual([]);
     });
 
-    it("gives the DM every party member, movable, marking those under the fog", () => {
+    it("gives the DM every party member, movable, with their note, marking those under the fog", () => {
       const views = view(DM_VIEWER, [pc("Party/Two", DARK), pc("Party/Gone", LIT)]);
-      expect(views.map(({ id, hidden, movable }) => ({ id, hidden, movable }))).toEqual([
-        { id: "Party/Two", hidden: "fog", movable: true },
-        { id: "Party/Gone", hidden: undefined, movable: true },
+      expect(views.map(({ note, hidden, movable }) => ({ note, hidden, movable }))).toEqual([
+        { note: "Party/Two", hidden: "fog", movable: true },
+        { note: "Party/Gone", hidden: undefined, movable: true },
       ]);
     });
 
@@ -118,6 +118,7 @@ describe("tokensForViewer", () => {
     for (const token of view(playerOne, tokens)) {
       expect(token).not.toHaveProperty("hidden");
       expect(token).not.toHaveProperty("visibility");
+      expect(token).not.toHaveProperty("note");
     }
   });
 });

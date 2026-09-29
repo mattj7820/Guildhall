@@ -5,6 +5,11 @@ import { areaRevealed } from "~/maps/fog/coverage";
 import type { FogMask } from "~/maps/fog/types";
 import type { AreaView, MapView, Size } from "~/maps/types";
 import { mapEditUrl, mapUrl } from "~/maps/urls";
+import { normalise } from "~/maps/geometry";
+import type { Token, PartyPlacement, TokenView } from "~/maps/tokens/types";
+import { useMapTokens } from "~/maps/tokens/useMapTokens";
+import type { Point } from "~/maps/types";
+import { newId } from "~/shared/ids";
 import { AreaShape } from "./AreaShape";
 import { FogAreaList } from "./FogAreaList";
 import { FogLayer } from "./FogLayer";
@@ -15,6 +20,8 @@ import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
 import { NotePanel } from "./NotePanel";
 import { ShareSwitch } from "./ShareSwitch";
+import { TokenLayer } from "./TokenLayer";
+import { TokenPanel, type Placing } from "./TokenPanel";
 import { useFogTools } from "./useFogTools";
 
 /** How dark the fog is for the DM, who sees the map through it. */
@@ -32,7 +39,17 @@ function seenByPlayers(areas: AreaView[], mask: FogMask): AreaView[] {
  * as players see it. The DM always sees the fog of a shared map, see-through, and Fog opens the
  * tools to reveal and hide.
  */
-export function MapViewer({ map, images }: { map: MapView; images: string[] }) {
+export function MapViewer({
+  map,
+  tokens: fromPage,
+  party,
+  images,
+}: {
+  map: MapView;
+  tokens: TokenView[];
+  party: PartyPlacement[];
+  images: string[];
+}) {
   const [selectedId, setSelectedId] = useState<string>();
   const selected = map.areas.find((area) => area.id === selectedId);
   const [actualSize, setActualSize] = useState<Size>();
@@ -41,6 +58,28 @@ export function MapViewer({ map, images }: { map: MapView; images: string[] }) {
   const fog = useFogTools(map.id, map.fog, fogMode && !presenting);
   const shared = !!map.shared;
   const fogOpacity = presenting ? 1 : DM_FOG_OPACITY;
+  const { tokens, error: tokenError, send } = useMapTokens(map.id, fromPage);
+  const [placing, setPlacing] = useState<Placing>();
+  const [selectedTokenId, setSelectedTokenId] = useState<string>();
+  const selectedToken = tokens.find((token) => token.id === selectedTokenId);
+
+  function place(at: Point) {
+    const token: Token =
+      placing?.kind === "character"
+        ? { kind: "character", id: newId(), map: map.id, at, note: placing.note }
+        : {
+            kind: "marker",
+            id: newId(),
+            map: map.id,
+            at,
+            name: placing?.name ?? "",
+            colour: placing?.kind === "marker" ? placing.colour : "red",
+            visibility: placing?.kind === "marker" && placing.shown ? "players" : "dm",
+          };
+    void send([{ type: "place", token }]);
+    setPlacing(undefined);
+    setSelectedTokenId(token.id);
+  }
 
   return (
     <main className="flex h-[calc(100dvh-3.5rem)] flex-col">
@@ -109,41 +148,65 @@ export function MapViewer({ map, images }: { map: MapView; images: string[] }) {
             imageUrl={map.image.url}
             className="flex-1"
             onImageMeasured={setActualSize}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && placing) setPlacing(undefined);
+            }}
           >
-            {(canvas) =>
-              fogMode && !presenting ? (
-                <FogPainter
-                  mask={fog.mask}
+            {(canvas) => (
+              <>
+                {fogMode && !presenting ? (
+                  <FogPainter
+                    mask={fog.mask}
+                    size={map.size}
+                    canvas={canvas}
+                    tool={fog.tool}
+                    mode={fog.mode}
+                    radius={fog.radius}
+                    areas={map.areas}
+                    panning={fog.panning}
+                    opacity={fogOpacity}
+                    onChange={fog.change}
+                  />
+                ) : (
+                  <>
+                    {shared && <FogLayer mask={fog.mask} size={map.size} opacity={fogOpacity} />}
+                    <g aria-label="Map areas" role="group">
+                      {(presenting && shared ? seenByPlayers(map.areas, fog.mask) : map.areas).map(
+                        (area) => (
+                          <AreaShape
+                            key={area.id}
+                            area={area}
+                            size={map.size}
+                            scale={canvas.scale}
+                            selected={area.id === selectedId}
+                            onSelect={(chosen) => setSelectedId(chosen.id)}
+                          />
+                        ),
+                      )}
+                    </g>
+                  </>
+                )}
+                <TokenLayer
+                  tokens={presenting ? tokens.filter((token) => !token.hidden) : tokens}
                   size={map.size}
-                  canvas={canvas}
-                  tool={fog.tool}
-                  mode={fog.mode}
-                  radius={fog.radius}
-                  areas={map.areas}
-                  panning={fog.panning}
-                  opacity={fogOpacity}
-                  onChange={fog.change}
+                  scale={canvas.scale}
+                  selectedId={presenting ? undefined : selectedTokenId}
+                  onSelect={presenting ? undefined : (token) => setSelectedTokenId(token.id)}
                 />
-              ) : (
-                <>
-                  {shared && <FogLayer mask={fog.mask} size={map.size} opacity={fogOpacity} />}
-                  <g aria-label="Map areas" role="group">
-                    {(presenting && shared ? seenByPlayers(map.areas, fog.mask) : map.areas).map(
-                      (area) => (
-                        <AreaShape
-                          key={area.id}
-                          area={area}
-                          size={map.size}
-                          scale={canvas.scale}
-                          selected={area.id === selectedId}
-                          onSelect={(chosen) => setSelectedId(chosen.id)}
-                        />
-                      ),
-                    )}
-                  </g>
-                </>
-              )
-            }
+                {placing && !presenting && (
+                  <rect
+                    {...map.size}
+                    fill="transparent"
+                    className="cursor-crosshair"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      const point = canvas.clientToImage(event.clientX, event.clientY);
+                      if (point) place(normalise(point[0], point[1], map.size));
+                    }}
+                  />
+                )}
+              </>
+            )}
           </MapCanvas>
           {!presenting && map.areas.length > 0 && <Legend />}
           {presenting && (
@@ -184,6 +247,19 @@ export function MapViewer({ map, images }: { map: MapView; images: string[] }) {
                   settings.
                 </p>
               )
+            )}
+            {!fogMode && (
+              <TokenPanel
+                mapId={map.id}
+                party={party}
+                tokens={tokens}
+                selected={selectedToken}
+                placing={placing}
+                error={tokenError}
+                onPlace={setPlacing}
+                onSelect={(token) => setSelectedTokenId(token?.id)}
+                send={(actions) => void send(actions)}
+              />
             )}
             <AreaList areas={map.areas} onSelect={(area) => setSelectedId(area.id)} />
           </aside>

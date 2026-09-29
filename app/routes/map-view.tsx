@@ -1,5 +1,6 @@
 import { data, isRouteErrorResponse, Link } from "react-router";
 import { loadMapView, mapVersion } from "~/.server/maps/load";
+import { loadTokens, partyPlacements } from "~/.server/maps/tokens";
 import { MapViewer } from "~/components/maps/MapViewer";
 import { PlayerMapViewer } from "~/components/maps/PlayerMapViewer";
 import { servicesContext, viewerContext } from "~/context";
@@ -18,20 +19,42 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   // A map the viewer can't see gets the same 404 as one that doesn't exist.
   const view = map && (await loadMapView(services, map, maps, viewer));
   if (!map || !view) throw data("Map not found", { status: 404 });
-  // Only the DM gets the vault's image list (for a moved image); players get just the map.
+  const tokens = await loadTokens(services, map, viewer);
+  // Only the DM gets the vault's image list (for a moved image) and the party to place; players
+  // get just the map and the tokens they may see.
   if (viewer.role !== "dm") {
-    return { forDm: false as const, map: view, version: await mapVersion(services, map) };
+    const version = await mapVersion(services, map, viewer);
+    return { forDm: false as const, map: view, tokens, version };
   }
-  return { forDm: true as const, map: view, images: services.vault.current.mapImages() };
+  return {
+    forDm: true as const,
+    map: view,
+    tokens,
+    party: await partyPlacements(services, maps),
+    images: services.vault.current.mapImages(),
+  };
 }
 
 export default function MapPage({ loaderData }: Route.ComponentProps) {
   if (!loaderData.forDm) {
     return (
-      <PlayerMapViewer key={loaderData.map.id} map={loaderData.map} version={loaderData.version} />
+      <PlayerMapViewer
+        key={loaderData.map.id}
+        map={loaderData.map}
+        tokens={loaderData.tokens}
+        version={loaderData.version}
+      />
     );
   }
-  return <MapViewer key={loaderData.map.id} map={loaderData.map} images={loaderData.images} />;
+  return (
+    <MapViewer
+      key={loaderData.map.id}
+      map={loaderData.map}
+      tokens={loaderData.tokens}
+      party={loaderData.party}
+      images={loaderData.images}
+    />
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

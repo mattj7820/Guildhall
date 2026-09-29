@@ -12,6 +12,7 @@ import { cookieSettings, createSessions } from "~/.server/auth/sessions";
 import { Characters } from "~/.server/characters/characters";
 import { CampaignMaps } from "~/.server/maps/campaign-maps";
 import { MapFogs } from "~/.server/maps/map-fogs";
+import { MapTokens } from "~/.server/maps/map-tokens";
 import { PlayerImages } from "~/.server/maps/player-image";
 import { FileCache } from "~/.server/data/file-cache";
 import { Live } from "~/.server/live/live";
@@ -44,6 +45,7 @@ async function createServices(): Promise<Services> {
     preparedEncounters: PreparedEncounters.inFolder(config.dataPath),
     maps: CampaignMaps.inFolder(config.dataPath),
     fogs: MapFogs.inFolder(config.dataPath),
+    tokens: MapTokens.inFolder(config.dataPath),
     playerImages: new PlayerImages(new FileCache(path.join(config.dataPath, "cache", "map-tiles"))),
     characters: Characters.inFolder(config.dataPath),
     members: Members.inFolder(config.dataPath),

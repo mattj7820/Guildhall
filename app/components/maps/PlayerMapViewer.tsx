@@ -5,11 +5,13 @@ import type { AreaView, MapView, NoteLink, Size, TileLayer } from "~/maps/types"
 import { mapUrl, mapVersionUrl } from "~/maps/urls";
 import { useMapUpdates } from "~/maps/useMapUpdates";
 import { LiveStatus } from "../LiveStatus";
+import type { TokenView } from "~/maps/tokens/types";
 import { AreaShape } from "./AreaShape";
 import { useFogImage } from "./FogLayer";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
 import { NotePanel } from "./NotePanel";
+import { TokenLayer } from "./TokenLayer";
 
 const REVEALED_ID = "revealed-by-fog";
 
@@ -19,7 +21,15 @@ const REVEALED_ID = "revealed-by-fog";
  * everything else, so this only lays out what it was given. What the DM reveals shows within a
  * few seconds, without reloading the page.
  */
-export function PlayerMapViewer({ map, version }: { map: MapView; version: string }) {
+export function PlayerMapViewer({
+  map,
+  tokens,
+  version,
+}: {
+  map: MapView;
+  tokens: TokenView[];
+  version: string;
+}) {
   const status = useMapUpdates(map.id, mapVersionUrl(map.id), version);
   const [selectedId, setSelectedId] = useState<string>();
   const selected = map.areas.find((area) => area.id === selectedId);
@@ -73,6 +83,7 @@ export function PlayerMapViewer({ map, version }: { map: MapView; version: strin
                     />
                   ))}
                 </g>
+                <TokenLayer tokens={tokens} size={map.size} scale={scale} />
               </>
             )}
           </MapCanvas>

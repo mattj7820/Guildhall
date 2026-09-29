@@ -65,7 +65,7 @@ export function tokensForViewer({ tokens, viewer, fog, party }: Input): TokenVie
       ...(member.portraitUrl && { portraitUrl: member.portraitUrl }),
       movable: theirs,
       ...(viewer.role === "dm"
-        ? !revealed && { hidden: "fog" as const }
+        ? { note: token.note, ...(!revealed && { hidden: "fog" as const }) }
         : !revealed && { inTheDark: true }),
     });
   }

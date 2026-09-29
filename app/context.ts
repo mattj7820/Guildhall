@@ -8,6 +8,7 @@ import type { PreparedEncounters } from "~/.server/combat/prepared-encounters";
 import type { Config } from "~/.server/config";
 import type { CampaignMaps } from "~/.server/maps/campaign-maps";
 import type { MapFogs } from "~/.server/maps/map-fogs";
+import type { MapTokens } from "~/.server/maps/map-tokens";
 import type { PlayerImages } from "~/.server/maps/player-image";
 import type { Members } from "~/.server/members/members";
 import type { LiveVault } from "~/.server/vault/live-vault";
@@ -23,6 +24,8 @@ export interface Services {
   maps: CampaignMaps;
   /** Each map's fog of war, kept in the data folder. */
   fogs: MapFogs;
+  /** Party members' and the DM's tokens on maps, kept in the data folder. */
+  tokens: MapTokens;
   /** What players get of map images: tiles with the fogged parts taken out. */
   playerImages: PlayerImages;
   /** Character sheets, shared companions and their bags, kept in the data folder. */

@@ -1,0 +1,232 @@
+import { expect, test, type Browser, type Page } from "@playwright/test";
+import { createMap, mapCanvas, onImage, ORIGIN, uniqueName } from "./support/app";
+import { SIGNED_IN } from "./support/sign-in";
+
+/**
+ * Tokens on maps. Tests start as the DM, who makes a shared map of the fog fixture (1024×512)
+ * with its left third revealed; Player One (who plays Fixture PC One) gets a second browser.
+ *
+ * Each party member is in one place, on one map, and every spec shares the server's party, so
+ * these tests run in order, and no other spec places party members.
+ */
+test.describe.configure({ mode: "serial" });
+
+const FOG_IMAGE = { width: 1024, height: 512 };
+const LIT: [number, number] = [0.15, 0.5];
+const LIT_TOO: [number, number] = [0.2, 0.3];
+const DARK: [number, number] = [0.7, 0.5];
+
+async function sharedMap(page: Page) {
+  const name = uniqueName("Tokens");
+  await createMap(page, { image: "Fixture Fog.png", name });
+  const map = page.url().replace(/\/edit$/, "");
+  const post = (path: string, data: object) =>
+    page.request.post(`${map}/${path}`, { headers: { Origin: ORIGIN }, data });
+  expect((await post("edit", { intent: "setVisibility", visibility: "players" })).status()).toBe(
+    200,
+  );
+  const leftThird = [
+    [0, 0],
+    [0.3, 0],
+    [0.3, 1],
+    [0, 1],
+  ];
+  const reveal = { type: "paint", mode: "reveal", shape: { kind: "polygon", points: leftThird } };
+  expect((await post("fog", { changes: [reveal] })).status()).toBe(200);
+  await page.goto(map);
+  return { name, map };
+}
+
+async function asPlayerOne(browser: Browser) {
+  const context = await browser.newContext({ storageState: SIGNED_IN.playerOne, baseURL: ORIGIN });
+  return context.newPage();
+}
+
+const tokens = (page: Page) => page.getByRole("group", { name: "Tokens" });
+
+async function clickMap(page: Page, name: string, at: [number, number]) {
+  await mapCanvas(page, name).click({ position: await onImage(page, name, FOG_IMAGE, at) });
+}
+
+/** Places a party member (by the name on their card) where the DM clicks. */
+async function placeMember(page: Page, mapName: string, member: string, at: [number, number]) {
+  await page
+    .getByRole("list", { name: "Party" })
+    .getByRole("button", { name: new RegExp(`^(Place|Bring) ${member} here$`) })
+    .click();
+  await clickMap(page, mapName, at);
+  await expect(
+    tokens(page).getByRole("button", { name: new RegExp(`^${member} at`) }),
+  ).toBeVisible();
+}
+
+async function addMarker(
+  page: Page,
+  mapName: string,
+  { name, shown, at }: { name: string; shown: boolean; at: [number, number] },
+) {
+  await page.getByRole("button", { name: "Add marker" }).click();
+  const form = page.getByRole("form", { name: "New marker" });
+  await form.getByLabel("Marker name").fill(name);
+  await form.getByRole("radio", { name: "teal" }).check();
+  if (shown) await form.getByLabel(/Players can see it/).check();
+  await form.getByRole("button", { name: "Place on the map" }).click();
+  await clickMap(page, mapName, at);
+  await expect(tokens(page).getByRole("button", { name: new RegExp(`^${name} at`) })).toBeVisible();
+}
+
+test("the DM places the party and markers, and a player gets only what they may see", async ({
+  page,
+  browser,
+}) => {
+  const { name, map } = await sharedMap(page);
+  const secret = uniqueName("Secret marker");
+  const shownInTheDark = uniqueName("Shown in the dark");
+  const shown = uniqueName("Shown marker");
+
+  await placeMember(page, name, "Fixture PC One", LIT);
+  await placeMember(page, name, "Fixture PC Two", DARK);
+  await addMarker(page, name, { name: secret, shown: false, at: LIT_TOO });
+  await addMarker(page, name, { name: shownInTheDark, shown: true, at: DARK });
+  await addMarker(page, name, { name: shown, shown: true, at: LIT_TOO });
+
+  // The DM sees everything, with what players can't see of it.
+  await expect(
+    tokens(page).getByRole("button", { name: /^Fixture PC Two at .*under the fog/ }),
+  ).toBeVisible();
+  await expect(
+    tokens(page).getByRole("button", {
+      name: new RegExp(`^${secret} at .*players can't see this`),
+    }),
+  ).toBeVisible();
+  await expect(page.getByRole("list", { name: "Party" })).toContainText("Fixture PC One here");
+
+  // Tokens are kept: they're still there after reloading.
+  await page.reload();
+  await expect(tokens(page).getByRole("button")).toHaveCount(5);
+
+  const player = await asPlayerOne(browser);
+  await player.goto(map);
+  await expect(tokens(player).getByRole("img", { name: /^Fixture PC One at/ })).toBeVisible();
+  await expect(tokens(player).getByRole("img", { name: new RegExp(`^${shown} at`) })).toBeVisible();
+  await expect(tokens(player).getByRole("img")).toHaveCount(2);
+
+  // Not hidden in the browser: absent from the page and its data altogether.
+  const html = await player.content();
+  const data = await (await player.request.get(`${map}.data`)).text();
+  for (const text of [html, data]) {
+    expect(text).not.toContain(secret);
+    expect(text).not.toContain(shownInTheDark);
+    expect(text).not.toContain("Fixture PC Two");
+    expect(text).not.toContain("Party/");
+  }
+  await player.context().close();
+});
+
+test("a player sees their own token even under the fog, in the dark", async ({ page, browser }) => {
+  const { name, map } = await sharedMap(page);
+  await placeMember(page, name, "Fixture PC One", DARK);
+  await placeMember(page, name, "Fixture Companion", DARK);
+
+  const player = await asPlayerOne(browser);
+  await player.goto(map);
+  await expect(
+    tokens(player).getByRole("img", { name: /^Fixture PC One at .*in the dark$/ }),
+  ).toBeVisible();
+  await expect(
+    tokens(player).getByRole("img", { name: /^Fixture Companion at .*in the dark$/ }),
+  ).toBeVisible();
+  await player.context().close();
+});
+
+test("the DM brings a party member from another map, and takes tokens away", async ({ page }) => {
+  const first = await sharedMap(page);
+  await placeMember(page, first.name, "Fixture PC One", LIT);
+  const second = await sharedMap(page);
+  const party = page.getByRole("list", { name: "Party" });
+  await expect(party).toContainText(`Fixture PC One on ${first.name}`);
+
+  await placeMember(page, second.name, "Fixture PC One", LIT_TOO);
+  await page.goto(first.map);
+  await expect(tokens(page).getByRole("button", { name: /^Fixture PC One/ })).toHaveCount(0);
+  await expect(party).toContainText(`Fixture PC One on ${second.name}`);
+
+  await page.goto(second.map);
+  await tokens(page)
+    .getByRole("button", { name: /^Fixture PC One at/ })
+    .click();
+  await page.getByRole("button", { name: "Take off this map" }).click();
+  await expect(tokens(page).getByRole("button")).toHaveCount(0);
+  await expect(party).toContainText("Fixture PC One not placed");
+});
+
+test("a player can't place, change or move tokens that aren't theirs", async ({
+  page,
+  browser,
+}) => {
+  const { name, map } = await sharedMap(page);
+  await placeMember(page, name, "Fixture PC Two", LIT);
+  const marker = uniqueName("Marker");
+  await addMarker(page, name, { name: marker, shown: true, at: LIT_TOO });
+
+  const player = await asPlayerOne(browser);
+  await player.goto(map);
+  // Nothing to change: tokens are pictures for them, and there's no panel.
+  await expect(tokens(player).getByRole("button")).toHaveCount(0);
+  await expect(player.getByRole("button", { name: "Add marker" })).toHaveCount(0);
+
+  // A change that can't be made still answers with the map's tokens: here, to learn their IDs.
+  const dmTokens = await (
+    await page.request.post(`${map}/tokens`, {
+      headers: { Origin: ORIGIN },
+      data: { actions: [{ type: "move", id: "none", to: [0.1, 0.1] }] },
+    })
+  ).json();
+  const idOf = (label: string) =>
+    (dmTokens.tokens as { id: string; name: string }[]).find((token) => token.name === label)!.id;
+
+  const attempt = (actions: object[]) =>
+    player.request.post(`${map}/tokens`, { headers: { Origin: ORIGIN }, data: { actions } });
+  for (const actions of [
+    [{ type: "move", id: idOf("Fixture PC Two"), to: [0.1, 0.1] }],
+    [{ type: "move", id: idOf(marker), to: [0.1, 0.1] }],
+    [{ type: "remove", id: idOf(marker) }],
+    [{ type: "editMarker", id: idOf(marker), name: "Mine now" }],
+    [
+      {
+        type: "place",
+        token: {
+          kind: "marker",
+          id: "p",
+          map: map.split("/").pop(),
+          at: [0.1, 0.1],
+          name: "Mine",
+          colour: "red",
+          visibility: "players",
+        },
+      },
+    ],
+  ]) {
+    expect((await attempt(actions)).status()).toBe(403);
+  }
+  // Nothing changed: the same two tokens, and the marker kept its name.
+  await page.reload();
+  await expect(tokens(page).getByRole("button")).toHaveCount(2);
+  await expect(
+    tokens(page).getByRole("button", { name: new RegExp(`^${marker} at`) }),
+  ).toBeVisible();
+  await player.context().close();
+});
+
+test("a map that isn't shared takes no token changes from players", async ({ page, browser }) => {
+  const name = uniqueName("Unshared");
+  await createMap(page, { image: "Fixture Fog.png", name });
+  const map = page.url().replace(/\/edit$/, "");
+  const player = await asPlayerOne(browser);
+  const response = await player.request.post(`${map}/tokens`, {
+    headers: { Origin: ORIGIN },
+    data: { actions: [{ type: "move", id: "anything", to: [0.1, 0.1] }] },
+  });
+  expect(response.status()).toBe(404);
+  await player.context().close();
+});

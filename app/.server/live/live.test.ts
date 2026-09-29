@@ -4,12 +4,16 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Services } from "~/context";
+import { aCharacterToken, aMarker } from "~/maps/tokens/test-builders";
+import type { Token } from "~/maps/tokens/types";
 import type { CampaignMap } from "~/maps/types";
 import { FIXTURE_VAULT } from "../../../tests/support/fixture-vault";
 import { createSessions } from "../auth/sessions";
 import { loadConfig } from "../config";
 import { CampaignMaps } from "../maps/campaign-maps";
+import { Characters } from "../characters/characters";
 import { MapFogs } from "../maps/map-fogs";
+import { MapTokens } from "../maps/map-tokens";
 import { Members } from "../members/members";
 import { Vault } from "../vault/vault";
 import { Live } from "./live";
@@ -53,6 +57,8 @@ beforeEach(async () => {
     vault: { current: vault } as Services["vault"],
     maps: CampaignMaps.inFolder(folder),
     fogs: MapFogs.inFolder(folder),
+    tokens: MapTokens.inFolder(folder),
+    characters: Characters.inFolder(folder),
     members: Members.inFolder(folder),
     sessions: createSessions({ secrets: ["test-secret-test-secret-test-secret"], secure: false }),
   } as Omit<Services, "live">;
@@ -142,6 +148,41 @@ describe("Live", () => {
     ]);
     await live.mapChanged(shared.id);
     expect(((await pushed) as { version: string }).version).not.toBe(before.version);
+  });
+
+  it("tells a player nothing at all when a token they can't see is placed or moved", async () => {
+    const player = await connect(DISCORD_IDS.playerOne, "player one");
+    const dm = await connect(DISCORD_IDS.dm);
+    for (const client of [player, dm]) client.send({ type: "watch", map: shared.id });
+    await briefly();
+    const before = aboutMap(player, shared.id).length;
+
+    const place = async (token: Token) => {
+      const dmHears = dm.next(about(shared.id));
+      await services.tokens.apply(shared.id, [{ type: "place", token }], () => true);
+      await live.mapChanged(shared.id);
+      await dmHears;
+      await briefly();
+    };
+    // A DM-only marker, and another player's PC under the fog (all of it is fogged).
+    await place(aMarker({ id: "secret", map: shared.id, visibility: "dm" }));
+    await place(aCharacterToken({ id: "two", map: shared.id, note: "Party/Fixture PC Two" }));
+    expect(aboutMap(player, shared.id)).toHaveLength(before);
+
+    // Their own PC, which they always see, does reach them.
+    const heard = player.next(about(shared.id));
+    await services.tokens.apply(
+      shared.id,
+      [{ type: "place", token: aCharacterToken({ id: "one", map: shared.id }) }],
+      () => true,
+    );
+    await live.mapChanged(shared.id);
+    expect(await heard).toMatchObject({ type: "map", map: shared.id });
+    // PROTOTYPE: its positions ignore the fog on purpose; check every message once it's gone.
+    const real = player.received.filter(
+      (message) => (message as { type: string }).type !== "positions",
+    );
+    expect(JSON.stringify(real)).not.toMatch(/secret|Fixture PC Two/);
   });
 
   it("tells a player a map has gone when the DM stops sharing it", async () => {

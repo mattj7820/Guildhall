@@ -12,12 +12,13 @@ import type { Route } from "./+types/map-version";
  */
 export async function loader({ params, context }: Route.LoaderArgs) {
   const services = context.get(servicesContext);
+  const viewer = context.get(viewerContext);
   const map = await services.maps.get(params.id);
-  if (!map || !canView(context.get(viewerContext), map.visibility)) {
+  if (!map || !canView(viewer, map.visibility)) {
     throw data("Not found", { status: 404 });
   }
   return Response.json(
-    { version: await mapVersion(services, map) },
+    { version: await mapVersion(services, map, viewer) },
     { headers: { "Cache-Control": "no-store" } },
   );
 }

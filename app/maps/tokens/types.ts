@@ -63,4 +63,14 @@ export interface TokenView {
   hidden?: "secret" | "fog";
   /** DM only: the marker's own visibility, for its form. */
   visibility?: Visibility;
+  /** DM only: which party member, for the party panel. (A note's path could name a secret.) */
+  note?: EntityId;
+}
+
+/** A party member for the DM's panel, and which map their token is on, if any. */
+export interface PartyPlacement {
+  note: EntityId;
+  name: string;
+  portraitUrl?: string;
+  on?: { id: MapId; name: string };
 }

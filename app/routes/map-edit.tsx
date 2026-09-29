@@ -67,6 +67,7 @@ async function changeMap({ request, params, context }: Route.ActionArgs) {
     if (form.get("intent") !== "delete") throw data("Unknown action", { status: 400 });
     await maps.delete(params.id);
     await fogs.delete(params.id);
+    await services.tokens.deleteMap(params.id);
     return redirect("/maps");
   }
 
