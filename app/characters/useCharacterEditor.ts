@@ -54,6 +54,8 @@ export function useCharacterEditor(initial: Character) {
   const controls = useMemo(
     () => ({
       dispatch: (...actions: CharacterAction[]) => editor.dispatch(...actions),
+      dispatchWithoutUndo: (...actions: CharacterAction[]) =>
+        editor.dispatchWithoutUndo(...actions),
       undo: () => editor.undo(),
       redo: () => editor.redo(),
       flush: () => editor.flush(),

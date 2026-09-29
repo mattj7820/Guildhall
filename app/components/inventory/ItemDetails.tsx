@@ -8,17 +8,11 @@ import {
 import { QUANTITY_MAX } from "~/characters/inventory";
 import { ITEM_ICONS } from "~/characters/item-icons";
 import type { InventoryItem, ItemId } from "~/characters/types";
+import type { LinkedNote } from "~/characters/view";
 import { newId } from "~/shared/ids";
 import { buttonClass, iconButtonClass, inputClass, labelClass } from "../styles";
 import type { Recipient } from "./InventoryBoard";
 import { ItemIconSvg } from "./ItemTile";
-
-/** A linked vault note as the viewer may see it, rendered on the server. */
-export interface LinkedNote {
-  title: string;
-  html: string;
-  url: string;
-}
 
 /**
  * Everything about one item, in a modal dialog (a bottom sheet on phones): its name, icon,
@@ -241,7 +235,7 @@ export function ItemDetails({
               </a>
             </div>
             <div
-              className="note-body prose prose-stone prose-sm dark:prose-invert mt-2 max-w-none"
+              className="note-body prose prose-stone prose-sm dark:prose-invert mt-2 max-w-none [&>h1:first-child]:hidden"
               dangerouslySetInnerHTML={{ __html: note.html }}
             />
           </section>

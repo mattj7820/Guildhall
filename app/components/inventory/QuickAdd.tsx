@@ -2,16 +2,10 @@ import { useId, useRef, useState, type KeyboardEvent } from "react";
 import { DESCRIPTION_MAX, SOURCE_MAX } from "~/characters/inventory-changes";
 import { guessIcon, parseQuickAdd } from "~/characters/quick-add";
 import type { InventoryItem, ItemSource } from "~/characters/types";
+import type { CatalogueItem } from "~/characters/view";
 import { newId } from "~/shared/ids";
 import { buttonClass, inputClass, primaryButtonClass } from "../styles";
 import { ItemIconSvg } from "./ItemTile";
-
-/** A vault item note someone may add: its entity ID, title and suggested icon. */
-export interface CatalogueItem {
-  id: string;
-  title: string;
-  icon?: string;
-}
 
 type Option = { kind: "custom" } | { kind: "vault"; item: CatalogueItem };
 

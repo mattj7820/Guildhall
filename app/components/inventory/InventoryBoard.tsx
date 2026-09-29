@@ -92,7 +92,7 @@ interface Drag {
  * out of the equipped slots is unequipped, and one dropped on a portrait is given away.
  */
 export function InventoryBoard({
-  items,
+  items: latest,
   visible,
   onChange,
   onOpen,
@@ -105,6 +105,10 @@ export function InventoryBoard({
   const dndId = useId();
   const instructionsId = useId();
   const tooltipId = useId();
+  // While something is being dragged, the bag holds still: changes arriving from elsewhere (the
+  // DM, another tab) wait until it's dropped, so nothing moves under the pointer.
+  const [held, setHeld] = useState<InventoryItem[]>();
+  const items = held ?? latest;
   const filtered = visible !== undefined && visible.size < items.length;
   const shown = filtered ? items.filter((item) => visible.has(item.id)) : items;
 
@@ -113,6 +117,7 @@ export function InventoryBoard({
   /** What the dragged item is over, for the caption saying what dropping it will do. */
   const [overId, setOverId] = useState<UniqueIdentifier>();
   const justDropped = useRef(false);
+  const dragging = useRef<Drag>(undefined);
   const keyboardDrag = useRef(false);
 
   const gridRef = useRef<HTMLUListElement>(null);
@@ -147,25 +152,35 @@ export function InventoryBoard({
     const shift = activatorEvent instanceof MouseEvent && activatorEvent.shiftKey;
     keyboardDrag.current = activatorEvent instanceof KeyboardEvent;
     const fromSlot = String(active.id).startsWith(SLOT_PREFIX);
-    setDrag({
+    const started: Drag = {
       id: itemIdOf(active.id),
       splitting:
         shift && !fromSlot && item && item.quantity > 1 ? Math.floor(item.quantity / 2) : undefined,
       fromSlot,
-    });
+    };
+    // The first "over" can arrive before React re-renders with the new state, so the handlers
+    // read the drag from here.
+    dragging.current = started;
+    setDrag(started);
+    setHeld(latest);
     setTooltip(undefined);
   }
 
   function handleDragOver({ over }: DragOverEvent) {
-    const item = drag && carried(drag);
-    const target = over && byId(over.id);
     setOverId(over?.id);
-    setStackTarget(item && target && canStack(item, target) ? target.id : undefined);
+    setStackTarget(stackOnto(dragging.current, over?.id)?.id);
+  }
+
+  /** The identical stack under the carried item, if it's over one. */
+  function stackOnto(current: Drag | undefined, overId: UniqueIdentifier | undefined) {
+    const item = current && carried(current);
+    const target = overId === undefined ? undefined : byId(overId);
+    return item && target && canStack(item, target) ? target : undefined;
   }
 
   function handleDragEnd({ active, over }: DragEndEvent) {
-    const current = drag;
-    const target = stackTarget;
+    const current = dragging.current;
+    const target = stackOnto(current, over?.id)?.id;
     finishDrag();
     const item = byId(active.id);
     if (!over || !item || !current) return;
@@ -206,7 +221,9 @@ export function InventoryBoard({
   }
 
   function finishDrag() {
+    dragging.current = undefined;
     setDrag(undefined);
+    setHeld(undefined);
     setStackTarget(undefined);
     setOverId(undefined);
     // Dropping ends with a click on the tile, which would open its details: straight after a
@@ -266,7 +283,7 @@ export function InventoryBoard({
     if (recipient) return `Over ${recipient.name}: drop to give it to them.`;
     const target = byId(overId);
     if (!target) return undefined;
-    if (drag && canStackOnto(drag, target)) return `Over ${target.name}: drop to stack.`;
+    if (stackOnto(dragging.current, target.id)) return `Over ${target.name}: drop to stack.`;
     const position = items.indexOf(target) + 1;
     return `${item.name} is at position ${position} of ${items.length}.`;
   }
@@ -275,11 +292,6 @@ export function InventoryBoard({
     const key = String(id);
     if (!key.startsWith(GIVE_PREFIX)) return undefined;
     return recipients.find((recipient) => recipient.id === key.slice(GIVE_PREFIX.length));
-  }
-
-  function canStackOnto(current: Drag, target: InventoryItem) {
-    const item = carried(current);
-    return !!item && canStack(item, target);
   }
 
   // Keyboard focus moves between tiles with the arrow keys; only one tile is in the tab order.

@@ -45,6 +45,20 @@ export interface OrphanCard {
   note: EntityId;
 }
 
+/** A vault item note someone may add to a bag: its entity ID, title and suggested icon. */
+export interface CatalogueItem {
+  id: EntityId;
+  title: string;
+  icon?: string;
+}
+
+/** A linked vault note as the viewer may see it, rendered on the server. */
+export interface LinkedNote {
+  title: string;
+  html: string;
+  url: string;
+}
+
 /** What the sheet page needs, for someone allowed to open it. */
 export interface CharacterPage {
   character: Character;
@@ -63,4 +77,8 @@ export interface CharacterPage {
   speed?: string;
   /** A companion's armour class, from its statblock. */
   armourClass?: number;
+  /** Vault item notes this viewer may add to the bag. */
+  catalogue: CatalogueItem[];
+  /** Those notes as this viewer may read them, by entity ID, for items' details. */
+  itemNotes: Record<EntityId, LinkedNote>;
 }

@@ -98,6 +98,13 @@ export class CharacterEditor {
     this.schedule(this.timing.saveDelayMs);
   }
 
+  /** Makes changes that aren't worth an undo step, such as marking an item as seen. */
+  dispatchWithoutUndo(...actions: CharacterAction[]) {
+    this.sync = queue(this.sync, ...actions);
+    this.changed();
+    this.schedule(this.timing.saveDelayMs);
+  }
+
   undo() {
     this.step("undo");
   }

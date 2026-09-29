@@ -4,8 +4,9 @@ import type { Companion } from "~/characters/types";
 import { useCharacterEditor } from "~/characters/useCharacterEditor";
 import { CHARACTERS_URL } from "~/characters/urls";
 import type { CharacterPage } from "~/characters/view";
-import { buttonClass } from "../styles";
+import { buttonClass, panelClass } from "../styles";
 import { Portrait } from "./Portrait";
+import { SheetBag } from "./SheetBag";
 import { EditorBar } from "./EditorBar";
 import { HitPointsPanel } from "./HitPointsPanel";
 import { StatBox } from "./SheetParts";
@@ -61,6 +62,16 @@ export function CompanionSheet({ page }: { page: CharacterPage }) {
         // The statblock is its own labelled region.
         <div className="note-body mt-4" dangerouslySetInnerHTML={{ __html: page.statblockHtml }} />
       )}
+
+      <section aria-labelledby="bag-heading" className={`${panelClass} mt-4`}>
+        <h2 id="bag-heading" className="font-serif text-2xl font-bold">
+          Bag
+        </h2>
+        <p className="mb-3 text-sm text-stone-600 dark:text-stone-400">
+          Shared by the whole party.
+        </p>
+        <SheetBag editor={editor} page={page} />
+      </section>
     </main>
   );
 }

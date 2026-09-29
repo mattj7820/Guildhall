@@ -2,11 +2,12 @@ import { useMemo, useState } from "react";
 import type { InventoryChange, InventoryState } from "~/characters/inventory-changes";
 import type { SortOrder } from "~/characters/inventory";
 import type { ItemId } from "~/characters/types";
+import type { CatalogueItem, LinkedNote } from "~/characters/view";
 import { buttonClass, inputClass } from "../styles";
 import { InventoryBoard, type Recipient } from "./InventoryBoard";
-import { ItemDetails, type LinkedNote } from "./ItemDetails";
+import { ItemDetails } from "./ItemDetails";
 import { Purse } from "./Purse";
-import { QuickAdd, type CatalogueItem } from "./QuickAdd";
+import { QuickAdd } from "./QuickAdd";
 
 type Filter = "all" | "equipped";
 
@@ -67,7 +68,7 @@ export function Bag({
         placeholder="Search…"
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        className={`${inputClass} w-32 min-w-0 flex-1`}
+        className={`${inputClass} min-w-32 flex-1`}
       />
       <div
         role="group"

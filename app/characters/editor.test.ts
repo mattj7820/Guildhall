@@ -163,6 +163,14 @@ describe("CharacterEditor", () => {
     expect([sheet.abilities.dex, sheet.abilities.str]).toEqual([10, 10]);
   });
 
+  it("saves changes not worth undoing without adding an undo step", async () => {
+    const { server, editor } = setUp(aCharacter({ items: [anItem({ id: "gift", unseen: true })] }));
+    editor.dispatchWithoutUndo({ type: "inventory", change: { type: "seen", id: "gift" } });
+    await vi.advanceTimersByTimeAsync(300);
+    expect(server.stored.inventory.items[0].unseen).toBe(false);
+    expect(editor.getSnapshot().canUndo).toBe(false);
+  });
+
   it("picks up changes made elsewhere when refreshed, unless it has unsaved ones", async () => {
     const { server, editor } = setUp();
     server.elsewhere({ type: "damage", amount: 0 }, dex(18));

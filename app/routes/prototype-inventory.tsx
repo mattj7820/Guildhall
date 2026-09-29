@@ -13,10 +13,9 @@ import {
   type InventoryState,
 } from "~/characters/inventory-changes";
 import type { InventoryItem, ItemId } from "~/characters/types";
+import type { CatalogueItem, LinkedNote } from "~/characters/view";
 import { Bag } from "~/components/inventory/Bag";
 import type { Recipient } from "~/components/inventory/InventoryBoard";
-import type { LinkedNote } from "~/components/inventory/ItemDetails";
-import type { CatalogueItem } from "~/components/inventory/QuickAdd";
 import { UndoToast } from "~/components/inventory/UndoToast";
 import { buttonClass, panelClass, primaryButtonClass } from "~/components/styles";
 import { viewerContext } from "~/context";

@@ -4,7 +4,7 @@ import { aCharacter, aCompanion, anItem, aSheet } from "~/characters/test-builde
 import type { Character } from "~/characters/types";
 import { FIXTURE_VAULT } from "../../../tests/support/fixture-vault";
 import { Vault } from "../vault/vault";
-import { characterPage, partyCards, portraitChoices, portraitPath } from "./load";
+import { characterPage, itemCatalogue, partyCards, portraitChoices, portraitPath } from "./load";
 
 /** Integration tests over the fixture vault: two PCs (Player One, Player Two) and a companion. */
 let vault: Vault;
@@ -111,6 +111,23 @@ describe("characterPage", () => {
     expect(page.statblockHtml).toContain("Fixture Companion");
     expect(page.statblockHtml).not.toContain("Fixture Secret Form");
     expect(page).toMatchObject({ armourClass: 13, speed: "40 ft." });
+  });
+});
+
+describe("itemCatalogue", () => {
+  it("offers players only shared item notes, without their DM parts", () => {
+    const { catalogue, itemNotes } = itemCatalogue(vault, playerOne);
+    expect(catalogue.map((item) => item.title)).toEqual(["Fixture Cursed Ring", "Fixture Rope"]);
+    const ring = itemNotes["Items/Fixture Cursed Ring"].html;
+    expect(ring).toContain("Players see this paragraph");
+    expect(ring).not.toContain("ringsecretcallout");
+    expect(ring).not.toContain("ringsecretsection");
+  });
+
+  it("offers the DM every item note, with DM parts boxed", () => {
+    const { catalogue, itemNotes } = itemCatalogue(vault, DM_VIEWER);
+    expect(catalogue.map((item) => item.title)).toContain("Fixture Secret Relic");
+    expect(itemNotes["Items/Fixture Cursed Ring"].html).toContain("ringsecretsection");
   });
 });
 

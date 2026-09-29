@@ -90,6 +90,30 @@ function card(
   };
 }
 
+/**
+ * Vault item notes this viewer may put in a bag, and each as they may read it, for items' details:
+ * players get the note without its DM parts; notes kept from them aren't there at all, so an item
+ * linked to one shows only its own name and description (an unidentified item).
+ */
+export function itemCatalogue(
+  vault: Vault,
+  viewer: Viewer,
+): Pick<CharacterPage, "catalogue" | "itemNotes"> {
+  const notes = vault
+    .notes(viewer)
+    .filter((note) => note.type === "item")
+    .sort((a, b) => byName.compare(a.title, b.title));
+  return {
+    catalogue: notes.map((note) => ({ id: note.id, title: note.title })),
+    itemNotes: Object.fromEntries(
+      notes.map((note) => [
+        note.id,
+        { title: note.title, url: noteUrl(note.slug), html: vault.render(note, viewer) },
+      ]),
+    ),
+  };
+}
+
 /** Everything the sheet page shows, for someone allowed to open the character. */
 export function characterPage(vault: Vault, character: Character, viewer: Viewer): CharacterPage {
   const note = vault.noteById(character.note, DM_VIEWER);
@@ -104,6 +128,7 @@ export function characterPage(vault: Vault, character: Character, viewer: Viewer
     ...(portrait && { portraitUrl: portraitUrl(character.id, portrait) }),
     ...(fromNote && { notePortrait: fromNote }),
     ...(character.kind === "pc" && { portraitChoices: portraitChoices(vault, viewer) }),
+    ...itemCatalogue(vault, viewer),
     ...(readable && {
       story: {
         title: readable.title,
