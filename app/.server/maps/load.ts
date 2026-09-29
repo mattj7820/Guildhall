@@ -6,7 +6,6 @@ import type { CampaignMap, MapView, NoteLink } from "~/maps/types";
 import { noteUrl } from "~/wiki/urls";
 import type { Vault } from "../vault/vault";
 import type { SourceImage } from "./player-image";
-import { loadTokens } from "./tokens";
 import { mapView } from "./view";
 
 /**
@@ -89,15 +88,13 @@ const vaultNumbers = new WeakMap<Vault, number>();
 let vaultsSeen = 0;
 
 /**
- * Changes whenever anything this viewer sees of the map might: the map (its areas, links or
- * sharing), its fog, its image file, the vault's notes, or the tokens they can see. A player's
- * open map reloads its data only when it changes. The tokens count only as this viewer sees them,
- * so moving a token a player can't see never changes their version.
+ * Changes whenever anything a viewer sees of the map might: the map (its areas, links or sharing),
+ * its fog, its image file, or the vault's notes. A player's open map reloads its data only when it
+ * changes. Tokens aren't part of it: they're sent on their own, as each viewer may see them.
  */
 export async function mapVersion(
-  services: Pick<Services, "config" | "vault" | "fogs" | "tokens" | "characters">,
+  services: Pick<Services, "config" | "vault" | "fogs">,
   map: CampaignMap,
-  viewer: Viewer,
 ): Promise<string> {
   const vault = services.vault.current;
   let vaultNumber = vaultNumbers.get(vault);
@@ -109,22 +106,5 @@ export async function mapVersion(
     mapSource(services, map),
     services.fogs.get(map.id, map.image),
   ]);
-  const tokens = await loadTokens(services, map, viewer, fog.mask);
-  return [
-    map.updatedAt,
-    fog.version,
-    source?.version ?? "missing",
-    vaultNumber,
-    hash(JSON.stringify(tokens)),
-  ].join(".");
-}
-
-/** A short fingerprint of some text (FNV-1a), for telling versions apart; not for security. */
-function hash(text: string): string {
-  let value = 0x811c9dc5;
-  for (let i = 0; i < text.length; i++) {
-    value ^= text.charCodeAt(i);
-    value = Math.imul(value, 0x01000193);
-  }
-  return (value >>> 0).toString(36);
+  return [map.updatedAt, fog.version, source?.version ?? "missing", vaultNumber].join(".");
 }

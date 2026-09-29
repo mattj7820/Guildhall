@@ -43,6 +43,32 @@ async function asPlayerOne(browser: Browser) {
 }
 
 const tokens = (page: Page) => page.getByRole("group", { name: "Tokens" });
+const anyToken = (page: Page) => tokens(page).getByRole("img").or(tokens(page).getByRole("button"));
+const tokenNamed = (page: Page, name: string) =>
+  tokens(page).getByRole("button", { name: new RegExp(`^${name} at`) });
+
+/** Where a token is, from its label: "Fixture PC One at 15.0%, 50.0%, …". */
+async function whereIs(page: Page, name: string): Promise<[number, number]> {
+  const label = (await tokenNamed(page, name).getAttribute("aria-label")) ?? "";
+  const [, x, y] = /at ([\d.]+)%, ([\d.]+)%/.exec(label) ?? [];
+  return [Number(x) / 100, Number(y) / 100];
+}
+
+/** Drags a token by the mouse to a point on the image, in several steps like a hand would. */
+async function dragToken(page: Page, mapName: string, name: string, to: [number, number]) {
+  const box = await tokenNamed(page, name).boundingBox();
+  if (!box) throw new Error(`${name} isn't on screen`);
+  const canvas = await mapCanvas(page, mapName).boundingBox();
+  const target = await onImage(page, mapName, FOG_IMAGE, to);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(canvas!.x + target.x, canvas!.y + target.y, { steps: 10 });
+  await page.mouse.up();
+}
+
+/** Close enough: a drop lands to the nearest pixel. */
+const near = ([x, y]: [number, number], [tx, ty]: [number, number]) =>
+  Math.abs(x - tx) < 0.02 && Math.abs(y - ty) < 0.02;
 
 async function clickMap(page: Page, name: string, at: [number, number]) {
   await mapCanvas(page, name).click({ position: await onImage(page, name, FOG_IMAGE, at) });
@@ -107,9 +133,12 @@ test("the DM places the party and markers, and a player gets only what they may 
 
   const player = await asPlayerOne(browser);
   await player.goto(map);
-  await expect(tokens(player).getByRole("img", { name: /^Fixture PC One at/ })).toBeVisible();
+  // Their own PC is theirs to move; the marker is only a picture.
+  await expect(
+    tokens(player).getByRole("button", { name: /^Fixture PC One at .*you can move this$/ }),
+  ).toBeVisible();
   await expect(tokens(player).getByRole("img", { name: new RegExp(`^${shown} at`) })).toBeVisible();
-  await expect(tokens(player).getByRole("img")).toHaveCount(2);
+  await expect(anyToken(player)).toHaveCount(2);
 
   // Not hidden in the browser: absent from the page and its data altogether.
   const html = await player.content();
@@ -131,10 +160,10 @@ test("a player sees their own token even under the fog, in the dark", async ({ p
   const player = await asPlayerOne(browser);
   await player.goto(map);
   await expect(
-    tokens(player).getByRole("img", { name: /^Fixture PC One at .*in the dark$/ }),
+    tokens(player).getByRole("button", { name: /^Fixture PC One at .*in the dark/ }),
   ).toBeVisible();
   await expect(
-    tokens(player).getByRole("img", { name: /^Fixture Companion at .*in the dark$/ }),
+    tokens(player).getByRole("button", { name: /^Fixture Companion at .*in the dark/ }),
   ).toBeVisible();
   await player.context().close();
 });
@@ -215,6 +244,52 @@ test("a player can't place, change or move tokens that aren't theirs", async ({
   await expect(
     tokens(page).getByRole("button", { name: new RegExp(`^${marker} at`) }),
   ).toBeVisible();
+  await player.context().close();
+});
+
+test("a player drags their token and the DM sees it move, and the other way round", async ({
+  page,
+  browser,
+}) => {
+  const { name, map } = await sharedMap(page);
+  await placeMember(page, name, "Fixture PC One", LIT);
+  const player = await asPlayerOne(browser);
+  await player.goto(map);
+  // Anything set on a page would be lost if it reloaded.
+  for (const each of [page, player]) {
+    await each.evaluate(() => ((window as { stayed?: boolean }).stayed = true));
+  }
+
+  const there: [number, number] = [0.25, 0.2];
+  await dragToken(player, name, "Fixture PC One", there);
+  await expect.poll(() => whereIs(page, "Fixture PC One").then((at) => near(at, there))).toBe(true);
+
+  const back: [number, number] = [0.1, 0.8];
+  await dragToken(page, name, "Fixture PC One", back);
+  await expect
+    .poll(() => whereIs(player, "Fixture PC One").then((at) => near(at, back)))
+    .toBe(true);
+
+  // Kept: both see it there after reloading, too.
+  await player.reload();
+  expect(near(await whereIs(player, "Fixture PC One"), back)).toBe(true);
+  expect(await page.evaluate(() => (window as { stayed?: boolean }).stayed)).toBe(true);
+  await player.context().close();
+});
+
+test("a player moves their token with the arrow keys", async ({ page, browser }) => {
+  const { name, map } = await sharedMap(page);
+  await placeMember(page, name, "Fixture PC One", LIT);
+  const player = await asPlayerOne(browser);
+  await player.goto(map);
+  const [x, y] = await whereIs(player, "Fixture PC One");
+
+  await tokenNamed(player, "Fixture PC One").focus();
+  await player.keyboard.press("ArrowRight");
+  await player.keyboard.press("Shift+ArrowDown");
+  await expect
+    .poll(() => whereIs(page, "Fixture PC One").then(([nx, ny]) => nx > x && ny > y))
+    .toBe(true);
   await player.context().close();
 });
 

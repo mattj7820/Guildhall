@@ -58,7 +58,8 @@ export function MapViewer({
   const fog = useFogTools(map.id, map.fog, fogMode && !presenting);
   const shared = !!map.shared;
   const fogOpacity = presenting ? 1 : DM_FOG_OPACITY;
-  const { tokens, error: tokenError, send } = useMapTokens(map.id, fromPage);
+  const mapTokens = useMapTokens(map.id, fromPage);
+  const { tokens, error: tokenError, send } = mapTokens;
   const [placing, setPlacing] = useState<Placing>();
   const [selectedTokenId, setSelectedTokenId] = useState<string>();
   const selectedToken = tokens.find((token) => token.id === selectedTokenId);
@@ -189,9 +190,10 @@ export function MapViewer({
                 <TokenLayer
                   tokens={presenting ? tokens.filter((token) => !token.hidden) : tokens}
                   size={map.size}
-                  scale={canvas.scale}
+                  canvas={canvas}
                   selectedId={presenting ? undefined : selectedTokenId}
                   onSelect={presenting ? undefined : (token) => setSelectedTokenId(token.id)}
+                  mover={presenting ? undefined : mapTokens}
                 />
                 {placing && !presenting && (
                   <rect

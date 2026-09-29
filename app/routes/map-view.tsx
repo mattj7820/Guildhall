@@ -23,7 +23,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   // Only the DM gets the vault's image list (for a moved image) and the party to place; players
   // get just the map and the tokens they may see.
   if (viewer.role !== "dm") {
-    const version = await mapVersion(services, map, viewer);
+    const version = await mapVersion(services, map);
     return { forDm: false as const, map: view, tokens, version };
   }
   return {

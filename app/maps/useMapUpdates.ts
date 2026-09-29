@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useRevalidator } from "react-router";
 import type { LiveStatus } from "~/live/client";
 import { useLiveMap } from "~/live/useLive";
+import type { TokenView } from "./tokens/types";
 import type { MapId } from "./types";
 
 /** How often an open map checks for changes while the live connection is down. */
@@ -12,11 +13,17 @@ export const MAP_POLL_MS = 3000;
  * over the live connection as soon as anything changes, and the page reloads its data (through
  * the same loader as the first load) only when the version differs, or the map has gone. While
  * the connection is down it checks the version every few seconds instead, and when the tab is
- * shown or focused again. Returns the connection's status.
+ * shown or focused again; that check also brings the tokens, which otherwise come live. Returns
+ * the connection's status.
  */
-export function useMapUpdates(map: MapId, versionUrl: string, version: string): LiveStatus {
+export function useMapUpdates(
+  map: MapId,
+  versionUrl: string,
+  version: string,
+  onTokens: (tokens: TokenView[]) => void,
+): LiveStatus {
   const { revalidate, state } = useRevalidator();
-  const latest = useRef({ version, revalidate, idle: state === "idle", live: false });
+  const latest = useRef({ version, revalidate, onTokens, idle: state === "idle", live: false });
   const status = useLiveMap(map, (message) => {
     if (message.type === "gone") void latest.current.revalidate();
     else if (message.type === "map" && message.version !== latest.current.version) {
@@ -24,7 +31,13 @@ export function useMapUpdates(map: MapId, versionUrl: string, version: string): 
     }
   });
   useEffect(() => {
-    latest.current = { version, revalidate, idle: state === "idle", live: status === "live" };
+    latest.current = {
+      version,
+      revalidate,
+      onTokens,
+      idle: state === "idle",
+      live: status === "live",
+    };
   });
 
   useEffect(() => {
@@ -38,8 +51,12 @@ export function useMapUpdates(map: MapId, versionUrl: string, version: string): 
         // Gone or no longer shared: reloading shows the not-found page.
         if (response.status === 404) return void latest.current.revalidate();
         if (!response.ok) return;
-        const { version: now } = (await response.json()) as { version: string };
+        const { version: now, tokens } = (await response.json()) as {
+          version: string;
+          tokens: TokenView[];
+        };
         if (now !== latest.current.version) void latest.current.revalidate();
+        else latest.current.onTokens(tokens);
       } catch {
         // Offline for a moment: the next check will try again.
       } finally {

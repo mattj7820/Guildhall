@@ -4,7 +4,7 @@ import type { Services } from "~/context";
 import type { MapId } from "~/maps/types";
 import { canView } from "~/campaign/visibility";
 import { LiveHub, type BuildMessage, type Connection } from "./hub";
-import { mapState } from "./map-rooms";
+import { mapState, tokensState } from "./map-rooms";
 import { PrototypeTokens } from "./prototype-tokens";
 import { LiveSockets } from "./sockets";
 
@@ -27,7 +27,9 @@ export class Live {
       members: services.members,
       join: async (map, viewer) => {
         const state = await mapState(services, map, viewer);
-        return state.type === "gone" ? [state] : [state, ...prototype.join(map, viewer)];
+        if (state.type === "gone") return [state];
+        const tokens = await tokensState(services, map, viewer);
+        return [state, ...(tokens ? [tokens] : []), ...prototype.join(map, viewer)];
       },
       onOther: (connection, message) => prototype.receive(connection, message),
     });
@@ -38,9 +40,14 @@ export class Live {
     return this.sockets.handleUpgrade(req, socket, head);
   }
 
-  /** Something about the map changed: everyone watching it hears its new version, or `gone`. */
-  mapChanged(map: MapId): Promise<void> {
-    return this.hub.publish(map, (viewer) => mapState(this.services, map, viewer));
+  /**
+   * Something about the map changed (its areas, fog or tokens): everyone watching it hears its
+   * new version, or `gone`, and its tokens as they may see them. Each hears only what's different
+   * for them.
+   */
+  async mapChanged(map: MapId): Promise<void> {
+    await this.hub.publish(map, (viewer) => mapState(this.services, map, viewer));
+    await this.publishOnMap(map, (viewer) => tokensState(this.services, map, viewer));
   }
 
   /**

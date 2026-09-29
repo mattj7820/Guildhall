@@ -4,6 +4,7 @@ import type { Services } from "~/context";
 import type { ServerMessage } from "~/live/messages";
 import type { MapId } from "~/maps/types";
 import { mapVersion } from "../maps/load";
+import { loadTokens } from "../maps/tokens";
 
 type Deps = Pick<Services, "config" | "vault" | "maps" | "fogs" | "tokens" | "characters">;
 
@@ -14,5 +15,19 @@ type Deps = Pick<Services, "config" | "vault" | "maps" | "fogs" | "tokens" | "ch
 export async function mapState(services: Deps, id: MapId, viewer: Viewer): Promise<ServerMessage> {
   const map = await services.maps.get(id);
   if (!map || !canView(viewer, map.visibility)) return { type: "gone", map: id };
-  return { type: "map", map: id, version: await mapVersion(services, map, viewer) };
+  return { type: "map", map: id, version: await mapVersion(services, map) };
+}
+
+/**
+ * The map's tokens as one viewer may see them, or nothing for a map they can't see. Sent as a
+ * whole each time: only a few, and the hub never repeats what a connection already has.
+ */
+export async function tokensState(
+  services: Deps,
+  id: MapId,
+  viewer: Viewer,
+): Promise<ServerMessage | undefined> {
+  const map = await services.maps.get(id);
+  if (!map || !canView(viewer, map.visibility)) return undefined;
+  return { type: "tokens", map: id, tokens: await loadTokens(services, map, viewer) };
 }

@@ -177,7 +177,11 @@ describe("Live", () => {
       () => true,
     );
     await live.mapChanged(shared.id);
-    expect(await heard).toMatchObject({ type: "map", map: shared.id });
+    expect(await heard).toMatchObject({
+      type: "tokens",
+      map: shared.id,
+      tokens: [{ name: "Fixture PC One", inTheDark: true, movable: true }],
+    });
     // PROTOTYPE: its positions ignore the fog on purpose; check every message once it's gone.
     const real = player.received.filter(
       (message) => (message as { type: string }).type !== "positions",

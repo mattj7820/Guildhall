@@ -3,6 +3,7 @@
  * server sends `ServerMessage`s, each one built on the server for the viewer who gets it.
  */
 import { z } from "zod";
+import type { TokenView } from "~/maps/tokens/types";
 import type { MapId } from "~/maps/types";
 
 /** Where browsers open their live connection. */
@@ -22,6 +23,8 @@ export type ServerMessage =
   | { type: "map"; map: MapId; version: string }
   /** The map is missing, or no longer visible to this viewer: the same either way. */
   | { type: "gone"; map: MapId }
+  /** The map's tokens as this viewer may see them, sent whenever that changes. */
+  | { type: "tokens"; map: MapId; tokens: TokenView[] }
   // PROTOTYPE (removed before the PR): party tokens dragged live.
   | { type: "positions"; map: MapId; positions: Record<string, [number, number]> }
   | { type: "drag"; map: MapId; token: string; at: [number, number]; by: string };
@@ -36,6 +39,8 @@ export function stateKey(message: ServerMessage): string | undefined {
     case "map":
     case "gone":
       return `map:${message.map}`;
+    case "tokens":
+      return `tokens:${message.map}`;
     case "positions":
       return `positions:${message.map}`;
     default:

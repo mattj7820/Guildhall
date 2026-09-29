@@ -76,7 +76,7 @@ export function TokensPrototype({ map, tokens }: { map: MapView; tokens: Prototy
     }
     function receive(message: ServerMessage) {
       setCounts((counts) => ({ ...counts, received: counts.received + 1 }));
-      if (message.type === "map") return;
+      if (message.type === "map" || message.type === "tokens") return;
       if (message.type === "gone") return setStatus("gone");
       if (message.type === "drag") {
         setOthers((others) => ({

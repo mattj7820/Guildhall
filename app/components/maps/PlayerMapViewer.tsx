@@ -6,6 +6,7 @@ import { mapUrl, mapVersionUrl } from "~/maps/urls";
 import { useMapUpdates } from "~/maps/useMapUpdates";
 import { LiveStatus } from "../LiveStatus";
 import type { TokenView } from "~/maps/tokens/types";
+import { useMapTokens } from "~/maps/tokens/useMapTokens";
 import { AreaShape } from "./AreaShape";
 import { useFogImage } from "./FogLayer";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
@@ -30,7 +31,8 @@ export function PlayerMapViewer({
   tokens: TokenView[];
   version: string;
 }) {
-  const status = useMapUpdates(map.id, mapVersionUrl(map.id), version);
+  const mapTokens = useMapTokens(map.id, tokens);
+  const status = useMapUpdates(map.id, mapVersionUrl(map.id), version, mapTokens.pushed);
   const [selectedId, setSelectedId] = useState<string>();
   const selected = map.areas.find((area) => area.id === selectedId);
   const mask = useMemo(() => fogMask(map.fog), [map.fog]);
@@ -57,7 +59,7 @@ export function PlayerMapViewer({
             className="flex-1"
             backdrop={<Tiles size={map.size} layer={tiles} />}
           >
-            {({ scale }) => (
+            {(canvas) => (
               <>
                 {revealed && (
                   <defs>
@@ -76,14 +78,20 @@ export function PlayerMapViewer({
                       key={area.id}
                       area={area}
                       size={map.size}
-                      scale={scale}
+                      scale={canvas.scale}
                       selected={area.id === selectedId}
                       onSelect={(chosen) => setSelectedId(chosen.id)}
                       plain
                     />
                   ))}
                 </g>
-                <TokenLayer tokens={tokens} size={map.size} scale={scale} />
+                <TokenLayer
+                  tokens={mapTokens.tokens}
+                  size={map.size}
+                  canvas={canvas}
+                  mover={mapTokens}
+                  sayMovable
+                />
               </>
             )}
           </MapCanvas>
