@@ -26,7 +26,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
     tags: note.tags,
     aliases: note.aliases,
     visibility: note.visibility,
-    hasOwnTitle: note.hasOwnTitle,
+    hasOwnTitle: vault.current.hasOwnTitle(note, viewer),
     html: vault.current.render(note, viewer),
     showVisibility: viewer.role === "dm",
     /** Maps of this place. DM-only, like the maps themselves for now. */

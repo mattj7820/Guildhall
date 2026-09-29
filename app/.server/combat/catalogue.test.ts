@@ -38,6 +38,7 @@ describe("combatCatalogue", () => {
     expect(catalogue.creatures.map((c) => c.name)).toEqual([
       "Fixture Bare",
       "Fixture Companion",
+      "Fixture Informant Disguise",
       "Fixture Minion",
       "Fixture Secret Form",
       "Test Creature",

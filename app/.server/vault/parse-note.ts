@@ -22,8 +22,6 @@ export interface Note {
   player?: string;
   /** Markdown body with frontmatter removed. */
   body: string;
-  /** True when the body opens with its own `# Heading`, so the page needn't repeat the title. */
-  hasOwnTitle: boolean;
   /** Set when the frontmatter could not be parsed; the note is then treated as DM-only. */
   frontmatterError?: string;
 }
@@ -56,7 +54,6 @@ export function parseNote(path: string, source: string): Note {
     tags: stringList(data.tags ?? data.tag).map((tag) => tag.replace(/^#/, "")),
     player: nonEmptyString(data.player),
     body,
-    hasOwnTitle: /^\s*# /.test(body),
     frontmatterError,
   };
 }

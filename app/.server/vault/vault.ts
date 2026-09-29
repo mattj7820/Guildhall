@@ -1,7 +1,7 @@
 import type { EntityId, Role, Viewer } from "~/campaign/types";
 import type { FolderNode, NoteSummary } from "~/wiki/types";
 import { canView } from "~/campaign/visibility";
-import { applyComments } from "./comments";
+import { forPlayers } from "./dm-parts";
 import { createLinkResolver, type LinkResolver } from "./link-resolver";
 import { parseNote, type Note } from "./parse-note";
 import { isMapImage } from "./media";
@@ -27,6 +27,8 @@ export interface FoundImage {
 
 interface RenderedBody {
   html: string;
+  /** The page starts with its own top-level heading, so the title needn't be shown again. */
+  hasOwnTitle: boolean;
   /** Attachments the note links to or embeds. */
   assets: string[];
 }
@@ -84,6 +86,14 @@ export class Vault {
     return this.renderCollecting(note, viewer.role).html;
   }
 
+  /**
+   * Whether the note, as this viewer sees it, opens with its own `# Title`. Decided on what the
+   * viewer actually gets: a note that opens with a hidden `# DM` section has no title for players.
+   */
+  hasOwnTitle(note: Note, viewer: Viewer): boolean {
+    return this.renderCollecting(note, viewer.role).hasOwnTitle;
+  }
+
   folderTree(viewer: Viewer): FolderNode {
     const root: FolderNode = { name: "", path: "", folders: [], notes: [] };
     for (const note of this.notes(viewer)) {
@@ -109,7 +119,7 @@ export class Vault {
       index = new SearchIndex(
         this.notes(viewer).map((note) => ({
           note,
-          markdown: viewer.role === "dm" ? note.body : applyComments(note.body, "player"),
+          markdown: viewer.role === "dm" ? note.body : forPlayers(note.body),
         })),
       );
       this.searchIndexes.set(viewer.role, index);
@@ -119,15 +129,15 @@ export class Vault {
 
   /**
    * Every readable statblock in notes the viewer may see, in note order. Players' copies come from
-   * the note with `%%comments%%` removed, so a statblock hidden in a comment stays secret.
+   * the note as players see it, so a statblock in a comment or DM part stays secret.
    */
   statblocks(viewer: Viewer): NoteStatblock[] {
     let list = this.statblockLists.get(viewer.role);
     if (!list) {
       list = this.notes(viewer).flatMap((note) =>
-        extractStatblocks(
-          viewer.role === "dm" ? note.body : applyComments(note.body, "player"),
-        ).map((statblock) => ({ note, statblock })),
+        extractStatblocks(viewer.role === "dm" ? note.body : forPlayers(note.body)).map(
+          (statblock) => ({ note, statblock }),
+        ),
       );
       this.statblockLists.set(viewer.role, list);
     }
@@ -191,7 +201,7 @@ export class Vault {
       canSee: (linked) => canView({ role }, linked.visibility),
       onAsset: (path) => assets.push(path),
     });
-    const rendered = { html, assets };
+    const rendered = { html, assets, hasOwnTitle: /^\s*<h1[\s>]/.test(html) };
     this.renderCache.set(key, rendered);
     return rendered;
   }

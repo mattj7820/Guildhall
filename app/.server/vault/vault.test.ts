@@ -254,4 +254,54 @@ describe("Vault", () => {
       },
     );
   });
+  describe("DM parts of shared notes", () => {
+    const informant = (viewer: typeof DM_VIEWER) =>
+      vault.getNote("NPCs/Fixture Informant", viewer)!;
+    const found = (query: string, viewer: typeof DM_VIEWER) =>
+      vault.search(query, viewer).some((result) => result.note.slug === "NPCs/Fixture Informant");
+
+    it("shows players the shared part, and none of the DM section or DM callout", () => {
+      const html = vault.render(informant(PLAYER_VIEWER), PLAYER_VIEWER);
+      expect(html).toContain("persimmon");
+      expect(html).toContain("damson");
+      for (const secret of ["medlar", "loquat", "quince", "[!dm]", "dm-map.png"]) {
+        expect(html).not.toContain(secret);
+      }
+    });
+
+    it("keeps DM parts out of players' search", () => {
+      expect(found("persimmon", PLAYER_VIEWER)).toBe(true);
+      for (const secret of ["medlar", "loquat", "quince"]) {
+        expect(found(secret, PLAYER_VIEWER)).toBe(false);
+        expect(found(secret, DM_VIEWER)).toBe(true);
+      }
+    });
+
+    it("keeps a statblock in a DM section from players", () => {
+      const names = (viewer: typeof DM_VIEWER) =>
+        vault.statblocks(viewer).map(({ statblock }) => statblock.name);
+      expect(names(DM_VIEWER)).toContain("Fixture Informant Disguise");
+      expect(names(PLAYER_VIEWER)).not.toContain("Fixture Informant Disguise");
+    });
+
+    it("doesn't let players load an image embedded only in a DM section", () => {
+      expect(vault.getAsset("Attachments/dm-map.png", PLAYER_VIEWER)).toBeUndefined();
+    });
+
+    it("gives the DM everything", () => {
+      const html = vault.render(informant(DM_VIEWER), DM_VIEWER);
+      for (const word of ["persimmon", "medlar", "loquat", "quince", "damson"]) {
+        expect(html).toContain(word);
+      }
+      expect(html).toContain('src="/vault-asset/Attachments/dm-map.png"');
+    });
+
+    it("decides whether a note opens with its own title from what the viewer sees", () => {
+      // Players' page opens with "# Fixture Informant", once the "# DM" section is gone.
+      expect(vault.hasOwnTitle(informant(PLAYER_VIEWER), PLAYER_VIEWER)).toBe(true);
+      expect(vault.hasOwnTitle(vault.getNote("Home", DM_VIEWER)!, DM_VIEWER)).toBe(true);
+      const untitled = vault.getNote("Secrets/Broken Frontmatter", DM_VIEWER)!;
+      expect(vault.hasOwnTitle(untitled, DM_VIEWER)).toBe(false);
+    });
+  });
 });

@@ -37,7 +37,7 @@ export function noteLink(vault: Vault, id: EntityId, viewer: Viewer): NoteLink |
       title: note.title,
       url: noteUrl(note.slug),
       html: vault.render(note, viewer),
-      hasOwnTitle: note.hasOwnTitle,
+      hasOwnTitle: vault.hasOwnTitle(note, viewer),
     }
   );
 }

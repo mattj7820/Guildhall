@@ -85,9 +85,4 @@ describe("parseNote", () => {
       expect(parseNote("a.md", withFrontmatter('player: ""')).player).toBeUndefined();
     });
   });
-
-  it("notices when the body supplies its own title heading", () => {
-    expect(parseNote("a.md", "# Title\n\nText").hasOwnTitle).toBe(true);
-    expect(parseNote("a.md", "Text\n\n# Later heading").hasOwnTitle).toBe(false);
-  });
 });

@@ -8,6 +8,7 @@ import remarkRehype from "remark-rehype";
 import { unified } from "unified";
 import type { Role } from "~/campaign/types";
 import { applyComments } from "./comments";
+import { forPlayers } from "./dm-parts";
 import { remarkWikilinks, type WikilinkOptions } from "./remark-wikilinks";
 import { rehypeStatblocks } from "./statblock/rehype-statblocks";
 
@@ -60,5 +61,8 @@ export function renderMarkdown(markdown: string, options: RenderOptions): string
     .use(rehypeStatblocks)
     .use(rehypeStringify);
 
-  return String(processor.processSync(applyComments(markdown, options.role)));
+  // Players get only what they may see; everything below (wikilinks, and so which images they may
+  // load) works on that.
+  const source = options.role === "player" ? forPlayers(markdown) : applyComments(markdown, "dm");
+  return String(processor.processSync(source));
 }
