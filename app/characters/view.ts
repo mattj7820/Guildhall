@@ -50,6 +50,8 @@ export interface CatalogueItem {
   id: EntityId;
   title: string;
   icon?: string;
+  /** For the DM: players can't read this note (yet), so they'll see only the item's own name. */
+  hiddenFromPlayers?: boolean;
 }
 
 /** A linked vault note as the viewer may see it, rendered on the server. */
@@ -57,6 +59,8 @@ export interface LinkedNote {
   title: string;
   html: string;
   url: string;
+  /** For the DM: players can't read this note (yet). */
+  hiddenFromPlayers?: boolean;
 }
 
 /** What the sheet page needs, for someone allowed to open it. */
@@ -81,4 +85,6 @@ export interface CharacterPage {
   catalogue: CatalogueItem[];
   /** Those notes as this viewer may read them, by entity ID, for items' details. */
   itemNotes: Record<EntityId, LinkedNote>;
+  /** Who this viewer gives items as ("the DM"); none when it's their own bag. */
+  givingAs?: string;
 }

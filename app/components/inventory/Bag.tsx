@@ -22,6 +22,7 @@ export function Bag({
   notes,
   recipients,
   onGive,
+  givingAs,
 }: {
   state: InventoryState;
   onChange: (change: InventoryChange) => void;
@@ -32,6 +33,11 @@ export function Bag({
   /** Who items can be given to, and how. */
   recipients?: Recipient[];
   onGive?: (id: ItemId, to: string, amount: number) => void;
+  /**
+   * Adding here gives, as this person ("the DM"): what's added arrives marked new and says who
+   * gave it, and looking at a new item doesn't count as its owner having seen it.
+   */
+  givingAs?: string;
 }) {
   const [adding, setAdding] = useState(false);
   const [opened, setOpened] = useState<{ id: ItemId; focus?: "split" | "give" }>();
@@ -54,13 +60,13 @@ export function Bag({
   function open(id: ItemId, focus?: "split" | "give") {
     setOpened({ id, focus });
     const item = state.items.find((candidate) => candidate.id === id);
-    if (item?.unseen) onChange({ type: "seen", id });
+    if (item?.unseen && !givingAs) onChange({ type: "seen", id });
   }
 
   const toolbar = (
     <div className="mb-3 flex flex-wrap items-center gap-2">
       <button type="button" className={buttonClass} onClick={() => setAdding(true)}>
-        + Add item
+        {givingAs ? "+ Give item" : "+ Add item"}
       </button>
       <input
         type="search"
@@ -113,7 +119,13 @@ export function Bag({
       {adding && (
         <QuickAdd
           catalogue={catalogue}
-          onAdd={(item) => onChange({ type: "add", item })}
+          label={givingAs ? "Give item" : "Add item"}
+          onAdd={(item) =>
+            onChange({
+              type: "add",
+              item: givingAs ? { ...item, givenBy: givingAs, unseen: true } : item,
+            })
+          }
           onClose={() => setAdding(false)}
         />
       )}

@@ -10,11 +10,13 @@ export const QUANTITY_MAX = 9999;
 
 /**
  * Whether `item` can be stacked onto `target` without losing anything: the same note (or none),
- * name, icon, description and source, and neither equipped or attuned.
+ * name, icon, description and source, and neither equipped or attuned. A new item that hasn't
+ * been looked at yet stays apart, so a gift of something already in the bag is still noticed.
  */
 export function canStack(item: InventoryItem, target: InventoryItem): boolean {
   if (item.id === target.id) return false;
   if (item.equipped || target.equipped || item.attuned || target.attuned) return false;
+  if (item.unseen || target.unseen) return false;
   return (
     item.note === target.note &&
     sameText(item.name, target.name) &&

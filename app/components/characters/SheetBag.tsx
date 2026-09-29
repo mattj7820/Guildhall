@@ -44,6 +44,7 @@ export function SheetBag({
         notes={page.itemNotes}
         recipients={recipients}
         onGive={onGive}
+        givingAs={page.givingAs}
       />
       <UndoToast message={toast.message} serial={toast.serial} onUndo={editor.undo} />
     </>

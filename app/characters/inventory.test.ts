@@ -38,6 +38,7 @@ describe("canStack", () => {
     ],
     ["an equipped item", { equipped: true }, {}],
     ["an attuned target", {}, { attuned: true }],
+    ["a new item not yet looked at", { unseen: true }, {}],
   ])("keeps apart items with %s, so stacking never loses anything", (_, a, b) => {
     expect(canStack(anItem(a), anItem(b))).toBe(false);
   });

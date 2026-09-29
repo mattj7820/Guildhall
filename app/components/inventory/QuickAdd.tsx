@@ -142,6 +142,11 @@ export function QuickAdd({
                   <span>
                     {parsed!.quantity > 1 && `${parsed!.quantity} × `}
                     {name} <span className="text-xs text-stone-500">· from the wiki</span>
+                    {option.item.hiddenFromPlayers && (
+                      <span className="ml-1 text-xs text-rose-700 dark:text-rose-400">
+                        · players can&rsquo;t read its note yet, so they&rsquo;ll see only this name
+                      </span>
+                    )}
                   </span>
                 ) : (
                   <span>

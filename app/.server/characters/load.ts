@@ -1,5 +1,6 @@
 import { toHtml } from "hast-util-to-html";
-import { DM_VIEWER, type Viewer } from "~/campaign/types";
+import { DM_VIEWER, PLAYER_VIEWER, type Viewer } from "~/campaign/types";
+import { canView } from "~/campaign/visibility";
 import { characterAccess } from "~/characters/permissions";
 import type { Character } from "~/characters/types";
 import { portraitUrl } from "~/characters/urls";
@@ -103,12 +104,21 @@ export function itemCatalogue(
     .notes(viewer)
     .filter((note) => note.type === "item")
     .sort((a, b) => byName.compare(a.title, b.title));
+  const hidden = (note: Note) =>
+    viewer.role === "dm" && !canView(PLAYER_VIEWER, note.visibility)
+      ? { hiddenFromPlayers: true }
+      : {};
   return {
-    catalogue: notes.map((note) => ({ id: note.id, title: note.title })),
+    catalogue: notes.map((note) => ({ id: note.id, title: note.title, ...hidden(note) })),
     itemNotes: Object.fromEntries(
       notes.map((note) => [
         note.id,
-        { title: note.title, url: noteUrl(note.slug), html: vault.render(note, viewer) },
+        {
+          title: note.title,
+          url: noteUrl(note.slug),
+          html: vault.render(note, viewer),
+          ...hidden(note),
+        },
       ]),
     ),
   };
@@ -129,6 +139,8 @@ export function characterPage(vault: Vault, character: Character, viewer: Viewer
     ...(fromNote && { notePortrait: fromNote }),
     ...(character.kind === "pc" && { portraitChoices: portraitChoices(vault, viewer) }),
     ...itemCatalogue(vault, viewer),
+    // The DM's additions to anyone's bag are gifts.
+    ...(viewer.role === "dm" && { givingAs: "the DM" }),
     ...(readable && {
       story: {
         title: readable.title,

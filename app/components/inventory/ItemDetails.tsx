@@ -226,7 +226,14 @@ export function ItemDetails({
         {note && (
           <section className="mt-4 border-t border-stone-200 pt-3 dark:border-stone-700">
             <div className="flex items-baseline justify-between gap-2">
-              <h3 className={labelClass}>From the wiki: {note.title}</h3>
+              <h3 className={labelClass}>
+                From the wiki: {note.title}
+                {note.hiddenFromPlayers && (
+                  <span className="ml-1 font-normal tracking-normal text-rose-700 normal-case dark:text-rose-400">
+                    (players can&rsquo;t read this note yet)
+                  </span>
+                )}
+              </h3>
               <a
                 href={note.url}
                 className="text-sm text-amber-800 hover:underline dark:text-amber-400"

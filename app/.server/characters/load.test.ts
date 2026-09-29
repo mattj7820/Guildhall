@@ -129,6 +129,20 @@ describe("itemCatalogue", () => {
     expect(catalogue.map((item) => item.title)).toContain("Fixture Secret Relic");
     expect(itemNotes["Items/Fixture Cursed Ring"].html).toContain("ringsecretsection");
   });
+
+  it("tells the DM which item notes players can't read", () => {
+    const { catalogue, itemNotes } = itemCatalogue(vault, DM_VIEWER);
+    const relic = catalogue.find((item) => item.title === "Fixture Secret Relic");
+    const rope = catalogue.find((item) => item.title === "Fixture Rope");
+    expect(relic?.hiddenFromPlayers).toBe(true);
+    expect(rope?.hiddenFromPlayers).toBeUndefined();
+    expect(itemNotes["Items/Fixture Secret Relic"].hiddenFromPlayers).toBe(true);
+  });
+
+  it("makes the DM's additions gifts, and a player's not", () => {
+    expect(characterPage(vault, pcOne, DM_VIEWER).givingAs).toBe("the DM");
+    expect(characterPage(vault, pcOne, playerOne).givingAs).toBeUndefined();
+  });
 });
 
 describe("portraitPath", () => {
