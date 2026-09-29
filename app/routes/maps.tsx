@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { data, Form, Link, redirect, useActionData, useNavigation } from "react-router";
 import { DataFileError } from "~/.server/data/json-store";
+import { whereabouts } from "~/.server/maps/tokens";
 import { ImagePicker } from "~/components/maps/ImagePicker";
 import { NotePicker } from "~/components/maps/NotePicker";
 import { inputClass, panelClass, primaryButtonClass, buttonClass } from "~/components/styles";
@@ -10,6 +11,7 @@ import { servicesContext, viewerContext, type Services } from "~/context";
 import { mapImageSchema, MAP_NAME_MAX } from "~/maps/schema";
 import { mapTree, type MapTreeNode } from "~/maps/tree";
 import type { MapImage } from "~/maps/types";
+import type { Whereabouts } from "~/maps/tokens/types";
 import { mapEditUrl, mapUrl } from "~/maps/urls";
 import type { Route } from "./+types/maps";
 
@@ -19,7 +21,9 @@ export function meta(_: Route.MetaArgs) {
 
 export async function loader({ context }: Route.LoaderArgs) {
   const viewer = context.get(viewerContext);
-  if (viewer.role !== "dm") return playersMaps(context.get(servicesContext), viewer);
+  const services = context.get(servicesContext);
+  const party = await partyWhereabouts(services, viewer);
+  if (viewer.role !== "dm") return { ...(await playersMaps(services, viewer)), party };
   const { maps, vault } = context.get(servicesContext);
   const current = vault.current;
   const picker = {
@@ -33,11 +37,21 @@ export async function loader({ context }: Route.LoaderArgs) {
       areas: areas.map(({ id, name, map }) => ({ id, name, map })),
       imageMissing: !current.findImage(image.path),
     }));
-    return { forDm: true as const, tree: mapTree(list), ...picker };
+    return { forDm: true as const, tree: mapTree(list), party, ...picker };
   } catch (error) {
     if (error instanceof DataFileError) {
-      return { forDm: true as const, tree: [], error: error.message, ...picker };
+      return { forDm: true as const, tree: [], error: error.message, party, ...picker };
     }
+    throw error;
+  }
+}
+
+/** Where the party is, or nothing if the tokens can't be read just now (the map list says why). */
+async function partyWhereabouts(services: Services, viewer: Viewer): Promise<Whereabouts[]> {
+  try {
+    return await whereabouts(services, viewer);
+  } catch (error) {
+    if (error instanceof DataFileError) return [];
     throw error;
   }
 }
@@ -115,6 +129,8 @@ export default function Maps({ loaderData }: Route.ComponentProps) {
 
       {forDm && creating && <NewMapForm loaded={loaderData} onCancel={() => setCreating(false)} />}
 
+      <PartyWhereabouts party={loaderData.party} forDm={forDm} />
+
       {"error" in loaderData && loaderData.error ? (
         <p role="alert" className="rounded-md bg-rose-100 px-3 py-2 text-sm text-rose-900">
           {loaderData.error}
@@ -143,6 +159,39 @@ export default function Maps({ loaderData }: Route.ComponentProps) {
         </nav>
       )}
     </main>
+  );
+}
+
+/** Where each party member is (for a player, their own), with a way to their map. */
+function PartyWhereabouts({ party, forDm }: { party: Whereabouts[]; forDm: boolean }) {
+  if (party.length === 0) return null;
+  const heading = forDm ? "Where the party is" : "Where you are";
+  return (
+    <section aria-label={heading} className={`${panelClass} mb-4`}>
+      <h2 className="mb-2 text-xs font-semibold tracking-wide text-stone-500 uppercase">
+        {heading}
+      </h2>
+      <ul className="flex flex-col gap-1 text-sm">
+        {party.map((member) => (
+          <li key={member.name}>
+            <span className="font-semibold">{member.name}</span>{" "}
+            {member.map ? (
+              <>
+                is on{" "}
+                <Link
+                  to={mapUrl(member.map.id)}
+                  className="text-amber-800 underline dark:text-amber-400"
+                >
+                  {member.map.name}
+                </Link>
+              </>
+            ) : (
+              <span className="text-stone-500">isn't on a map yet</span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

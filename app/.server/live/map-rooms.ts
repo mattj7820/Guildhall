@@ -4,7 +4,7 @@ import type { Services } from "~/context";
 import type { ServerMessage } from "~/live/messages";
 import type { MapId } from "~/maps/types";
 import { mapVersion } from "../maps/load";
-import { loadTokens } from "../maps/tokens";
+import { loadMapTokens } from "../maps/tokens";
 
 type Deps = Pick<Services, "config" | "vault" | "maps" | "fogs" | "tokens" | "characters">;
 
@@ -29,5 +29,5 @@ export async function tokensState(
 ): Promise<ServerMessage | undefined> {
   const map = await services.maps.get(id);
   if (!map || !canView(viewer, map.visibility)) return undefined;
-  return { type: "tokens", map: id, tokens: await loadTokens(services, map, viewer) };
+  return { type: "tokens", map: id, ...(await loadMapTokens(services, map, viewer)) };
 }

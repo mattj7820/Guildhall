@@ -3,7 +3,7 @@
  * server sends `ServerMessage`s, each one built on the server for the viewer who gets it.
  */
 import { z } from "zod";
-import type { TokenId, TokenView } from "~/maps/tokens/types";
+import type { MapTokensView, TokenId } from "~/maps/tokens/types";
 import type { MapId, Point } from "~/maps/types";
 
 /** Where browsers open their live connection. */
@@ -37,8 +37,8 @@ export type ServerMessage =
   | { type: "map"; map: MapId; version: string }
   /** The map is missing, or no longer visible to this viewer: the same either way. */
   | { type: "gone"; map: MapId }
-  /** The map's tokens as this viewer may see them, sent whenever that changes. */
-  | { type: "tokens"; map: MapId; tokens: TokenView[] }
+  /** The map's tokens and who's inside its areas, as this viewer may see them, when that changes. */
+  | ({ type: "tokens"; map: MapId } & MapTokensView)
   /** Someone is dragging a token this viewer can see, there. */
   | { type: "moving"; map: MapId; token: TokenId; at: Point; by: string }
   /** The token this viewer picked up is someone else's to move just now. */

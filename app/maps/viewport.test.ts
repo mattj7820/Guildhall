@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  centreOn,
   clamp,
   fit,
   pan,
@@ -98,5 +99,26 @@ describe("zoomPercent", () => {
     const start = fit(WORLD, SCREEN);
     expect(zoomPercent(start, WORLD, SCREEN)).toBe(100);
     expect(zoomPercent({ ...start, scale: start.scale * 1.5 }, WORLD, SCREEN)).toBe(150);
+  });
+});
+
+describe("centreOn", () => {
+  const image = { width: 400, height: 200 };
+  const viewport = { width: 400, height: 200 };
+
+  it("puts the point in the middle, zoomed in to twice the fit", () => {
+    const view = centreOn(fit(image, viewport), [200, 100], image, viewport);
+    expect(view.scale).toBe(2);
+    expect(toScreen(view, 200, 100)).toEqual([200, 100]);
+  });
+
+  it("keeps a closer zoom", () => {
+    const zoomed = { scale: 3, x: 0, y: 0 };
+    expect(centreOn(zoomed, [200, 100], image, viewport).scale).toBe(3);
+  });
+
+  it("stops at the image's edge rather than showing past it", () => {
+    const view = centreOn(fit(image, viewport), [0, 0], image, viewport);
+    expect([view.x, view.y]).toEqual([0, 0]);
   });
 });

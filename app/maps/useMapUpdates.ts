@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useRevalidator } from "react-router";
 import type { LiveStatus } from "~/live/client";
 import { useLiveMap } from "~/live/useLive";
-import type { TokenView } from "./tokens/types";
+import type { MapTokensView } from "./tokens/types";
 import type { MapId } from "./types";
 
 /** How often an open map checks for changes while the live connection is down. */
@@ -20,7 +20,7 @@ export function useMapUpdates(
   map: MapId,
   versionUrl: string,
   version: string,
-  onTokens: (tokens: TokenView[]) => void,
+  onTokens: (view: MapTokensView) => void,
 ): LiveStatus {
   const { revalidate, state } = useRevalidator();
   const latest = useRef({ version, revalidate, onTokens, idle: state === "idle", live: false });
@@ -51,9 +51,8 @@ export function useMapUpdates(
         // Gone or no longer shared: reloading shows the not-found page.
         if (response.status === 404) return void latest.current.revalidate();
         if (!response.ok) return;
-        const { version: now, tokens } = (await response.json()) as {
+        const { version: now, ...tokens } = (await response.json()) as MapTokensView & {
           version: string;
-          tokens: TokenView[];
         };
         if (now !== latest.current.version) void latest.current.revalidate();
         else latest.current.onTokens(tokens);

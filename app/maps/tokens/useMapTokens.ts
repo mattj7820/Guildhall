@@ -6,7 +6,7 @@ import { mapTokensUrl } from "../urls";
 import type { MapId, Point } from "../types";
 import type { TokenAction } from "./actions";
 import { movesReducer, shownTokens, startMoves, type MovesEvent, type ShownToken } from "./moves";
-import type { TokenId, TokenView } from "./types";
+import type { InsideBadge, MapTokensView, TokenId, TokenView } from "./types";
 
 /** How often a drag is sent to the others: smooth enough, and light on the connection. */
 export const DRAGS_PER_SECOND = 20;
@@ -23,8 +23,10 @@ export interface MapTokensState {
   drop: (id: TokenId, at: Point, from: Point) => void;
   /** Put back where it was. */
   cancel: (id: TokenId) => void;
+  /** Who's inside this map's areas that lead deeper. */
+  inside: InsideBadge[];
   /** Tokens from somewhere else: the version check while the live connection is down. */
-  pushed: (tokens: TokenView[]) => void;
+  pushed: (view: MapTokensView) => void;
 }
 
 /**
@@ -34,26 +36,29 @@ export interface MapTokensState {
  * token is dragged, where it is goes to the others 20 times a second; the server holds it for
  * whoever picked it up first, and says so to anyone else who tries.
  */
-export function useMapTokens(map: MapId, fromPage: TokenView[]): MapTokensState {
+export function useMapTokens(map: MapId, fromPage: MapTokensView): MapTokensState {
   const [state, setState] = useState(() => ({
     fromPage,
-    moves: startMoves(fromPage),
+    moves: startMoves(fromPage.tokens),
+    inside: fromPage.inside,
     error: undefined as string | undefined,
   }));
   // The page's data was reloaded: its tokens are newer than what's held here.
-  if (state.fromPage !== fromPage) {
+  if (state.fromPage.tokens !== fromPage.tokens || state.fromPage.inside !== fromPage.inside) {
     setState({
       ...state,
       fromPage,
-      moves: movesReducer(state.moves, { type: "pushed", tokens: fromPage }),
+      moves: movesReducer(state.moves, { type: "pushed", tokens: fromPage.tokens }),
+      inside: fromPage.inside,
     });
   }
 
   const dispatch = useCallback(
-    (event: MovesEvent, error?: string | null) =>
+    (event: MovesEvent, error?: string | null, inside?: InsideBadge[]) =>
       setState((current) => ({
         ...current,
         moves: movesReducer(current.moves, event),
+        ...(inside && { inside }),
         ...(error !== undefined && { error: error ?? undefined }),
       })),
     [],
@@ -63,7 +68,9 @@ export function useMapTokens(map: MapId, fromPage: TokenView[]): MapTokensState 
   const inHand = useRef<TokenId | undefined>(undefined);
 
   const status = useLiveMap(map, (message) => {
-    if (message.type === "tokens") dispatch({ type: "pushed", tokens: message.tokens });
+    if (message.type === "tokens") {
+      dispatch({ type: "pushed", tokens: message.tokens }, undefined, message.inside);
+    }
     if (message.type === "moving") {
       dispatch({
         type: "othersMoving",
@@ -152,6 +159,11 @@ export function useMapTokens(map: MapId, fromPage: TokenView[]): MapTokensState 
     drag,
     drop,
     cancel,
-    pushed: useCallback((tokens) => dispatch({ type: "pushed", tokens }), [dispatch]),
+    inside: state.inside,
+    pushed: useCallback(
+      (view: MapTokensView) =>
+        dispatch({ type: "pushed", tokens: view.tokens }, undefined, view.inside),
+      [dispatch],
+    ),
   };
 }

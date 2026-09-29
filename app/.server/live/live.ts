@@ -9,6 +9,7 @@ import { canMoveToken } from "~/maps/tokens/permissions";
 import type { Token, TokenId } from "~/maps/tokens/types";
 import { tokensForViewer } from "~/maps/tokens/visibility";
 import type { CampaignMap, MapId, Point } from "~/maps/types";
+import { ancestors } from "~/maps/tree";
 import { partyControllers, partyFor } from "../maps/tokens";
 import { Holds } from "./holds";
 import { LiveHub, type BuildMessage, type Connection } from "./hub";
@@ -65,7 +66,11 @@ export class Live {
   async mapChanged(map: MapId): Promise<void> {
     this.dragContexts.delete(map);
     await this.hub.publish(map, (viewer) => mapState(this.services, map, viewer));
-    await this.publishOnMap(map, (viewer) => tokensState(this.services, map, viewer));
+    // The maps around it show who's inside their areas, so they may look different too.
+    const around = [map, ...ancestors(map, await this.services.maps.list()).map((each) => each.id)];
+    for (const each of around) {
+      await this.publishOnMap(each, (viewer) => tokensState(this.services, each, viewer));
+    }
   }
 
   /** The vault changed, which any map's notes or image may depend on. */

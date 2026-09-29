@@ -6,7 +6,17 @@ import { tileStates, TILE_OVERLAP, type FogField } from "~/maps/fog/tiles";
 import type { FogMask } from "~/maps/fog/types";
 import { polygonArea } from "~/maps/geometry";
 import { ancestors } from "~/maps/tree";
-import type { AreaView, CampaignMap, MapImageView, MapView, NoteLink, Size } from "~/maps/types";
+import type {
+  Area,
+  AreaId,
+  AreaView,
+  CampaignMap,
+  MapId,
+  MapImageView,
+  MapView,
+  NoteLink,
+  Size,
+} from "~/maps/types";
 import { mapImageUrl, mapTileUrl } from "~/maps/urls";
 import type { FoundImage } from "../vault/vault";
 
@@ -67,9 +77,7 @@ export function mapView({
   const breadcrumbs = [...shownAncestors, map].map(({ id, name }) => ({ id, name }));
 
   const areas = map.areas
-    .filter(
-      (area) => canView(viewer, area.visibility) && (isDm || areaRevealed(fog.mask, area.outline)),
-    )
+    .filter((area) => areaSeen(area, viewer, fog.mask))
     .sort((a, b) => polygonArea(b.outline) - polygonArea(a.outline))
     .map((area): AreaView => {
       const child = area.map ? visibleMap(area.map) : undefined;
@@ -111,6 +119,31 @@ export function mapView({
 }
 
 /** Players get only the tiles the fog lets them have, never the whole image or its file name. */
+/**
+ * Whether the viewer sees an area: the DM, all of them; players, those that aren't secret and are
+ * at least half revealed.
+ */
+export function areaSeen(area: Area, viewer: Viewer, fog: FogMask): boolean {
+  return (
+    canView(viewer, area.visibility) && (viewer.role === "dm" || areaRevealed(fog, area.outline))
+  );
+}
+
+/** The areas of a map the viewer sees that lead to a map they may see, as `mapView` shows them. */
+export function linksSeen(
+  map: CampaignMap,
+  maps: readonly CampaignMap[],
+  viewer: Viewer,
+  fog: FogMask,
+): { area: AreaId; map: MapId }[] {
+  return map.areas.flatMap((area) => {
+    const child = area.map && maps.find((each) => each.id === area.map);
+    return child && canView(viewer, child.visibility) && areaSeen(area, viewer, fog)
+      ? [{ area: area.id, map: child.id }]
+      : [];
+  });
+}
+
 function playerImageView(
   map: CampaignMap,
   found: MapViewInput["image"],

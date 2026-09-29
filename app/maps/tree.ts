@@ -51,6 +51,29 @@ export function ancestors<M extends TreeMap>(id: MapId, maps: readonly M[]): M[]
 }
 
 /**
+ * The maps inside this one, at any depth: those its areas lead to, and theirs. Stops if it meets
+ * a cycle.
+ */
+export function descendants(id: MapId, maps: readonly TreeMap[]): MapId[] {
+  const byId = new Map(maps.map((map) => [map.id, map]));
+  const parents = parentLinks(maps);
+  const found: MapId[] = [];
+  const seen = new Set<MapId>([id]);
+  const visit = (parent: MapId) => {
+    for (const area of byId.get(parent)?.areas ?? []) {
+      const child = area.map;
+      // Only the parent a map really has: a second link to it (a hand-edited file) doesn't count.
+      if (!child || seen.has(child) || parents.get(child)?.mapId !== parent) continue;
+      seen.add(child);
+      found.push(child);
+      visit(child);
+    }
+  };
+  visit(id);
+  return found;
+}
+
+/**
  * Every map as a tree, top-level maps first in the given order. Maps caught in a cycle (so with
  * no top-level ancestor) are listed at the top level too, so none go missing.
  */

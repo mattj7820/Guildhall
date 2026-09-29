@@ -3,13 +3,24 @@ import type { Controllers } from "~/characters/permissions";
 import type { Character } from "~/characters/types";
 import type { Services } from "~/context";
 import type { FogMask } from "~/maps/fog/types";
-import type { PartyPlacement, TokenView } from "~/maps/tokens/types";
+import { canView } from "~/campaign/visibility";
+import { characterAccess } from "~/characters/permissions";
+import { descendants } from "~/maps/tree";
+import type {
+  InsideBadge,
+  MapTokensView,
+  PartyFace,
+  PartyPlacement,
+  TokenView,
+  Whereabouts,
+} from "~/maps/tokens/types";
 import { tokensForViewer, type PartyMember } from "~/maps/tokens/visibility";
 import type { CampaignMap } from "~/maps/types";
 import { controllersFor } from "../characters/controllers";
 import { partyCards } from "../characters/load";
 import type { Note } from "../vault/parse-note";
 import type { Vault } from "../vault/vault";
+import { linksSeen } from "./view";
 
 /** PC and companion notes by ID, looked up as the DM would. */
 function partyNotes(vault: Vault): Map<EntityId, Note> {
@@ -54,6 +65,101 @@ export function partyFor(
 }
 
 type Deps = Pick<Services, "vault" | "characters" | "tokens" | "fogs">;
+
+/**
+ * Who's inside each area of a map that leads to a deeper map, as this viewer may see them: the
+ * party members on that map, or on maps inside it, whom they'd see there. Only through areas and
+ * links they can see, so a badge never gives a hidden place away.
+ */
+export async function insideBadges(
+  services: Deps,
+  map: CampaignMap,
+  maps: readonly CampaignMap[],
+  viewer: Viewer,
+  fog: FogMask,
+): Promise<InsideBadge[]> {
+  const links = linksSeen(map, maps, viewer, fog);
+  if (links.length === 0) return [];
+  const [tokens, characters] = await Promise.all([
+    services.tokens.list(),
+    services.characters.list(),
+  ]);
+  const party = partyFor(services.vault.current, characters, viewer);
+  const order = partyCards(services.vault.current, characters, viewer).cards.map(
+    (card) => card.name,
+  );
+  const badges: InsideBadge[] = [];
+  for (const link of links) {
+    const inside = [link.map, ...descendants(link.map, maps)];
+    const members: PartyFace[] = [];
+    for (const id of inside) {
+      const on = maps.find((each) => each.id === id);
+      const here = tokens.filter((token) => token.map === id && token.kind === "character");
+      if (!on || !canView(viewer, on.visibility) || here.length === 0) continue;
+      const { mask } = await services.fogs.get(on.id, on.image);
+      for (const seen of tokensForViewer({ tokens: here, viewer, fog: mask, party })) {
+        members.push({
+          name: seen.name,
+          ...(seen.portraitUrl && { portraitUrl: seen.portraitUrl }),
+        });
+      }
+    }
+    // In the party's usual order: PCs by name, then companions.
+    members.sort((a, b) => order.indexOf(a.name) - order.indexOf(b.name));
+    if (members.length > 0) badges.push({ area: link.area, members });
+  }
+  return badges;
+}
+
+/** A map's tokens and who's inside its areas, as this viewer may see them. */
+export async function loadMapTokens(
+  services: Deps & Pick<Services, "maps">,
+  map: CampaignMap,
+  viewer: Viewer,
+): Promise<MapTokensView> {
+  const [maps, { mask }] = await Promise.all([
+    services.maps.list(),
+    services.fogs.get(map.id, map.image),
+  ]);
+  const [tokens, inside] = await Promise.all([
+    loadTokens(services, map, viewer, mask),
+    insideBadges(services, map, maps, viewer, mask),
+  ]);
+  return { tokens, inside };
+}
+
+/**
+ * Where the party is, for the Maps page. Players get their own party members, on maps they may
+ * open (or nowhere, if not); the DM, everyone.
+ */
+export async function whereabouts(
+  services: Deps & Pick<Services, "maps">,
+  viewer: Viewer,
+): Promise<Whereabouts[]> {
+  const [maps, tokens, characters] = await Promise.all([
+    services.maps.list(),
+    services.tokens.list(),
+    services.characters.list(),
+  ]);
+  const vault = services.vault.current;
+  const { cards } = partyCards(vault, characters, viewer);
+  const controllers = partyControllers(vault);
+  return cards.flatMap((card) => {
+    const theirs = characterAccess(viewer, controllers(card.note)) === "edit";
+    if (viewer.role !== "dm" && !theirs) return [];
+    const token = tokens.find((each) => each.kind === "character" && each.note === card.note);
+    const on = token && maps.find((each) => each.id === token.map);
+    const shown = on && canView(viewer, on.visibility) ? { id: on.id, name: on.name } : undefined;
+    return [
+      {
+        name: card.name,
+        ...(card.portraitUrl && { portraitUrl: card.portraitUrl }),
+        theirs: viewer.role !== "dm" && theirs,
+        ...(shown && { map: shown }),
+      },
+    ];
+  });
+}
 
 /** The tokens on a map as this viewer may see them. */
 export async function loadTokens(

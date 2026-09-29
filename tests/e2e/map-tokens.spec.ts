@@ -346,6 +346,60 @@ test("a player moves their token with the arrow keys", async ({ page, browser })
   await player.context().close();
 });
 
+test("the DM brings everyone into a deeper map, and players find where they are", async ({
+  page,
+  browser,
+}) => {
+  const outer = await sharedMap(page);
+  const inner = await sharedMap(page);
+  // An area in the outer map's revealed left third that leads to the inner map.
+  const town = {
+    id: "town",
+    name: "Fixture town",
+    outline: [
+      [0.05, 0.1],
+      [0.25, 0.1],
+      [0.25, 0.9],
+      [0.05, 0.9],
+    ],
+    map: inner.map.split("/").pop(),
+    visibility: "players",
+  };
+  const saved = await page.request.post(`${outer.map}/edit`, {
+    headers: { Origin: ORIGIN },
+    data: { intent: "save", name: outer.name, areas: [town] },
+  });
+  expect(saved.status()).toBe(200);
+
+  await page.goto(inner.map);
+  await page.getByRole("button", { name: "Bring everyone here" }).click();
+  await clickMap(page, inner.name, [0.15, 0.5]);
+  await expect(anyToken(page)).toHaveCount(3);
+
+  const player = await asPlayerOne(browser);
+  // The outer map shows who's inside the area that leads in.
+  await player.goto(outer.map);
+  await expect(
+    player.getByRole("img", {
+      name: "Inside Fixture town: Fixture PC One, Fixture PC Two, Fixture Companion",
+    }),
+  ).toBeVisible();
+
+  // The Maps page says where they are, and takes them there.
+  await player.goto("/maps");
+  const where = player.getByRole("region", { name: "Where you are" });
+  await expect(where).toContainText(`Fixture PC One is on ${inner.name}`);
+  await where.getByRole("link", { name: inner.name }).first().click();
+
+  // Find centres the map on their token, zoomed in.
+  await player
+    .getByRole("list", { name: "Party here" })
+    .getByRole("button", { name: "Find Fixture PC One" })
+    .click();
+  await expect(player.getByRole("status", { name: "Zoom level" })).not.toHaveText("100%");
+  await player.context().close();
+});
+
 test("a map that isn't shared takes no token changes from players", async ({ page, browser }) => {
   const name = uniqueName("Unshared");
   await createMap(page, { image: "Fixture Fog.png", name });

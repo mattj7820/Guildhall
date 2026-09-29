@@ -3,7 +3,7 @@
  * checked by the server, drawn and moved in the browser.
  */
 import type { EntityId, Visibility } from "~/campaign/types";
-import type { MapId, Point } from "../types";
+import type { AreaId, MapId, Point } from "../types";
 
 export type TokenId = string;
 
@@ -65,6 +65,34 @@ export interface TokenView {
   visibility?: Visibility;
   /** DM only: which party member, for the party panel. (A note's path could name a secret.) */
   note?: EntityId;
+}
+
+/** A party member as a badge shows them. */
+export interface PartyFace {
+  name: string;
+  portraitUrl?: string;
+}
+
+/**
+ * Party members inside an area of a map: on the map it leads to, or on a map inside that. Only
+ * those the viewer would see there, through areas and links they can see.
+ */
+export interface InsideBadge {
+  area: AreaId;
+  members: PartyFace[];
+}
+
+/** A map's tokens, and who's inside its areas, as one viewer may see them. */
+export interface MapTokensView {
+  tokens: TokenView[];
+  inside: InsideBadge[];
+}
+
+/** Where a party member is, for the Maps page: on a map the viewer may open, or nowhere known. */
+export interface Whereabouts extends PartyFace {
+  map?: { id: MapId; name: string };
+  /** One of the viewer's own (their PC, or the companion they share). */
+  theirs: boolean;
 }
 
 /** A party member for the DM's panel, and which map their token is on, if any. */

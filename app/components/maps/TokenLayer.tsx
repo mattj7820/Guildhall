@@ -8,7 +8,8 @@ import type { CanvasTools } from "./MapCanvas";
 /** A token's radius on screen, whatever the zoom. */
 export const TOKEN_RADIUS = 15;
 
-const CLIP_ID = "token-portrait-clip";
+/** Clips a portrait to a circle; badges use it too. */
+export const CLIP_ID = "token-portrait-clip";
 
 /** A press becomes a drag once it has moved this many screen pixels; less is a click. */
 const DRAG_THRESHOLD = 3;

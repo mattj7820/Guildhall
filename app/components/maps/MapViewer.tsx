@@ -5,8 +5,9 @@ import { areaRevealed } from "~/maps/fog/coverage";
 import type { FogMask } from "~/maps/fog/types";
 import type { AreaView, MapView, Size } from "~/maps/types";
 import { mapEditUrl, mapUrl } from "~/maps/urls";
-import { normalise } from "~/maps/geometry";
-import type { Token, PartyPlacement, TokenView } from "~/maps/tokens/types";
+import { normalise, offset, toPixels } from "~/maps/geometry";
+import type { TokenAction } from "~/maps/tokens/actions";
+import type { InsideBadge, PartyPlacement, Token, TokenView } from "~/maps/tokens/types";
 import { useMapTokens } from "~/maps/tokens/useMapTokens";
 import type { Point } from "~/maps/types";
 import { newId } from "~/shared/ids";
@@ -20,7 +21,8 @@ import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
 import { NotePanel } from "./NotePanel";
 import { ShareSwitch } from "./ShareSwitch";
-import { TokenLayer } from "./TokenLayer";
+import { InsideBadges } from "./InsideBadges";
+import { TOKEN_RADIUS, TokenLayer } from "./TokenLayer";
 import { TokenPanel, type Placing } from "./TokenPanel";
 import { useFogTools } from "./useFogTools";
 
@@ -42,11 +44,13 @@ function seenByPlayers(areas: AreaView[], mask: FogMask): AreaView[] {
 export function MapViewer({
   map,
   tokens: fromPage,
+  inside: insideFromPage,
   party,
   images,
 }: {
   map: MapView;
   tokens: TokenView[];
+  inside: InsideBadge[];
   party: PartyPlacement[];
   images: string[];
 }) {
@@ -58,13 +62,34 @@ export function MapViewer({
   const fog = useFogTools(map.id, map.fog, fogMode && !presenting);
   const shared = !!map.shared;
   const fogOpacity = presenting ? 1 : DM_FOG_OPACITY;
-  const mapTokens = useMapTokens(map.id, fromPage);
-  const { tokens, error: tokenError, send } = mapTokens;
+  const mapTokens = useMapTokens(map.id, { tokens: fromPage, inside: insideFromPage });
+  const { tokens, inside, error: tokenError, send } = mapTokens;
+  const [focus, setFocus] = useState<{ at: [number, number]; key: number }>();
+  const find = (token: TokenView) =>
+    setFocus({ at: toPixels(token.at, map.size), key: (focus?.key ?? 0) + 1 });
   const [placing, setPlacing] = useState<Placing>();
   const [selectedTokenId, setSelectedTokenId] = useState<string>();
   const selectedToken = tokens.find((token) => token.id === selectedTokenId);
 
-  function place(at: Point) {
+  function place(at: Point, scale: number) {
+    if (placing?.kind === "party") {
+      // Side by side around the click, a token's width apart on screen.
+      const step = (TOKEN_RADIUS * 2.6) / scale / map.size.width;
+      const first = at[0] - (step * (party.length - 1)) / 2;
+      const placed = party.map((member, index): TokenAction => ({
+        type: "place",
+        token: {
+          kind: "character",
+          id: newId(),
+          map: map.id,
+          at: offset([first, at[1]], step * index, 0),
+          note: member.note,
+        },
+      }));
+      void send(placed);
+      setPlacing(undefined);
+      return;
+    }
     const token: Token =
       placing?.kind === "character"
         ? { kind: "character", id: newId(), map: map.id, at, note: placing.note }
@@ -148,6 +173,7 @@ export function MapViewer({
             onKeyDown={(event) => {
               if (event.key === "Escape" && placing) setPlacing(undefined);
             }}
+            focus={focus}
           >
             {(canvas) => (
               <>
@@ -183,6 +209,12 @@ export function MapViewer({
                     </g>
                   </>
                 )}
+                <InsideBadges
+                  badges={inside}
+                  areas={map.areas}
+                  size={map.size}
+                  scale={canvas.scale}
+                />
                 <TokenLayer
                   tokens={presenting ? tokens.filter((token) => !token.hidden) : tokens}
                   size={map.size}
@@ -200,7 +232,7 @@ export function MapViewer({
                     onClick={(event) => {
                       event.stopPropagation();
                       const point = canvas.clientToImage(event.clientX, event.clientY);
-                      if (point) place(normalise(point[0], point[1], map.size));
+                      if (point) place(normalise(point[0], point[1], map.size), canvas.scale);
                     }}
                   />
                 )}
@@ -257,6 +289,7 @@ export function MapViewer({
                 error={tokenError}
                 onPlace={setPlacing}
                 onSelect={(token) => setSelectedTokenId(token?.id)}
+                onFind={find}
                 send={(actions) => void send(actions)}
               />
             )}

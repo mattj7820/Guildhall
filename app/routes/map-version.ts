@@ -1,6 +1,6 @@
 import { data } from "react-router";
 import { mapVersion } from "~/.server/maps/load";
-import { loadTokens } from "~/.server/maps/tokens";
+import { loadMapTokens } from "~/.server/maps/tokens";
 import { canView } from "~/campaign/visibility";
 import { servicesContext, viewerContext } from "~/context";
 import type { Route } from "./+types/map-version";
@@ -19,7 +19,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
     throw data("Not found", { status: 404 });
   }
   return Response.json(
-    { version: await mapVersion(services, map), tokens: await loadTokens(services, map, viewer) },
+    { version: await mapVersion(services, map), ...(await loadMapTokens(services, map, viewer)) },
     { headers: { "Cache-Control": "no-store" } },
   );
 }

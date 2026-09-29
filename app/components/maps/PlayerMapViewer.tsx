@@ -5,12 +5,14 @@ import type { AreaView, MapView, NoteLink, Size, TileLayer } from "~/maps/types"
 import { mapUrl, mapVersionUrl } from "~/maps/urls";
 import { useMapUpdates } from "~/maps/useMapUpdates";
 import { LiveStatus } from "../LiveStatus";
-import type { TokenView } from "~/maps/tokens/types";
+import { toPixels } from "~/maps/geometry";
+import type { InsideBadge, TokenView } from "~/maps/tokens/types";
 import { useMapTokens } from "~/maps/tokens/useMapTokens";
 import { AreaShape } from "./AreaShape";
 import { useFogImage } from "./FogLayer";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
+import { InsideBadges } from "./InsideBadges";
 import { NotePanel } from "./NotePanel";
 import { TokenLayer } from "./TokenLayer";
 
@@ -25,13 +27,18 @@ const REVEALED_ID = "revealed-by-fog";
 export function PlayerMapViewer({
   map,
   tokens,
+  inside,
   version,
 }: {
   map: MapView;
   tokens: TokenView[];
+  inside: InsideBadge[];
   version: string;
 }) {
-  const mapTokens = useMapTokens(map.id, tokens);
+  const mapTokens = useMapTokens(map.id, { tokens, inside });
+  const [focus, setFocus] = useState<{ at: [number, number]; key: number }>();
+  const find = (token: TokenView) =>
+    setFocus({ at: toPixels(token.at, map.size), key: (focus?.key ?? 0) + 1 });
   const status = useMapUpdates(map.id, mapVersionUrl(map.id), version, mapTokens.pushed);
   const [selectedId, setSelectedId] = useState<string>();
   const selected = map.areas.find((area) => area.id === selectedId);
@@ -56,6 +63,7 @@ export function PlayerMapViewer({
             size={map.size}
             className="flex-1"
             backdrop={<Tiles size={map.size} layer={tiles} />}
+            focus={focus}
           >
             {(canvas) => (
               <>
@@ -83,6 +91,12 @@ export function PlayerMapViewer({
                     />
                   ))}
                 </g>
+                <InsideBadges
+                  badges={mapTokens.inside}
+                  areas={map.areas}
+                  size={map.size}
+                  scale={canvas.scale}
+                />
                 <TokenLayer
                   tokens={mapTokens.tokens}
                   size={map.size}
@@ -108,10 +122,53 @@ export function PlayerMapViewer({
           ) : (
             map.note && hasContent(map.note) && <NotePanel note={map.note} />
           )}
+          <PartyHere tokens={mapTokens.tokens} onFind={find} />
           <AreaList areas={map.areas} onSelect={(area) => setSelectedId(area.id)} />
         </aside>
       </div>
     </main>
+  );
+}
+
+/** The party members on this map the player can see, to find them on it: theirs first. */
+function PartyHere({
+  tokens,
+  onFind,
+}: {
+  tokens: TokenView[];
+  onFind: (token: TokenView) => void;
+}) {
+  const party = tokens
+    .filter((token) => token.kind === "character")
+    .sort((a, b) => Number(b.movable) - Number(a.movable));
+  if (party.length === 0) return null;
+  return (
+    <section aria-labelledby="party-here-heading">
+      <h2
+        id="party-here-heading"
+        className="mb-1 text-xs font-semibold tracking-wide text-stone-500 uppercase"
+      >
+        Party here
+      </h2>
+      <ul aria-label="Party here" className="flex flex-col gap-1 text-sm">
+        {party.map((token) => (
+          <li key={token.id} className="flex items-center gap-2">
+            <span className="mr-auto">
+              {token.name}
+              {token.inTheDark && <span className="text-xs text-stone-500"> (in the dark)</span>}
+            </span>
+            <button
+              type="button"
+              aria-label={`Find ${token.name}`}
+              className="rounded px-2 py-0.5 text-sm hover:bg-stone-100 dark:hover:bg-stone-800"
+              onClick={() => onFind(token)}
+            >
+              Find
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

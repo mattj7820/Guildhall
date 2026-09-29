@@ -18,6 +18,7 @@ import {
   zoomAt,
   zoomPercent,
   type View,
+  centreOn as centredOn,
 } from "./viewport";
 
 /** A press that moves less than this is a click, not a drag. */
@@ -86,6 +87,12 @@ export function usePanZoom({ width, height }: Size) {
   );
 
   const fitView = useCallback(() => setState((prev) => ({ ...prev, moved: null })), []);
+
+  /** Puts an image point (image pixels) in the middle, zoomed in enough to see what's there. */
+  const centreOn = useCallback(
+    (point: [number, number]) => update((current, size) => centredOn(current, point, image, size)),
+    [image, update],
+  );
 
   // React's onWheel is passive, so it can't stop the page scrolling; listen natively instead.
   useEffect(() => {
@@ -190,6 +197,7 @@ export function usePanZoom({ width, height }: Size) {
     zoomIn: () => zoomBy(ZOOM_STEP),
     zoomOut: () => zoomBy(1 / ZOOM_STEP),
     fitView,
+    centreOn,
     clientToImage,
     pointerHandlers,
     onKeyDown,

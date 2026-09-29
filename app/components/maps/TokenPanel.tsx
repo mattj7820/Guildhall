@@ -15,6 +15,7 @@ import { mapUrl } from "~/maps/urls";
 /** What the DM's next click on the map will place. */
 export type Placing =
   | { kind: "character"; note: string; name: string }
+  | { kind: "party"; name: string }
   | { kind: "marker"; name: string; colour: MarkerColour; shown: boolean };
 
 interface Props {
@@ -26,6 +27,8 @@ interface Props {
   error?: string;
   onPlace: (placing: Placing | undefined) => void;
   onSelect: (token: TokenView | undefined) => void;
+  /** Centres the map on a token. */
+  onFind: (token: TokenView) => void;
   send: (actions: TokenAction[]) => void;
 }
 
@@ -42,6 +45,7 @@ export function TokenPanel({
   error,
   onPlace,
   onSelect,
+  onFind,
   send,
 }: Props) {
   const [addingMarker, setAddingMarker] = useState(false);
@@ -94,11 +98,14 @@ export function TokenPanel({
               {here ? (
                 <button
                   type="button"
-                  aria-label={`Select ${member.name}`}
+                  aria-label={`Find ${member.name}`}
                   className={buttonClass}
-                  onClick={() => onSelect(here)}
+                  onClick={() => {
+                    onSelect(here);
+                    onFind(here);
+                  }}
                 >
-                  Select
+                  Find
                 </button>
               ) : (
                 <button
@@ -116,6 +123,16 @@ export function TokenPanel({
           );
         })}
       </ul>
+
+      {party.length > 1 && (
+        <button
+          type="button"
+          className={buttonClass}
+          onClick={() => onPlace({ kind: "party", name: "the whole party" })}
+        >
+          Bring everyone here
+        </button>
+      )}
 
       <div className="flex items-center gap-2">
         <h2 className={`${labelClass} mr-auto`}>Markers</h2>

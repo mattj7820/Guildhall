@@ -1,6 +1,6 @@
 import { data, isRouteErrorResponse, Link } from "react-router";
 import { loadMapView, mapVersion } from "~/.server/maps/load";
-import { loadTokens, partyPlacements } from "~/.server/maps/tokens";
+import { loadMapTokens, partyPlacements } from "~/.server/maps/tokens";
 import { MapViewer } from "~/components/maps/MapViewer";
 import { PlayerMapViewer } from "~/components/maps/PlayerMapViewer";
 import { servicesContext, viewerContext } from "~/context";
@@ -19,17 +19,18 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   // A map the viewer can't see gets the same 404 as one that doesn't exist.
   const view = map && (await loadMapView(services, map, maps, viewer));
   if (!map || !view) throw data("Map not found", { status: 404 });
-  const tokens = await loadTokens(services, map, viewer);
+  const { tokens, inside } = await loadMapTokens(services, map, viewer);
   // Only the DM gets the vault's image list (for a moved image) and the party to place; players
   // get just the map and the tokens they may see.
   if (viewer.role !== "dm") {
     const version = await mapVersion(services, map);
-    return { forDm: false as const, map: view, tokens, version };
+    return { forDm: false as const, map: view, tokens, inside, version };
   }
   return {
     forDm: true as const,
     map: view,
     tokens,
+    inside,
     party: await partyPlacements(services, maps),
     images: services.vault.current.mapImages(),
   };
@@ -42,6 +43,7 @@ export default function MapPage({ loaderData }: Route.ComponentProps) {
         key={loaderData.map.id}
         map={loaderData.map}
         tokens={loaderData.tokens}
+        inside={loaderData.inside}
         version={loaderData.version}
       />
     );
@@ -51,6 +53,7 @@ export default function MapPage({ loaderData }: Route.ComponentProps) {
       key={loaderData.map.id}
       map={loaderData.map}
       tokens={loaderData.tokens}
+      inside={loaderData.inside}
       party={loaderData.party}
       images={loaderData.images}
     />

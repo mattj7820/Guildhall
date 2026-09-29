@@ -3,6 +3,7 @@ import { buildArea, buildMap, link } from "./test-builders";
 import {
   ancestors,
   attachableMaps,
+  descendants,
   mapTree,
   parentLinks,
   treeProblem,
@@ -27,6 +28,24 @@ describe("parentLinks", () => {
 
   it("ignores links to maps that don't exist", () => {
     expect(parentLinks([buildMap({ id: "a", areas: [link("gone")] })]).size).toBe(0);
+  });
+});
+
+describe("descendants", () => {
+  it("lists every map inside, at any depth", () => {
+    expect(descendants("world", maps)).toEqual(["region", "town"]);
+    expect(descendants("region", maps)).toEqual(["town"]);
+  });
+
+  it("is empty for a map with none, or one that doesn't exist", () => {
+    expect(descendants("town", maps)).toEqual([]);
+    expect(descendants("nowhere", maps)).toEqual([]);
+  });
+
+  it("stops at a cycle in a hand-edited file", () => {
+    const a = buildMap({ id: "a", areas: [link("b")] });
+    const b = buildMap({ id: "b", areas: [link("a")] });
+    expect(descendants("a", [a, b])).toEqual(["b"]);
   });
 });
 
