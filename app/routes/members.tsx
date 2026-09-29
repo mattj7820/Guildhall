@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { data, Form } from "react-router";
-import { dmDiscordIds } from "~/.server/auth/middleware";
+import { dmDiscordIds } from "~/.server/auth/identify";
 import { DataFileError } from "~/.server/data/json-store";
 import { partyPlayers } from "~/.server/members/players";
 import type { Player } from "~/campaign/types";
@@ -31,7 +31,7 @@ export async function loader({ context }: Route.LoaderArgs) {
 export async function action({ request, context }: Route.ActionArgs) {
   const account = context.get(accountContext);
   if (account.kind !== "member" || !account.isDm) throw data("Not found", { status: 404 });
-  const { members, vault } = context.get(servicesContext);
+  const { members, vault, live } = context.get(servicesContext);
   const form = await request.formData();
   const discordId = String(form.get("discordId") ?? "");
   const playerId = String(form.get("playerId") ?? "") || undefined;
@@ -43,19 +43,22 @@ export async function action({ request, context }: Route.ActionArgs) {
   switch (form.get("intent")) {
     case "approve":
       await members.approve(discordId, playerId);
-      return { ok: true };
+      break;
     case "assign":
       await members.assignPlayer(discordId, playerId);
-      return { ok: true };
+      break;
     case "remove":
       if (discordId === account.member.discordId) {
         return data({ error: "You can't remove yourself." }, 400);
       }
       await members.remove(discordId);
-      return { ok: true };
+      break;
     default:
       throw data("Unknown action", { status: 400 });
   }
+  // Their open connections were let in as they were; they sign in again, or are refused.
+  await live.memberChanged(discordId);
+  return { ok: true };
 }
 
 export default function Members({ loaderData, actionData }: Route.ComponentProps) {

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  cellAt,
+  pointRevealed,
   decodeCells,
   encodeCells,
   fogGrid,
@@ -29,6 +31,26 @@ describe("fogGrid", () => {
   it("never has more cells along a side than the long side's count", () => {
     const { cols, rows } = fogGrid({ width: 1234, height: 5678 });
     expect(Math.max(cols, rows)).toBe(LONG_SIDE_CELLS);
+  });
+});
+
+describe("cellAt and pointRevealed", () => {
+  const grid = { cols: 4, rows: 2 };
+
+  it.each<[[number, number], number]>([
+    [[0, 0], 0],
+    [[0.24, 0.49], 0],
+    [[0.25, 0], 1],
+    [[0.99, 0.5], 7],
+    [[1, 1], 7],
+  ])("puts %j in cell %i", (point, cell) => {
+    expect(cellAt(grid, point)).toBe(cell);
+  });
+
+  it("says whether the point's cell is revealed", () => {
+    const mask = { ...grid, cells: Uint8Array.from([0, 1, 0, 0, 0, 0, 0, 0]) };
+    expect(pointRevealed(mask, [0.3, 0.2])).toBe(true);
+    expect(pointRevealed(mask, [0.2, 0.2])).toBe(false);
   });
 });
 

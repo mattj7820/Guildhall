@@ -3,10 +3,12 @@ import type { Account } from "~/.server/auth/account";
 import type { DiscordAuth } from "~/.server/auth/discord";
 import type { Characters } from "~/.server/characters/characters";
 import type { Sessions } from "~/.server/auth/sessions";
+import type { Live } from "~/.server/live/live";
 import type { PreparedEncounters } from "~/.server/combat/prepared-encounters";
 import type { Config } from "~/.server/config";
 import type { CampaignMaps } from "~/.server/maps/campaign-maps";
 import type { MapFogs } from "~/.server/maps/map-fogs";
+import type { MapTokens } from "~/.server/maps/map-tokens";
 import type { PlayerImages } from "~/.server/maps/player-image";
 import type { Members } from "~/.server/members/members";
 import type { LiveVault } from "~/.server/vault/live-vault";
@@ -22,12 +24,16 @@ export interface Services {
   maps: CampaignMaps;
   /** Each map's fog of war, kept in the data folder. */
   fogs: MapFogs;
+  /** Party members' and the DM's tokens on maps, kept in the data folder. */
+  tokens: MapTokens;
   /** What players get of map images: tiles with the fogged parts taken out. */
   playerImages: PlayerImages;
   /** Character sheets, shared companions and their bags, kept in the data folder. */
   characters: Characters;
   /** Everyone who has signed in, approved or waiting, kept in the data folder. */
   members: Members;
+  /** Live updates: websockets on the same server, signed in like pages. */
+  live: Live;
   /** Signed session cookies. */
   sessions: Sessions;
   /** Remembers a Discord sign-in between leaving for Discord and coming back. */

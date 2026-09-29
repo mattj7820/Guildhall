@@ -14,6 +14,11 @@ const app = express();
  * @type {(() => Promise<void>) | undefined}
  */
 let closeApp;
+/**
+ * Where websocket upgrades go: the app's live connections, which sign them in like pages.
+ * @type {(req: import("node:http").IncomingMessage, socket: import("node:stream").Duplex, head: Buffer) => Promise<void>}
+ */
+let handleUpgrade;
 
 app.use(compression());
 app.disable("x-powered-by");
@@ -26,6 +31,12 @@ if (DEVELOPMENT) {
     }),
   );
   app.use(viteDevServer.middlewares);
+  // Vite's own hot-reload socket has a port of its own in middleware mode, so every upgrade
+  // here is Guildhall's.
+  handleUpgrade = async (req, socket, head) => {
+    const source = await viteDevServer.ssrLoadModule("./server/app.ts");
+    return source.handleUpgrade(req, socket, head);
+  };
   app.use(async (req, res, next) => {
     try {
       const source = await viteDevServer.ssrLoadModule("./server/app.ts");
@@ -45,19 +56,25 @@ if (DEVELOPMENT) {
   app.use(express.static("build/client", { maxAge: "1h" }));
   app.use(build.app);
   closeApp = build.close;
+  handleUpgrade = build.handleUpgrade;
 }
 
 const server = app.listen(PORT, () => {
   console.log(`Guildhall is running on port ${PORT}`);
 });
+server.on("upgrade", (req, socket, head) => {
+  handleUpgrade(req, socket, head).catch(() => socket.destroy());
+});
 
-// Hosts stop containers with SIGTERM (Ctrl+C sends SIGINT): finish open requests, stop watching
-// the vault, then exit, rather than being killed mid-write after a timeout.
+// Hosts stop containers with SIGTERM (Ctrl+C sends SIGINT): finish open requests, close live
+// connections, stop watching the vault, then exit, rather than being killed mid-write.
 for (const signal of ["SIGTERM", "SIGINT"]) {
   process.once(signal, () => {
     console.log(`${signal} received; shutting down`);
+    // Live connections never finish by themselves, so they're closed before waiting on the rest.
+    const closing = closeApp?.();
     server.close(async () => {
-      await closeApp?.();
+      await closing;
       process.exit(0);
     });
     server.closeIdleConnections();

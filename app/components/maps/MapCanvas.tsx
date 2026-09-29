@@ -1,4 +1,4 @@
-import { useEffect, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useRef, type KeyboardEvent, type ReactNode } from "react";
 import type { Size } from "~/maps/types";
 import { usePanZoom } from "~/maps/usePanZoom";
 
@@ -26,6 +26,8 @@ interface Props {
   /** The pointer's position over the map, in image pixels. */
   onCanvasPointerMove?: (point: [number, number]) => void;
   onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
+  /** Centres the view on this image point (image pixels) whenever `key` changes: "Find". */
+  focus?: { at: [number, number]; key: number };
   className?: string;
 }
 
@@ -43,6 +45,7 @@ export function MapCanvas({
   onCanvasClick,
   onCanvasPointerMove,
   onKeyDown,
+  focus,
   className = "",
 }: Props) {
   const {
@@ -53,10 +56,20 @@ export function MapCanvas({
     zoomIn,
     zoomOut,
     fitView,
+    centreOn,
     clientToImage,
     pointerHandlers,
     onKeyDown: panZoomKeys,
   } = usePanZoom(size);
+
+  const focusKey = focus?.key;
+  const focusAt = useRef(focus?.at);
+  useEffect(() => {
+    focusAt.current = focus?.at;
+  });
+  useEffect(() => {
+    if (focusKey !== undefined && focusAt.current) centreOn(focusAt.current);
+  }, [focusKey, centreOn]);
 
   // SVG <image> doesn't report its natural size, so load it once more (from cache) to measure.
   useEffect(() => {

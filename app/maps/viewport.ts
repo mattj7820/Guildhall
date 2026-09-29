@@ -71,6 +71,25 @@ export function zoomAt(
   return clamp({ scale, x: imageX - at.x / scale, y: imageY - at.y / scale }, image, viewport);
 }
 
+/**
+ * Puts an image point (in image pixels) in the middle of the screen, zoomed in to at least twice
+ * the fit so what's there stands out, as far as the image's edges allow.
+ */
+export function centreOn(
+  view: View,
+  [imageX, imageY]: [number, number],
+  image: Size,
+  viewport: Size,
+): View {
+  const { max } = scaleLimits(image, viewport);
+  const scale = Math.min(max, Math.max(view.scale, fitScale(image, viewport) * 2));
+  return clamp(
+    { scale, x: imageX - viewport.width / 2 / scale, y: imageY - viewport.height / 2 / scale },
+    image,
+    viewport,
+  );
+}
+
 /** Moves the image by a distance in screen pixels, as when dragging it. */
 export function pan(view: View, dx: number, dy: number, image: Size, viewport: Size): View {
   return clamp(

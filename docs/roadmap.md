@@ -22,9 +22,16 @@ locations, maps, characters, sessions).
   editor with undo; a clean view for the table. Kept in the data folder.
 - **Maps for players, with fog of war:** the DM shares a map and reveals it as the party explores
   (brush, rectangle, areas, reveal and hide all, undo); players see only what's revealed, black
-  elsewhere, and reveals reach their open maps within seconds. Hidden pixels never leave the
+  elsewhere, and reveals reach their open maps as they happen. Hidden pixels never leave the
   server: players get tiles with the fog taken out. Secret areas, and areas shown once half
   revealed.
+- **Tokens on maps, shared live:** a token for each PC and the companion (their portrait, or an
+  initial), and the DM's own markers with a name and a colour. Players drag their own; the DM
+  moves anything; everyone sees a drag as it happens, and whoever picks a token up holds it until
+  they let it go. Each party member is in one place: the maps above show a badge of who's inside
+  an area, the Maps page says where you are, and Find takes you to your token. Tokens under the fog
+  never reach players (except their own, "in the dark"). Fog reveals arrive the same way, live,
+  over websockets on the same server, with polling when the connection drops.
 - **Character sheets (first slice):** a sheet per PC note, typed in from paper, with the paper
   sheet's own maths (modifiers, proficiency, passives) and typed overrides; click any bonus to roll
   it; hit points with Heal and Damage. Players edit only their own; others see a summary. Changes
@@ -42,8 +49,16 @@ locations, maps, characters, sessions).
 - **Player view polish (next):** go through the wiki and combat tracker as a signed-in player:
   the turn order for everyone, and each player's own characters shown as theirs
   (`Viewer.playerId` is now set).
-- **Counters on maps (after that):** tokens the DM and players can move on a map, shared live, which
-  brings websockets on the same Express server.
+- **Battle maps (towards dropping Roll20):** a grid on a map (a square's size and offset, in image
+  fractions), tokens sized in squares and snapping to them, measuring distances, and monster
+  tokens linked to the combat tracker: initiative, HP and conditions on the token, and the turn
+  order for everyone, from a server-held encounter pushed through the live hub (decisions 13 and
+  43 say how the model grows).
+- **Tokens, next steps:** fog clearing around the party as their tokens move, if the DM wants it;
+  icons on markers; a lock for the DM to stop players moving mid-scene; undo for the DM's moves;
+  tokens for NPCs linked to their notes; touch dragging for tablets and phones.
+- **Live, more:** the same hub for shared dice rolls (with the DM's hidden rolls), character sheet
+  changes pushed rather than polled, and the combat tracker's turn order for players.
 - **Hosting, next steps:** backups of the data folder (Dokploy volume backups, or a nightly copy to
   a separate Drive folder), a "last synced" indicator and "Sync now" for the vault copy, and
   Discord avatars.
@@ -76,12 +91,11 @@ locations, maps, characters, sessions).
   - Later: an overlay on the battle map, with flashy turn transitions and, one day, attack
     animations.
 - **Interactive maps, next steps:**
-  - **Fog, next steps:** reveals pushed over websockets with the counters work (the page already
-    reloads on a version, so only the trigger changes); tokens showing where the party is;
-    exploration memory ("seen before" dimmed rather than black, a second mask); per-player fog
-    when the party splits (a mask per player beside the party's); revealing an area's note with
-    it; a minimap (needs an overview shrunk cell by cell, so pixels from under the fog can't blend
-    in); a fog texture instead of plain black (tiles are already transparent outside the reveal).
+  - **Fog, next steps:** exploration memory ("seen before" dimmed rather than black, a second
+    mask); per-player fog when the party splits (a mask per player beside the party's); revealing
+    an area's note with it; a minimap (needs an overview shrunk cell by cell, so pixels from under
+    the fog can't blend in); a fog texture instead of plain black (tiles are already transparent
+    outside the reveal).
   - Phones: pinch zoom, a bottom sheet for the side panel, and a lower-resolution level of tiles
     for small screens; touch-friendly handles, for a tablet at the table.
   - A downscaled preview of very large images, for playing over a slow connection.

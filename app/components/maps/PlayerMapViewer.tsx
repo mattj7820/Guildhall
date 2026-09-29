@@ -4,11 +4,17 @@ import { fogMask } from "~/maps/fog/editor";
 import type { AreaView, MapView, NoteLink, Size, TileLayer } from "~/maps/types";
 import { mapUrl, mapVersionUrl } from "~/maps/urls";
 import { useMapUpdates } from "~/maps/useMapUpdates";
+import { LiveStatus } from "../LiveStatus";
+import { toPixels } from "~/maps/geometry";
+import type { InsideBadge, TokenView } from "~/maps/tokens/types";
+import { useMapTokens } from "~/maps/tokens/useMapTokens";
 import { AreaShape } from "./AreaShape";
 import { useFogImage } from "./FogLayer";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
+import { InsideBadges } from "./InsideBadges";
 import { NotePanel } from "./NotePanel";
+import { TokenLayer } from "./TokenLayer";
 
 const REVEALED_ID = "revealed-by-fog";
 
@@ -18,8 +24,22 @@ const REVEALED_ID = "revealed-by-fog";
  * everything else, so this only lays out what it was given. What the DM reveals shows within a
  * few seconds, without reloading the page.
  */
-export function PlayerMapViewer({ map, version }: { map: MapView; version: string }) {
-  useMapUpdates(mapVersionUrl(map.id), version);
+export function PlayerMapViewer({
+  map,
+  tokens,
+  inside,
+  version,
+}: {
+  map: MapView;
+  tokens: TokenView[];
+  inside: InsideBadge[];
+  version: string;
+}) {
+  const mapTokens = useMapTokens(map.id, { tokens, inside });
+  const [focus, setFocus] = useState<{ at: [number, number]; key: number }>();
+  const find = (token: TokenView) =>
+    setFocus({ at: toPixels(token.at, map.size), key: (focus?.key ?? 0) + 1 });
+  const status = useMapUpdates(map.id, mapVersionUrl(map.id), version, mapTokens.pushed);
   const [selectedId, setSelectedId] = useState<string>();
   const selected = map.areas.find((area) => area.id === selectedId);
   const mask = useMemo(() => fogMask(map.fog), [map.fog]);
@@ -32,6 +52,9 @@ export function PlayerMapViewer({ map, version }: { map: MapView; version: strin
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-stone-200 px-4 py-2 dark:border-stone-800">
         <MapBreadcrumbs crumbs={map.breadcrumbs} />
         <h1 className="sr-only">{map.name}</h1>
+        <div className="ml-auto">
+          <LiveStatus status={status} />
+        </div>
       </div>
       <div className="flex min-h-0 flex-1 flex-col bg-stone-50 md:flex-row dark:bg-stone-950">
         <div className="relative flex min-h-[50vh] flex-1">
@@ -40,8 +63,9 @@ export function PlayerMapViewer({ map, version }: { map: MapView; version: strin
             size={map.size}
             className="flex-1"
             backdrop={<Tiles size={map.size} layer={tiles} />}
+            focus={focus}
           >
-            {({ scale }) => (
+            {(canvas) => (
               <>
                 {revealed && (
                   <defs>
@@ -60,13 +84,26 @@ export function PlayerMapViewer({ map, version }: { map: MapView; version: strin
                       key={area.id}
                       area={area}
                       size={map.size}
-                      scale={scale}
+                      scale={canvas.scale}
                       selected={area.id === selectedId}
                       onSelect={(chosen) => setSelectedId(chosen.id)}
                       plain
                     />
                   ))}
                 </g>
+                <InsideBadges
+                  badges={mapTokens.inside}
+                  areas={map.areas}
+                  size={map.size}
+                  scale={canvas.scale}
+                />
+                <TokenLayer
+                  tokens={mapTokens.tokens}
+                  size={map.size}
+                  canvas={canvas}
+                  mover={mapTokens}
+                  sayMovable
+                />
               </>
             )}
           </MapCanvas>
@@ -85,6 +122,7 @@ export function PlayerMapViewer({ map, version }: { map: MapView; version: strin
           ) : (
             map.note && hasContent(map.note) && <NotePanel note={map.note} />
           )}
+          <PartyHere tokens={mapTokens.tokens} onFind={find} />
           <AreaList areas={map.areas} onSelect={(area) => setSelectedId(area.id)} />
         </aside>
       </div>
@@ -92,8 +130,50 @@ export function PlayerMapViewer({ map, version }: { map: MapView; version: strin
   );
 }
 
+/** The party members on this map the player can see, to find them on it: theirs first. */
+function PartyHere({
+  tokens,
+  onFind,
+}: {
+  tokens: TokenView[];
+  onFind: (token: TokenView) => void;
+}) {
+  const party = tokens
+    .filter((token) => token.kind === "character")
+    .sort((a, b) => Number(b.movable) - Number(a.movable));
+  if (party.length === 0) return null;
+  return (
+    <section aria-labelledby="party-here-heading">
+      <h2
+        id="party-here-heading"
+        className="mb-1 text-xs font-semibold tracking-wide text-stone-500 uppercase"
+      >
+        Party here
+      </h2>
+      <ul aria-label="Party here" className="flex flex-col gap-1 text-sm">
+        {party.map((token) => (
+          <li key={token.id} className="flex items-center gap-2">
+            <span className="mr-auto">
+              {token.name}
+              {token.inTheDark && <span className="text-xs text-stone-500"> (in the dark)</span>}
+            </span>
+            <button
+              type="button"
+              aria-label={`Find ${token.name}`}
+              className="rounded px-2 py-0.5 text-sm hover:bg-stone-100 dark:hover:bg-stone-800"
+              onClick={() => onFind(token)}
+            >
+              Find
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 /** The tiles players may have, each at its place, over black. */
-function Tiles({ size, layer }: { size: Size; layer?: TileLayer }) {
+export function Tiles({ size, layer }: { size: Size; layer?: TileLayer }) {
   const scaleX = layer ? size.width / layer.width : 1;
   const scaleY = layer ? size.height / layer.height : 1;
   return (

@@ -89,8 +89,8 @@ let vaultsSeen = 0;
 
 /**
  * Changes whenever anything a viewer sees of the map might: the map (its areas, links or sharing),
- * its fog, its image file, or the vault's notes. A player's open map polls it and reloads its data
- * only when it changes.
+ * its fog, its image file, or the vault's notes. A player's open map reloads its data only when it
+ * changes. Tokens aren't part of it: they're sent on their own, as each viewer may see them.
  */
 export async function mapVersion(
   services: Pick<Services, "config" | "vault" | "fogs">,

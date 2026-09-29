@@ -1,5 +1,5 @@
 /** The fog's grid and mask, and a compact text form for storing and sending it. */
-import type { Size } from "../types";
+import type { Point, Size } from "../types";
 import type { CellRanges, FogGrid, FogMask } from "./types";
 
 /**
@@ -19,6 +19,18 @@ export function fogGrid({ width, height }: Size): FogGrid {
 /** A new map starts fully fogged. */
 export function hiddenMask(grid: FogGrid): FogMask {
   return { cols: grid.cols, rows: grid.rows, cells: new Uint8Array(grid.cols * grid.rows) };
+}
+
+/** The cell a point (in fractions of the image) is in; points on the far edges are in the last. */
+export function cellAt({ cols, rows }: FogGrid, [x, y]: Point): number {
+  const col = Math.min(cols - 1, Math.max(0, Math.floor(x * cols)));
+  const row = Math.min(rows - 1, Math.max(0, Math.floor(y * rows)));
+  return row * cols + col;
+}
+
+/** Whether the point is somewhere players can see. */
+export function pointRevealed(mask: FogMask, point: Point): boolean {
+  return mask.cells[cellAt(mask, point)] === 1;
 }
 
 export function revealedCount(mask: FogMask): number {

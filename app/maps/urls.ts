@@ -32,3 +32,8 @@ export function mapImageUrl(id: MapId, version: string): string {
 export function mapVersionUrl(id: MapId): string {
   return `${mapUrl(id)}/version`;
 }
+
+/** Where token changes are sent, as JSON. */
+export function mapTokensUrl(id: MapId): string {
+  return `${mapUrl(id)}/tokens`;
+}
