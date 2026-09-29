@@ -147,6 +147,30 @@ describe("CharacterEditor", () => {
     expect(editor.getSnapshot().status).toEqual({ kind: "saved" });
   });
 
+  it("says so when items it stacked couldn't be stacked in the saved bag", async () => {
+    const { server, editor } = setUp(
+      aCharacter({
+        items: [
+          anItem({ id: "a", name: "Cheese", icon: { builtin: "cheese" } }),
+          anItem({ id: "b", name: "Cheese", icon: { builtin: "cheese" }, quantity: 5 }),
+        ],
+      }),
+    );
+    // Meanwhile the DM gives the second one a description, so they no longer stack.
+    server.elsewhere({
+      type: "inventory",
+      change: { type: "edit", id: "b", changes: { description: "Mouldy" } },
+    });
+    editor.dispatch({ type: "inventory", change: { type: "stack", id: "a", onto: "b" } });
+    expect(editor.getSnapshot().character.inventory.items).toHaveLength(1);
+
+    await vi.advanceTimersByTimeAsync(300);
+    expect(editor.getSnapshot().character.inventory.items).toHaveLength(2);
+    expect(editor.getSnapshot().notices.map((notice) => notice.text)).toContain(
+      "Those items couldn't be stacked: they'd been changed elsewhere.",
+    );
+  });
+
   it("lets go of a batch the server refuses, saying why", async () => {
     const { server, editor } = setUp();
     server.failWith.push(409);

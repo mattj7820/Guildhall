@@ -3,7 +3,7 @@
  * picks up changes made elsewhere. Plain TypeScript, so it can be tested without a browser; React
  * reads it through `useCharacterEditor`.
  */
-import { applyAction, type ActionResult, type CharacterAction } from "./actions";
+import { applyAction, applyActions, type ActionResult, type CharacterAction } from "./actions";
 import { replacedNotice } from "./describe";
 import {
   confirmed,
@@ -225,6 +225,8 @@ export class CharacterEditor {
   private async sendBatch() {
     const taken = takeBatch(this.sync);
     if (!taken || this.disposed) return;
+    // What the batch did here, to compare with what it did to the saved copy.
+    const expected = applyActions(this.sync.confirmed, taken.batch).results;
     this.sync = taken.state;
     this.status = { kind: "saving" };
     this.changed();
@@ -256,7 +258,7 @@ export class CharacterEditor {
     const answer = (await response.json()) as SaveAnswer;
     this.sync = confirmed(this.sync, answer.character);
     this.status = { kind: "saved" };
-    this.notify(noticesFor(taken.batch, answer));
+    this.notify(noticesFor(taken.batch, answer, expected));
     this.changed();
     if (this.sync.queued.length > 0) this.schedule(0);
   }
@@ -292,10 +294,26 @@ export class CharacterEditor {
 }
 
 /** What to tell the editor after a save: fields someone else changed first, and dropped changes. */
-function noticesFor(batch: CharacterAction[], answer: SaveAnswer): string[] {
+function noticesFor(
+  batch: CharacterAction[],
+  answer: SaveAnswer,
+  expected: SaveAnswer["results"],
+): string[] {
   const texts = answer.results.flatMap((result, index) =>
     result.replaced !== undefined ? [replacedNotice(batch[index], result.replaced)] : [],
   );
+  // Stacking and splitting are the changes whose "nothing to do" leaves the bag looking different
+  // from what was just shown (the items had changed elsewhere, so they no longer stack).
+  const unstacked = answer.results.some((result, index) => {
+    const action = batch[index];
+    return (
+      result.outcome === "unchanged" &&
+      expected[index]?.outcome === "changed" &&
+      action.type === "inventory" &&
+      (action.change.type === "stack" || action.change.type === "split")
+    );
+  });
+  if (unstacked) texts.push("Those items couldn't be stacked: they'd been changed elsewhere.");
   if (answer.results.some((result) => result.outcome === "dropped")) {
     texts.push("Some changes were about things removed elsewhere, so they were left out.");
   }
