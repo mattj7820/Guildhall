@@ -8,6 +8,7 @@ locations, maps, characters, sessions).
 
 - **Hub shell:** a home page linking to table tools (Roll20) and to Guildhall's own modules.
 - **Campaign wiki (read-only):** browse and search the Obsidian vault, with DM/player preview.
+  Shared notes can keep DM-only parts: a `## DM` section or a `> [!dm]` callout.
 - **Combat tracker (first slice, DM only):** encounters built from vault statblocks and PC notes,
   initiative with reroll tie-breaks, turns and rounds, monster HP and conditions, the statblock
   alongside, a dice roller and undo. The encounter is kept in the browser.
@@ -35,7 +36,7 @@ locations, maps, characters, sessions).
   Discord avatars.
 - **Roles, more:** DM-only powers such as hidden rolls, and perhaps co-DMs.
 - **Wiki, next steps:** backlinks, note transclusion (`![[Note]]`), Obsidian callouts,
-  section-level visibility, browsing by entity type, and perhaps Obsidian plugins later.
+  browsing by entity type, and perhaps Obsidian plugins later.
 - **Character sheets:** create a character in-app (D&D Beyond style), view the sheet, and click
   stats to roll.
 - **Dice:** shared dice rolling, including DM hidden rolls. Complements physical dice on camera.

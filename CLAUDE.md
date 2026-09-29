@@ -103,6 +103,10 @@ First e2e run needs `npx playwright install chromium`.
   - `parse-note.ts`: frontmatter → `Note`. Visibility fails closed to `dm`.
   - `link-resolver.ts`: Obsidian wikilink parsing and shortest-path resolution.
   - `comments.ts`: `%%comments%%` stripped for players, highlighted for the DM.
+  - `dm-parts.ts`: DM sections (a heading that is exactly "DM") and DM callouts (`> [!dm]`).
+    `forPlayers(body)` is **the** player text: comments and DM parts removed. The page,
+    search and statblocks for players all come from it. `remarkDmParts` boxes DM parts for
+    the DM.
   - `remark-wikilinks.ts` + `render.ts`: markdown → sanitised HTML.
   - `search.ts`: MiniSearch, one index per role, built from role-appropriate text.
   - `statblock/`: parses ` ```statblock ` YAML (Fantasy Statblocks plugin format), including the
@@ -157,6 +161,7 @@ First e2e run needs `npx playwright install chromium`.
   vault path. A map's parent is derived from area links, never stored (one parent per map). Map
   images are served by map ID through `map-image`, not `vault-asset`. Map changes go through
   `editorReducer`; the image changes only through its own action.
+- Anything players read from a note's body must come from `forPlayers`, never `note.body`.
 - Hidden content must be indistinguishable from missing content in player view (same 404, links
   become plain text, excluded from search and the tree).
 - Signing in: who someone is comes from `accountContext` (DM, member or waiting), what they may

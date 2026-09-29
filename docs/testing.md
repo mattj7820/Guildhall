@@ -31,6 +31,9 @@ its body says which, for example:
 - `Secrets/Broken Frontmatter.md`: invalid YAML that must fail closed to DM-only.
 - `Locations/Old Mill.md` and `Locations/Brindleford/Old Mill.md`: an ambiguous name.
 - `NPCs/Mira Stonehand.md`: image and audio embeds, and inline and block `%%DM comments%%`.
+- `NPCs/Fixture Informant.md`: a shared note that opens with a `# DM` section, with a
+  `> [!dm]` callout and a `## DM` section holding a statblock and a DM-only image; each part
+  has its own search keyword.
 - `Bestiary/Test Creature.md`: a statblock in the plugin format, plus an unreadable one.
 - `Bestiary/Fixture Minion.md`: the combat tracker's test monster, with known DEX, AC and hit dice.
 - `Bestiary/Fixture Companion.md`: a player-visible companion statblock, plus one hidden in a DM

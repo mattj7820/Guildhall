@@ -62,8 +62,10 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
     their maps.
 - **What players see.** Notes are DM-only unless their frontmatter says `visibility: players`.
   Players never get DM-only notes: they're left out of navigation, search and links, and a direct
-  URL gives the same 404 as a missing note. Obsidian `%%comments%%` are stripped for players, so the
-  DM can keep inline secrets inside shared notes. The DM can preview the players' view at any time.
+  URL gives the same 404 as a missing note. Inside a shared note, the DM's parts stay secret: a
+  section under a `## DM` heading, a `> [!dm]` callout, or an Obsidian `%%comment%%`. Players never
+  receive them (not on the page, in search or in statblocks), while the DM sees them boxed as
+  "DM only". The DM can preview the players' view at any time.
 - **Sign in with Discord.** Everyone signs in with their Discord account; newcomers wait until the
   DM lets them in on the Members page and says which player they are, which links them to their
   characters. Removing someone signs them out everywhere. Only the Discord name is asked for.

@@ -438,3 +438,28 @@ skips rclone's half-downloaded `.partial` files and files that vanish mid-read, 
 a time, so a sync in progress can't break or roll back what's served. There's no database: the
 copy plus the in-memory index is Guildhall's own copy of the vault. The image is built and checked
 in CI; `docs/deployment.md` is the runbook.
+
+## 28. DM sections and DM callouts: one shared note, with the DM's parts marked
+
+**Date:** 2026-09-29
+
+**Context.** Most notes are about things the players will learn some of: a place, a person, a
+faction. Keeping a player version and a DM version of each would double the vault and let them
+drift apart. `%%comments%%` (decision 4) keep secrets in a shared note, but Obsidian hides them in
+its own reading view, so the DM can't comfortably read their own notes.
+
+**Decision.** Two more ways to mark DM-only parts of a shared note, both readable in Obsidian:
+
+- **A DM section:** a heading whose text is exactly "DM" (any level, any case) hides everything
+  under it, up to the next heading of the same or a higher level. This suits the usual shape of a
+  note: what everyone knows, then a `## DM` section at the bottom.
+- **A DM callout:** `> [!dm] optional title` hides one boxed secret anywhere in a note.
+
+Players never receive them: `forPlayers` (in `app/.server/vault/dm-parts.ts`) removes comments
+and then DM parts, and the page, search and statblocks for players are all made from its result,
+so a DM part's text, statblocks and embedded images never reach them. It uses the wiki's own
+markdown parser, so a DM part is hidden exactly when it would render as one. The DM sees each DM
+part boxed and labelled "DM only", nested ones included, so the rule when writing is simple:
+anything not in a box is what players see. Only an exact "DM" heading counts (not "DM notes"),
+and a callout ends at a blank line, as in Obsidian. Notes stay DM-only unless marked
+`visibility: players`; an Obsidian template can set that for new notes.
