@@ -81,6 +81,7 @@ export function mapView({
         ...(child ? { map: { id: child.id, name: child.name } } : {}),
         ...(linkedNote ? { note: linkedNote } : {}),
         broken,
+        ...(isDm && area.visibility === "dm" ? { secret: true } : {}),
       };
     });
 

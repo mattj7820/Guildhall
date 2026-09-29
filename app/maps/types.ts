@@ -104,6 +104,8 @@ export interface AreaView {
   note?: NoteLink;
   /** DM only: links that no longer lead anywhere. */
   broken: ("map" | "note")[];
+  /** DM only: players never see this area. */
+  secret?: boolean;
 }
 
 /** A map prepared for one viewer, safe to send to the browser. */

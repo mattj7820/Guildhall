@@ -18,6 +18,11 @@ export function mapTileUrl(id: MapId, x: number, y: number, version: string): st
   return `${mapUrl(id)}/tiles/${x}/${y}?v=${encodeURIComponent(version)}`;
 }
 
+/** Where the DM's fog tools save. */
+export function mapFogUrl(id: MapId): string {
+  return `${mapUrl(id)}/fog`;
+}
+
 /** The map's image. The version changes when the file does, so a re-export shows at once. */
 export function mapImageUrl(id: MapId, version: string): string {
   return `${mapUrl(id)}/image?v=${encodeURIComponent(version)}`;

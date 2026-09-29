@@ -80,6 +80,7 @@ describe("mapView for the DM", () => {
           map: { id: "town", name: "Town" },
           note: NOTES.town.link,
           broken: [],
+          secret: true,
         },
       ],
     });

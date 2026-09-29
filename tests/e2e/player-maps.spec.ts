@@ -1,6 +1,14 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import sharp from "sharp";
-import { createMap, ORIGIN, uniqueName } from "./support/app";
+import {
+  createMap,
+  drawArea,
+  expectSaved,
+  mapCanvas,
+  onImage,
+  ORIGIN,
+  uniqueName,
+} from "./support/app";
 import { SIGNED_IN } from "./support/sign-in";
 
 /**
@@ -118,4 +126,106 @@ test("a map that isn't shared gives players nothing at all", async ({ page, brow
   });
   expect(reveal.status()).toBe(404);
   await player.context().close();
+});
+
+test.describe("The DM's fog tools", () => {
+  const FOG_IMAGE = { width: 1024, height: 512 };
+  const fogToolbar = (page: Page) => page.getByRole("toolbar", { name: "Fog of war" });
+  const revealed = (page: Page) => fogToolbar(page).getByText(/% revealed$/);
+  const fogSaved = (page: Page) =>
+    expect(fogToolbar(page).getByRole("status")).toHaveText("✓ Saved");
+
+  /** A map of the fog fixture with one area, "Keep", over its left quarter; opens its page. */
+  async function mapWithArea(page: Page) {
+    const name = uniqueName("Fog");
+    await createMap(page, { image: "Fixture Fog.png", name });
+    await drawArea(page, name, FOG_IMAGE, [
+      [0.05, 0.1],
+      [0.25, 0.1],
+      [0.25, 0.9],
+      [0.05, 0.9],
+    ]);
+    await page.getByLabel("Area name").fill("Keep");
+    await expectSaved(page);
+    await page.getByRole("link", { name: "Done" }).click();
+    await expect(mapCanvas(page, name)).toBeVisible();
+    return name;
+  }
+
+  test("shares a map from the editor, and keeps it shared", async ({ page }) => {
+    await createMap(page, { image: "Fixture Fog.png", name: uniqueName("Shared") });
+    const share = page.getByRole("switch", { name: "Share with players" });
+    await expect(share).toHaveAttribute("aria-checked", "false");
+    await share.click();
+    await expect(share).toHaveAttribute("aria-checked", "true");
+    await page.reload();
+    await expect(page.getByRole("switch", { name: "Share with players" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+  });
+
+  test("reveals an area from the list, saves it, and hides it again", async ({ page }) => {
+    await mapWithArea(page);
+    await page.getByRole("button", { name: "Fog", exact: true }).click();
+    const areas = page.getByRole("list", { name: "Areas under the fog" });
+    await expect(areas.getByText("Under the fog")).toBeVisible();
+
+    await page.getByRole("button", { name: "Reveal Keep" }).click();
+    await expect(areas.getByText("Players see it")).toBeVisible();
+    await fogSaved(page);
+
+    await page.reload();
+    await page.getByRole("button", { name: "Fog", exact: true }).click();
+    await expect(areas.getByText("Players see it")).toBeVisible();
+    await page.getByRole("button", { name: "Hide Keep" }).click();
+    await expect(areas.getByText("Under the fog")).toBeVisible();
+    await fogSaved(page);
+  });
+
+  test("brushes the fog away, undoes it, and reveals and hides everything", async ({ page }) => {
+    const name = await mapWithArea(page);
+    await page.getByRole("button", { name: "Fog", exact: true }).click();
+    await expect(revealed(page)).toHaveText("0% revealed");
+
+    const box = (await mapCanvas(page, name).boundingBox())!;
+    const at = async (point: [number, number]) => {
+      const { x, y } = await onImage(page, name, FOG_IMAGE, point);
+      return [box.x + x, box.y + y] as const;
+    };
+    await page.mouse.move(...(await at([0.3, 0.5])));
+    await page.mouse.down();
+    await page.mouse.move(...(await at([0.7, 0.5])), { steps: 10 });
+    await page.mouse.up();
+    await expect(revealed(page)).not.toHaveText("0% revealed");
+    await fogSaved(page);
+
+    await page.keyboard.press("Control+z");
+    await expect(revealed(page)).toHaveText("0% revealed");
+    await fogSaved(page);
+
+    await fogToolbar(page).getByRole("button", { name: "Reveal all" }).click();
+    await expect(revealed(page)).toHaveText("100% revealed");
+    await fogToolbar(page).getByRole("button", { name: "Hide all" }).click();
+    await expect(revealed(page)).toHaveText("0% revealed");
+    await fogSaved(page);
+    await page.reload();
+    await page.getByRole("button", { name: "Fog", exact: true }).click();
+    await expect(revealed(page)).toHaveText("0% revealed");
+  });
+
+  test("keeps a secret area secret, however much is revealed", async ({ page }) => {
+    await mapWithArea(page);
+    await page.getByRole("link", { name: "Edit map" }).click();
+    await page.getByRole("button", { name: /Keep/ }).first().click();
+    await page.getByRole("checkbox", { name: /Secret/ }).check();
+    await expectSaved(page);
+    await page.getByRole("link", { name: "Done" }).click();
+
+    await page.getByRole("button", { name: "Fog", exact: true }).click();
+    await fogToolbar(page).getByRole("button", { name: "Reveal all" }).click();
+    await expect(
+      page.getByRole("list", { name: "Areas under the fog" }).getByText("Secret"),
+    ).toBeVisible();
+  });
 });

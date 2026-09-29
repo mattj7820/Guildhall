@@ -20,6 +20,7 @@ import { ImageHealth } from "./ImageHealth";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
 import { MapSettings } from "./MapSettings";
+import { ShareSwitch } from "./ShareSwitch";
 import { VertexHandles, type VertexDrag } from "./VertexHandles";
 
 /** Wait this long after the last change before saving, so typing doesn't save every key. */
@@ -113,6 +114,7 @@ export function MapEditor(props: MapEditorProps) {
           <p aria-live="polite" className="text-sm text-stone-500">
             {status && (status === "All changes saved" ? `✓ ${status}` : status)}
           </p>
+          <ShareSwitch mapId={map.id} shared={!!view.shared} />
           <button
             type="button"
             className={buttonClass}

@@ -108,7 +108,9 @@ First e2e run needs `npx playwright install chromium`.
   grid, run-length text form, cell ranges), `shapes.ts` (the cells a stroke or polygon covers),
   `changes.ts` (`applyFogChange`, `inverseOf`), `coverage.ts` (`areaRevealed`: at least half),
   `tiles.ts` (`cellAlpha`, `pixelAlpha`: a pixel in a hidden cell is always transparent; which
-  tiles players may have, and their keys), `schema.ts` (zod for requests).
+  tiles players may have, and their keys), `schema.ts` (zod for requests), `editor.ts`
+  (`FogEditor`: the DM's changes shown at once, saved in batches, undone with inverses) and its
+  `useFogEditor` hook.
 - `app/characters/`: character sheets and bags (isomorphic): `types.ts` (`Character` is a
   `PlayerCharacter` with a `Sheet`, or a shared `Companion`; `InventoryItem`, `Purse`),
   `abilities.ts` (abilities, skills, `abilityModifier`, `signed`), `derive.ts` (`deriveSheet`: the
@@ -180,7 +182,10 @@ First e2e run needs `npx playwright install chromium`.
   `ItemTooltip`, `ItemDetails`, `QuickAdd`, `Purse`, `UndoToast`.
 - `app/components/maps/`: `MapCanvas` (the SVG canvas), `MapViewer` and `MapEditor` (the two
   pages), `AreaShape`, `VertexHandles`, `DraftOutline`, `AreaForm`, `MapSettings`, `ImageHealth`,
-  `ImagePicker`, `NotePicker`, `NotePanel`, `MapBreadcrumbs`. Shared control classes are in
+  `ImagePicker`, `NotePicker`, `NotePanel`, `MapBreadcrumbs`, and for fog of war `ShareSwitch`,
+  `FogLayer` (the fog drawn from the cell opacities), `FogPainter` (brush, rectangle and area
+  tools), `FogToolbar`, `FogAreaList` (what players see of each area) and `useFogTools` (tool
+  state and keys). Shared control classes are in
   `app/components/styles.ts`.
 
 ## Conventions

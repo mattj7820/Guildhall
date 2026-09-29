@@ -661,3 +661,18 @@ still goes through one of the two modules. The cache is disposable. Sharing a ma
 the background (about 3 s for the largest map), so the first player doesn't wait. A small overview
 image was left out: shrinking the whole image blends pixels from both sides of the fog's edge, so a
 minimap needs a resampling that respects cells first.
+
+## 38. The DM's fog tools live on the map page
+
+**Date:** 2026-09-29
+
+Revealing happens mid-session, while the DM is looking at the map, so the tools are a **Fog** mode
+on the map page rather than in the editor: a brush with an adjustable size, a rectangle, and
+clicking an area's outline, each revealing or hiding (X, or hold Alt), plus reveal all and hide
+all. A stroke or rectangle shows in the fog as it's drawn and becomes one change, and one undo
+step, when released. The DM always sees a shared map's fog as a see-through veil drawn from the
+same cell opacities as players' tiles, and a list says which areas players see (with reveal and
+hide buttons that also work from the keyboard). The existing preview toggle shows exactly what
+players get. Presenting a shared map draws the fog solid and only the areas players see, since
+presenting is for showing the table. Saving follows the character sheets (decision 30): changes
+show at once, go in small batches, retry when offline, and undo sends the inverse.
