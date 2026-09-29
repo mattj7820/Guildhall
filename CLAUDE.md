@@ -1,7 +1,8 @@
 # Guildhall: notes for Claude
 
-A personal D&D campaign hub (hobby project and public portfolio repo). The owner DMs an online
-campaign for two players: Roll20 for maps, Discord for voice, and all notes in an Obsidian vault.
+A personal D&D campaign hub (hobby project and portfolio piece, in a private GitHub repo). The
+owner DMs an online campaign for two players: Roll20 for maps, Discord for voice, and all notes in
+an Obsidian vault.
 Guildhall links out to those tools and grows its own modules. The point of building it is
 **interconnection**: eventually wiki, maps, characters, combat and dice all link through a shared
 campaign model (NPCs, locations, maps, characters, sessions). See `docs/roadmap.md`.
@@ -20,8 +21,10 @@ read-only from Google Drive (see `docs/deployment.md`).
   bans fs write APIs (and namespace `fs` imports) in `app/` and `server/`; don't work around it.
   The single exception is `app/.server/data/json-store.ts`, which writes only inside `DATA_PATH`
   (config refuses a data folder that overlaps the vault). New persistent data goes through it.
-- **Public repo:** never commit real vault content, personal file paths or secrets. Config lives in
-  a gitignored `.env`; keep `.env.example` in sync when adding variables.
+- **Keep the repo shareable:** it's private on GitHub (so its code and CI can't be read without
+  signing in), but it may be shown as a portfolio piece: never commit real vault content, personal
+  file paths or secrets. Config lives in a gitignored `.env`; keep `.env.example` in sync when
+  adding variables.
 - **Tests use only the fixture vault** in `tests/fixtures/vault` (invented, minimal test data).
   Never point tests at a real vault.
 - **No AI-generated story, lore or narrative content** anywhere in the app or fixtures. Writing
