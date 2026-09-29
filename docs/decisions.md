@@ -527,8 +527,10 @@ A bag's items are a list in grid order, flowed into however many columns fit, so
 desktop show the same order; fixed (x, y) cells would reflow badly between widths. The grid always
 shows a spare row and never fills up: at the table the DM decides what's carried, not a slot
 count. Items stack only when nothing would be lost (the same note or name, icon, description and
-source, neither equipped), and a new item that hasn't been looked at stays apart, so a gift of
-something already in the bag is still noticed. While something is being dragged, the bag holds
+source, neither equipped), and a new item that hasn't been looked at doesn't join one that has,
+so a gift of something already in the bag is still noticed. Two new items do stack, and stay new,
+and splitting a new stack keeps both halves new, so the DM can arrange gifts before the player has
+opened them. While something is being dragged, the bag holds
 still: changes arriving from elsewhere wait until the drop, so nothing moves under the pointer.
 Drag and drop uses dnd-kit (`@dnd-kit/core` and `sortable`), for its keyboard and touch support and
 screen-reader announcements; keyboard moves follow the list's order, so Left at the start of a row

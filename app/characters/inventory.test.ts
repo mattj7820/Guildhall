@@ -38,9 +38,14 @@ describe("canStack", () => {
     ],
     ["an equipped item", { equipped: true }, {}],
     ["an attuned target", {}, { attuned: true }],
-    ["a new item not yet looked at", { unseen: true }, {}],
+    ["a new item and one already looked at", { unseen: true }, {}],
+    ["one already looked at and a new item", {}, { unseen: true }],
   ])("keeps apart items with %s, so stacking never loses anything", (_, a, b) => {
     expect(canStack(anItem(a), anItem(b))).toBe(false);
+  });
+
+  it("stacks two new items, such as two gifts of the same thing", () => {
+    expect(canStack(anItem({ unseen: true }), anItem({ unseen: true }))).toBe(true);
   });
 
   it("doesn't stack an item onto itself", () => {
@@ -103,6 +108,13 @@ describe("splitItem", () => {
     expect(ids(split)).toEqual(["a", "new", "b"]);
     expect(split.map((item) => item.quantity)).toEqual([3, 2, 1]);
     expect(split[1]).toMatchObject({ equipped: false, name: "Rope" });
+  });
+
+  it("keeps a new stack's halves new, so they stack back together", () => {
+    const items = [anItem({ id: "gift", quantity: 3, unseen: true, givenBy: "the DM" })];
+    const split = splitItem(items, "gift", 1, "half");
+    expect(split.map((item) => item.unseen)).toEqual([true, true]);
+    expect(stackItem(split, "half", "gift")[0]).toMatchObject({ quantity: 3, unseen: true });
   });
 
   it("can place the new stack elsewhere", () => {

@@ -11,12 +11,13 @@ export const QUANTITY_MAX = 9999;
 /**
  * Whether `item` can be stacked onto `target` without losing anything: the same note (or none),
  * name, icon, description and source, and neither equipped or attuned. A new item that hasn't
- * been looked at yet stays apart, so a gift of something already in the bag is still noticed.
+ * been looked at yet doesn't join one that has, so a gift of something already in the bag is
+ * still noticed; two new items stack, and stay new.
  */
 export function canStack(item: InventoryItem, target: InventoryItem): boolean {
   if (item.id === target.id) return false;
   if (item.equipped || target.equipped || item.attuned || target.attuned) return false;
-  if (item.unseen || target.unseen) return false;
+  if (Boolean(item.unseen) !== Boolean(target.unseen)) return false;
   return (
     item.note === target.note &&
     sameText(item.name, target.name) &&
@@ -69,7 +70,6 @@ export function splitItem(
     quantity: amount,
     equipped: false,
     attuned: false,
-    unseen: false,
   };
   const next = items.map((candidate) =>
     candidate.id === id ? { ...candidate, quantity: candidate.quantity - amount } : candidate,

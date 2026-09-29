@@ -56,6 +56,30 @@ test("the DM gives an item, and the player finds it new in their bag", async ({
   await player.close();
 });
 
+test("the DM can split and restack their own gifts, which stay new", async ({ page }) => {
+  const cheese = uniqueName("Cheese");
+  await openBag(page);
+  await give(page, `2 ${cheese}`, new RegExp(`^Add 2 × ${cheese}`));
+  await tile(page, `${cheese}, 2, new`).press("s");
+  await page
+    .getByRole("dialog", { name: cheese })
+    .getByRole("button", { name: "Split", exact: true })
+    .click();
+  await expect(tile(page, `${cheese}, new`)).toHaveCount(2);
+
+  await tile(page, `${cheese}, new`).last().focus();
+  await page.keyboard.press("Space");
+  await expect(
+    page.getByRole("status").filter({ hasText: `${cheese} is at position` }),
+  ).toBeAttached();
+  await page.keyboard.press("ArrowLeft");
+  await expect(
+    page.getByRole("status").filter({ hasText: `Over ${cheese}: drop to stack.` }),
+  ).toBeAttached();
+  await page.keyboard.press("Space");
+  await expect(tile(page, `${cheese}, 2, new`)).toBeVisible();
+});
+
 test("a player with their sheet open picks up a gift when they come back to it", async ({
   page,
   browser,
