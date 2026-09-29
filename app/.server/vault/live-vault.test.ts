@@ -93,4 +93,23 @@ describe("LiveVault reloads", () => {
     expect(quiet).toHaveBeenCalledWith(expect.stringMatching(/Reload failed/), expect.any(Error));
     quiet.mockRestore();
   });
+
+  it("tells listeners once a rebuild has finished, and not when it failed", async () => {
+    const vault = new Vault({ notes: [{ path: "Opened.md", source: "" }], assets: [] });
+    const load = vi
+      .fn()
+      .mockResolvedValueOnce(vault)
+      .mockResolvedValueOnce(vault)
+      .mockRejectedValueOnce(new Error("disk"));
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+    const live = await LiveVault.open("unused", { watchForChanges: false, load });
+    const heard = vi.fn();
+    const stop = live.onReload(heard);
+    await live.reload();
+    expect(heard).toHaveBeenCalledTimes(1);
+    await live.reload();
+    expect(heard).toHaveBeenCalledTimes(1);
+    stop();
+    quiet.mockRestore();
+  });
 });

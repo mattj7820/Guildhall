@@ -56,7 +56,10 @@ async function createServices(): Promise<Services> {
       }),
     }),
   };
-  return { ...services, live: new Live(services) };
+  const live = new Live(services);
+  // A map's notes and image come from the vault, so any open map may look different now.
+  vault.onReload(() => void live.allMapsChanged());
+  return { ...services, live };
 }
 
 const globalForServices = globalThis as typeof globalThis & {

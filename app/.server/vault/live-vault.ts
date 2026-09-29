@@ -19,6 +19,7 @@ export class LiveVault {
   private firstChangeAt?: number;
   private reloading?: Promise<void>;
   private changedWhileReloading = false;
+  private readonly listeners = new Set<() => void>();
 
   private constructor(
     private readonly root: string,
@@ -37,6 +38,12 @@ export class LiveVault {
 
   get current(): Vault {
     return this.snapshot;
+  }
+
+  /** Calls `listener` after each rebuild that succeeded. Returns a way to stop. */
+  onReload(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
   }
 
   /** Rebuilds the vault. If a rebuild is already running, it runs once more afterwards. */
@@ -58,14 +65,17 @@ export class LiveVault {
   }
 
   private async rebuildUntilSettled(): Promise<void> {
+    let reloaded = false;
     do {
       this.changedWhileReloading = false;
       try {
         this.snapshot = await this.load(this.root);
+        reloaded = true;
       } catch (error) {
         console.error("[vault] Reload failed; still serving the previous snapshot.", error);
       }
     } while (this.changedWhileReloading);
+    if (reloaded) for (const listener of this.listeners) listener();
   }
 
   private scheduleReload(): void {

@@ -4,6 +4,7 @@ import { fogMask } from "~/maps/fog/editor";
 import type { AreaView, MapView, NoteLink, Size, TileLayer } from "~/maps/types";
 import { mapUrl, mapVersionUrl } from "~/maps/urls";
 import { useMapUpdates } from "~/maps/useMapUpdates";
+import { LiveStatus } from "../LiveStatus";
 import { AreaShape } from "./AreaShape";
 import { useFogImage } from "./FogLayer";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
@@ -19,7 +20,7 @@ const REVEALED_ID = "revealed-by-fog";
  * few seconds, without reloading the page.
  */
 export function PlayerMapViewer({ map, version }: { map: MapView; version: string }) {
-  useMapUpdates(mapVersionUrl(map.id), version);
+  const status = useMapUpdates(map.id, mapVersionUrl(map.id), version);
   const [selectedId, setSelectedId] = useState<string>();
   const selected = map.areas.find((area) => area.id === selectedId);
   const mask = useMemo(() => fogMask(map.fog), [map.fog]);
@@ -36,6 +37,7 @@ export function PlayerMapViewer({ map, version }: { map: MapView; version: strin
         <Link to={`${mapUrl(map.id)}/tokens-prototype`} className="ml-auto text-sm underline">
           Tokens (prototype)
         </Link>
+        <LiveStatus status={status} />
       </div>
       <div className="flex min-h-0 flex-1 flex-col bg-stone-50 md:flex-row dark:bg-stone-950">
         <div className="relative flex min-h-[50vh] flex-1">

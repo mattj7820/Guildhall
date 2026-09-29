@@ -49,7 +49,14 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
  *
  * A form with `intent=delete` deletes the map.
  */
-export async function action({ request, params, context }: Route.ActionArgs) {
+export async function action(args: Route.ActionArgs) {
+  const result = await changeMap(args);
+  // Areas link maps into a tree, so a change here can show on other maps too (breadcrumbs, links).
+  await args.context.get(servicesContext).live.allMapsChanged();
+  return result;
+}
+
+async function changeMap({ request, params, context }: Route.ActionArgs) {
   if (context.get(viewerContext).role !== "dm") throw data("Not found", { status: 404 });
   const services = context.get(servicesContext);
   const { maps, fogs, vault } = services;

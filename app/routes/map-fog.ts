@@ -16,7 +16,7 @@ const bodySchema = z.object({ changes: fogChangesSchema });
  */
 export async function action({ request, params, context }: Route.ActionArgs) {
   if (context.get(viewerContext).role !== "dm") throw data("Not found", { status: 404 });
-  const { maps, fogs } = context.get(servicesContext);
+  const { maps, fogs, live } = context.get(servicesContext);
   const map = await maps.get(params.id);
   if (!map) throw data("Not found", { status: 404 });
 
@@ -32,6 +32,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   }
 
   const { mask, version } = await fogs.apply(map.id, map.image, body.data.changes);
+  await live.mapChanged(map.id);
   const fog: FogView = {
     cols: mask.cols,
     rows: mask.rows,

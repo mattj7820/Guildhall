@@ -231,6 +231,8 @@ test.describe("The DM's fog tools", () => {
   test("keeps a secret area secret, however much is revealed", async ({ page }) => {
     await mapWithArea(page);
     await page.getByRole("link", { name: "Edit map" }).click();
+    // "Keep" is on the map page too: wait for the editor before choosing it.
+    await expect(page).toHaveURL(/\/edit$/);
     await page.getByRole("button", { name: /Keep/ }).first().click();
     await page.getByRole("checkbox", { name: /Secret/ }).check();
     await expectSaved(page);
@@ -379,6 +381,47 @@ test.describe("Maps for players", () => {
     await expect(player.getByRole("heading", { name: "Map not found" })).toBeVisible({
       timeout: 10_000,
     });
+    await player.context().close();
+  });
+
+  test("reveals arrive over the live connection, with no polling at all", async ({
+    page,
+    browser,
+  }) => {
+    const { map } = await sharedMap(page);
+    const player = await asPlayerOne(browser);
+    // Checking the version by hand is refused, so only the live connection can bring changes.
+    let polled = 0;
+    await player.route("**/version", (route) => {
+      polled++;
+      return route.abort();
+    });
+    await player.goto(map);
+    await expect(player.getByRole("status", { name: "Live updates" })).toHaveText("Live");
+    const tiles = player.locator('svg image[href*="/tiles/"]');
+    await expect(tiles).toHaveCount(1);
+
+    await changeFog(page, map, REVEAL_ALL);
+    await expect(tiles).toHaveCount(2);
+    expect(polled).toBe(0);
+    await player.context().close();
+  });
+
+  test("checks for changes every few seconds while the live connection is down", async ({
+    page,
+    browser,
+  }) => {
+    const { map } = await sharedMap(page);
+    const player = await asPlayerOne(browser);
+    // Every attempt to connect is turned away, as if a proxy dropped websockets.
+    await player.routeWebSocket("**/live", (socket) => socket.close());
+    await player.goto(map);
+    await expect(player.getByRole("status", { name: "Live updates" })).toHaveText("Reconnecting…");
+    const tiles = player.locator('svg image[href*="/tiles/"]');
+    await expect(tiles).toHaveCount(1);
+
+    await changeFog(page, map, REVEAL_ALL);
+    await expect(tiles).toHaveCount(2, { timeout: 10_000 });
     await player.context().close();
   });
 

@@ -1,26 +1,37 @@
 import { useEffect, useRef } from "react";
 import { useRevalidator } from "react-router";
+import type { LiveStatus } from "~/live/client";
+import { useLiveMap } from "~/live/useLive";
+import type { MapId } from "./types";
 
-/** How often an open map checks for changes: often enough that a reveal shows within seconds. */
+/** How often an open map checks for changes while the live connection is down. */
 export const MAP_POLL_MS = 3000;
 
 /**
- * Keeps an open map up to date without reloading the page: checks the map's version while the tab
- * is visible, and as soon as it's shown or focused again, and reloads the page's data only when
- * the version has changed (or the map is no longer there). Later, a websocket can say the same
- * thing sooner; only what triggers the check would change.
+ * Keeps an open map up to date without reloading the page. The server pushes the map's version
+ * over the live connection as soon as anything changes, and the page reloads its data (through
+ * the same loader as the first load) only when the version differs, or the map has gone. While
+ * the connection is down it checks the version every few seconds instead, and when the tab is
+ * shown or focused again. Returns the connection's status.
  */
-export function useMapUpdates(versionUrl: string, version: string) {
+export function useMapUpdates(map: MapId, versionUrl: string, version: string): LiveStatus {
   const { revalidate, state } = useRevalidator();
-  const latest = useRef({ version, revalidate, idle: state === "idle" });
+  const latest = useRef({ version, revalidate, idle: state === "idle", live: false });
+  const status = useLiveMap(map, (message) => {
+    if (message.type === "gone") void latest.current.revalidate();
+    else if (message.type === "map" && message.version !== latest.current.version) {
+      void latest.current.revalidate();
+    }
+  });
   useEffect(() => {
-    latest.current = { version, revalidate, idle: state === "idle" };
+    latest.current = { version, revalidate, idle: state === "idle", live: status === "live" };
   });
 
   useEffect(() => {
     let checking = false;
     async function check() {
-      if (checking || document.visibilityState !== "visible" || !latest.current.idle) return;
+      const { live, idle } = latest.current;
+      if (live || checking || document.visibilityState !== "visible" || !idle) return;
       checking = true;
       try {
         const response = await fetch(versionUrl, { headers: { Accept: "application/json" } });
@@ -45,4 +56,6 @@ export function useMapUpdates(versionUrl: string, version: string) {
       document.removeEventListener("visibilitychange", onShown);
     };
   }, [versionUrl]);
+
+  return status;
 }
