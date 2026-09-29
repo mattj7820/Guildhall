@@ -33,6 +33,8 @@ export type InventoryChange =
   | { type: "edit"; id: ItemId; changes: ItemEdits }
   | { type: "seen"; id: ItemId }
   | { type: "sort"; order: SortOrder }
+  /** Puts an item back exactly as it was (for undo): replaced where it is, or inserted at `index`. */
+  | { type: "restore"; item: InventoryItem; index: number }
   | { type: "purse"; coin: Coin; amount: number };
 
 /** What the item details let someone edit directly. */
@@ -93,6 +95,17 @@ function changeItems(items: InventoryItem[], change: InventoryChange): Inventory
         : items;
     case "sort":
       return sortItems(items, change.order);
+    case "restore": {
+      const at = items.findIndex((item) => item.id === change.item.id);
+      if (at >= 0) {
+        return sameItem(items[at], change.item)
+          ? items
+          : items.map((item, index) => (index === at ? change.item : item));
+      }
+      const next = [...items];
+      next.splice(Math.max(0, Math.min(change.index, items.length)), 0, change.item);
+      return next;
+    }
     case "purse":
       return items;
   }
@@ -118,6 +131,10 @@ function cleanEdits(changes: ItemEdits): ItemEdits {
       text || note ? { ...(text ? { text } : {}), ...(note ? { note } : {}) } : undefined;
   }
   return clean;
+}
+
+function sameItem(a: InventoryItem, b: InventoryItem): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
 }
 
 function tidy(text: string | undefined, max: number): string | undefined {
@@ -178,6 +195,7 @@ export function describeChange(before: InventoryState, change: InventoryChange):
   if (change.type === "sort")
     return change.order === "name" ? "Sorted by name" : "Sorted equipped first";
   if (change.type === "add") return `Added ${label(change.item)}`;
+  if (change.type === "restore") return `Put back ${change.item.name}`;
   const item = before.items.find((candidate) => candidate.id === change.id);
   const name = item?.name ?? "item";
   switch (change.type) {

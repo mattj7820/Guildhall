@@ -83,8 +83,12 @@ describe("characterSchema", () => {
   });
 
   it("reads a companion, which keeps only hit points and a bag", () => {
-    const character = characterSchema.parse({ ...base, kind: "companion", hp: { current: 9 } });
-    expect(character).toMatchObject({ kind: "companion", hp: { current: 9, temp: 0 } });
+    const character = characterSchema.parse({
+      ...base,
+      kind: "companion",
+      hp: { current: 9, max: 22 },
+    });
+    expect(character).toMatchObject({ kind: "companion", hp: { current: 9, max: 22, temp: 0 } });
   });
 
   it("refuses an unknown kind of character", () => {

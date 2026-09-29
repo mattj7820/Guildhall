@@ -118,11 +118,11 @@ export interface PlayerCharacter extends CharacterBase {
 
 /**
  * A companion the party shares, such as an animal: its numbers stay in its vault statblock, so
- * Guildhall keeps only its current hit points and its bag.
+ * Guildhall keeps only its hit points (the maximum starts as the statblock's) and its bag.
  */
 export interface Companion extends CharacterBase {
   kind: "companion";
-  hp: Pick<HitPoints, "current" | "temp">;
+  hp: HitPoints;
 }
 
 export type Character = PlayerCharacter | Companion;

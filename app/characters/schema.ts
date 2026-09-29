@@ -44,6 +44,14 @@ export const DERIVED_KEYS: DerivedKey[] = [
 
 const proficiency = z.enum(PROFICIENCIES).catch("none");
 
+const hitPoints = z
+  .object({
+    current: whole(0, HP_MAX).default(0),
+    max: whole(0, HP_MAX).default(0),
+    temp: whole(0, HP_MAX).default(0),
+  })
+  .prefault({});
+
 /** An object with every key, each defaulting to `fallback`. */
 function record<K extends string, V extends NonNullable<unknown>>(
   keys: readonly K[],
@@ -71,13 +79,7 @@ export const sheetSchema: z.ZodType<Sheet> = z.object({
     .default({}),
   armourClass: whole(0, 50).default(10),
   speed: shortText.default("30 ft."),
-  hp: z
-    .object({
-      current: whole(0, HP_MAX).default(0),
-      max: whole(0, HP_MAX).default(0),
-      temp: whole(0, HP_MAX).default(0),
-    })
-    .prefault({}),
+  hp: hitPoints,
   heroicInspiration: z.boolean().default(false),
   senses: longText,
   languages: longText,
@@ -141,8 +143,6 @@ export const characterSchema: z.ZodType<Character> = z.discriminatedUnion("kind"
   z.object({
     kind: z.literal("companion"),
     ...characterBase,
-    hp: z
-      .object({ current: whole(0, HP_MAX).default(0), temp: whole(0, HP_MAX).default(0) })
-      .prefault({}),
+    hp: hitPoints,
   }),
 ]);
