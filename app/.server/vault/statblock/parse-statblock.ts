@@ -1,4 +1,5 @@
 import { parse as parseYaml } from "yaml";
+import { abilityModifier, signed } from "~/characters/abilities";
 import { formatDice, parseDice } from "~/dice/parse";
 
 /**
@@ -136,7 +137,7 @@ export function parseStatblock(source: string): StatblockResult {
         armorClass: leadingNumber(data.ac),
         hitPoints: leadingNumber(data.hp),
         hitDice: diceExpression(data.hit_dice),
-        dexterityModifier: scores ? Math.floor((scores[1].score - 10) / 2) : 0,
+        dexterityModifier: scores ? abilityModifier(scores[1].score) : 0,
       },
     },
   };
@@ -154,10 +155,6 @@ function text(value: unknown): string | undefined {
 
 function titleCase(value: string): string {
   return value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-function signed(value: number): string {
-  return value >= 0 ? `+${value}` : String(value);
 }
 
 /** "Small humanoid (goblinoid), neutral evil" */
@@ -198,7 +195,7 @@ function abilities(stats: unknown): AbilityScore[] | undefined {
   return scores.map((score, index) => ({
     ability: ABILITIES[index],
     score,
-    modifier: signed(Math.floor((score - 10) / 2)),
+    modifier: signed(abilityModifier(score)),
   }));
 }
 

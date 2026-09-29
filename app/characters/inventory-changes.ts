@@ -15,12 +15,10 @@ import {
   updateItem,
   type SortOrder,
 } from "./inventory";
-import type { Coin, InventoryItem, ItemId, Purse } from "./types";
+import type { Coin, Inventory, InventoryItem, ItemId, Purse } from "./types";
 
-export interface InventoryState {
-  items: InventoryItem[];
-  purse: Purse;
-}
+/** What inventory changes work on: a character's bag and coins. */
+export type InventoryState = Inventory;
 
 export type InventoryChange =
   | { type: "add"; item: InventoryItem; index?: number }

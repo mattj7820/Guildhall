@@ -1,4 +1,5 @@
-import type { InventoryItem } from "./types";
+import { blankSheet } from "./schema";
+import type { InventoryItem, Sheet } from "./types";
 
 let count = 0;
 
@@ -14,4 +15,9 @@ export function anItem(fields: Partial<InventoryItem> = {}): InventoryItem {
     attuned: false,
     ...fields,
   };
+}
+
+/** A blank sheet with the given changes. */
+export function aSheet(fields: Partial<Sheet> = {}): Sheet {
+  return { ...blankSheet(), ...fields };
 }
