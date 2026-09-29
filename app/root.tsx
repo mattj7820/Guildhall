@@ -59,6 +59,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <NavLink to="/wiki" className={navLinkClass}>
                   Wiki
                 </NavLink>
+                <NavLink to="/characters" className={navLinkClass}>
+                  Characters
+                </NavLink>
                 {role === "dm" && (
                   <>
                     <NavLink to="/combat" className={navLinkClass}>

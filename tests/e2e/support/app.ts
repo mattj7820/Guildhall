@@ -201,3 +201,28 @@ export async function linkNewMap(page: Page, image: string) {
   await expect(newMap).toHaveCount(0);
   await expectSaved(page);
 }
+
+/* Characters */
+
+/** Guildhall's own address in the e2e run, for posts that must look like they came from it. */
+export const ORIGIN = "http://localhost:4173";
+
+/** A party member's card on the Characters page. */
+export const characterCard = (page: Page, name: string) =>
+  page.getByRole("article", { name, exact: true });
+
+/**
+ * Opens a character's sheet from the Characters page, starting it first if no test has yet.
+ * Tests share one server, and starting a sheet that exists just opens it, so any test may be
+ * first.
+ */
+export async function openCharacter(page: Page, name: string) {
+  await page.goto("/characters");
+  const card = characterCard(page, name);
+  await card
+    .getByRole("link", { name: new RegExp(`^Open .* for ${name}$`) })
+    .or(card.getByRole("button", { name: new RegExp(`^(Start sheet|Set up) for ${name}$`) }))
+    .click();
+  await expect(page).toHaveURL(/\/characters\/\w+$/);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+}

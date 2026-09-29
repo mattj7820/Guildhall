@@ -12,15 +12,18 @@ import type { Note } from "../vault/parse-note";
  * Unknown if the note has gone or is no longer that kind of note, which keeps players out until
  * the DM links it again.
  *
- * `findNote` must look notes up as the DM would, since a PC's note may be kept from players.
+ * The note must be looked up as the DM would, since a PC's note may be kept from players.
  */
+export function controllersFor(kind: Character["kind"], note: Note | undefined): Controllers {
+  if (!note || note.type !== kind) return "unknown";
+  const player = note.player ? playerFromName(note.player) : undefined;
+  if (kind === "companion" && !player) return "party";
+  return { players: player ? [player.id] : [] };
+}
+
 export function controllersOf(
   character: Character,
   findNote: (id: EntityId) => Note | undefined,
 ): Controllers {
-  const note = findNote(character.note);
-  if (!note || note.type !== (character.kind === "pc" ? "pc" : "companion")) return "unknown";
-  const player = note.player ? playerFromName(note.player) : undefined;
-  if (character.kind === "companion" && !player) return "party";
-  return { players: player ? [player.id] : [] };
+  return controllersFor(character.kind, findNote(character.note));
 }

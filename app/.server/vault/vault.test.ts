@@ -94,6 +94,7 @@ describe("Vault", () => {
       const tree = vault.folderTree(DM_VIEWER);
       expect(folderNames(tree)).toEqual([
         "Bestiary",
+        "Items",
         "Locations",
         "Maps",
         "NPCs",
@@ -210,6 +211,19 @@ describe("Vault", () => {
         expect(vault.getAsset(path, DM_VIEWER)).toBeUndefined();
       },
     );
+  });
+
+  describe("firstImage", () => {
+    it("finds the first image a note embeds, skipping audio", () => {
+      const mira = vault.getNote("NPCs/Mira Stonehand", DM_VIEWER)!;
+      expect(vault.firstImage(mira, DM_VIEWER)).toBe("Attachments/mira-portrait.png");
+    });
+
+    it("never finds an image inside a DM part for players", () => {
+      const informant = vault.getNote("NPCs/Fixture Informant", DM_VIEWER)!;
+      expect(vault.firstImage(informant, DM_VIEWER)).toBe("Attachments/dm-map.png");
+      expect(vault.firstImage(informant, PLAYER_VIEWER)).toBeUndefined();
+    });
   });
 
   describe("noteById", () => {

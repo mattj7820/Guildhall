@@ -4,7 +4,7 @@ import { canView } from "~/campaign/visibility";
 import { forPlayers } from "./dm-parts";
 import { createLinkResolver, type LinkResolver } from "./link-resolver";
 import { parseNote, type Note } from "./parse-note";
-import { isMapImage } from "./media";
+import { isMapImage, mediaKind } from "./media";
 import { basename, dirname, isMarkdown } from "./paths";
 import { readVault, type VaultSnapshot } from "./read-vault";
 import { renderMarkdown } from "./render";
@@ -90,6 +90,16 @@ export class Vault {
    * Whether the note, as this viewer sees it, opens with its own `# Title`. Decided on what the
    * viewer actually gets: a note that opens with a hidden `# DM` section has no title for players.
    */
+  /**
+   * The first image a note shows this viewer, for a character's portrait. For players, images in
+   * DM parts and comments don't count, as they're never shown.
+   */
+  firstImage(note: Note, viewer: Viewer): string | undefined {
+    return this.renderCollecting(note, viewer.role).assets.find(
+      (asset) => mediaKind(asset) === "image",
+    );
+  }
+
   hasOwnTitle(note: Note, viewer: Viewer): boolean {
     return this.renderCollecting(note, viewer.role).hasOwnTitle;
   }

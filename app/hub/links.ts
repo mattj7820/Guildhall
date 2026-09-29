@@ -41,6 +41,13 @@ export function hubLinks(config: { roll20CampaignUrl?: string }, role: Role = "d
         href: "/wiki",
         external: false,
       },
+      {
+        id: "characters",
+        title: "Characters",
+        description: "Character sheets and bags: roll from the sheet, and carry your loot.",
+        href: "/characters",
+        external: false,
+      },
       ...(role === "dm"
         ? [
             {

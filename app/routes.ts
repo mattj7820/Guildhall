@@ -22,6 +22,9 @@ export default [
   route("auth/discord/callback", "routes/auth-discord-callback.ts"),
   route("waiting", "routes/waiting.tsx"),
   route("members", "routes/members.tsx"),
+  route("characters", "routes/characters.tsx"),
+  route("characters/:id", "routes/character.tsx"),
+  route("characters/:id/portrait", "routes/character-portrait.ts"),
   // Temporary: the inventory prototype, removed once the real bag is built.
   route("prototype/inventory", "routes/prototype-inventory.tsx"),
 ] satisfies RouteConfig;
