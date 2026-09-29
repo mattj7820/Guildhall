@@ -1,11 +1,12 @@
 ---
 visibility: players
-type: npc
+type: companion
 ---
 # Fixture Companion
 
 Fixture: a companion statblock that a player-controlled combatant can link to. DEX 17 (+3), AC 13,
-22 HP from 4d8 + 4.
+22 HP from 4d8 + 4. `type: companion` makes it the party's shared companion, with a card and a
+bag every player can use.
 
 The statblock inside the DM comment below must never reach players.
 

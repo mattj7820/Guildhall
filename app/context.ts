@@ -1,6 +1,7 @@
 import { createContext, type Cookie } from "react-router";
 import type { Account } from "~/.server/auth/account";
 import type { DiscordAuth } from "~/.server/auth/discord";
+import type { Characters } from "~/.server/characters/characters";
 import type { Sessions } from "~/.server/auth/sessions";
 import type { PreparedEncounters } from "~/.server/combat/prepared-encounters";
 import type { Config } from "~/.server/config";
@@ -17,6 +18,8 @@ export interface Services {
   preparedEncounters: PreparedEncounters;
   /** Interactive maps and their areas, kept in the data folder. */
   maps: CampaignMaps;
+  /** Character sheets, shared companions and their bags, kept in the data folder. */
+  characters: Characters;
   /** Everyone who has signed in, approved or waiting, kept in the data folder. */
   members: Members;
   /** Signed session cookies. */

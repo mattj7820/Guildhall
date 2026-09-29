@@ -20,6 +20,14 @@ describe("hubLinks", () => {
     );
   });
 
+  it("lists characters for everyone", () => {
+    for (const role of ["dm", "player"] as const) {
+      expect(hubLinks({}, role).modules).toContainEqual(
+        expect.objectContaining({ id: "characters", href: "/characters", external: false }),
+      );
+    }
+  });
+
   it("lists the combat tracker for the DM", () => {
     expect(hubLinks({}, "dm").modules).toContainEqual(
       expect.objectContaining({ id: "combat", href: "/combat", external: false }),

@@ -22,4 +22,10 @@ export default [
   route("auth/discord/callback", "routes/auth-discord-callback.ts"),
   route("waiting", "routes/waiting.tsx"),
   route("members", "routes/members.tsx"),
+  route("characters", "routes/characters.tsx"),
+  route("characters/:id", "routes/character.tsx"),
+  route("characters/:id/portrait", "routes/character-portrait.ts"),
+  route("characters/:id/changes", "routes/character-changes.ts"),
+  route("characters/:id/give", "routes/character-give.ts"),
+  route("credits", "routes/credits.tsx"),
 ] satisfies RouteConfig;

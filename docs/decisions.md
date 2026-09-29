@@ -463,3 +463,111 @@ part boxed and labelled "DM only", nested ones included, so the rule when writin
 anything not in a box is what players see. Only an exact "DM" heading counts (not "DM notes"),
 and a callout ends at a blank line, as in Obsidian. Notes stay DM-only unless marked
 `visibility: players`; an Obsidian template can set that for new notes.
+
+## 29. Characters are Guildhall data, linked to their notes; who plays them comes from the vault
+
+**Date:** 2026-09-29
+
+**Context.** Players get character sheets and bags they change during play, so this is the first
+module where players write data. The PC note is the character's story, and the vault is read-only.
+
+**Options considered.**
+
+- **One `characters.json` in the data folder (chosen):** the same `JsonFile` as maps and members
+  (decision 18): one file to back up, queued atomic writes, and a gift between two bags is one
+  write.
+- **A file per character:** smaller writes, but new directory handling in the store for no gain
+  at a party's size.
+- **Sheets in the PC note's frontmatter:** the vault is read-only.
+- **SQLite:** not needed for a handful of records.
+
+**Decision.** A character has its own ID, used in URLs, and points at its note by entity ID
+(decision 6), so a note renamed without an `id` leaves the sheet intact, and the DM can link it
+again. Who plays a character is never stored: it's read from the note's `player:` on every
+request, as for Members and combat, so the vault stays the one place the DM says so. A character
+whose note has gone fails closed: only the DM can reach it. An item copies its name and icon when
+added and points at its item note by entity ID, so an item linked to a note kept from players
+shows only its own name: an unidentified item needs no extra field.
+
+## 30. Changes are actions applied to what's stored; undo sends inverse actions
+
+**Date:** 2026-09-29
+
+**Context.** The DM and a player may edit the same sheet at once (a player tracking HP while the
+DM hands out loot), and two tabs can be open. Neither may silently lose the other's change, and
+there's no real-time infrastructure yet.
+
+**Options considered.**
+
+- **Save the whole sheet, last write wins** (the map editor's way): a player's save would wipe the
+  potion the DM just gave.
+- **A revision check that refuses stale saves:** safe, but the loser redoes their change,
+  mid-session.
+- **Send small intent actions, applied to whatever is stored now (chosen):** "set DEX to 14",
+  "take 7 damage", "move the rope". Edits to different things merge by themselves, and relative
+  ones (damage, healing, adding items) add up.
+
+**Decision.** Every change is a `CharacterAction`, applied by one pure function in the browser (at
+once) and on the server (inside the file's queued update). A set action carries the value its
+sender saw; if someone else changed it since, the action still wins (last write wins per field)
+and the sender is told what it replaced. Actions about an item that's gone are dropped and
+reported, never errors. The browser keeps the server's last copy with unsaved actions on top,
+sends one batch at a time through a small JSON endpoint (`/characters/:id/changes`, behind the
+same sign-in, origin and permission checks), rebases onto each answer, retries when offline, and
+polls while the tab is visible and when it's focused. Undo can't restore an old copy, which would
+wipe others' changes, so it sends the inverse of what one action changed (for the bag, a small
+diff). Websockets can later replace polling without changing any of this (decision 13's path to
+sharing).
+
+## 31. The bag is an ordered list, and stacking never loses anything
+
+**Date:** 2026-09-29
+
+A bag's items are a list in grid order, flowed into however many columns fit, so a phone and a
+desktop show the same order; fixed (x, y) cells would reflow badly between widths. The grid always
+shows a spare row and never fills up: at the table the DM decides what's carried, not a slot
+count. Items stack only when nothing would be lost (the same note or name, icon, description and
+source, neither equipped), and a new item that hasn't been looked at doesn't join one that has,
+so a gift of something already in the bag is still noticed. Two new items do stack, and stay new,
+and splitting a new stack keeps both halves new, so the DM can arrange gifts before the player has
+opened them. While something is being dragged, the bag holds
+still: changes arriving from elsewhere wait until the drop, so nothing moves under the pointer.
+Drag and drop uses dnd-kit (`@dnd-kit/core` and `sortable`), for its keyboard and touch support and
+screen-reader announcements; keyboard moves follow the list's order, so Left at the start of a row
+goes to the end of the row above.
+
+## 32. Other players see a summary; hidden looks missing
+
+**Date:** 2026-09-29
+
+A player opens and edits only characters they play (and the party's companion); the DM, all.
+Other players' characters appear as a summary card: name, portrait, species, class, level and
+equipped items. Anything else about them (the sheet, the bag, the save endpoint) gives the same
+404 as a character that doesn't exist. A portrait is the image chosen on the sheet only if the
+viewer could load that image anyway, otherwise the first image the viewer can see in the note, so
+it can never be a way to see a DM-only image; the save endpoint refuses such a choice outright.
+The DM previewing as a player sees what a player assigned to no one sees.
+
+## 33. Item icons from game-icons.net
+
+**Date:** 2026-09-29
+
+Items need recognisable icons, and no art may come from the games that inspired the bag, nor be
+AI-generated in this slice. A curated set of 57 icons from game-icons.net (CC BY 3.0) is imported
+by a script that keeps only each icon's path data and author, so tiles draw them in the app's own
+colours. The licence asks for credit: each icon's author is recorded, listed on the Credits page
+(linked from every bag) and in the README. Quick add guesses an icon from an item's name; any icon
+can be changed. Vault images as icons can come later.
+
+## 34. Companions are shared, and gifts are one write
+
+**Date:** 2026-09-29
+
+A companion the party shares (the blink dog) is a vault note with `type: companion`; its statblock
+stays the source of its numbers. Guildhall keeps only its hit points (the maximum starting as the
+statblock's) and a bag every player can use, and shows it as a card beside the PCs. Players give
+items to each other and to the companion: a gift changes both bags in one update of
+`characters.json`, so it can't vanish from one bag without reaching the other. A player may give
+only from a bag they may change, to someone they can see, and nobody can take. Gifts arrive as a
+new tile saying who gave them, and can't be undone. The DM's additions to any bag are gifts "from
+the DM".

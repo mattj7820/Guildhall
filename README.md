@@ -46,6 +46,28 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
     companions, notes), then start one at the table. Just untick anyone absent and type the
     players' initiative. They're reusable templates you can edit, duplicate and delete, saved in
     Guildhall's data folder.
+- **Character sheets**, one per PC note, laid out like the paper sheet:
+  - Numbers are typed in as they are on paper; the sheet works out only what paper does
+    (modifiers, save and skill bonuses with proficiency or expertise, initiative, passive scores),
+    and any of those can be typed over for features it doesn't know about.
+  - Click any bonus to roll it, labelled "Kit · Stealth", with advantage and disadvantage.
+  - Hit points with Heal and Damage always to hand (temporary HP soaks up damage first).
+  - Changes save as they're made, with undo and redo. The DM and the player can edit the same
+    sheet at once: changes to different things are both kept, and if both change the same thing,
+    the later one wins and its sender is told what it replaced.
+  - Players open and edit only their own characters; everyone else sees a summary (name,
+    portrait, species, class, level and equipped items). The PC note is the sheet's story.
+- **A game-style bag** beside the sheet (press I):
+  - Items as tiles with icons and names, in a grid that grows as needed. Drag to move, drop on an
+    identical item to stack, hold Shift to take half, drop on the Equipped slots to equip (and
+    drag back out, or press ✕, to unequip), or on the bin to remove, with undo. Everything also
+    works from the keyboard and with a screen reader, and by long press on a phone.
+  - Quick add: type "3 torches" and press Enter. Items can link to the vault's item notes, whose
+    shared text shows in the item's details (the DM's parts never reach players).
+  - Descriptions, where an item came from, coins (drawn copper to platinum, with their worth in
+    gold), sorting and search.
+  - The DM can give items to anyone; they arrive marked new. Players give items to each other,
+    and to the party's shared companion (a `type: companion` note), whose bag everyone can use.
 - **Interactive maps** (DM only), made from the map images already in the vault (Wonderdraft or
   Dungeondraft exports, say):
   - Outline anything on a map (a region, a town, one building) by clicking round it, then name it
@@ -103,11 +125,11 @@ application); see `.env.example` and [docs/deployment.md](docs/deployment.md).
 ```yaml
 ---
 visibility: players # players | dm. Missing or unrecognised means dm (fails closed).
-type: npc # optional entity type: npc, pc, location, faction, item, session, lore, map…
+type: npc # optional entity type: npc, pc, companion, location, faction, item, session, lore, map…
 aliases: [Mira] # standard Obsidian aliases; also searchable
 tags: [brindleford]
 id: npc-mira # optional stable ID that survives renaming the file
-player: Sam # on type: pc notes, who plays the character (used by the combat tracker)
+player: Sam # on type: pc notes, who plays the character (their sheet, the combat tracker)
 ---
 ```
 
@@ -128,11 +150,14 @@ Before running the end-to-end tests for the first time: `npx playwright install 
 
 ## Testing
 
-Unit tests cover vault parsing, Obsidian link resolution, rendering and visibility rules, and the
+Unit tests cover vault parsing, Obsidian link resolution, rendering and visibility rules, the
 combat rules (initiative and reroll tie-breaks, turns and rounds, HP, dice, what a player may see)
-with scripted dice. Playwright covers the user journeys: the hub, wikilink navigation, search, the
-player view hiding DM content everywhere, and running a fight in the combat tracker. All tests run against an invented fixture vault, and the e2e run
-fails if that vault is modified in any way. CI runs lint, typecheck, unit tests (Linux and
+with scripted dice, and characters (the modifier maths, who may do what, every change and its
+undo, merging two people's edits, and the bag's rules for stacking, splitting and giving).
+Playwright covers the user journeys: the hub, wikilink navigation, search, the player view hiding
+DM content everywhere, running a fight, editing a sheet and rolling from it, and using the bag by
+mouse and keyboard. All tests run against an invented fixture vault, and the e2e run fails if that
+vault is modified in any way. CI runs lint, typecheck, unit tests (Linux and
 Windows) and e2e tests on every push. See [docs/testing.md](docs/testing.md) for the strategy.
 
 ## Tech stack
@@ -151,6 +176,7 @@ app/
   hub/             Hub links configuration
   wiki/            Wiki types and URL helpers shared by server and browser
   maps/            Interactive maps model: areas, geometry, pan and zoom, the editor (isomorphic)
+  characters/      Sheets and bags: the model, changes as actions, undo, saving (isomorphic)
   members/         Who can sign in: member shapes shared with the browser
   .server/         Server-only code: config, the DM's preview cookie
     auth/          Sessions, who may reach what, Discord sign-in, dev sign-in
@@ -158,12 +184,14 @@ app/
     vault/         Vault reading, parsing, link resolution, rendering, search, statblocks
     combat/        The combat tracker's catalogue and the prepared-encounter store
     maps/          The map store, and maps prepared for a viewer
+    characters/    The character store, who plays whom, and sheets prepared for a viewer
     data/          The JSON store: the only code that writes files, and only in DATA_PATH
   routes/          Pages and resource routes
-  components/      UI components (combat/ holds the tracker's)
+  components/      UI components (combat/, maps/, characters/ and inventory/ by module)
 server/app.ts      Express app: creates long-lived services, mounts React Router
 server/http.ts     Proxy trust, security headers, health check
 server.js          HTTP entry point (dev: Vite middleware; prod: static + build)
+scripts/           One-off tools (importing the item icons)
 tests/
   fixtures/vault/  Invented Obsidian vault used by all tests
   e2e/             Playwright specs
@@ -184,3 +212,7 @@ Dockerfile, docker-compose.yml   The image, and the app beside its Google Drive 
 ## License
 
 [MIT](LICENSE)
+
+Item icons are from [game-icons.net](https://game-icons.net) by Lorc, Delapouite, Willdabeast,
+Lucas and Carl Olsen, licensed under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/).
+Each icon's author is recorded in `app/characters/item-icons.ts`.

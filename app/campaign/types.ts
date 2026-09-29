@@ -56,6 +56,7 @@ export type EntityId = string;
 export const KNOWN_ENTITY_TYPES = [
   "npc",
   "pc",
+  "companion",
   "location",
   "faction",
   "item",

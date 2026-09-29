@@ -6,6 +6,7 @@ import { loadConfig } from "~/.server/config";
 import { discordAuth } from "~/.server/auth/discord";
 import { createAttemptCookie } from "~/.server/auth/discord-sign-in";
 import { cookieSettings, createSessions } from "~/.server/auth/sessions";
+import { Characters } from "~/.server/characters/characters";
 import { CampaignMaps } from "~/.server/maps/campaign-maps";
 import { Members } from "~/.server/members/members";
 import { LiveVault } from "~/.server/vault/live-vault";
@@ -13,8 +14,10 @@ import { clientAddressContext, servicesContext, type Services } from "~/context"
 import { prepareApp } from "./http";
 
 /**
- * Creates the long-lived services once per process. In development Vite may re-evaluate this
- * module, so the instance is kept on globalThis to avoid stacking up file watchers.
+ * Creates the long-lived services. In production this module is evaluated once. In development
+ * Vite evaluates it again whenever server code it depends on changes; the services are then
+ * built afresh, so saving runs the new code (a stale repository would quietly apply old rules
+ * while the browser used new ones), and the old vault watcher is closed so watchers don't pile up.
  */
 async function createServices(): Promise<Services> {
   const config = loadConfig();
@@ -33,6 +36,7 @@ async function createServices(): Promise<Services> {
     vault,
     preparedEncounters: PreparedEncounters.inFolder(config.dataPath),
     maps: CampaignMaps.inFolder(config.dataPath),
+    characters: Characters.inFolder(config.dataPath),
     members: Members.inFolder(config.dataPath),
     sessions: createSessions(cookies),
     signInAttempts: createAttemptCookie(cookies),
@@ -48,7 +52,14 @@ async function createServices(): Promise<Services> {
 const globalForServices = globalThis as typeof globalThis & {
   __guildhallServices?: Promise<Services>;
 };
-const services = await (globalForServices.__guildhallServices ??= createServices());
+const services = await (globalForServices.__guildhallServices = replaceServices(
+  globalForServices.__guildhallServices,
+));
+
+async function replaceServices(previous: Promise<Services> | undefined): Promise<Services> {
+  if (previous) await (await previous).vault.close();
+  return createServices();
+}
 
 export const app = express();
 

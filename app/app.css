@@ -165,3 +165,14 @@
   cursor: text;
   text-decoration: none;
 }
+
+/* The latest roll on a character sheet: shown, then fading away. */
+@keyframes fade {
+  0%,
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
