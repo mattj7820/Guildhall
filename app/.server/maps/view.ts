@@ -17,6 +17,8 @@ export interface MapViewInput {
   viewer: Viewer;
   /** Where the map's image was found, with a version that changes when the file does. */
   image: (FoundImage & { version: string }) | undefined;
+  /** Whether players can load the image through the wiki anyway (a shared note embeds it). */
+  imageInSharedNote?: boolean;
   /** A note the viewer may see, rendered for them; undefined if it's hidden or missing. */
   note: (id: EntityId) => NoteLink | undefined;
   /** The map's fog of war as stored now. */
@@ -48,6 +50,7 @@ export function mapView({
   note,
   fog,
   tiles,
+  imageInSharedNote = false,
 }: MapViewInput): MapView | undefined {
   if (!canView(viewer, map.visibility)) return undefined;
   const isDm = viewer.role === "dm";
@@ -90,7 +93,9 @@ export function mapView({
     id: map.id,
     name: map.name,
     size: { width: map.image.width, height: map.image.height },
-    image: isDm ? dmImageView(map, image) : playerImageView(map, image, fog.mask, tiles),
+    image: isDm
+      ? { ...dmImageView(map, image), ...(imageInSharedNote ? { inSharedNote: true } : {}) }
+      : playerImageView(map, image, fog.mask, tiles),
     ...(mapNote ? { note: mapNote } : {}),
     noteBroken: isDm && !!map.note && !mapNote,
     breadcrumbs,

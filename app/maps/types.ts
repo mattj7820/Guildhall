@@ -82,6 +82,11 @@ export interface MapImageView {
   /** DM only: where the image is recorded, and where it was found instead. */
   path?: string;
   movedTo?: string;
+  /**
+   * DM only: the image is embedded in a note players can read, so the wiki shows them all of it,
+   * whatever the fog hides here.
+   */
+  inSharedNote?: boolean;
 }
 
 /** The tiles of an image players may have, each drawn at its place on the map. */

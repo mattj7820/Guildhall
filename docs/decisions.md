@@ -690,7 +690,8 @@ DM parts are taken out. Otherwise the panel just says nothing more is known yet:
 reads like nothing to find, not like a secret. There's no editing: the editor is the same 404 as a
 missing map. Players pan and zoom freely; showing where the party is will come with tokens.
 Revealing an area never shares its note, which stays a vault decision (a later idea: revealing
-them together).
+them together). One way round the fog is outside maps: a note players can read that embeds the map's
+image makes the wiki serve all of it (decision 3). The DM's map page warns when that's so.
 
 ## 40. Players' maps update by polling a version, ready for websockets
 

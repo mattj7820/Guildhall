@@ -294,4 +294,11 @@ describe("mapView and the fog", () => {
     const tiles = { image: { width: 400, height: 200 }, size: 100, alpha: cellAlpha(mask) };
     expect(view(map, DM_VIEWER, { fog: fogged(mask), tiles })?.image.tiles).toBeUndefined();
   });
+
+  it("warns only the DM when players can see the whole image in the wiki", () => {
+    const input = { imageInSharedNote: true };
+    expect(view(map, DM_VIEWER, input)?.image.inSharedNote).toBe(true);
+    expect(view(map, PLAYER_VIEWER, input)?.image).not.toHaveProperty("inSharedNote");
+    expect(view(map, DM_VIEWER)?.image).not.toHaveProperty("inSharedNote");
+  });
 });

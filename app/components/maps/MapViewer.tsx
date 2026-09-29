@@ -66,6 +66,15 @@ export function MapViewer({ map, images }: { map: MapView; images: string[] }) {
         </div>
       </div>
       <ImageHealth map={map} images={images} actual={actualSize} />
+      {map.image.inSharedNote && (
+        <p
+          role="alert"
+          className="border-b border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"
+        >
+          This map's image is embedded in a wiki note players can read, so they can see all of it
+          there, whatever the fog hides here. Take it out of that note, or make the note DM-only.
+        </p>
+      )}
       {fogMode && (
         <FogToolbar
           tool={fog.tool}

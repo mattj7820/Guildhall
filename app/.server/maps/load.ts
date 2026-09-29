@@ -1,6 +1,6 @@
 import { stat } from "node:fs/promises";
 import path from "node:path";
-import type { EntityId, Viewer } from "~/campaign/types";
+import { PLAYER_VIEWER, type EntityId, type Viewer } from "~/campaign/types";
 import type { Services } from "~/context";
 import type { CampaignMap, MapView, NoteLink } from "~/maps/types";
 import { noteUrl } from "~/wiki/urls";
@@ -73,6 +73,7 @@ export async function loadMapView(
     image: source,
     note: (id) => noteLink(current, id, viewer),
     fog,
+    imageInSharedNote: !!source && current.getAsset(source.path, PLAYER_VIEWER) !== undefined,
     tiles: forPlayers
       ? {
           image: await playerImages.size(source),

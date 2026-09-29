@@ -216,6 +216,18 @@ test.describe("The DM's fog tools", () => {
     await expect(revealed(page)).toHaveText("0% revealed");
   });
 
+  test("warns when players can see the whole image in the wiki anyway", async ({ page }) => {
+    // Mira Stonehand's shared note embeds her portrait.
+    await createMap(page, { image: "mira-portrait.png", name: uniqueName("Portrait") });
+    await page.getByRole("link", { name: "Done" }).click();
+    await expect(page.getByRole("alert")).toContainText("embedded in a wiki note players can read");
+
+    await createMap(page, { image: "Fixture Fog.png", name: uniqueName("Unembedded") });
+    await page.getByRole("link", { name: "Done" }).click();
+    await expect(page.getByRole("button", { name: "Fog", exact: true })).toBeVisible();
+    await expect(page.getByText("embedded in a wiki note players can read")).toHaveCount(0);
+  });
+
   test("keeps a secret area secret, however much is revealed", async ({ page }) => {
     await mapWithArea(page);
     await page.getByRole("link", { name: "Edit map" }).click();
