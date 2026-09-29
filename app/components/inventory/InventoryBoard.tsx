@@ -55,7 +55,6 @@ const SLOT_PREFIX = "equipped:";
 const isZone = (id: UniqueIdentifier) => ZONES.has(id) || String(id).startsWith(GIVE_PREFIX);
 const itemIdOf = (id: UniqueIdentifier) => String(id).replace(SLOT_PREFIX, "");
 
-export type Recipient = GiftRecipient;
 const TOOLTIP_DELAY_MS = 400;
 
 interface Props {
@@ -66,7 +65,7 @@ interface Props {
   onOpen: (id: ItemId, focus?: "split" | "give") => void;
   onAdd: () => void;
   /** Who items can be given to; none means no giving. */
-  recipients?: Recipient[];
+  recipients?: GiftRecipient[];
   onGive?: (id: ItemId, to: string, amount: number) => void;
   /** Above the grid, inside the drag area (so the equipped slots can take drops). */
   toolbar?: ReactNode;
@@ -284,7 +283,7 @@ export function InventoryBoard({
     return `${item.name} is at position ${position} of ${items.length}.`;
   }
 
-  function recipientOf(id: UniqueIdentifier): Recipient | undefined {
+  function recipientOf(id: UniqueIdentifier): GiftRecipient | undefined {
     const key = String(id);
     if (!key.startsWith(GIVE_PREFIX)) return undefined;
     return recipients.find((recipient) => recipient.id === key.slice(GIVE_PREFIX.length));
@@ -466,9 +465,12 @@ export function InventoryBoard({
                 }
               }}
               onBlur={hideTooltip}
-              onPointerEnter={(event) =>
-                showTooltip(item.id, event.currentTarget, TOOLTIP_DELAY_MS)
-              }
+              onPointerEnter={(event) => {
+                // Touch has no hover (and no "leave" to hide it again): a tap opens the item.
+                if (event.pointerType === "mouse") {
+                  showTooltip(item.id, event.currentTarget, TOOLTIP_DELAY_MS);
+                }
+              }}
               onPointerLeave={hideTooltip}
             />
           ))}
@@ -712,7 +714,7 @@ function EquippedSlot({
 }
 
 /** Portraits to drop an item on to give it away. Drop targets only: by keyboard, it's G. */
-function GiveTargets({ recipients, dragging }: { recipients: Recipient[]; dragging: boolean }) {
+function GiveTargets({ recipients, dragging }: { recipients: GiftRecipient[]; dragging: boolean }) {
   return (
     <section aria-label="Give to" className="mb-3">
       <h3 className="mb-1 text-xs font-semibold tracking-wide text-stone-500 uppercase">Give to</h3>
@@ -725,7 +727,7 @@ function GiveTargets({ recipients, dragging }: { recipients: Recipient[]; draggi
   );
 }
 
-function GiveTarget({ recipient, dragging }: { recipient: Recipient; dragging: boolean }) {
+function GiveTarget({ recipient, dragging }: { recipient: GiftRecipient; dragging: boolean }) {
   const { setNodeRef, isOver } = useDroppable({ id: GIVE_PREFIX + recipient.id });
   return (
     <li

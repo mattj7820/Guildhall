@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router";
 import type { InventoryChange, InventoryState } from "~/characters/inventory-changes";
 import type { SortOrder } from "~/characters/inventory";
 import type { ItemId } from "~/characters/types";
-import type { CatalogueItem, LinkedNote } from "~/characters/view";
+import type { CatalogueItem, LinkedNote, GiftRecipient } from "~/characters/view";
 import { buttonClass, inputClass } from "../styles";
-import { InventoryBoard, type Recipient } from "./InventoryBoard";
+import { InventoryBoard } from "./InventoryBoard";
 import { ItemDetails } from "./ItemDetails";
 import { Purse } from "./Purse";
 import { QuickAdd } from "./QuickAdd";
@@ -31,7 +32,7 @@ export function Bag({
   /** Linked notes as this person may see them, by entity ID. */
   notes: Record<string, LinkedNote>;
   /** Who items can be given to, and how. */
-  recipients?: Recipient[];
+  recipients?: GiftRecipient[];
   onGive?: (id: ItemId, to: string, amount: number) => void;
   /**
    * Adding here gives, as this person ("the DM"): what's added arrives marked new and says who
@@ -140,6 +141,11 @@ export function Bag({
         toolbar={toolbar}
       />
       <Purse purse={state.purse} onChange={onChange} />
+      <p className="mt-3 text-right text-xs text-stone-500">
+        <Link to="/credits" className="hover:underline">
+          Icon credits
+        </Link>
+      </p>
       {openedItem && (
         <ItemDetails
           key={openedItem.id}

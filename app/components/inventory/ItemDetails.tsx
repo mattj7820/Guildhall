@@ -8,10 +8,9 @@ import {
 import { QUANTITY_MAX } from "~/characters/inventory";
 import { ITEM_ICONS } from "~/characters/item-icons";
 import type { InventoryItem, ItemId } from "~/characters/types";
-import type { LinkedNote } from "~/characters/view";
+import type { LinkedNote, GiftRecipient } from "~/characters/view";
 import { newId } from "~/shared/ids";
 import { buttonClass, iconButtonClass, inputClass, labelClass } from "../styles";
-import type { Recipient } from "./InventoryBoard";
 import { ItemIconSvg } from "./ItemTile";
 
 /**
@@ -32,7 +31,7 @@ export function ItemDetails({
   /** Open with the split or give control focused. */
   focus?: "split" | "give";
   /** Who it can be given to; none hides giving. */
-  recipients?: Recipient[];
+  recipients?: GiftRecipient[];
   onChange: (change: InventoryChange) => void;
   onGive?: (id: ItemId, to: string, amount: number) => void;
   onClose: () => void;

@@ -107,6 +107,19 @@ test("splits, stacks, equips and unequips from the keyboard", async ({ page }) =
 
   await equipped.getByRole("button", { name: `Unequip ${arrows}` }).click();
   await expect(tile(page, `${arrows}, 4`)).toBeVisible();
+
+  // E on an equipped slot unequips it too.
+  await tile(page, `${arrows}, 4`).press("e");
+  await equipped.getByRole("button", { name: `${arrows}, 4, equipped` }).press("e");
+  await expect(tile(page, `${arrows}, 4`)).toBeVisible();
+});
+
+test("credits the icons", async ({ page }) => {
+  await openBag(page);
+  await page.getByRole("link", { name: "Icon credits" }).click();
+  await expect(page.getByRole("heading", { name: "Credits", level: 1 })).toBeVisible();
+  await expect(page.getByText("CC BY 3.0")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "By Lorc" })).toBeVisible();
 });
 
 test("moves and stacks items by dragging them", async ({ page }) => {
