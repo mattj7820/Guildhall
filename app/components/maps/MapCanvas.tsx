@@ -15,6 +15,8 @@ interface Props {
   /** The size the areas were drawn against: the canvas's coordinate system, in image pixels. */
   size: Size;
   imageUrl?: string;
+  /** Drawn instead of the whole image, e.g. the tiles players may see. */
+  backdrop?: ReactNode;
   /** Areas, handles and anything else drawn over the image, in image pixels. */
   children?: (canvas: CanvasTools) => ReactNode;
   /** Called with the image's real size once it has loaded. */
@@ -35,6 +37,7 @@ export function MapCanvas({
   name,
   size,
   imageUrl,
+  backdrop,
   children,
   onImageMeasured,
   onCanvasClick,
@@ -102,20 +105,21 @@ export function MapCanvas({
             if (point) onCanvasPointerMove(point);
           }}
         >
-          {imageUrl ? (
-            <image
-              href={imageUrl}
-              width={size.width}
-              height={size.height}
-              preserveAspectRatio="none"
-            />
-          ) : (
-            <rect
-              width={size.width}
-              height={size.height}
-              className="fill-stone-300 dark:fill-stone-700"
-            />
-          )}
+          {backdrop ??
+            (imageUrl ? (
+              <image
+                href={imageUrl}
+                width={size.width}
+                height={size.height}
+                preserveAspectRatio="none"
+              />
+            ) : (
+              <rect
+                width={size.width}
+                height={size.height}
+                className="fill-stone-300 dark:fill-stone-700"
+              />
+            ))}
           {children?.({ scale, clientToImage })}
         </svg>
       </div>

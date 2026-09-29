@@ -162,8 +162,9 @@ First e2e run needs `npx playwright install chromium`.
 - `app/routes/`: `home`, `wiki` (layout + sidebar), `wiki-home` (landing page + `?q=` search),
   `wiki-note` (`/wiki/*`), `combat` (DM-only tracker; server `loader` + hydrating `clientLoader`;
   `?start=<id>` starts a prepared encounter), `combat-prepared` (list; create, duplicate and delete
-  actions), `combat-prepared-edit` (editor; autosave action), `maps` (tree of maps; create action),
-  `map-view` (`/maps/:id`, the table view), `map-edit` (editor; save, createChild, setImage,
+  actions), `combat-prepared-edit` (editor; autosave action), `maps` (tree of maps: every map for the DM,
+  only shared ones for players; create action), `map-view` (`/maps/:id`: the table view for the DM,
+  the fogged view for players), `map-edit` (editor; save, createChild, setImage,
   setVisibility and delete actions; `?area=` preselects an area), `map-fog` (JSON: the DM's fog
   changes), `map-tile` (resource route: one tile of a map's image as players may see it), `map-image` (resource route: a map's image by map
   ID), `vault-asset` (resource route), `view-mode` (the DM's preview toggle), `login` (sign-in
@@ -185,7 +186,8 @@ First e2e run needs `npx playwright install chromium`.
   `ImagePicker`, `NotePicker`, `NotePanel`, `MapBreadcrumbs`, and for fog of war `ShareSwitch`,
   `FogLayer` (the fog drawn from the cell opacities), `FogPainter` (brush, rectangle and area
   tools), `FogToolbar`, `FogAreaList` (what players see of each area) and `useFogTools` (tool
-  state and keys). Shared control classes are in
+  state and keys). `PlayerMapViewer` is a map as players see it: tiles over black, and outlines
+  drawn only over what's revealed. Shared control classes are in
   `app/components/styles.ts`.
 
 ## Conventions

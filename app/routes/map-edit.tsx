@@ -1,7 +1,6 @@
 import { data, redirect, type ShouldRevalidateFunctionArgs } from "react-router";
 import { z } from "zod";
 import { loadMapView, mapSource } from "~/.server/maps/load";
-import { MapsDmOnlyNotice } from "~/components/maps/DmOnlyNotice";
 import { MapEditor } from "~/components/maps/MapEditor";
 import { servicesContext, viewerContext, type Services } from "~/context";
 import { mapChangesSchema, mapImageSchema } from "~/maps/schema";
@@ -10,13 +9,14 @@ import { mapUrl } from "~/maps/urls";
 import type { Route } from "./+types/map-edit";
 
 export function meta({ loaderData }: Route.MetaArgs) {
-  const name = loaderData && !loaderData.dmOnly ? loaderData.map.name : "Map";
+  const name = loaderData?.map.name ?? "Map";
   return [{ title: `Editing ${name} · Guildhall` }];
 }
 
 export async function loader({ request, params, context }: Route.LoaderArgs) {
   const viewer = context.get(viewerContext);
-  if (viewer.role !== "dm") return { dmOnly: true as const };
+  // Editing is the DM's: for anyone else it's the same 404 as a map that doesn't exist.
+  if (viewer.role !== "dm") throw data("Map not found", { status: 404 });
   const services = context.get(servicesContext);
   const maps = await services.maps.list();
   const map = maps.find((candidate) => candidate.id === params.id);
@@ -25,7 +25,6 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
 
   const current = services.vault.current;
   return {
-    dmOnly: false as const,
     map,
     view,
     /** Every map's links, so the editor can offer only maps that keep the tree a tree. */
@@ -136,7 +135,6 @@ export function shouldRevalidate({
 }
 
 export default function EditMap({ loaderData }: Route.ComponentProps) {
-  if (loaderData.dmOnly) return <MapsDmOnlyNotice />;
   return (
     <MapEditor
       key={loaderData.map.id}

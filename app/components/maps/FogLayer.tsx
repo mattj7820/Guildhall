@@ -21,12 +21,7 @@ const MASK_ID = "fog-of-war";
  * scales it up. Drawn only in the browser, where there's a canvas to make the mask with.
  */
 export function FogLayer({ mask, size, opacity, preview }: Props) {
-  const inBrowser = useSyncExternalStore(
-    noSubscription,
-    () => true,
-    () => false,
-  );
-  const url = useMemo(() => (inBrowser ? fogImage(mask) : undefined), [inBrowser, mask]);
+  const url = useFogImage(mask, "fog");
   if (!url) return null;
   return (
     <g aria-hidden="true" pointerEvents="none">
@@ -43,8 +38,20 @@ export function FogLayer({ mask, size, opacity, preview }: Props) {
 
 const noSubscription = () => () => {};
 
-/** One pixel per cell: white where the fog is, black where it's clear, grey along the edge. */
-function fogImage(mask: FogMask): string {
+/**
+ * The fog as an image for an SVG mask, one pixel per cell: white where the fog is ("fog") or
+ * where it's clear ("revealed"), grey along the edge. Only in the browser, which has a canvas.
+ */
+export function useFogImage(mask: FogMask, white: "fog" | "revealed"): string | undefined {
+  const inBrowser = useSyncExternalStore(
+    noSubscription,
+    () => true,
+    () => false,
+  );
+  return useMemo(() => (inBrowser ? fogImage(mask, white) : undefined), [inBrowser, mask, white]);
+}
+
+function fogImage(mask: FogMask, white: "fog" | "revealed"): string {
   const canvas = document.createElement("canvas");
   canvas.width = mask.cols;
   canvas.height = mask.rows;
@@ -52,8 +59,8 @@ function fogImage(mask: FogMask): string {
   if (!context) return "";
   const pixels = context.createImageData(mask.cols, mask.rows);
   cellAlpha(mask).forEach((shown, index) => {
-    const fog = 255 - shown;
-    pixels.data.set([fog, fog, fog, 255], index * 4);
+    const value = white === "fog" ? 255 - shown : shown;
+    pixels.data.set([value, value, value, 255], index * 4);
   });
   context.putImageData(pixels, 0, 0);
   return canvas.toDataURL();

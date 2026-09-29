@@ -158,6 +158,8 @@ test.describe("The DM's fog tools", () => {
     await expect(share).toHaveAttribute("aria-checked", "false");
     await share.click();
     await expect(share).toHaveAttribute("aria-checked", "true");
+    // It's disabled until the server has saved it.
+    await expect(share).toBeEnabled();
     await page.reload();
     await expect(page.getByRole("switch", { name: "Share with players" })).toHaveAttribute(
       "aria-checked",
@@ -227,5 +229,116 @@ test.describe("The DM's fog tools", () => {
     await expect(
       page.getByRole("list", { name: "Areas under the fog" }).getByText("Secret"),
     ).toBeVisible();
+  });
+});
+
+test.describe("Maps for players", () => {
+  const FOG_IMAGE = { width: 1024, height: 512 };
+  const LEFT_THIRD: Change = {
+    type: "paint",
+    mode: "reveal",
+    shape: {
+      kind: "polygon",
+      points: [
+        [0, 0],
+        [0.3, 0],
+        [0.3, 1],
+        [0, 1],
+      ],
+    },
+  };
+
+  /**
+   * A shared map of the fog fixture with "Keep" in its left quarter, revealed, and "Cellar" on
+   * its right, still under the fog. Gives the map's name and address.
+   */
+  async function sharedMap(page: Page) {
+    const name = uniqueName("Explored");
+    await createMap(page, { image: "Fixture Fog.png", name });
+    const map = page.url().replace(/\/edit$/, "");
+    for (const [area, corners] of [
+      [
+        "Keep",
+        [
+          [0.05, 0.1],
+          [0.25, 0.1],
+          [0.25, 0.9],
+          [0.05, 0.9],
+        ],
+      ],
+      [
+        "Cellar",
+        [
+          [0.6, 0.2],
+          [0.9, 0.2],
+          [0.9, 0.8],
+          [0.6, 0.8],
+        ],
+      ],
+    ] as const) {
+      await drawArea(
+        page,
+        name,
+        FOG_IMAGE,
+        corners.map(([x, y]) => [x, y]),
+      );
+      await page.getByLabel("Area name").fill(area);
+      await expectSaved(page);
+    }
+    await share(page, map);
+    await changeFog(page, map, LEFT_THIRD);
+    return { name, map };
+  }
+
+  test("players find shared maps from the hub and the menu", async ({ page, browser }) => {
+    const { name } = await sharedMap(page);
+    const player = await asPlayerOne(browser);
+    await player.goto("/");
+    await expect(player.getByRole("link", { name: /^Maps/ }).first()).toBeVisible();
+    await player
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "Maps" })
+      .click();
+    await player.getByRole("link", { name }).click();
+    await expect(player.getByRole("navigation", { name: "Breadcrumbs" })).toContainText(name);
+    await player.context().close();
+  });
+
+  test("a player sees only what's revealed, and only the areas they can see", async ({
+    page,
+    browser,
+  }) => {
+    const { map } = await sharedMap(page);
+    const player = await asPlayerOne(browser);
+    await player.goto(map);
+
+    // Only the revealed tile, served as a tile, never the whole image or its file name.
+    const tiles = player.locator('svg image[href*="/tiles/"]');
+    await expect(tiles).toHaveCount(1);
+    expect(await tiles.first().getAttribute("href")).toMatch(/\/tiles\/0\/0\?v=/);
+    const html = await player.content();
+    expect(html).not.toContain("Fixture Fog");
+    expect(html).not.toMatch(/\/image\?v=/);
+
+    // The area under the fog isn't in the page at all, not even in its data.
+    const keep = player
+      .getByRole("group", { name: "Map areas" })
+      .getByRole("button", { name: "Keep" });
+    await expect(keep).toBeVisible();
+    await expect(player.getByRole("list", { name: "Areas" })).toHaveText("Keep");
+    expect(html).not.toContain("Cellar");
+
+    await keep.click();
+    await expect(player.getByText("Nothing more is known yet.")).toBeVisible();
+    await expect(player.getByRole("button", { name: "Fog" })).toHaveCount(0);
+    await expect(player.getByRole("link", { name: "Edit map" })).toHaveCount(0);
+    await player.context().close();
+  });
+
+  test("players can't open the editor", async ({ page, browser }) => {
+    const { map } = await sharedMap(page);
+    const player = await asPlayerOne(browser);
+    expect((await player.goto(`${map}/edit`))?.status()).toBe(404);
+    await player.context().close();
   });
 });

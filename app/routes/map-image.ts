@@ -4,9 +4,9 @@ import { servicesContext, viewerContext } from "~/context";
 import type { Route } from "./+types/map-image";
 
 /**
- * Streams a map's image, found by map ID, so the vault file name never appears in a URL. Maps are
- * DM-only for now; when players get a map view, this becomes "if the viewer may see the map",
- * which is independent of which notes embed the file (the rule `vault-asset` follows).
+ * Streams a map's whole image, found by map ID, so the vault file name never appears in a URL.
+ * Only ever for the DM (not while previewing as a player), even for a shared, fully revealed map:
+ * players get the parts the fog reveals, as tiles (`map-tile`).
  *
  * Map images can be 15 MB, so the browser revalidates with an ETag and gets a 304 while the file
  * is unchanged; the page's image URL also carries a version, so a re-export shows at once.

@@ -62,15 +62,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <NavLink to="/characters" className={navLinkClass}>
                   Characters
                 </NavLink>
+                <NavLink to="/maps" className={navLinkClass}>
+                  Maps
+                </NavLink>
                 {role === "dm" && (
-                  <>
-                    <NavLink to="/combat" className={navLinkClass}>
-                      Combat
-                    </NavLink>
-                    <NavLink to="/maps" className={navLinkClass}>
-                      Maps
-                    </NavLink>
-                  </>
+                  <NavLink to="/combat" className={navLinkClass}>
+                    Combat
+                  </NavLink>
                 )}
                 {user.isDm && (
                   <NavLink to="/members" className={navLinkClass}>

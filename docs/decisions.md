@@ -676,3 +676,18 @@ hide buttons that also work from the keyboard). The existing preview toggle show
 players get. Presenting a shared map draws the fog solid and only the areas players see, since
 presenting is for showing the table. Saving follows the character sheets (decision 30): changes
 show at once, go in small batches, retry when offline, and undo sends the inverse.
+
+## 39. What players see of a map
+
+**Date:** 2026-09-29
+
+Players get Maps in the menu and on the hub, listing only shared maps, nested as they lead to each
+other; only the links between shared maps are sent, never area names or image files. A map's page
+is black except for the tiles they may have (decision 37). Areas they can see (decision 36) are
+drawn only over the revealed parts, so an outline never runs off into the fog; clicking one opens
+its deeper map if that's shared, or its note if it's shared and has anything left for players once
+DM parts are taken out. Otherwise the panel just says nothing more is known yet: an empty note
+reads like nothing to find, not like a secret. There's no editing: the editor is the same 404 as a
+missing map. Players pan and zoom freely; showing where the party is will come with tokens.
+Revealing an area never shares its note, which stays a vault decision (a later idea: revealing
+them together).

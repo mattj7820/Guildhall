@@ -34,8 +34,8 @@ describe("hubLinks", () => {
     );
   });
 
-  it("lists maps for the DM", () => {
-    expect(hubLinks({}, "dm").modules).toContainEqual(
+  it.each(["dm", "player"] as const)("lists maps for the %s", (role) => {
+    expect(hubLinks({}, role).modules).toContainEqual(
       expect.objectContaining({ id: "maps", href: "/maps", external: false }),
     );
   });
@@ -49,7 +49,6 @@ describe("hubLinks", () => {
   it("leaves DM-only modules out of the player preview", () => {
     const ids = hubLinks({}, "player").modules.map((m) => m.id);
     expect(ids).not.toContain("combat");
-    expect(ids).not.toContain("maps");
     expect(ids).not.toContain("members");
   });
 });

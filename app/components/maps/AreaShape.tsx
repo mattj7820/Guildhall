@@ -12,6 +12,8 @@ interface Props {
   selected?: boolean;
   /** Clicking an area that doesn't lead to a map (or pressing Enter or Space on it). */
   onSelect?: (area: AreaView) => void;
+  /** For players: just the area's name, without saying whether it's mapped yet. */
+  plain?: boolean;
 }
 
 /**
@@ -19,7 +21,7 @@ interface Props {
  * tab" work; one without a map yet is a button that shows it in the side panel. The name appears
  * on hover and keyboard focus.
  */
-export function AreaShape({ area, size, scale, selected = false, onSelect }: Props) {
+export function AreaShape({ area, size, scale, selected = false, onSelect, plain = false }: Props) {
   const [labelX, labelY] = labelPoint(area.outline, size);
   const mapped = !!area.map;
   const shape = (
@@ -44,7 +46,7 @@ export function AreaShape({ area, size, scale, selected = false, onSelect }: Pro
         }`}
       >
         {area.name}
-        {!mapped && " · not mapped yet"}
+        {!mapped && !plain && " · not mapped yet"}
       </text>
     </>
   );
@@ -61,7 +63,7 @@ export function AreaShape({ area, size, scale, selected = false, onSelect }: Pro
     <g
       role="button"
       tabIndex={0}
-      aria-label={`${area.name}, not mapped yet`}
+      aria-label={plain ? area.name : `${area.name}, not mapped yet`}
       aria-pressed={selected}
       className={focusRing}
       onClick={() => onSelect?.(area)}

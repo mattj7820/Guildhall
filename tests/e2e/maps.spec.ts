@@ -76,16 +76,22 @@ test.describe("Maps", () => {
     await expect(page.getByRole("heading", { name: "Map not found" })).toBeVisible();
   });
 
-  test("are DM-only, including their images", async ({ page }) => {
-    await createMap(page, { image: "Fixture Town.png", name: uniqueName("Secret") });
+  test("that aren't shared look missing to players, images and all", async ({ page }) => {
+    const name = uniqueName("Secret");
+    await createMap(page, { image: "Fixture Town.png", name });
     const mapPage = page.url();
     const src = await page.locator("svg image").getAttribute("href");
 
     await switchToPlayerView(page);
-    await expect(page.getByText("Maps are DM-only for now.")).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Main" })).not.toContainText("Maps");
-    await page.goto(mapPage);
-    await expect(page.getByText("Maps are DM-only for now.")).toBeVisible();
+    await page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "Maps" })
+      .click();
+    await expect(page.getByRole("heading", { name: "Maps", level: 1 })).toBeVisible();
+    await expect(page.getByRole("link", { name })).toHaveCount(0);
+    for (const url of [mapPage, mapPage.replace(/\/edit$/, "")]) {
+      expect((await page.goto(url))?.status()).toBe(404);
+    }
     expect((await page.request.get(src!)).status()).toBe(404);
     const reveal = await page.request.post(mapPage.replace(/\/edit$/, "/fog"), {
       headers: { Origin: ORIGIN },
