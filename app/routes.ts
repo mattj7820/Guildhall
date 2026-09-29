@@ -14,6 +14,7 @@ export default [
   route("maps/:id", "routes/map-view.tsx"),
   route("maps/:id/edit", "routes/map-edit.tsx"),
   route("maps/:id/image", "routes/map-image.ts"),
+  route("maps/:id/fog-prototype", "routes/map-fog-prototype.tsx"),
   route("vault-asset/*", "routes/vault-asset.ts"),
   route("view-mode", "routes/view-mode.ts"),
   route("login", "routes/login.tsx"),
