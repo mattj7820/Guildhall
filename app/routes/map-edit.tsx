@@ -1,4 +1,5 @@
 import { data, redirect, type ShouldRevalidateFunctionArgs } from "react-router";
+import { z } from "zod";
 import { loadMapView } from "~/.server/maps/load";
 import { MapsDmOnlyNotice } from "~/components/maps/DmOnlyNotice";
 import { MapEditor } from "~/components/maps/MapEditor";
@@ -42,19 +43,22 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
  * JSON from the editor:
  * - `{ intent: "save", name, note, areas }` autosaves the map;
  * - `{ intent: "createChild", name, image, note }` makes a new map for an area to lead to;
- * - `{ intent: "setImage", image }` records the image's new location or size.
+ * - `{ intent: "setImage", image }` records the image's new location or size;
+ * - `{ intent: "setVisibility", visibility }` shares the map with players, or stops sharing it.
+ *   Like the image, it isn't part of the autosave (or undo): sharing is a deliberate act.
  *
  * A form with `intent=delete` deletes the map.
  */
 export async function action({ request, params, context }: Route.ActionArgs) {
   if (context.get(viewerContext).role !== "dm") throw data("Not found", { status: 404 });
-  const { maps, vault } = context.get(servicesContext);
+  const { maps, fogs, vault } = context.get(servicesContext);
   const inVault = (path: string) => vault.current.mapImages().includes(path);
 
   if (!request.headers.get("Content-Type")?.includes("application/json")) {
     const form = await request.formData();
     if (form.get("intent") !== "delete") throw data("Unknown action", { status: 400 });
     await maps.delete(params.id);
+    await fogs.delete(params.id);
     return redirect("/maps");
   }
 
@@ -63,6 +67,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     name?: unknown;
     image?: unknown;
     note?: unknown;
+    visibility?: unknown;
   };
   switch (body.intent) {
     case "save": {
@@ -90,6 +95,13 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         return data({ error: "That image isn't in the vault." }, 400);
       }
       return (await maps.setImage(params.id, image.data)) ? { imageSet: true } : gone();
+    }
+    case "setVisibility": {
+      const visibility = z.enum(["dm", "players"]).safeParse(body.visibility);
+      if (!visibility.success)
+        return data({ error: "Share with players, or keep it DM-only." }, 400);
+      const changed = await maps.setVisibility(params.id, visibility.data);
+      return changed ? { shared: changed.visibility === "players" } : gone();
     }
     default:
       throw data("Unknown action", { status: 400 });

@@ -55,7 +55,43 @@ describe("CampaignMaps", () => {
     const { id } = await store().create({ name: "World", image: WORLD_IMAGE });
     expect(await CampaignMaps.inFolder(folder).get(id)).toMatchObject({ name: "World" });
     const onDisk = JSON.parse(await readFile(path.join(folder, "maps.json"), "utf8"));
-    expect(onDisk).toMatchObject({ version: 1, maps: [{ name: "World" }] });
+    expect(onDisk).toMatchObject({ version: 2, maps: [{ name: "World" }] });
+  });
+
+  it("shares a map with players and makes it DM-only again", async () => {
+    const maps = store();
+    const { id } = await maps.create({ name: "World", image: WORLD_IMAGE });
+    expect(await maps.setVisibility(id, "players")).toMatchObject({
+      visibility: "players",
+      updatedAt: "2026-09-27T10:01:00.000Z",
+    });
+    expect((await maps.get(id))?.visibility).toBe("players");
+    await maps.setVisibility(id, "dm");
+    expect((await maps.get(id))?.visibility).toBe("dm");
+    expect(await maps.setVisibility("gone", "players")).toBeUndefined();
+  });
+
+  it("reads a version 1 file's areas as shown once revealed, since its maps were all DM-only", async () => {
+    const area = { id: "a1", name: "Harbour", outline: SQUARE, visibility: "dm" };
+    const map = {
+      id: "world",
+      name: "World",
+      image: WORLD_IMAGE,
+      visibility: "dm",
+      areas: [area],
+      createdAt: "2026-09-27T10:00:00.000Z",
+      updatedAt: "2026-09-27T10:00:00.000Z",
+    };
+    await writeFile(path.join(folder, "maps.json"), JSON.stringify({ version: 1, maps: [map] }));
+
+    const maps = store();
+    expect(await maps.get("world")).toMatchObject({
+      visibility: "dm",
+      areas: [{ id: "a1", visibility: "players" }],
+    });
+    await maps.setVisibility("world", "dm");
+    const onDisk = JSON.parse(await readFile(path.join(folder, "maps.json"), "utf8"));
+    expect(onDisk).toMatchObject({ version: 2, maps: [{ areas: [{ visibility: "players" }] }] });
   });
 
   it("lists maps by name", async () => {

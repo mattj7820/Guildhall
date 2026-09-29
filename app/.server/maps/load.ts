@@ -44,7 +44,7 @@ export function noteLink(vault: Vault, id: EntityId, viewer: Viewer): NoteLink |
 
 /** The map prepared for the viewer, with its image found in the current vault. */
 export async function loadMapView(
-  { config, vault }: Pick<Services, "config" | "vault">,
+  { config, vault, fogs }: Pick<Services, "config" | "vault" | "fogs">,
   map: CampaignMap,
   maps: readonly CampaignMap[],
   viewer: Viewer,
@@ -52,11 +52,13 @@ export async function loadMapView(
   const current = vault.current;
   const found = current.findImage(map.image.path);
   const version = found && (await imageVersion(config.vaultPath, found.path));
+  const fog = await fogs.get(map.id, map.image);
   return mapView({
     map,
     maps,
     viewer,
     image: found && version ? { ...found, version } : undefined,
     note: (id) => noteLink(current, id, viewer),
+    fog,
   });
 }

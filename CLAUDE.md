@@ -145,16 +145,18 @@ First e2e run needs `npx playwright install chromium`.
 - `app/.server/combat/catalogue.ts`: vault statblocks and PCs as browser-safe shapes, with
   statblocks pre-rendered. `prepared-encounters.ts`: the prepared-encounter repository.
 - `app/.server/maps/`: `campaign-maps.ts` (the map repository over `maps.json`; tree rules checked
-  inside the write), `view.ts` (`mapView`: a map for a `Viewer`, with hidden things left out), and
-  `load.ts` (finds the image, versions its URL, renders linked notes).
+  inside the write; sharing), `map-fogs.ts` (each map's fog over `fog.json`), `view.ts` (`mapView`:
+  a map for a `Viewer`, with hidden things and fogged areas left out), and `load.ts` (finds the
+  image, versions its URL, renders linked notes, reads the fog).
 - `app/.server/data/json-store.ts`: `JsonFile`, a validated, queued, atomically written JSON file.
 - `app/wiki/`: URL helpers and types shared with the browser.
 - `app/routes/`: `home`, `wiki` (layout + sidebar), `wiki-home` (landing page + `?q=` search),
   `wiki-note` (`/wiki/*`), `combat` (DM-only tracker; server `loader` + hydrating `clientLoader`;
   `?start=<id>` starts a prepared encounter), `combat-prepared` (list; create, duplicate and delete
   actions), `combat-prepared-edit` (editor; autosave action), `maps` (tree of maps; create action),
-  `map-view` (`/maps/:id`, the table view), `map-edit` (editor; save, createChild, setImage and
-  delete actions; `?area=` preselects an area), `map-image` (resource route: a map's image by map
+  `map-view` (`/maps/:id`, the table view), `map-edit` (editor; save, createChild, setImage,
+  setVisibility and delete actions; `?area=` preselects an area), `map-fog` (JSON: the DM's fog
+  changes), `map-image` (resource route: a map's image by map
   ID), `vault-asset` (resource route), `view-mode` (the DM's preview toggle), `login` (sign-in
   page; dev sign-in action), `logout` (POST), `auth-discord` (starts Discord sign-in) and
   `auth-discord-callback`, `waiting` (for newcomers), `members` (DM-only: approve, assign,
@@ -191,8 +193,11 @@ First e2e run needs `npx playwright install chromium`.
 - Maps: outlines are stored as fractions of the image (0..1), never pixels; the map records the
   pixel size they were drawn against. Maps and areas reference notes by entity ID and images by
   vault path. A map's parent is derived from area links, never stored (one parent per map). Map
-  images are served by map ID through `map-image`, not `vault-asset`. Map changes go through
-  `editorReducer`; the image changes only through its own action.
+  images are served by map ID through `map-image`, not `vault-asset`, and only ever to the DM.
+  Map changes go through `editorReducer`; the image and sharing change only through their own
+  actions. An area's `visibility` is `players` (seen once at least half revealed on a shared map)
+  or `dm` (secret). Fog changes are `FogChange`s through `applyFogChange`, in the browser and on
+  the server; undo sends `inverseOf`.
 - Characters: every change is a `CharacterAction` through `applyAction`, the same in the browser
   and on the server, which applies it to what's stored now (never save a whole sheet). Set actions
   carry `from` (what the sender saw). New IDs are made by the sender and carried in the action.

@@ -8,6 +8,7 @@ import {
   linkNewMap,
   mapCanvas,
   openNote,
+  ORIGIN,
   switchToPlayerView,
   uniqueName,
   vertexHandles,
@@ -86,9 +87,28 @@ test.describe("Maps", () => {
     await page.goto(mapPage);
     await expect(page.getByText("Maps are DM-only for now.")).toBeVisible();
     expect((await page.request.get(src!)).status()).toBe(404);
+    const reveal = await page.request.post(`${mapPage}/fog`, {
+      headers: { Origin: ORIGIN },
+      data: { changes: [REVEAL_ALL] },
+    });
+    expect(reveal.status()).toBe(404);
+  });
+
+  test("saves the DM's fog changes", async ({ page }) => {
+    await createMap(page, { image: "Fixture World.png", name: uniqueName("Fogged") });
+    const fog = page.url().replace(/\/edit$/, "/fog");
+    const response = await page.request.post(fog, {
+      headers: { Origin: ORIGIN },
+      data: { changes: [REVEAL_ALL] },
+    });
+    expect(response.status()).toBe(200);
+    expect(await response.json()).toEqual({
+      fog: { cols: 512, rows: 256, cells: "0.2t4w", version: 1 },
+    });
   });
 });
 
+const REVEAL_ALL = { type: "paint", mode: "reveal", shape: { kind: "all" } };
 const WORLD = { width: 400, height: 200 };
 /** A rectangle in the world map's left half, clear of the drawing toolbar. */
 const HARBOUR: [number, number][] = [

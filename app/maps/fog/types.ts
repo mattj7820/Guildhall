@@ -37,3 +37,10 @@ export type FogChange =
 
 /** Cell indexes as `[start, length, start, length, …]`, ascending. */
 export type CellRanges = number[];
+
+/** The fog as sent to a browser: the mask's cells in their text form (see `encodeCells`). */
+export interface FogView extends FogGrid {
+  cells: string;
+  /** Goes up with every change, so a poll can tell whether anything changed. */
+  version: number;
+}

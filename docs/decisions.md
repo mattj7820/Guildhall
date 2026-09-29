@@ -600,3 +600,23 @@ the inverse, which sets back only the cells that change flipped, so it never hid
 revealed meanwhile elsewhere. A new shared map starts fully fogged. Players see an area once at
 least half of its cells are revealed, so a brush grazing its edge doesn't give its name away. One
 fog per map for now; per-player fog or an "explored" memory would be further masks beside it.
+
+## 36. Sharing a map, and areas seen through the fog
+
+**Date:** 2026-09-29
+
+**Context.** Decision 24 gave maps and areas a `visibility`, failing closed to `dm`, with no way
+to change it. With fog of war, what players see of a shared map is decided by what's revealed.
+
+**Decision.** The DM shares a whole map from the editor, as its own action outside the autosave
+and undo, since sharing is deliberate. A shared map appears for players in the maps list and
+breadcrumbs exactly as `mapView` already works out, and starts fully fogged. On a shared map an
+area needs no sharing of its own: players see it once at least half of it is revealed (decision
+35). An area can be made secret (`visibility: dm`), for example a hidden door, and then players
+never see it, however much is revealed. New areas are `players`. `maps.json` moves to version 2 to
+change what an area's `dm` means: version 1 had no way to share, so its areas were all `dm` without
+meaning "secret", and reading a version 1 file turns them into `players`. That's safe because every
+version 1 map was DM-only. Players never get the whole image's address, even for a fully
+revealed map; the parts they may see come another way (decision 37). An area's links still follow
+their own targets: a link to a map shows only if that map is shared, and a note only if it's shared.
+Fog lives in its own `fog.json`, so changes during a session never race the editor's autosave.

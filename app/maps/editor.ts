@@ -31,6 +31,8 @@ export type EditorAction =
   | { type: "select"; id?: AreaId }
   | { type: "renameArea"; id: AreaId; name: string }
   | { type: "linkArea"; id: AreaId; map?: MapId; note?: EntityId }
+  /** A secret area is never shown to players, even where the fog is revealed. */
+  | { type: "setAreaSecret"; id: AreaId; secret: boolean }
   | { type: "deleteArea"; id: AreaId }
   | { type: "moveVertex"; id: AreaId; index: number; point: Point }
   /** Moves a vertex by a small offset; repeated nudges of the same point merge into one undo. */
@@ -92,7 +94,8 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         id: action.id,
         name: NEW_AREA_NAME,
         outline: state.draft,
-        visibility: "dm",
+        // Seen by players once it's revealed on a shared map, unless the DM makes it secret.
+        visibility: "players",
       };
       return {
         ...change({ ...doc, areas: [...doc.areas, area] }),
@@ -110,6 +113,11 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         if ("map" in action) setOptional(linked, "map", action.map);
         if ("note" in action) setOptional(linked, "note", action.note);
         return linked;
+      });
+    case "setAreaSecret":
+      return changeArea(action.id, (area) => {
+        const visibility = action.secret ? "dm" : "players";
+        return area.visibility === visibility ? null : { ...area, visibility };
       });
     case "deleteArea": {
       if (!doc.areas.some((area) => area.id === action.id)) return state;

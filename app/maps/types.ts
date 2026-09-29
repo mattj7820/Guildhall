@@ -3,6 +3,7 @@
  * and edits them.
  */
 import type { EntityId, Visibility } from "~/campaign/types";
+import type { FogView } from "./fog/types";
 
 export type MapId = string;
 export type AreaId = string;
@@ -73,6 +74,7 @@ export interface NoteLink {
  * means a single image with the same name was found elsewhere (DM only, with its new path).
  */
 export interface MapImageView {
+  /** DM only: the whole image. Players only ever get the parts the fog reveals. */
   url?: string;
   status: "ok" | "moved" | "missing";
   /** DM only: where the image is recorded, and where it was found instead. */
@@ -103,6 +105,13 @@ export interface MapView {
   noteBroken: boolean;
   /** Ancestors, outermost first, then this map. */
   breadcrumbs: MapLink[];
-  /** Largest first, so smaller areas inside larger ones are drawn on top and can be clicked. */
+  /**
+   * Largest first, so smaller areas inside larger ones are drawn on top and can be clicked. For
+   * players, only areas that aren't secret and are at least half revealed.
+   */
   areas: AreaView[];
+  /** What's revealed. For players it describes only what they can see anyway. */
+  fog: FogView;
+  /** DM only: whether players can see this map. */
+  shared?: boolean;
 }

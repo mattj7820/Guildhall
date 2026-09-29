@@ -43,7 +43,7 @@ describe("drawing an area", () => {
 
     const done = editorReducer(drawing, { type: "finishDrawing", id: "new" });
     expect(currentDoc(done).areas).toEqual([
-      { id: "new", name: NEW_AREA_NAME, outline: TRIANGLE, visibility: "dm" },
+      { id: "new", name: NEW_AREA_NAME, outline: TRIANGLE, visibility: "players" },
     ]);
     expect(done.draft).toBeNull();
     expect(done.selectedId).toBe("new");
@@ -97,6 +97,14 @@ describe("editing areas", () => {
     const unlinked = run(linked, { type: "linkArea", id: "a", map: undefined });
     expect(areaA(unlinked)).not.toHaveProperty("map");
     expect(areaA(unlinked)).toMatchObject({ note: "n" });
+  });
+
+  it("makes an area secret from players, and undoes it", () => {
+    const shown = startEditor(doc({ areas: [buildArea({ id: "a", visibility: "players" })] }));
+    const secret = editorReducer(shown, { type: "setAreaSecret", id: "a", secret: true });
+    expect(areaA(secret)?.visibility).toBe("dm");
+    expect(areaA(editorReducer(secret, { type: "undo" }))?.visibility).toBe("players");
+    expect(editorReducer(secret, { type: "setAreaSecret", id: "a", secret: true })).toBe(secret);
   });
 
   it("deletes an area and clears the selection", () => {
