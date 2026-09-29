@@ -39,6 +39,7 @@ import {
 import type { InventoryChange } from "~/characters/inventory-changes";
 import { canStack } from "~/characters/inventory";
 import type { InventoryItem, ItemId } from "~/characters/types";
+import type { GiftRecipient } from "~/characters/view";
 import { newId } from "~/shared/ids";
 import { ItemTooltip } from "./ItemTooltip";
 import { TileFace, tileLabel } from "./ItemTile";
@@ -54,12 +55,7 @@ const SLOT_PREFIX = "equipped:";
 const isZone = (id: UniqueIdentifier) => ZONES.has(id) || String(id).startsWith(GIVE_PREFIX);
 const itemIdOf = (id: UniqueIdentifier) => String(id).replace(SLOT_PREFIX, "");
 
-/** Someone an item can be handed to: another character, or a companion the party shares. */
-export interface Recipient {
-  id: string;
-  name: string;
-  companion?: boolean;
-}
+export type Recipient = GiftRecipient;
 const TOOLTIP_DELAY_MS = 400;
 
 interface Props {

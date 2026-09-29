@@ -139,6 +139,15 @@ describe("itemCatalogue", () => {
     expect(itemNotes["Items/Fixture Secret Relic"].hiddenFromPlayers).toBe(true);
   });
 
+  it("lists the rest of the party with bags as people to give items to", () => {
+    const companion = aCompanion({ id: "dog" });
+    const page = characterPage(vault, pcOne, playerOne, [pcOne, pcTwo, companion, orphan]);
+    expect(page.recipients).toEqual([
+      { id: "two", name: "Fixture PC Two" },
+      { id: "dog", name: "Fixture Companion", companion: true },
+    ]);
+  });
+
   it("makes the DM's additions gifts, and a player's not", () => {
     expect(characterPage(vault, pcOne, DM_VIEWER).givingAs).toBe("the DM");
     expect(characterPage(vault, pcOne, playerOne).givingAs).toBeUndefined();

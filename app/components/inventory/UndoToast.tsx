@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 
 const SHOW_FOR_MS = 6000;
 
-/** "Removed Rope ×3 · Undo", for a few seconds after each change. Also read out to screen readers. */
+/**
+ * "Removed Rope ×3 · Undo", for a few seconds after each change. Also read out to screen readers.
+ */
 export function UndoToast({
   message,
   serial,
@@ -11,7 +13,8 @@ export function UndoToast({
   message?: string;
   /** Changes with each new message, so the same text twice still shows again. */
   serial: number;
-  onUndo: () => void;
+  /** None for a change that can't be undone. */
+  onUndo?: () => void;
 }) {
   /** The latest message that has timed out or been used. */
   const [hidden, setHidden] = useState<number>();
@@ -29,16 +32,18 @@ export function UndoToast({
       {message && hidden !== serial && (
         <p className="pointer-events-auto flex items-center gap-3 rounded-full bg-stone-900 px-4 py-2 text-sm text-stone-50 shadow-lg dark:bg-stone-100 dark:text-stone-900">
           {message}
-          <button
-            type="button"
-            onClick={() => {
-              setHidden(serial);
-              onUndo();
-            }}
-            className="font-semibold text-amber-300 hover:underline dark:text-amber-700"
-          >
-            Undo
-          </button>
+          {onUndo && (
+            <button
+              type="button"
+              onClick={() => {
+                setHidden(serial);
+                onUndo();
+              }}
+              className="font-semibold text-amber-300 hover:underline dark:text-amber-700"
+            >
+              Undo
+            </button>
+          )}
         </p>
       )}
     </div>

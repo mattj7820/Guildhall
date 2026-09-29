@@ -124,8 +124,16 @@ export function itemCatalogue(
   };
 }
 
-/** Everything the sheet page shows, for someone allowed to open the character. */
-export function characterPage(vault: Vault, character: Character, viewer: Viewer): CharacterPage {
+/**
+ * Everything the sheet page shows, for someone allowed to open the character. `party` is every
+ * character, for whom items can be given to.
+ */
+export function characterPage(
+  vault: Vault,
+  character: Character,
+  viewer: Viewer,
+  party: readonly Character[] = [],
+): CharacterPage {
   const note = vault.noteById(character.note, DM_VIEWER);
   const readable = vault.noteById(character.note, viewer);
   const portrait = portraitPath(vault, character, viewer);
@@ -139,6 +147,11 @@ export function characterPage(vault: Vault, character: Character, viewer: Viewer
     ...(fromNote && { notePortrait: fromNote }),
     ...(character.kind === "pc" && { portraitChoices: portraitChoices(vault, viewer) }),
     ...itemCatalogue(vault, viewer),
+    recipients: partyCards(vault, party, viewer).cards.flatMap(({ id, name, kind }) =>
+      id && id !== character.id
+        ? [{ id, name, ...(kind === "companion" && { companion: true }) }]
+        : [],
+    ),
     // The DM's additions to anyone's bag are gifts.
     ...(viewer.role === "dm" && { givingAs: "the DM" }),
     ...(readable && {

@@ -13,7 +13,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   const viewer = context.get(viewerContext);
   const services = context.get(servicesContext);
   const character = await openableCharacter(services, params.id, viewer);
-  return characterPage(services.vault.current, character, viewer);
+  return characterPage(services.vault.current, character, viewer, await services.characters.list());
 }
 
 export default function Character({ loaderData }: Route.ComponentProps) {

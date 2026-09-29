@@ -64,12 +64,16 @@ export class CharacterEditor {
   private readonly listeners = new Set<() => void>();
   private timer: ReturnType<typeof setTimeout> | undefined;
   private refreshing = false;
+  /** The save on its way, if any. */
+  private inFlight: Promise<void> | undefined;
   private disposed = false;
 
   constructor(
     initial: Character,
     /** The character's changes endpoint: POST batches, GET the stored copy. */
     private readonly url: string,
+    /** Where gifts to another bag go. */
+    private readonly giveUrl: string,
     private readonly fetcher: typeof fetch = (...args) => fetch(...args),
     private readonly timing: EditorTiming = DEFAULT_TIMING,
   ) {
@@ -143,6 +147,34 @@ export class CharacterEditor {
     }
   }
 
+  /**
+   * Gives some or all of a stack to another party member. Anything unsaved is saved first, so the
+   * server has the item as it's shown here. Not an undo step: it's in someone else's bag now.
+   * Resolves to a problem to show, or nothing when it's done.
+   */
+  async give(gift: { item: string; amount: number; to: string }): Promise<string | undefined> {
+    if (!(await this.settle())) {
+      return "Your other changes haven't saved yet, so nothing was given. Try again in a moment.";
+    }
+    let response: Response;
+    try {
+      response = await this.fetcher(this.giveUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(gift),
+      });
+    } catch {
+      return "Couldn't reach Guildhall. Nothing was given.";
+    }
+    if (!response.ok) return (await errorOf(response)) ?? "That couldn't be given.";
+    const { character } = (await response.json()) as { character: Character };
+    if (character.revision > this.sync.confirmed.revision) {
+      this.sync = { ...this.sync, confirmed: character };
+      this.changed();
+    }
+    return undefined;
+  }
+
   dismiss(id: number) {
     this.notices = this.notices.filter((notice) => notice.id !== id);
     this.changed();
@@ -169,7 +201,28 @@ export class CharacterEditor {
     this.timer = setTimeout(() => void this.send(), delay);
   }
 
-  private async send() {
+  /**
+   * Saves everything waiting. False if some of it is still waiting (the server couldn't be
+   * reached); changes the server refused have been let go, so they don't count.
+   */
+  private async settle(): Promise<boolean> {
+    clearTimeout(this.timer);
+    for (let attempt = 0; attempt < 5 && hasUnsaved(this.sync); attempt++) {
+      await this.send();
+      if (this.status.kind === "error") break;
+    }
+    return !hasUnsaved(this.sync);
+  }
+
+  /** Sends the next batch, or waits for the one on its way. */
+  private send(): Promise<void> {
+    if (!this.inFlight) {
+      this.inFlight = this.sendBatch().finally(() => (this.inFlight = undefined));
+    }
+    return this.inFlight;
+  }
+
+  private async sendBatch() {
     const taken = takeBatch(this.sync);
     if (!taken || this.disposed) return;
     this.sync = taken.state;

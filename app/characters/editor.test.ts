@@ -21,9 +21,28 @@ function fakeServer(initial: Character) {
     elsewhere(...actions: CharacterAction[]) {
       stored = { ...applyActions(stored, actions).character, revision: stored.revision + 1 };
     },
-    fetch: vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+    gifts: [] as { item: string; amount: number; to: string }[],
+    fetch: vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       if (init?.method !== "POST") return Response.json({ character: stored });
       const body = JSON.parse(String(init.body));
+      if (String(url).endsWith("/give")) {
+        const item = stored.inventory.items.find((candidate) => candidate.id === body.item);
+        if (!item)
+          return Response.json({ error: "That item isn't there any more." }, { status: 409 });
+        server.gifts.push(body);
+        stored = {
+          ...applyActions(stored, [
+            item.quantity === body.amount
+              ? { type: "inventory", change: { type: "remove", id: item.id } }
+              : {
+                  type: "inventory",
+                  change: { type: "quantity", id: item.id, quantity: item.quantity - body.amount },
+                },
+          ]).character,
+          revision: stored.revision + 1,
+        };
+        return Response.json({ character: stored });
+      }
       server.posts.push(body);
       const failure = server.failWith.shift();
       if (failure === "offline") throw new TypeError("Failed to fetch");
@@ -51,6 +70,7 @@ function setUp(initial = aCharacter()) {
   const editor = new CharacterEditor(
     initial,
     "/characters/c/changes",
+    "/characters/c/give",
     server.fetch as typeof fetch,
     TIMING,
   );
@@ -182,6 +202,50 @@ describe("CharacterEditor", () => {
     const gets = server.fetch.mock.calls.length;
     await editor.refresh();
     expect(server.fetch.mock.calls.length).toBe(gets);
+  });
+
+  describe("give", () => {
+    const withArrows = () =>
+      aCharacter({ items: [anItem({ id: "arrows", name: "Arrows", quantity: 20 })] });
+
+    it("saves waiting changes first, then shows the bag the server sent back", async () => {
+      const { server, editor } = setUp(withArrows());
+      editor.dispatch(dex(14));
+      const problem = await editor.give({ item: "arrows", amount: 5, to: "dog" });
+      expect(problem).toBeUndefined();
+      expect(server.posts).toHaveLength(1);
+      expect(server.gifts).toEqual([{ item: "arrows", amount: 5, to: "dog" }]);
+      const { character, canUndo } = editor.getSnapshot();
+      expect(character.inventory.items[0].quantity).toBe(15);
+      expect(dexOf(character)).toBe(14);
+      // Undo still covers the change made before; the gift itself can't be undone.
+      expect(canUndo).toBe(true);
+    });
+
+    it("says why when the gift can't be made", async () => {
+      const { editor } = setUp(withArrows());
+      expect(await editor.give({ item: "gone", amount: 1, to: "dog" })).toBe(
+        "That item isn't there any more.",
+      );
+    });
+
+    it("gives nothing while other changes are still waiting to reach the server", async () => {
+      const { server, editor } = setUp(withArrows());
+      server.failWith.push("offline");
+      editor.dispatch(dex(14));
+      expect(await editor.give({ item: "arrows", amount: 1, to: "dog" })).toMatch(
+        /haven't saved yet, so nothing was given/,
+      );
+      expect(server.gifts).toEqual([]);
+    });
+
+    it("goes ahead once a change the server refused has been let go", async () => {
+      const { server, editor } = setUp(withArrows());
+      server.failWith.push(409);
+      editor.dispatch(dex(14));
+      expect(await editor.give({ item: "arrows", amount: 1, to: "dog" })).toBeUndefined();
+      expect(server.gifts).toHaveLength(1);
+    });
   });
 
   it("saves straight away when flushed", async () => {

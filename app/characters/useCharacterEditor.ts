@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { CharacterAction } from "./actions";
 import { CharacterEditor } from "./editor";
 import type { Character } from "./types";
-import { changesUrl } from "./urls";
+import { changesUrl, giveUrl } from "./urls";
 
 /** How often an open sheet checks for changes made elsewhere (by the DM, or in another tab). */
 const POLL_MS = 10_000;
@@ -14,7 +14,9 @@ const POLL_MS = 10_000;
  * text boxes (which keep their own undo).
  */
 export function useCharacterEditor(initial: Character) {
-  const [editor] = useState(() => new CharacterEditor(initial, changesUrl(initial.id)));
+  const [editor] = useState(
+    () => new CharacterEditor(initial, changesUrl(initial.id), giveUrl(initial.id)),
+  );
   const snapshot = useSyncExternalStore(editor.subscribe, editor.getSnapshot, editor.getSnapshot);
 
   useEffect(() => {
@@ -60,6 +62,7 @@ export function useCharacterEditor(initial: Character) {
       redo: () => editor.redo(),
       flush: () => editor.flush(),
       dismiss: (id: number) => editor.dismiss(id),
+      give: (gift: { item: string; amount: number; to: string }) => editor.give(gift),
     }),
     [editor],
   );

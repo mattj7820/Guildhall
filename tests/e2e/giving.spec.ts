@@ -99,3 +99,90 @@ test("an item whose note is kept from players shows them only its name", async (
   expect(await player.page.content()).not.toContain("unidentified item");
   await player.close();
 });
+
+test.describe("between characters", () => {
+  test.use({ storageState: SIGNED_IN.playerOne });
+
+  /** Makes sure the companion and Fixture PC Two have bags to give to, as the DM. */
+  async function setUpParty(browser: Browser) {
+    const context = await browser.newContext({ storageState: SIGNED_IN.dm, baseURL: ORIGIN });
+    const page = await context.newPage();
+    await openCharacter(page, "Fixture Companion");
+    await openCharacter(page, "Fixture PC Two");
+    const pcTwo = new URL(page.url()).pathname;
+    await context.close();
+    return pcTwo;
+  }
+
+  async function addItem(page: Page, text: string) {
+    await page.getByRole("button", { name: "+ Add item" }).click();
+    const box = page.getByRole("combobox", { name: "Add item" });
+    await box.fill(text);
+    await box.press("Enter");
+    await page.getByRole("button", { name: "Done" }).click();
+    await saved(page);
+  }
+
+  test("a player gives part of a stack to the shared companion", async ({ page, browser }) => {
+    await setUpParty(browser);
+    const bolts = uniqueName("Bolts");
+    await openBag(page);
+    await addItem(page, `3 ${bolts}`);
+
+    await tile(page, `${bolts}, 3`).press("g");
+    const details = page.getByRole("dialog", { name: bolts });
+    await details.getByRole("spinbutton", { name: "How many to give" }).fill("2");
+    await details.getByRole("combobox").selectOption({ label: "Fixture Companion (companion)" });
+    await details.getByRole("button", { name: "Give", exact: true }).click();
+    await expect(
+      page.getByRole("status").filter({ hasText: `Gave 2 ${bolts} to Fixture Companion` }),
+    ).toBeVisible();
+    await expect(tile(page, bolts)).toBeVisible();
+
+    await openCharacter(page, "Fixture Companion");
+    await tile(page, `${bolts}, 2, new`).click();
+    await expect(page.getByRole("dialog", { name: bolts })).toContainText(
+      "Given by Fixture PC One",
+    );
+  });
+
+  test("a player drags an item onto another player's portrait to give it", async ({
+    page,
+    browser,
+  }) => {
+    const pcTwo = await setUpParty(browser);
+    const letter = uniqueName("Letter");
+    await openBag(page);
+    await addItem(page, letter);
+
+    const from = await tile(page, letter).boundingBox();
+    const to = await page
+      .getByRole("region", { name: "Give to" })
+      .getByText("Fixture PC Two")
+      .boundingBox();
+    if (!from || !to) throw new Error("Not on screen");
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(from.x + from.width / 2 + 10, from.y + 5, { steps: 5 });
+    await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 12 });
+    await page.mouse.up();
+    await expect(tile(page, letter)).toHaveCount(0);
+
+    // Player One can't open Fixture PC Two's bag; the DM checks it arrived.
+    const context = await browser.newContext({ storageState: SIGNED_IN.dm, baseURL: ORIGIN });
+    const dm = await context.newPage();
+    await dm.goto(`${pcTwo}?bag`);
+    await expect(tile(dm, `${letter}, new`)).toBeVisible();
+    await context.close();
+  });
+
+  test("a player can't give from someone else's bag", async ({ page, browser }) => {
+    const pcTwo = await setUpParty(browser);
+    await openCharacter(page, "Fixture PC One");
+    const response = await page.request.post(`${pcTwo}/give`, {
+      headers: { Origin: ORIGIN },
+      data: { item: "anything", amount: 1, to: new URL(page.url()).pathname.split("/").at(-1) },
+    });
+    expect(response.status()).toBe(404);
+  });
+});

@@ -63,6 +63,13 @@ export interface LinkedNote {
   hiddenFromPlayers?: boolean;
 }
 
+/** Someone an item can be handed to: another character, or a companion the party shares. */
+export interface GiftRecipient {
+  id: CharacterId;
+  name: string;
+  companion?: boolean;
+}
+
 /** What the sheet page needs, for someone allowed to open it. */
 export interface CharacterPage {
   character: Character;
@@ -87,4 +94,6 @@ export interface CharacterPage {
   itemNotes: Record<EntityId, LinkedNote>;
   /** Who this viewer gives items as ("the DM"); none when it's their own bag. */
   givingAs?: string;
+  /** Other party members with a bag, whom items can be given to. */
+  recipients: GiftRecipient[];
 }
