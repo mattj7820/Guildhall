@@ -1,37 +1,54 @@
 import type { IncomingMessage } from "node:http";
 import type { Duplex } from "node:stream";
-import type { Services } from "~/context";
-import type { MapId } from "~/maps/types";
 import { canView } from "~/campaign/visibility";
+import type { Character } from "~/characters/types";
+import type { Services } from "~/context";
+import type { ClientMessage } from "~/live/messages";
+import type { FogMask } from "~/maps/fog/types";
+import { canMoveToken } from "~/maps/tokens/permissions";
+import type { Token, TokenId } from "~/maps/tokens/types";
+import { tokensForViewer } from "~/maps/tokens/visibility";
+import type { CampaignMap, MapId, Point } from "~/maps/types";
+import { partyControllers, partyFor } from "../maps/tokens";
+import { Holds } from "./holds";
 import { LiveHub, type BuildMessage, type Connection } from "./hub";
 import { mapState, tokensState } from "./map-rooms";
-import { PrototypeTokens } from "./prototype-tokens";
 import { LiveSockets } from "./sockets";
 
 type Deps = Omit<Services, "live">;
 
+/** What a drag is checked against, read once a second at most rather than 20 times. */
+interface DragContext {
+  map: CampaignMap;
+  tokens: Token[];
+  fog: FogMask;
+  characters: Character[];
+  readAt: number;
+}
+const DRAG_CONTEXT_MS = 1000;
+
 /**
  * Live updates: websockets on the same server, signed in like pages, with every message built
- * for the viewer who gets it. The rest of the server tells it what changed.
+ * for the viewer who gets it. The rest of the server tells it what changed; browsers tell it
+ * which tokens they're dragging, and it tells whoever may see them.
  */
 export class Live {
   private readonly hub: LiveHub;
   private readonly sockets: LiveSockets;
+  private readonly holds = new Holds();
+  private readonly dragContexts = new Map<MapId, DragContext>();
 
   constructor(private readonly services: Deps) {
-    // PROTOTYPE (removed before the PR).
-    const prototype = new PrototypeTokens(services, (map, build, except) =>
-      this.publishOnMap(map, build, except),
-    );
     this.hub = new LiveHub({
       members: services.members,
       join: async (map, viewer) => {
         const state = await mapState(services, map, viewer);
         if (state.type === "gone") return [state];
         const tokens = await tokensState(services, map, viewer);
-        return [state, ...(tokens ? [tokens] : []), ...prototype.join(map, viewer)];
+        return tokens ? [state, tokens] : [state];
       },
-      onOther: (connection, message) => prototype.receive(connection, message),
+      onMessage: (connection, message) => void this.receive(connection, message),
+      onClose: (connection) => this.holds.releaseAll(connection),
     });
     this.sockets = new LiveSockets(services, (socket, who) => this.hub.connect(socket, who));
   }
@@ -46,8 +63,100 @@ export class Live {
    * for them.
    */
   async mapChanged(map: MapId): Promise<void> {
+    this.dragContexts.delete(map);
     await this.hub.publish(map, (viewer) => mapState(this.services, map, viewer));
     await this.publishOnMap(map, (viewer) => tokensState(this.services, map, viewer));
+  }
+
+  /** The vault changed, which any map's notes or image may depend on. */
+  async allMapsChanged(): Promise<void> {
+    await Promise.all(this.hub.watchedMaps().map((map) => this.mapChanged(map)));
+  }
+
+  /** A member was let in, removed or given another player: their connections start afresh. */
+  memberChanged(discordId: string): Promise<void> {
+    return this.hub.recheck(discordId);
+  }
+
+  /**
+   * Whether someone else is moving a token just now, for a move being saved: the name of whoever
+   * has it, or nothing. The DM is never kept out.
+   */
+  heldByOther(map: MapId, token: TokenId, discordId: string, isDm: boolean): string | undefined {
+    return this.holds.heldByOther(map, token, discordId, isDm);
+  }
+
+  close(): void {
+    this.hub.close();
+    this.sockets.close();
+  }
+
+  private async receive(connection: Connection, message: ClientMessage): Promise<void> {
+    if (message.type === "release") {
+      return this.holds.release(message.map, message.token, connection);
+    }
+    if (message.type === "drag") {
+      await this.dragged(connection, message.map, message.token, message.at);
+    }
+  }
+
+  /**
+   * A token being dragged: checked like a saved move (the map visible to them, the token on it
+   * and theirs to move), held for them, and shown to those watching who may see it there.
+   */
+  private async dragged(connection: Connection, mapId: MapId, id: TokenId, at: Point) {
+    const { viewer, account } = connection.who;
+    if (!connection.maps.has(mapId)) return;
+    const context = await this.dragContext(mapId);
+    if (!context || !canView(viewer, context.map.visibility)) return;
+    const token = context.tokens.find((each) => each.id === id);
+    const vault = this.services.vault.current;
+    const controllers =
+      token?.kind === "character" ? partyControllers(vault)(token.note) : "unknown";
+    if (!token || !canMoveToken(viewer, token, controllers)) return;
+
+    const name = account.member.name;
+    const grab = this.holds.grab(mapId, id, {
+      connection,
+      discordId: account.member.discordId,
+      name,
+      isDm: viewer.role === "dm",
+    });
+    if (!grab.granted) {
+      return this.hub.reply(connection, { type: "held", map: mapId, token: id, by: grab.by });
+    }
+
+    const moved = { ...token, at };
+    await this.publishOnMap(
+      mapId,
+      (other) => {
+        const seen = tokensForViewer({
+          tokens: [moved],
+          viewer: other,
+          fog: context.fog,
+          party: partyFor(vault, context.characters, other),
+        });
+        return seen.length > 0
+          ? { type: "moving", map: mapId, token: id, at, by: name }
+          : undefined;
+      },
+      connection,
+    );
+  }
+
+  private async dragContext(mapId: MapId): Promise<DragContext | undefined> {
+    const cached = this.dragContexts.get(mapId);
+    if (cached && Date.now() - cached.readAt < DRAG_CONTEXT_MS) return cached;
+    const map = await this.services.maps.get(mapId);
+    if (!map) return undefined;
+    const [tokens, fog, characters] = await Promise.all([
+      this.services.tokens.onMap(mapId),
+      this.services.fogs.get(mapId, map.image),
+      this.services.characters.list(),
+    ]);
+    const context = { map, tokens, fog: fog.mask, characters, readAt: Date.now() };
+    this.dragContexts.set(mapId, context);
+    return context;
   }
 
   /**
@@ -63,20 +172,5 @@ export class Live {
       (viewer) => (canView(viewer, found.visibility) ? build(viewer) : undefined),
       except,
     );
-  }
-
-  /** The vault changed, which any map's notes or image may depend on. */
-  async allMapsChanged(): Promise<void> {
-    await Promise.all(this.hub.watchedMaps().map((map) => this.mapChanged(map)));
-  }
-
-  /** A member was let in, removed or given another player: their connections start afresh. */
-  memberChanged(discordId: string): Promise<void> {
-    return this.hub.recheck(discordId);
-  }
-
-  close(): void {
-    this.hub.close();
-    this.sockets.close();
   }
 }

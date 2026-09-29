@@ -6,7 +6,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Services } from "~/context";
 import { aCharacterToken, aMarker } from "~/maps/tokens/test-builders";
 import type { Token } from "~/maps/tokens/types";
-import type { CampaignMap } from "~/maps/types";
+import type { CampaignMap, Point } from "~/maps/types";
 import { FIXTURE_VAULT } from "../../../tests/support/fixture-vault";
 import { createSessions } from "../auth/sessions";
 import { loadConfig } from "../config";
@@ -86,6 +86,15 @@ async function connect(discordId: string, playerId = ""): Promise<Client> {
 }
 
 const about = (map: string) => (message: { map?: string }) => message.map === map;
+const moving = (token: string) => (message: unknown) =>
+  (message as { type: string; token?: string }).type === "moving" &&
+  (message as { token?: string }).token === token;
+const LIT: Point = [0.1, 0.5];
+
+async function placeOn(map: string, token: Token) {
+  await services.tokens.apply(map, [{ type: "place", token }], () => true);
+  await live.mapChanged(map);
+}
 const mapMessage = (message: { type: string }) => message.type === "map";
 const aboutMap = (client: Client, map: string) =>
   client.received.filter((message) => (message as { map?: string }).map === map);
@@ -125,14 +134,14 @@ describe("Live", () => {
   });
 
   it("never sends a player anything on a map they can't see, though they're still watching it", async () => {
+    await placeOn(secret.id, aMarker({ id: "m", map: secret.id, visibility: "players" }));
     const player = await connect(DISCORD_IDS.playerOne, "player one");
-    const dm = await connect(DISCORD_IDS.dm);
-    for (const client of [player, dm]) client.send({ type: "watch", map: secret.id });
+    const [dm, dmElsewhere] = [await connect(DISCORD_IDS.dm), await connect(DISCORD_IDS.dm)];
+    for (const client of [player, dm, dmElsewhere]) client.send({ type: "watch", map: secret.id });
     await briefly();
-    // PROTOTYPE: the DM drops a token on the hidden map; real tokens will replace this.
-    const dmHears = dm.next((message: { type: string }) => message.type === "positions");
-    dm.send({ type: "drop", map: secret.id, token: "Party/Fixture PC One", at: [0.1, 0.1] });
-    await dmHears;
+    const seen = dmElsewhere.next(moving("m"));
+    dm.send({ type: "drag", map: secret.id, token: "m", at: [0.2, 0.2] });
+    await seen;
     await briefly();
     expect(aboutMap(player, secret.id)).toEqual([{ type: "gone", map: secret.id }]);
   });
@@ -182,11 +191,145 @@ describe("Live", () => {
       map: shared.id,
       tokens: [{ name: "Fixture PC One", inTheDark: true, movable: true }],
     });
-    // PROTOTYPE: its positions ignore the fog on purpose; check every message once it's gone.
-    const real = player.received.filter(
-      (message) => (message as { type: string }).type !== "positions",
-    );
-    expect(JSON.stringify(real)).not.toMatch(/secret|Fixture PC Two/);
+    expect(JSON.stringify(player.received)).not.toMatch(/secret|Fixture PC Two/);
+  });
+
+  describe("dragging", () => {
+    /** The shared map with its left half revealed. */
+    beforeEach(async () => {
+      await services.fogs.apply(shared.id, shared.image, [
+        {
+          type: "paint",
+          mode: "reveal",
+          shape: {
+            kind: "polygon",
+            points: [
+              [0, 0],
+              [0.5, 0],
+              [0.5, 1],
+              [0, 1],
+            ],
+          },
+        },
+      ]);
+    });
+
+    async function watching(...clients: Client[]) {
+      for (const client of clients) client.send({ type: "watch", map: shared.id });
+      await briefly();
+    }
+
+    it("shows a drag to those who may see the token there, and to nobody else", async () => {
+      await placeOn(
+        shared.id,
+        aMarker({ id: "shown", map: shared.id, visibility: "players", at: LIT }),
+      );
+      await placeOn(
+        shared.id,
+        aMarker({ id: "secret", map: shared.id, visibility: "dm", at: LIT }),
+      );
+      const player = await connect(DISCORD_IDS.playerOne, "player one");
+      const [dm, dmElsewhere] = [await connect(DISCORD_IDS.dm), await connect(DISCORD_IDS.dm)];
+      await watching(player, dm, dmElsewhere);
+
+      const playerSees = player.next(moving("shown"));
+      dm.send({ type: "drag", map: shared.id, token: "shown", at: [0.3, 0.3] });
+      expect(await playerSees).toEqual({
+        type: "moving",
+        map: shared.id,
+        token: "shown",
+        at: [0.3, 0.3],
+        by: DISCORD_IDS.dm,
+      });
+      // The one dragging doesn't hear their own drag.
+      expect(dm.received.filter(moving("shown"))).toEqual([]);
+
+      const quiet = player.received.length;
+      for (const [token, at] of [
+        ["secret", [0.3, 0.3]],
+        ["shown", [0.8, 0.3]], // into the fog
+      ] as const) {
+        const dmSees = dmElsewhere.next(
+          (message: { at?: Point }) =>
+            message.at?.[0] === at[0] && (message as { token?: string }).token === token,
+        );
+        dm.send({ type: "drag", map: shared.id, token, at });
+        await dmSees;
+      }
+      await briefly();
+      expect(player.received).toHaveLength(quiet);
+    });
+
+    it("sends nowhere a player's drag of a token that isn't theirs", async () => {
+      await placeOn(
+        shared.id,
+        aCharacterToken({ id: "two", map: shared.id, note: "Party/Fixture PC Two", at: LIT }),
+      );
+      await placeOn(shared.id, aCharacterToken({ id: "one", map: shared.id, at: LIT }));
+      const player = await connect(DISCORD_IDS.playerOne, "player one");
+      const dm = await connect(DISCORD_IDS.dm);
+      await watching(player, dm);
+
+      player.send({ type: "drag", map: shared.id, token: "two", at: [0.3, 0.3] });
+      const own = dm.next(moving("one"));
+      player.send({ type: "drag", map: shared.id, token: "one", at: [0.3, 0.3] });
+      await own;
+      expect(dm.received.filter(moving("two"))).toEqual([]);
+    });
+
+    it("keeps a token for whoever picked it up, and lets the DM take it", async () => {
+      await placeOn(
+        shared.id,
+        aCharacterToken({ id: "dog", map: shared.id, note: "Bestiary/Fixture Companion", at: LIT }),
+      );
+      const one = await connect(DISCORD_IDS.playerOne, "player one");
+      const two = await connect(DISCORD_IDS.newcomer, "player two");
+      const dm = await connect(DISCORD_IDS.dm);
+      await watching(one, two, dm);
+
+      const dmSeesOne = dm.next(moving("dog"));
+      one.send({ type: "drag", map: shared.id, token: "dog", at: [0.3, 0.3] });
+      await dmSeesOne;
+      const refused = two.next((message: { type: string }) => message.type === "held");
+      two.send({ type: "drag", map: shared.id, token: "dog", at: [0.4, 0.4] });
+      expect(await refused).toEqual({
+        type: "held",
+        map: shared.id,
+        token: "dog",
+        by: DISCORD_IDS.playerOne,
+      });
+      expect(live.heldByOther(shared.id, "dog", DISCORD_IDS.newcomer, false)).toBe(
+        DISCORD_IDS.playerOne,
+      );
+
+      // The DM can always take it.
+      const oneSeesDm = one.next(moving("dog"));
+      dm.send({ type: "drag", map: shared.id, token: "dog", at: [0.2, 0.2] });
+      expect(await oneSeesDm).toMatchObject({ by: DISCORD_IDS.dm });
+
+      // Put down: free for anyone.
+      dm.send({ type: "release", map: shared.id, token: "dog" });
+      const oneSeesTwo = one.next(moving("dog"));
+      two.send({ type: "drag", map: shared.id, token: "dog", at: [0.1, 0.1] });
+      expect(await oneSeesTwo).toMatchObject({ by: DISCORD_IDS.newcomer });
+    });
+
+    it("frees everything a closed tab held", async () => {
+      await placeOn(
+        shared.id,
+        aCharacterToken({ id: "dog", map: shared.id, note: "Bestiary/Fixture Companion", at: LIT }),
+      );
+      const one = await connect(DISCORD_IDS.playerOne, "player one");
+      const dm = await connect(DISCORD_IDS.dm);
+      await watching(one, dm);
+      const dmSees = dm.next(moving("dog"));
+      one.send({ type: "drag", map: shared.id, token: "dog", at: [0.3, 0.3] });
+      await dmSees;
+      one.socket.close();
+      await one.closed;
+      await briefly();
+      expect(live.heldByOther(shared.id, "dog", DISCORD_IDS.newcomer, false)).toBeUndefined();
+    });
   });
 
   it("tells a player a map has gone when the DM stops sharing it", async () => {

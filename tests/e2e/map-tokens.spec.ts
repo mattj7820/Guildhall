@@ -54,10 +54,29 @@ async function whereIs(page: Page, name: string): Promise<[number, number]> {
   return [Number(x) / 100, Number(y) / 100];
 }
 
+/** Where a token is, whether the viewer may move it just now or not. */
+async function whereIsAny(page: Page, name: string): Promise<[number, number]> {
+  const token = tokens(page).locator(`[aria-label^="${name} at"]`).first();
+  const [, x, y] =
+    /at ([\d.]+)%, ([\d.]+)%/.exec((await token.getAttribute("aria-label")) ?? "") ?? [];
+  return [Number(x) / 100, Number(y) / 100];
+}
+
+/** Where a token is on screen once it has finished gliding to where someone else put it. */
+async function restingBox(page: Page, name: string) {
+  let last = "";
+  for (;;) {
+    const box = await tokenNamed(page, name).boundingBox();
+    if (!box) throw new Error(`${name} isn't on screen`);
+    if (JSON.stringify(box) === last) return box;
+    last = JSON.stringify(box);
+    await page.waitForTimeout(100);
+  }
+}
+
 /** Drags a token by the mouse to a point on the image, in several steps like a hand would. */
 async function dragToken(page: Page, mapName: string, name: string, to: [number, number]) {
-  const box = await tokenNamed(page, name).boundingBox();
-  if (!box) throw new Error(`${name} isn't on screen`);
+  const box = await restingBox(page, name);
   const canvas = await mapCanvas(page, mapName).boundingBox();
   const target = await onImage(page, mapName, FOG_IMAGE, to);
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -274,6 +293,40 @@ test("a player drags their token and the DM sees it move, and the other way roun
   await player.reload();
   expect(near(await whereIs(player, "Fixture PC One"), back)).toBe(true);
   expect(await page.evaluate(() => (window as { stayed?: boolean }).stayed)).toBe(true);
+  await player.context().close();
+});
+
+test("others see a token move while it's dragged, and can't pick it up meanwhile", async ({
+  page,
+  browser,
+}) => {
+  const { name, map } = await sharedMap(page);
+  await placeMember(page, name, "Fixture Companion", LIT);
+  const player = await asPlayerOne(browser);
+  await player.goto(map);
+  await expect(player.getByRole("status", { name: "Live updates" })).toHaveText("Live");
+
+  // The DM picks the companion up and holds it partway, without letting go.
+  const box = await restingBox(page, "Fixture Companion");
+  const canvas = await mapCanvas(page, name).boundingBox();
+  const partway = await onImage(page, name, FOG_IMAGE, [0.25, 0.25]);
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(canvas!.x + partway.x, canvas!.y + partway.y, { steps: 10 });
+
+  // The player sees it there already, as the DM's to move just now.
+  const held = tokens(player).getByRole("img", {
+    name: /^Fixture Companion at .*Dev DM is moving it/,
+  });
+  await expect(held).toBeVisible();
+  await expect
+    .poll(async () => near(await whereIsAny(player, "Fixture Companion"), [0.25, 0.25]))
+    .toBe(true);
+
+  // And once it's let go, it's theirs to move again, where the DM left it.
+  await page.mouse.up();
+  await expect(tokenNamed(player, "Fixture Companion")).toBeVisible();
+  expect(near(await whereIs(player, "Fixture Companion"), [0.25, 0.25])).toBe(true);
   await player.context().close();
 });
 

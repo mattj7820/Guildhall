@@ -2,7 +2,7 @@ import { EventEmitter } from "node:events";
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import type { WebSocket } from "ws";
 import { DM_VIEWER, type Viewer } from "~/campaign/types";
-import { CLOSE_ACCESS_CHANGED, type ServerMessage } from "~/live/messages";
+import { CLOSE_ACCESS_CHANGED, type ClientMessage, type ServerMessage } from "~/live/messages";
 import type { Member } from "~/members/types";
 import { LiveHub, stillLetIn, type Connection } from "./hub";
 import type { Admitted } from "./sockets";
@@ -51,6 +51,7 @@ const member = (discordId: string, extra: Partial<Member> = {}): Member => ({
 });
 
 const playerOne: Viewer = { role: "player", playerId: "player one" };
+const DRAG: ClientMessage = { type: "drag", map: "m", token: "dog", at: [0.5, 0.5] };
 const dm = (): Admitted => ({
   account: { kind: "member", member: member("dm"), isDm: true },
   viewer: DM_VIEWER,
@@ -63,7 +64,8 @@ const player = (id = "p1", playerId = "player one"): Admitted => ({
 let stored: Map<string, Member>;
 let hub: LiveHub;
 let join: Mock<(map: string, viewer: Viewer) => Promise<ServerMessage[]>>;
-let other: Mock<(connection: Connection, message: unknown) => void>;
+let other: Mock<(connection: Connection, message: ClientMessage) => void>;
+let closed: Mock<(connection: Connection) => void>;
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -76,9 +78,10 @@ beforeEach(() => {
       ? { type: "map", map, version: "v1" }
       : { type: "gone", map },
   ]);
-  other = vi.fn<(connection: Connection, message: unknown) => void>();
+  other = vi.fn<(connection: Connection, message: ClientMessage) => void>();
+  closed = vi.fn<(connection: Connection) => void>();
   hub = new LiveHub(
-    { join, members: { get: async (id) => stored.get(id) }, onOther: other },
+    { join, members: { get: async (id) => stored.get(id) }, onMessage: other, onClose: closed },
     { heartbeatMs: 1000, recheckMs: 60_000 },
   );
 });
@@ -180,20 +183,22 @@ describe("LiveHub", () => {
     expect(socket.sent.map((message) => message.type === "map" && message.version)).toEqual(["v1"]);
   });
 
-  it("passes anything else on, with who sent it", async () => {
+  it("passes messages about what's on a map on, with who sent them", async () => {
     const socket = connect(player());
-    socket.says({ type: "something-else", x: 1 });
+    socket.says(DRAG);
     await settle();
     expect(other).toHaveBeenCalledWith(
       expect.objectContaining({ who: expect.objectContaining({ viewer: playerOne }) }),
-      { type: "something-else", x: 1 },
+      DRAG,
     );
   });
 
-  it("ignores messages that aren't JSON, and binary ones", async () => {
+  it("ignores messages that aren't JSON, binary, or not one it knows", async () => {
     const socket = connect(player());
     socket.emit("message", Buffer.from("not json"), false);
-    socket.emit("message", Buffer.from("{}"), true);
+    socket.emit("message", Buffer.from(JSON.stringify(DRAG)), true);
+    socket.says({ type: "something-else" });
+    socket.says({ ...DRAG, at: [2, 2] });
     await settle();
     expect(other).not.toHaveBeenCalled();
     expect(socket.closed).toBeUndefined();
@@ -201,11 +206,24 @@ describe("LiveHub", () => {
 
   it("ignores messages beyond its limit each second, and closes a flooding connection", async () => {
     const socket = connect(player());
-    for (let i = 0; i < 50; i++) socket.says({ type: "noise" });
+    for (let i = 0; i < 50; i++) socket.says(DRAG);
     await settle();
     expect(other).toHaveBeenCalledTimes(40);
-    for (let i = 0; i < 200; i++) socket.says({ type: "noise" });
+    for (let i = 0; i < 200; i++) socket.says(DRAG);
     expect(socket.closed).toBe(1008);
+  });
+
+  it("says when a connection has closed", () => {
+    const socket = connect(player());
+    socket.close(1000);
+    expect(closed).toHaveBeenCalledTimes(1);
+  });
+
+  it("answers one connection only when replying", async () => {
+    const [asker, other] = [connectWith(player()), connect(player())];
+    hub.reply(asker.connection, { type: "held", map: "m", token: "dog", by: "Player Two" });
+    expect(asker.socket.sent).toEqual([{ type: "held", map: "m", token: "dog", by: "Player Two" }]);
+    expect(other.sent).toEqual([]);
   });
 
   it("closes connections that stop answering pings", async () => {

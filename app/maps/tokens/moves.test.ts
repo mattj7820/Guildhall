@@ -106,4 +106,49 @@ describe("movesReducer and shownTokens", () => {
     );
     expect(positions(state)).toEqual({ one: [0.1, 0.1] });
   });
+
+  describe("others' drags", () => {
+    const moving = (at: [number, number], now = 0): MovesEvent => ({
+      type: "othersMoving",
+      id: "one",
+      at,
+      by: "Player One",
+      now,
+    });
+
+    it("shows a token where someone else is dragging it, and who", () => {
+      const [shown] = shownTokens(play([one], moving([0.3, 0.3])));
+      expect(shown).toMatchObject({ at: [0.3, 0.3], movingBy: "Player One" });
+    });
+
+    it("keeps showing their drag while other tokens change", () => {
+      const state = play([one, two], moving([0.3, 0.3]), {
+        type: "pushed",
+        tokens: [token("one", [0.1, 0.1]), token("two", [0.5, 0.5])],
+      });
+      expect(positions(state)).toEqual({ one: [0.3, 0.3], two: [0.5, 0.5] });
+    });
+
+    it("lets their drag land where the server says they put it", () => {
+      const state = play([one], moving([0.3, 0.3]), {
+        type: "pushed",
+        tokens: [token("one", [0.31, 0.3])],
+      });
+      expect(shownTokens(state)[0]).not.toHaveProperty("movingBy");
+      expect(positions(state)).toEqual({ one: [0.31, 0.3] });
+    });
+
+    it("forgets a drag nothing more has been heard of, as when a tab closed mid-drag", () => {
+      const state = play([one], moving([0.3, 0.3], 1000), { type: "tick", now: 3999 });
+      expect(positions(state)).toEqual({ one: [0.3, 0.3] });
+      expect(positions(movesReducer(state, { type: "tick", now: 4000 }))).toEqual({
+        one: [0.1, 0.1],
+      });
+    });
+
+    it("never moves a token in hand here, whatever others' drags say", () => {
+      const state = play([one], { type: "dragged", id: "one", at: [0.4, 0.4] }, moving([0.3, 0.3]));
+      expect(shownTokens(state)[0]).toMatchObject({ at: [0.4, 0.4], inHand: true });
+    });
+  });
 });

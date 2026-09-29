@@ -45,11 +45,9 @@ export function PlayerMapViewer({
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-stone-200 px-4 py-2 dark:border-stone-800">
         <MapBreadcrumbs crumbs={map.breadcrumbs} />
         <h1 className="sr-only">{map.name}</h1>
-        {/* PROTOTYPE (removed before the PR) */}
-        <Link to={`${mapUrl(map.id)}/tokens-prototype`} className="ml-auto text-sm underline">
-          Tokens (prototype)
-        </Link>
-        <LiveStatus status={status} />
+        <div className="ml-auto">
+          <LiveStatus status={status} />
+        </div>
       </div>
       <div className="flex min-h-0 flex-1 flex-col bg-stone-50 md:flex-row dark:bg-stone-950">
         <div className="relative flex min-h-[50vh] flex-1">

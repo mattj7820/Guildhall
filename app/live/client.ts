@@ -141,7 +141,8 @@ export class LiveClient {
     this.setStatus("connecting");
   }
 
-  private send(message: ClientMessage): void {
+  /** Sends if the connection is open; otherwise it's dropped (drags don't need to arrive). */
+  send(message: ClientMessage): void {
     if (this.socket?.readyState === OPEN) this.socket.send(JSON.stringify(message));
   }
 

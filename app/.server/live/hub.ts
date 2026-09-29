@@ -4,6 +4,7 @@ import {
   CLOSE_ACCESS_CHANGED,
   clientMessageSchema,
   stateKey,
+  type ClientMessage,
   type ServerMessage,
 } from "~/live/messages";
 import type { MapId } from "~/maps/types";
@@ -60,8 +61,10 @@ export class LiveHub {
     private readonly deps: {
       join: JoinRoom;
       members: { get(discordId: string): Promise<Member | undefined> };
-      /** Messages this hub doesn't handle itself. */
-      onOther?: (connection: Connection, message: unknown) => void;
+      /** Messages about what's on a map (dragging tokens), for someone else to handle. */
+      onMessage?: (connection: Connection, message: ClientMessage) => void;
+      /** A connection has closed. */
+      onClose?: (connection: Connection) => void;
     },
     { heartbeatMs = 25_000, recheckMs = 60_000 }: Options = {},
   ) {
@@ -86,7 +89,10 @@ export class LiveHub {
       window: { start: Date.now(), count: 0 },
     };
     this.open.add(connection);
-    socket.on("close", () => this.open.delete(connection));
+    socket.on("close", () => {
+      this.open.delete(connection);
+      this.deps.onClose?.(connection);
+    });
     socket.on("pong", () => (connection.alive = true));
     socket.on("message", (data, isBinary) => {
       if (isBinary || !this.withinLimit(connection)) return;
@@ -120,6 +126,12 @@ export class LiveHub {
         if (message) this.send(connection, message);
       }),
     );
+  }
+
+  /** Answers one connection, with a message its caller built for that connection's viewer. */
+  reply(connection: Connection, message: ServerMessage): void {
+    const open = [...this.open].find((each) => each === connection);
+    if (open) this.send(open, message);
   }
 
   /** The maps being watched by anyone. */
@@ -161,8 +173,11 @@ export class LiveHub {
 
   private async receive(connection: Open, raw: unknown): Promise<void> {
     const parsed = clientMessageSchema.safeParse(raw);
-    if (!parsed.success) return this.deps.onOther?.(connection, raw);
+    if (!parsed.success) return;
     const message = parsed.data;
+    if (message.type !== "watch" && message.type !== "unwatch") {
+      return this.deps.onMessage?.(connection, message);
+    }
     if (message.type === "unwatch") {
       connection.maps.delete(message.map);
       forgetSent(connection, message.map);

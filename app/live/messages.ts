@@ -3,18 +3,32 @@
  * server sends `ServerMessage`s, each one built on the server for the viewer who gets it.
  */
 import { z } from "zod";
-import type { TokenView } from "~/maps/tokens/types";
-import type { MapId } from "~/maps/types";
+import type { TokenId, TokenView } from "~/maps/tokens/types";
+import type { MapId, Point } from "~/maps/types";
 
 /** Where browsers open their live connection. */
 export const LIVE_PATH = "/live";
 
 const mapId = z.string().min(1).max(100);
+const tokenId = z.string().min(1).max(100);
+const coordinate = z.number().min(0).max(1);
 
 export const clientMessageSchema = z.discriminatedUnion("type", [
   /** Hear about a map while it's open. */
   z.object({ type: z.literal("watch"), map: mapId }),
   z.object({ type: z.literal("unwatch"), map: mapId }),
+  /**
+   * A token being dragged, a few times a second: shown to the others as it moves, never saved.
+   * The move itself is saved when it's let go, through the tokens endpoint.
+   */
+  z.object({
+    type: z.literal("drag"),
+    map: mapId,
+    token: tokenId,
+    at: z.tuple([coordinate, coordinate]),
+  }),
+  /** Let go, or put back: anyone may pick it up now. */
+  z.object({ type: z.literal("release"), map: mapId, token: tokenId }),
 ]);
 export type ClientMessage = z.infer<typeof clientMessageSchema>;
 
@@ -25,9 +39,10 @@ export type ServerMessage =
   | { type: "gone"; map: MapId }
   /** The map's tokens as this viewer may see them, sent whenever that changes. */
   | { type: "tokens"; map: MapId; tokens: TokenView[] }
-  // PROTOTYPE (removed before the PR): party tokens dragged live.
-  | { type: "positions"; map: MapId; positions: Record<string, [number, number]> }
-  | { type: "drag"; map: MapId; token: string; at: [number, number]; by: string };
+  /** Someone is dragging a token this viewer can see, there. */
+  | { type: "moving"; map: MapId; token: TokenId; at: Point; by: string }
+  /** The token this viewer picked up is someone else's to move just now. */
+  | { type: "held"; map: MapId; token: TokenId; by: string };
 
 /**
  * Messages that say how something is now, rather than that something happened. Only the latest
@@ -41,8 +56,6 @@ export function stateKey(message: ServerMessage): string | undefined {
       return `map:${message.map}`;
     case "tokens":
       return `tokens:${message.map}`;
-    case "positions":
-      return `positions:${message.map}`;
     default:
       return undefined;
   }

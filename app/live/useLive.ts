@@ -3,7 +3,7 @@ import { useRouteLoaderData } from "react-router";
 import type { MapId } from "~/maps/types";
 import type { loader as rootLoader } from "~/root";
 import { LiveClient, type LiveStatus } from "./client";
-import { LIVE_PATH, type ServerMessage } from "./messages";
+import { LIVE_PATH, type ClientMessage, type ServerMessage } from "./messages";
 
 let shared: LiveClient | undefined;
 
@@ -13,6 +13,11 @@ function liveClient(): LiveClient {
     `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}${LIVE_PATH}`,
   );
   return shared;
+}
+
+/** Tells the server something over the tab's live connection, if it's open. */
+export function sendLive(message: ClientMessage): void {
+  liveClient().send(message);
 }
 
 /**

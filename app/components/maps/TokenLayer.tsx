@@ -1,5 +1,6 @@
 import { useRef, type KeyboardEvent, type PointerEvent } from "react";
 import { normalise, offset, toPixels } from "~/maps/geometry";
+import type { ShownToken } from "~/maps/tokens/moves";
 import type { MarkerColour, TokenView } from "~/maps/tokens/types";
 import type { Point, Size } from "~/maps/types";
 import type { CanvasTools } from "./MapCanvas";
@@ -15,12 +16,17 @@ const DRAG_THRESHOLD = 3;
 const KEY_STEP = 10;
 /** Arrow-key moves count as put down once the keys have been still this long. */
 const KEY_SETTLE_MS = 400;
+/**
+ * Others' moves glide between the positions heard (20 a second, or a saved move), rather than
+ * jumping; a little longer than the gap between them, so it never stops and starts.
+ */
+const GLIDE_MS = 80;
 
 /** Moving tokens: they follow the pointer or keys, and are sent when let go. */
 export interface TokenMover {
   drag: (id: string, at: Point) => void;
   drop: (id: string, at: Point, from: Point) => void;
-  cancel: () => void;
+  cancel: (id: string) => void;
 }
 
 const MARKER_FILLS: Record<MarkerColour, string> = {
@@ -35,7 +41,7 @@ const MARKER_FILLS: Record<MarkerColour, string> = {
 };
 
 interface Props {
-  tokens: readonly TokenView[];
+  tokens: readonly ShownToken[];
   size: Size;
   canvas: CanvasTools;
   selectedId?: string;
@@ -45,6 +51,8 @@ interface Props {
   mover?: TokenMover;
   /** Players: say which tokens are theirs to move (the DM may move all of them). */
   sayMovable?: boolean;
+  /** The DM may pick up a token someone else is moving; others wait until it's let go. */
+  takeHeld?: boolean;
 }
 
 /**
@@ -59,6 +67,7 @@ export function TokenLayer({
   onSelect,
   mover,
   sayMovable,
+  takeHeld,
 }: Props) {
   return (
     <g aria-label="Tokens" role="group">
@@ -75,7 +84,7 @@ export function TokenLayer({
           canvas={canvas}
           selected={token.id === selectedId}
           onSelect={onSelect}
-          mover={token.movable ? mover : undefined}
+          mover={token.movable && (!token.movingBy || takeHeld) ? mover : undefined}
           sayMovable={sayMovable}
         />
       ))}
@@ -92,7 +101,7 @@ function TokenMark({
   mover,
   sayMovable,
 }: {
-  token: TokenView;
+  token: ShownToken;
   size: Size;
   canvas: CanvasTools;
   selected: boolean;
@@ -124,7 +133,7 @@ function TokenMark({
     if (event.key === "Escape" && keys.current) {
       clearTimeout(keys.current.timer);
       keys.current = null;
-      return mover.cancel();
+      return mover.cancel(token.id);
     }
     const step = (event.shiftKey ? KEY_STEP * 5 : KEY_STEP) / scale;
     const moves: Record<string, [number, number]> = {
@@ -152,7 +161,13 @@ function TokenMark({
     mover.drag(token.id, to);
   }
 
-  const cursor = mover ? "cursor-grab active:cursor-grabbing" : onSelect ? "cursor-pointer" : "";
+  const cursor = mover
+    ? "cursor-grab active:cursor-grabbing"
+    : token.movingBy && token.movable
+      ? "cursor-not-allowed"
+      : onSelect
+        ? "cursor-pointer"
+        : "";
   return (
     <g
       role={interactive ? "button" : "img"}
@@ -160,7 +175,10 @@ function TokenMark({
       aria-pressed={onSelect ? selected : undefined}
       tabIndex={interactive ? 0 : undefined}
       className={`group outline-none ${cursor}`}
-      transform={`translate(${x} ${y})`}
+      style={{
+        transform: `translate(${x}px, ${y}px)`,
+        transition: token.inHand ? "none" : `transform ${GLIDE_MS}ms linear`,
+      }}
       opacity={dim ? 0.75 : 1}
       onKeyDown={interactive ? onKeyDown : undefined}
       onPointerDown={(event) => {
@@ -188,7 +206,7 @@ function TokenMark({
         else onSelect?.(token);
       }}
       onPointerCancel={() => {
-        if (press.current?.at) mover?.cancel();
+        if (press.current?.at) mover?.cancel(token.id);
         press.current = null;
       }}
       // A click on a token is never a click on the map (placing, or an area under it).
@@ -214,7 +232,7 @@ function TokenMark({
         strokeWidth={3 / scale}
         className="pointer-events-none fill-stone-900 stroke-white font-semibold select-none [paint-order:stroke]"
       >
-        {token.name}
+        {token.movingBy ? `${token.name} (${token.movingBy})` : token.name}
       </text>
     </g>
   );
@@ -251,12 +269,13 @@ function TokenFace({ token, r }: { token: TokenView; r: number }) {
 }
 
 /** What a screen reader hears, and what tests find a token by. */
-export function tokenLabel(token: TokenView, sayMovable = false): string {
+export function tokenLabel(token: ShownToken, sayMovable = false): string {
   const where = `at ${percent(token.at[0])}, ${percent(token.at[1])}`;
   const notes = [
     token.hidden === "secret" && "players can't see this",
     token.hidden === "fog" && "under the fog",
     token.inTheDark && "in the dark",
+    token.movingBy && `${token.movingBy} is moving it`,
     sayMovable && token.movable && "you can move this",
   ].filter(Boolean);
   return [`${token.name} ${where}`, ...notes].join(", ");

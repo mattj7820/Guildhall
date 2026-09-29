@@ -3,7 +3,7 @@ import { z } from "zod";
 import { DataFileError } from "~/.server/data/json-store";
 import { loadTokens, partyControllers } from "~/.server/maps/tokens";
 import { canView } from "~/campaign/visibility";
-import { servicesContext, viewerContext } from "~/context";
+import { accountContext, servicesContext, viewerContext } from "~/context";
 import type { TokenAction } from "~/maps/tokens/actions";
 import { mayApply } from "~/maps/tokens/permissions";
 import { tokenActionsSchema } from "~/maps/tokens/schema";
@@ -37,7 +37,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     return Response.json({ error: "These token changes couldn't be read." }, { status: 400 });
   }
 
+  const account = context.get(accountContext);
+  const discordId = account.kind === "member" ? account.member.discordId : "";
   const controllersOf = partyControllers(services.vault.current);
+  let heldBy: string | undefined;
   const mapIds = new Set(maps.map((each) => each.id));
   const allowed = (action: TokenAction, tokens: readonly Token[]): boolean => {
     if (!mayApply(viewer, map.id, action, tokens, controllersOf)) return false;
@@ -51,6 +54,12 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     // Everything else acts on a token on this map, and a move elsewhere needs a map to go to.
     const token = tokens.find((each) => each.id === action.id);
     if (token?.map !== map.id) return false;
+    // Someone else is dragging it just now: theirs until they let go (the DM can always take it).
+    const holder = services.live.heldByOther(map.id, token.id, discordId, viewer.role === "dm");
+    if (holder) {
+      heldBy = holder;
+      return false;
+    }
     return action.type !== "move" || !action.map || mapIds.has(action.map);
   };
 
@@ -71,6 +80,9 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   await Promise.all(changed.map((each) => services.live.mapChanged(each)));
 
   const tokens = await loadTokens(services, map, viewer);
+  if (heldBy) {
+    return Response.json({ error: `${heldBy} is moving that.`, tokens }, { status: 409 });
+  }
   if (refused > 0) {
     return Response.json({ error: "You can't move that.", tokens }, { status: 403 });
   }
