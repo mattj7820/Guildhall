@@ -6,6 +6,7 @@ import { loadConfig } from "~/.server/config";
 import { discordAuth } from "~/.server/auth/discord";
 import { createAttemptCookie } from "~/.server/auth/discord-sign-in";
 import { cookieSettings, createSessions } from "~/.server/auth/sessions";
+import { Characters } from "~/.server/characters/characters";
 import { CampaignMaps } from "~/.server/maps/campaign-maps";
 import { Members } from "~/.server/members/members";
 import { LiveVault } from "~/.server/vault/live-vault";
@@ -33,6 +34,7 @@ async function createServices(): Promise<Services> {
     vault,
     preparedEncounters: PreparedEncounters.inFolder(config.dataPath),
     maps: CampaignMaps.inFolder(config.dataPath),
+    characters: Characters.inFolder(config.dataPath),
     members: Members.inFolder(config.dataPath),
     sessions: createSessions(cookies),
     signInAttempts: createAttemptCookie(cookies),
