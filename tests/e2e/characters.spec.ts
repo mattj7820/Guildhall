@@ -1,5 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { characterCard, openCharacter, ORIGIN } from "./support/app";
+import {
+  characterCard,
+  openCharacter,
+  ORIGIN,
+  switchToDmView,
+  switchToPlayerView,
+} from "./support/app";
 import { SIGNED_IN } from "./support/sign-in";
 
 /**
@@ -23,6 +29,19 @@ test("the DM sees the whole party and can open every sheet", async ({ page }) =>
   await expect(page.getByRole("heading", { name: "Fixture PC Two", level: 1 })).toBeVisible();
   await expect(page.getByRole("region", { name: "Ability scores" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Skills" })).toContainText("Sleight of Hand");
+});
+
+test("the DM previewing as a player can open the shared companion, but not the PCs", async ({
+  page,
+}) => {
+  await page.goto("/characters");
+  await switchToPlayerView(page);
+  await expect(
+    characterCard(page, "Fixture PC One").getByRole("link", { name: /^Open/ }),
+  ).toHaveCount(0);
+  await openCharacter(page, "Fixture Companion");
+  await expect(page.getByRole("heading", { name: "Fixture Companion", level: 1 })).toBeVisible();
+  await switchToDmView(page);
 });
 
 test.describe("as Player One", () => {

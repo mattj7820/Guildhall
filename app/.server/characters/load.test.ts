@@ -67,15 +67,16 @@ describe("partyCards", () => {
     });
   });
 
-  it("shares the companion with every assigned player, with its statblock's numbers", () => {
+  it("shares the companion with every player, with its statblock's numbers", () => {
     expect(cardFor(playerOne, "Bestiary/Fixture Companion")).toMatchObject({
       kind: "companion",
       canStart: true,
       armourClass: 13,
       speed: "40 ft.",
     });
+    // Players not yet assigned to anyone, and the DM previewing as a player, share it too.
     expect(cardFor(PLAYER_VIEWER, "Bestiary/Fixture Companion")).toMatchObject({
-      canStart: false,
+      canStart: true,
     });
   });
 

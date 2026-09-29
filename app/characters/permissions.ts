@@ -12,7 +12,8 @@ import type { PlayerId, Viewer } from "~/campaign/types";
 export type Controllers = { players: readonly PlayerId[] } | "party" | "unknown";
 
 /**
- * - `edit`: the whole sheet and bag, and changing them (the DM; the character's own players).
+ * - `edit`: the whole sheet and bag, and changing them (the DM; the character's own players; every
+ *   player, for a companion the party shares).
  * - `summary`: name, portrait, species, class, level and equipped items only (other players).
  * - `none`: nothing at all; the character looks like it doesn't exist.
  */
@@ -21,10 +22,11 @@ export type CharacterAccess = "edit" | "summary" | "none";
 export function characterAccess(viewer: Viewer, controllers: Controllers): CharacterAccess {
   if (viewer.role === "dm") return "edit";
   if (controllers === "unknown") return "none";
-  // A player the DM hasn't said is anyone (or the DM previewing) controls nothing.
+  // A companion the whole party shares is every player's, whoever they are.
+  if (controllers === "party") return "edit";
+  // A player the DM hasn't said is anyone (or the DM previewing) plays no character of their own.
   if (viewer.playerId === undefined) return "summary";
-  if (controllers === "party" || controllers.players.includes(viewer.playerId)) return "edit";
-  return "summary";
+  return controllers.players.includes(viewer.playerId) ? "edit" : "summary";
 }
 
 /** Opening the full sheet and bag, and changing them, go together. */

@@ -18,7 +18,12 @@ describe("characterAccess", () => {
     ["a player, the party's companion", alex, companion, "edit"],
     ["a player, a character whose note has gone", sam, noteGone, "none"],
     ["the DM previewing as a player (no player ID)", PLAYER_VIEWER, samsPc, "summary"],
-    ["a player not yet assigned, the party's companion", PLAYER_VIEWER, companion, "summary"],
+    [
+      "a player not yet assigned (or the DM previewing), the party's companion",
+      PLAYER_VIEWER,
+      companion,
+      "edit",
+    ],
   ])("%s: %s", (_, viewer, controllers, access) => {
     expect(characterAccess(viewer, controllers)).toBe(access);
   });

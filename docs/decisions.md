@@ -565,7 +565,9 @@ can be changed. Vault images as icons can come later.
 
 A companion the party shares (the blink dog) is a vault note with `type: companion`; its statblock
 stays the source of its numbers. Guildhall keeps only its hit points (the maximum starting as the
-statblock's) and a bag every player can use, and shows it as a card beside the PCs. Players give
+statblock's) and a bag every player can use, and shows it as a card beside the PCs. Every player
+can open it, including one not yet assigned to anyone, and so the DM previewing as a player; a
+companion's note can name one `player:` to keep it to them. Players give
 items to each other and to the companion: a gift changes both bags in one update of
 `characters.json`, so it can't vanish from one bag without reaching the other. A player may give
 only from a bag they may change, to someone they can see, and nobody can take. Gifts arrive as a
