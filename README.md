@@ -5,7 +5,8 @@
 A personal hub for running a Dungeons & Dragons campaign. It links out to the tools used at the
 table and hosts its own modules: a **read-only wiki over an Obsidian vault**, with a preview of
 what the players are allowed to see, a **combat tracker** that runs monsters straight from the
-vault's statblocks, and **interactive maps** made from the vault's map images. Players sign in
+vault's statblocks, and **interactive maps** made from the vault's map images, with **fog of war**
+that opens up as the party explores. Players sign in
 with Discord, and it's built to be hosted, with the vault copied read-only from Google Drive.
 
 The long-term goal is interconnection: wiki, maps, characters, combat and dice all linking through
@@ -68,7 +69,7 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
     gold), sorting and search.
   - The DM can give items to anyone; they arrive marked new. Players give items to each other,
     and to the party's shared companion (a `type: companion` note), whose bag everyone can use.
-- **Interactive maps** (DM only), made from the map images already in the vault (Wonderdraft or
+- **Interactive maps**, made from the map images already in the vault (Wonderdraft or
   Dungeondraft exports, say):
   - Outline anything on a map (a region, a town, one building) by clicking round it, then name it
     and reshape it by dragging its points, or with the keyboard. Undo and redo, and every change
@@ -82,6 +83,17 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
     them lined up; the DM is warned if the image has moved, gone or changed shape.
   - Maps and areas are kept in Guildhall's data folder; the vault is only read. Wiki notes link to
     their maps.
+- **Fog of war**, like a game's map screen: the DM shares a map, and players see only what's been
+  revealed. Everything else is black.
+  - Reveal as the party moves, mid-session: a brush with an adjustable size, a rectangle, or a
+    click on an outlined area, and hide again the same way (hold Alt). Reveal all, hide all, undo
+    and redo. The DM sees the whole map through the fog, and which areas players can see.
+  - Players see a reveal within seconds, without reloading, and pan and zoom freely. Areas appear
+    once half of them is revealed, leading to deeper maps the DM has shared; a secret area never
+    appears.
+  - Hidden parts never leave the server: players get the image as tiles with the fogged pixels
+    taken out, never the image itself, and tests prove a player's tiles are byte-for-byte the same
+    whatever is under the fog. The fog's edge is soft and only ever eats into what's revealed.
 - **What players see.** Notes are DM-only unless their frontmatter says `visibility: players`.
   Players never get DM-only notes: they're left out of navigation, search and links, and a direct
   URL gives the same 404 as a missing note. Inside a shared note, the DM's parts stay secret: a
@@ -176,6 +188,7 @@ app/
   hub/             Hub links configuration
   wiki/            Wiki types and URL helpers shared by server and browser
   maps/            Interactive maps model: areas, geometry, pan and zoom, the editor (isomorphic)
+    fog/           Fog of war: the mask, reveals and hides, undo, pixels and tiles (isomorphic)
   characters/      Sheets and bags: the model, changes as actions, undo, saving (isomorphic)
   members/         Who can sign in: member shapes shared with the browser
   .server/         Server-only code: config, the DM's preview cookie
@@ -183,9 +196,9 @@ app/
     members/       The member list and waiting list
     vault/         Vault reading, parsing, link resolution, rendering, search, statblocks
     combat/        The combat tracker's catalogue and the prepared-encounter store
-    maps/          The map store, and maps prepared for a viewer
+    maps/          The map and fog stores, maps prepared for a viewer, and players' map tiles
     characters/    The character store, who plays whom, and sheets prepared for a viewer
-    data/          The JSON store: the only code that writes files, and only in DATA_PATH
+    data/          The JSON store and file cache: the only code that writes files, only in DATA_PATH
   routes/          Pages and resource routes
   components/      UI components (combat/, maps/, characters/ and inventory/ by module)
 server/app.ts      Express app: creates long-lived services, mounts React Router

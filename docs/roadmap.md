@@ -17,9 +17,14 @@ locations, maps, characters, sessions).
   and reusable.
 - **Click-to-roll:** attacks, damage, checks, saves, skills and recharges roll straight from the
   tracker's statblocks, labelled, with natural 20s arming a critical-damage roll.
-- **Interactive maps (first slice, DM only):** maps from vault images, with outlined areas that
-  lead to deeper maps and wiki notes, nesting to any depth with breadcrumbs. Drawn and reshaped in
-  an editor with undo; a clean view for the table. Kept in the data folder.
+- **Interactive maps (first slice):** maps from vault images, with outlined areas that lead to
+  deeper maps and wiki notes, nesting to any depth with breadcrumbs. Drawn and reshaped in an
+  editor with undo; a clean view for the table. Kept in the data folder.
+- **Maps for players, with fog of war:** the DM shares a map and reveals it as the party explores
+  (brush, rectangle, areas, reveal and hide all, undo); players see only what's revealed, black
+  elsewhere, and reveals reach their open maps within seconds. Hidden pixels never leave the
+  server: players get tiles with the fog taken out. Secret areas, and areas shown once half
+  revealed.
 - **Character sheets (first slice):** a sheet per PC note, typed in from paper, with the paper
   sheet's own maths (modifiers, proficiency, passives) and typed overrides; click any bonus to roll
   it; hit points with Heal and Damage. Players edit only their own; others see a summary. Changes
@@ -34,9 +39,9 @@ locations, maps, characters, sessions).
 
 ## Parking lot
 
-- **Player view polish (next):** go through the wiki, combat tracker and maps as a signed-in
-  player: map visibility controls and a player map view, the turn order for everyone, and each
-  player's own characters shown as theirs (`Viewer.playerId` is now set).
+- **Player view polish (next):** go through the wiki and combat tracker as a signed-in player:
+  the turn order for everyone, and each player's own characters shown as theirs
+  (`Viewer.playerId` is now set).
 - **Counters on maps (after that):** tokens the DM and players can move on a map, shared live, which
   brings websockets on the same Express server.
 - **Hosting, next steps:** backups of the data folder (Dokploy volume backups, or a nightly copy to
@@ -71,12 +76,14 @@ locations, maps, characters, sessions).
   - Later: an overlay on the battle map, with flashy turn transitions and, one day, attack
     animations.
 - **Interactive maps, next steps:**
-  - **Player view:** players browse only the maps and areas the DM has revealed. The model, the
-    filter (`mapView`) and its tests exist; this needs visibility toggles in the editor and a
-    decision on whether revealing a map should also reveal its image to the wiki.
-  - Revealing as the party explores: fog of war, or a live reveal during a session (needs the
-    shared, server-held state from the multiplayer work).
-  - Touch: pinch zoom and touch-friendly handles, for a tablet at the table.
+  - **Fog, next steps:** reveals pushed over websockets with the counters work (the page already
+    reloads on a version, so only the trigger changes); tokens showing where the party is;
+    exploration memory ("seen before" dimmed rather than black, a second mask); per-player fog
+    when the party splits (a mask per player beside the party's); revealing an area's note with
+    it; a minimap (needs an overview shrunk cell by cell, so pixels from under the fog can't blend
+    in); a fog texture instead of plain black (tiles are already transparent outside the reveal).
+  - Phones: pinch zoom, a bottom sheet for the side panel, and a lower-resolution level of tiles
+    for small screens; touch-friendly handles, for a tablet at the table.
   - A downscaled preview of very large images, for playing over a slow connection.
   - Reading Wonderdraft or Dungeondraft files directly (their labels could suggest areas).
   - Pins and labels as well as outlines; searching areas; an area's own short description.
