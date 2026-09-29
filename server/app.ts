@@ -14,8 +14,7 @@ import { CampaignMaps } from "~/.server/maps/campaign-maps";
 import { MapFogs } from "~/.server/maps/map-fogs";
 import { PlayerImages } from "~/.server/maps/player-image";
 import { FileCache } from "~/.server/data/file-cache";
-import { PrototypeTokens } from "~/.server/live/prototype-tokens";
-import { LiveSockets } from "~/.server/live/sockets";
+import { Live } from "~/.server/live/live";
 import { Members } from "~/.server/members/members";
 import { LiveVault } from "~/.server/vault/live-vault";
 import { clientAddressContext, servicesContext, type Services } from "~/context";
@@ -57,9 +56,7 @@ async function createServices(): Promise<Services> {
       }),
     }),
   };
-  const prototypeTokens = new PrototypeTokens(services);
-  const live = new LiveSockets(services, (socket, who) => prototypeTokens.connect(socket, who));
-  return { ...services, live };
+  return { ...services, live: new Live(services) };
 }
 
 const globalForServices = globalThis as typeof globalThis & {

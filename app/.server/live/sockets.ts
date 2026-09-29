@@ -2,13 +2,11 @@ import type { IncomingMessage } from "node:http";
 import type { Duplex } from "node:stream";
 import { WebSocketServer, type WebSocket } from "ws";
 import type { Viewer } from "~/campaign/types";
+import { LIVE_PATH } from "~/live/messages";
 import type { Services } from "~/context";
 import type { Account } from "../auth/account";
 import { identify } from "../auth/identify";
 import { isOwnSocketOrigin } from "../auth/origin";
-
-/** Where browsers open their live connection. */
-export const LIVE_PATH = "/live";
 
 /** Small JSON messages only: anything bigger is refused before it's read. */
 const MAX_MESSAGE_BYTES = 4096;

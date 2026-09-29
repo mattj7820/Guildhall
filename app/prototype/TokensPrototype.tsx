@@ -8,6 +8,7 @@ import { buttonClass, labelClass, primaryButtonClass } from "~/components/styles
 import { normalise, offset, toPixels } from "~/maps/geometry";
 import type { MapView, Point, Size } from "~/maps/types";
 import { mapUrl } from "~/maps/urls";
+import type { ServerMessage } from "~/live/messages";
 
 export interface PrototypeToken {
   id: string;
@@ -16,16 +17,11 @@ export interface PrototypeToken {
   movable: boolean;
 }
 
-type ServerMessage =
-  | { type: "positions"; positions: Record<string, Point> }
-  | { type: "drag"; token: string; at: Point; by: string }
-  | { type: "gone" };
-
 /** Sends per second while dragging; 0 sends only the drop. */
 const RATES = [0, 5, 10, 20, 60] as const;
 const DELAYS = [0, 100, 250, 500] as const;
 /** A token's radius on screen, whatever the zoom. */
-const RADIUS = 20;
+const RADIUS = 15;
 /** Arrow keys move a token this many screen pixels; Shift, five times as far. */
 const KEY_STEP = 10;
 /** Keyboard moves count as dropped once the keys have been still this long. */
@@ -80,6 +76,7 @@ export function TokensPrototype({ map, tokens }: { map: MapView; tokens: Prototy
     }
     function receive(message: ServerMessage) {
       setCounts((counts) => ({ ...counts, received: counts.received + 1 }));
+      if (message.type === "map") return;
       if (message.type === "gone") return setStatus("gone");
       if (message.type === "drag") {
         setOthers((others) => ({
@@ -123,11 +120,11 @@ export function TokensPrototype({ map, tokens }: { map: MapView; tokens: Prototy
 
   const [throttle] = useState(() => new Throttle());
   function sendDrag(id: string, at: Point) {
-    throttle.push(settings.current.rate, () => send({ type: "drag", token: id, at }));
+    throttle.push(settings.current.rate, () => send({ type: "drag", map: map.id, token: id, at }));
   }
   function drop(id: string, at: Point) {
     throttle.cancel();
-    send({ type: "drop", token: id, at });
+    send({ type: "drop", map: map.id, token: id, at });
     // Stays where it was dropped; the server's answer will say the same.
     setPositions((positions) => ({ ...positions, [id]: at }));
     setMine(null);
