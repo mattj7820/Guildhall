@@ -23,6 +23,7 @@ describe("readVault", () => {
       "Attachments/mira-portrait.png",
       "Attachments/voice-sample.wav",
       "Maps/Fixture Duplicate.png",
+      "Maps/Fixture Fog.png",
       "Maps/Fixture Keep.png",
       "Maps/Fixture Town.png",
       "Maps/Fixture World.png",

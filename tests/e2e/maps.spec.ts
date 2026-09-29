@@ -87,7 +87,7 @@ test.describe("Maps", () => {
     await page.goto(mapPage);
     await expect(page.getByText("Maps are DM-only for now.")).toBeVisible();
     expect((await page.request.get(src!)).status()).toBe(404);
-    const reveal = await page.request.post(`${mapPage}/fog`, {
+    const reveal = await page.request.post(mapPage.replace(/\/edit$/, "/fog"), {
       headers: { Origin: ORIGIN },
       data: { changes: [REVEAL_ALL] },
     });

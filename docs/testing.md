@@ -63,8 +63,9 @@ The app must never modify the vault. Four independent checks:
 
 1. **Lint:** ESLint's `no-restricted-imports`/`no-restricted-properties` ban `fs` write APIs
    (`writeFile`, `rename`, `rm`, `mkdir`…) and namespace imports of `fs` in `app/` and `server/`.
-2. **Config:** `DATA_PATH`, the only place Guildhall writes (through `app/.server/data/json-store.ts`,
-   the single exception to the lint rule), is refused if it overlaps the vault.
+2. **Config:** `DATA_PATH`, the only place Guildhall writes (through `app/.server/data/json-store.ts`
+   and `app/.server/data/file-cache.ts`, the two exceptions to the lint rule), is refused if it
+   overlaps the vault. sharp's own `toFile` is banned everywhere, so it only ever makes buffers.
 3. **Construction:** the asset route can only serve files the vault index discovered, so a
    crafted path can't reach outside the vault.
 4. **E2E fingerprint:** Playwright's global setup hashes every fixture file (path, size, mtime,
@@ -126,6 +127,15 @@ Dice decide initiative, tie-breaks and monster HP, so tests must control them.
   untouched.
 - The fixture map images are placeholders (colour fields and a grid), made once by a script that
   isn't kept; they're described in `Maps/Fixture Maps.md`.
+- **Hidden pixels never reach players.** `Fixture Fog.png` has a magenta square in one corner, the
+  only magenta in it. `app/.server/maps/player-image.test.ts` keeps that corner fogged and checks
+  every tile a player could get three ways: no magenta pixel; every pixel in a hidden cell fully
+  transparent; and exactly the same bytes when something else is painted under the fog. The last
+  is the real guarantee (a player's image doesn't depend on hidden pixels at all), and it was
+  checked by putting back a leak on purpose (masking a lossy copy of a tile) and seeing it fail.
+  `tests/e2e/player-maps.spec.ts` checks the same over HTTP, as Player One. Pixel rules (a hidden
+  cell is transparent for any fog and image size, and which tiles players may have) are unit
+  tests in `app/maps/fog/tiles.test.ts`.
 
 ## Characters
 

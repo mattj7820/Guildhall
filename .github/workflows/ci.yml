@@ -66,6 +66,14 @@ jobs:
           test "$(docker exec guildhall id -u)" != "0"
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
             --header 'Accept: text/html' http://localhost:3000/wiki)" = "302"
+      - name: Check the image library works in the image (it cuts players' map tiles)
+        run: >-
+          docker exec --workdir /app guildhall node --input-type=module --eval
+          "import sharp from 'sharp';
+          const tile = await sharp('/vault/Maps/Fixture Fog.png')
+          .extract({ left: 0, top: 0, width: 64, height: 64 }).webp().toBuffer();
+          if (!tile.length) process.exit(1);
+          console.log('sharp works, libvips', sharp.versions.vips);"
       - name: Check dev sign-in is refused, since requests come from outside the container
         run: |
           status=$(curl --silent --output /dev/null --write-out '%{http_code}' \

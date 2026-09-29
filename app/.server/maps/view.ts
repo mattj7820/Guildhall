@@ -2,11 +2,12 @@ import type { EntityId, Viewer } from "~/campaign/types";
 import { canView } from "~/campaign/visibility";
 import { areaRevealed } from "~/maps/fog/coverage";
 import { encodeCells } from "~/maps/fog/mask";
+import { tileStates, TILE_OVERLAP } from "~/maps/fog/tiles";
 import type { FogMask } from "~/maps/fog/types";
 import { polygonArea } from "~/maps/geometry";
 import { ancestors } from "~/maps/tree";
-import type { AreaView, CampaignMap, MapImageView, MapView, NoteLink } from "~/maps/types";
-import { mapImageUrl } from "~/maps/urls";
+import type { AreaView, CampaignMap, MapImageView, MapView, NoteLink, Size } from "~/maps/types";
+import { mapImageUrl, mapTileUrl } from "~/maps/urls";
 import type { FoundImage } from "../vault/vault";
 
 export interface MapViewInput {
@@ -20,6 +21,11 @@ export interface MapViewInput {
   note: (id: EntityId) => NoteLink | undefined;
   /** The map's fog of war as stored now. */
   fog: { mask: FogMask; version: number };
+  /**
+   * Players only: the image's real size, the tile size, and the fog's cell opacities
+   * (`cellAlpha`), for listing the tiles they may have.
+   */
+  tiles?: { image: Size; size: number; alpha: Uint8Array };
 }
 
 /**
@@ -41,6 +47,7 @@ export function mapView({
   image,
   note,
   fog,
+  tiles,
 }: MapViewInput): MapView | undefined {
   if (!canView(viewer, map.visibility)) return undefined;
   const isDm = viewer.role === "dm";
@@ -82,7 +89,7 @@ export function mapView({
     id: map.id,
     name: map.name,
     size: { width: map.image.width, height: map.image.height },
-    image: imageView(map, image, isDm),
+    image: isDm ? dmImageView(map, image) : playerImageView(map, image, fog.mask, tiles),
     ...(mapNote ? { note: mapNote } : {}),
     noteBroken: isDm && !!map.note && !mapNote,
     breadcrumbs,
@@ -97,9 +104,31 @@ export function mapView({
   };
 }
 
-function imageView(map: CampaignMap, found: MapViewInput["image"], isDm: boolean): MapImageView {
-  if (!found) return { status: "missing", ...(isDm ? { path: map.image.path } : {}) };
-  if (!isDm) return { status: "ok" };
+/** Players get only the tiles the fog lets them have, never the whole image or its file name. */
+function playerImageView(
+  map: CampaignMap,
+  found: MapViewInput["image"],
+  mask: FogMask,
+  tiles: MapViewInput["tiles"],
+): MapImageView {
+  if (!found || !tiles) return { status: found ? "ok" : "missing" };
+  return {
+    status: "ok",
+    tiles: {
+      ...tiles.image,
+      size: tiles.size,
+      overlap: TILE_OVERLAP,
+      tiles: tileStates(mask, tiles.alpha, tiles.image, tiles.size).map(({ x, y, key }) => ({
+        x,
+        y,
+        url: mapTileUrl(map.id, x, y, `${found.version}.${key}`),
+      })),
+    },
+  };
+}
+
+function dmImageView(map: CampaignMap, found: MapViewInput["image"]): MapImageView {
+  if (!found) return { status: "missing", path: map.image.path };
   const url = mapImageUrl(map.id, found.version);
   return found.moved
     ? { url, status: "moved", path: map.image.path, movedTo: found.path }

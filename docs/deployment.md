@@ -102,6 +102,8 @@ and dev sign-ins are refused from outside the container anyway.
   sign-in and the DM's approval.
 - The server's administrator can read the vault copy, the data volume and the environment
   (including secrets). Only host it where you trust the administrator.
-- The app mounts the vault read-only; the only place it writes is `/data`.
+- The app mounts the vault read-only; the only place it writes is `/data`. Its `cache` folder
+  holds generated files (the tiles of players' maps): it needn't be backed up, and deleting it only
+  means they're made again.
 - `app` is only exposed to Traefik's network (`expose`, not `ports`), so it can't be reached
   over plain HTTP on the server's public address.

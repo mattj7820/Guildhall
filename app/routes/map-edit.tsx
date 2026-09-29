@@ -1,10 +1,11 @@
 import { data, redirect, type ShouldRevalidateFunctionArgs } from "react-router";
 import { z } from "zod";
-import { loadMapView } from "~/.server/maps/load";
+import { loadMapView, mapSource } from "~/.server/maps/load";
 import { MapsDmOnlyNotice } from "~/components/maps/DmOnlyNotice";
 import { MapEditor } from "~/components/maps/MapEditor";
-import { servicesContext, viewerContext } from "~/context";
+import { servicesContext, viewerContext, type Services } from "~/context";
 import { mapChangesSchema, mapImageSchema } from "~/maps/schema";
+import type { CampaignMap } from "~/maps/types";
 import { mapUrl } from "~/maps/urls";
 import type { Route } from "./+types/map-edit";
 
@@ -51,7 +52,8 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
  */
 export async function action({ request, params, context }: Route.ActionArgs) {
   if (context.get(viewerContext).role !== "dm") throw data("Not found", { status: 404 });
-  const { maps, fogs, vault } = context.get(servicesContext);
+  const services = context.get(servicesContext);
+  const { maps, fogs, vault } = services;
   const inVault = (path: string) => vault.current.mapImages().includes(path);
 
   if (!request.headers.get("Content-Type")?.includes("application/json")) {
@@ -101,10 +103,22 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       if (!visibility.success)
         return data({ error: "Share with players, or keep it DM-only." }, 400);
       const changed = await maps.setVisibility(params.id, visibility.data);
-      return changed ? { shared: changed.visibility === "players" } : gone();
+      if (!changed) return gone();
+      if (changed.visibility === "players") void prepareTiles(services, changed);
+      return { shared: changed.visibility === "players" };
     }
     default:
       throw data("Unknown action", { status: 400 });
+  }
+}
+
+/** Cuts the image's tiles in the background, so no player waits for them. */
+async function prepareTiles(services: Services, map: CampaignMap) {
+  try {
+    const source = await mapSource(services, map);
+    if (source) await services.playerImages.prepare(source);
+  } catch (error) {
+    console.error(`[maps] Couldn't prepare the tiles of "${map.name}"`, error);
   }
 }
 

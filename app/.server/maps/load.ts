@@ -5,6 +5,7 @@ import type { Services } from "~/context";
 import type { CampaignMap, MapView, NoteLink } from "~/maps/types";
 import { noteUrl } from "~/wiki/urls";
 import type { Vault } from "../vault/vault";
+import type { SourceImage } from "./player-image";
 import { mapView } from "./view";
 
 /**
@@ -42,23 +43,42 @@ export function noteLink(vault: Vault, id: EntityId, viewer: Viewer): NoteLink |
   );
 }
 
+/** The map's image as it is in the vault now (perhaps moved), or undefined if it's missing. */
+export async function mapSource(
+  { config, vault }: Pick<Services, "config" | "vault">,
+  map: CampaignMap,
+): Promise<(SourceImage & { moved: boolean }) | undefined> {
+  const found = vault.current.findImage(map.image.path);
+  const absolute = found && vaultFile(config.vaultPath, found.path);
+  const version = found && (await imageVersion(config.vaultPath, found.path));
+  return found && absolute && version ? { ...found, absolute, version } : undefined;
+}
+
 /** The map prepared for the viewer, with its image found in the current vault. */
 export async function loadMapView(
-  { config, vault, fogs }: Pick<Services, "config" | "vault" | "fogs">,
+  services: Pick<Services, "config" | "vault" | "fogs" | "playerImages">,
   map: CampaignMap,
   maps: readonly CampaignMap[],
   viewer: Viewer,
 ): Promise<MapView | undefined> {
+  const { vault, fogs, playerImages } = services;
   const current = vault.current;
-  const found = current.findImage(map.image.path);
-  const version = found && (await imageVersion(config.vaultPath, found.path));
+  const source = await mapSource(services, map);
   const fog = await fogs.get(map.id, map.image);
+  const forPlayers = viewer.role !== "dm" && source;
   return mapView({
     map,
     maps,
     viewer,
-    image: found && version ? { ...found, version } : undefined,
+    image: source,
     note: (id) => noteLink(current, id, viewer),
     fog,
+    tiles: forPlayers
+      ? {
+          image: await playerImages.size(source),
+          size: playerImages.tileSize,
+          alpha: playerImages.playerFog(map.id, fog).alpha,
+        }
+      : undefined,
   });
 }

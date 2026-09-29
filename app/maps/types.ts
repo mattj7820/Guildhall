@@ -76,10 +76,23 @@ export interface NoteLink {
 export interface MapImageView {
   /** DM only: the whole image. Players only ever get the parts the fog reveals. */
   url?: string;
+  /** Players only: the tiles of the image they may have. */
+  tiles?: TileLayer;
   status: "ok" | "moved" | "missing";
   /** DM only: where the image is recorded, and where it was found instead. */
   path?: string;
   movedTo?: string;
+}
+
+/** The tiles of an image players may have, each drawn at its place on the map. */
+export interface TileLayer {
+  /** The image's real size in pixels, which tiles are cut from (maybe not the map's `size`). */
+  width: number;
+  height: number;
+  /** A tile's side in image pixels; each also overlaps its neighbours by `overlap`. */
+  size: number;
+  overlap: number;
+  tiles: { x: number; y: number; url: string }[];
 }
 
 /** An area as the viewer may see it: hidden targets are simply absent. */

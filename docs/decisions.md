@@ -620,3 +620,44 @@ version 1 map was DM-only. Players never get the whole image's address, even for
 revealed map; the parts they may see come another way (decision 37). An area's links still follow
 their own targets: a link to a map shows only if that map is shared, and a note only if it's shared.
 Fog lives in its own `fog.json`, so changes during a session never race the editor's autosave.
+
+## 37. Players get maps as tiles, with the fog taken out on the server
+
+**Date:** 2026-09-29
+
+**Context.** Players must never receive hidden parts of a map image: covering them in the browser
+isn't enough, since the image file or the page's data would still hold them. The campaign's maps
+are big (3840×2160 to 5120×5120 and 3840×7680, up to 16 MB of PNG), reveals happen mid-session
+and should reach players within seconds, and the image library must work in the Docker image and
+on Windows.
+
+**Options considered.**
+
+- **Hiding in the browser:** leaks the whole image. Ruled out.
+- **One masked copy of the whole image per fog change:** simplest, but every reveal means about a
+  second of work on the server and players downloading 1 to 5 MB again.
+- **Tiles, masked only where the fog's edge crosses them (chosen):** a reveal changes only the
+  tiles along its edge, about 30 ms each on the server, and players fetch only those.
+- **Whole tiles only, with blocky fog:** no masking, but square 512-pixel reveals.
+
+**Decision.** `PlayerImages` (sharp, with libvips's prebuilt binaries) decodes each version of an
+image once and cuts it into 512-pixel tiles, each with a pixel of overlap so no seam shows:
+compressed WebP (quality 82: lettering stays crisp, and a whole map is 1 to 3 MB) to send when a
+tile is fully revealed, and an exact PNG copy to mask when it's partly revealed. Masking starts from
+the exact copy because a lossy one has already blended hidden pixels into their neighbours. In a
+masked tile, a pixel in a hidden cell is transparent black; revealed pixels keep their colour, and
+their opacity fades in over 2.5 cells from the fog's edge, so the soft edge eats into the reveal,
+never out of it. The page lists the tiles a player may have; each URL carries the image's version
+and a hash of the fog around that tile, so a reveal changes only the URLs of tiles it touched and
+the browser keeps the rest. The tile route always answers from the fog as it is now, so an old or
+guessed URL gets no more than the fog allows. The whole image stays DM-only, even when a map is
+fully revealed.
+
+Cut tiles are cached in `DATA_PATH/cache` by a second module allowed to write
+(`app/.server/data/file-cache.ts`), since they're files rather than JSON: it writes only there, one
+folder per image and version, through a temporary folder renamed into place, one set at a time, and
+removes older versions. sharp only ever makes buffers (its `toFile` is lint-banned), so every write
+still goes through one of the two modules. The cache is disposable. Sharing a map cuts its tiles in
+the background (about 3 s for the largest map), so the first player doesn't wait. A small overview
+image was left out: shrinking the whole image blends pixels from both sides of the fog's edge, so a
+minimap needs a resampling that respects cells first.
