@@ -36,6 +36,7 @@ export function ItemTooltip({
       )}
       {item.description && <p className="mt-1 text-stone-200">{item.description}</p>}
       {item.source?.text && <p className="mt-1 text-xs text-stone-400">From: {item.source.text}</p>}
+      {item.givenBy && <p className="mt-1 text-xs text-amber-200/80">Given by {item.givenBy}</p>}
       {item.note && <p className="mt-1 text-xs text-stone-400">Has a note in the wiki</p>}
     </div>
   );

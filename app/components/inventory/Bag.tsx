@@ -3,7 +3,7 @@ import type { InventoryChange, InventoryState } from "~/characters/inventory-cha
 import type { SortOrder } from "~/characters/inventory";
 import type { ItemId } from "~/characters/types";
 import { buttonClass, inputClass } from "../styles";
-import { InventoryBoard } from "./InventoryBoard";
+import { InventoryBoard, type Recipient } from "./InventoryBoard";
 import { ItemDetails, type LinkedNote } from "./ItemDetails";
 import { Purse } from "./Purse";
 import { QuickAdd, type CatalogueItem } from "./QuickAdd";
@@ -19,6 +19,8 @@ export function Bag({
   onChange,
   catalogue,
   notes,
+  recipients,
+  onGive,
 }: {
   state: InventoryState;
   onChange: (change: InventoryChange) => void;
@@ -26,9 +28,12 @@ export function Bag({
   catalogue: CatalogueItem[];
   /** Linked notes as this person may see them, by entity ID. */
   notes: Record<string, LinkedNote>;
+  /** Who items can be given to, and how. */
+  recipients?: Recipient[];
+  onGive?: (id: ItemId, to: string, amount: number) => void;
 }) {
   const [adding, setAdding] = useState(false);
-  const [opened, setOpened] = useState<{ id: ItemId; focus?: "split" }>();
+  const [opened, setOpened] = useState<{ id: ItemId; focus?: "split" | "give" }>();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
 
@@ -45,7 +50,7 @@ export function Bag({
 
   const openedItem = opened && state.items.find((item) => item.id === opened.id);
 
-  function open(id: ItemId, focus?: "split") {
+  function open(id: ItemId, focus?: "split" | "give") {
     setOpened({ id, focus });
     const item = state.items.find((candidate) => candidate.id === id);
     if (item?.unseen) onChange({ type: "seen", id });
@@ -117,6 +122,8 @@ export function Bag({
         onChange={onChange}
         onOpen={open}
         onAdd={() => setAdding(true)}
+        recipients={recipients}
+        onGive={onGive}
         toolbar={toolbar}
       />
       <Purse purse={state.purse} onChange={onChange} />
@@ -126,7 +133,9 @@ export function Bag({
           item={openedItem}
           note={openedItem.note ? notes[openedItem.note] : undefined}
           focus={opened.focus}
+          recipients={recipients}
           onChange={onChange}
+          onGive={onGive}
           onClose={() => setOpened(undefined)}
         />
       )}

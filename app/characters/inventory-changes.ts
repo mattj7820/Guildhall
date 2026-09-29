@@ -4,6 +4,7 @@
  */
 import {
   addItem,
+  QUANTITY_MAX,
   moveItem,
   removeItem,
   setEquipped,
@@ -124,6 +125,53 @@ function cleanEdits(changes: ItemEdits): ItemEdits {
 function tidy(text: string | undefined, max: number): string | undefined {
   const trimmed = (text ?? "").trim().slice(0, max);
   return trimmed || undefined;
+}
+
+export interface Transfer {
+  from: InventoryState;
+  to: InventoryState;
+}
+
+/**
+ * Hands some or all of a stack to someone else. It arrives as its own tile at the end of their
+ * bag (never stacked, so they can see what's new), unequipped, marked new and with who gave it.
+ * Undefined if the item has gone or the amount is wrong.
+ */
+export function giveItem(
+  from: InventoryState,
+  to: InventoryState,
+  { id, amount, newId, givenBy }: { id: ItemId; amount: number; newId: ItemId; givenBy: string },
+): Transfer | undefined {
+  const item = from.items.find((candidate) => candidate.id === id);
+  if (!item || !Number.isInteger(amount) || amount < 1 || amount > item.quantity) return undefined;
+  const kept =
+    amount === item.quantity
+      ? removeItem(from.items, id)
+      : setQuantity(from.items, id, item.quantity - amount);
+  const received: InventoryItem = {
+    ...item,
+    id: newId,
+    quantity: Math.min(amount, QUANTITY_MAX),
+    equipped: false,
+    attuned: false,
+    unseen: true,
+    givenBy,
+  };
+  return {
+    from: { ...from, items: kept },
+    to: { ...to, items: [...to.items, received] },
+  };
+}
+
+const COIN_VALUE_IN_GOLD: Record<Coin, number> = { cp: 0.01, sp: 0.1, ep: 0.5, gp: 1, pp: 10 };
+
+/** What the coins are worth altogether, in gold pieces, to the copper. */
+export function purseInGold(purse: Purse): number {
+  const copper = (Object.keys(COIN_VALUE_IN_GOLD) as Coin[]).reduce(
+    (sum, coin) => sum + Math.round(purse[coin] * COIN_VALUE_IN_GOLD[coin] * 100),
+    0,
+  );
+  return copper / 100;
 }
 
 /** A short past-tense line for the undo toast and screen readers, e.g. "Removed Rope ×3". */

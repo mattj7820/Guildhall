@@ -6,6 +6,7 @@ import {
   MouseSensor,
   pointerWithin,
   TouchSensor,
+  useDraggable,
   useDroppable,
   useSensor,
   useSensors,
@@ -45,6 +46,20 @@ import { TileFace, tileLabel } from "./ItemTile";
 const EQUIP_ZONE = "zone:equip";
 const REMOVE_ZONE = "zone:remove";
 const ZONES = new Set<UniqueIdentifier>([EQUIP_ZONE, REMOVE_ZONE]);
+/** Drop targets for giving an item to someone: `give:<their ID>`. */
+const GIVE_PREFIX = "give:";
+/** An equipped slot's copy of an item, which can be dragged back into the bag to unequip it. */
+const SLOT_PREFIX = "equipped:";
+
+const isZone = (id: UniqueIdentifier) => ZONES.has(id) || String(id).startsWith(GIVE_PREFIX);
+const itemIdOf = (id: UniqueIdentifier) => String(id).replace(SLOT_PREFIX, "");
+
+/** Someone an item can be handed to: another character, or a companion the party shares. */
+export interface Recipient {
+  id: string;
+  name: string;
+  companion?: boolean;
+}
 const TOOLTIP_DELAY_MS = 400;
 
 interface Props {
@@ -52,8 +67,11 @@ interface Props {
   /** Only these are shown (a search or filter); moving is off while some are hidden. */
   visible?: ReadonlySet<ItemId>;
   onChange: (change: InventoryChange) => void;
-  onOpen: (id: ItemId, focus?: "split") => void;
+  onOpen: (id: ItemId, focus?: "split" | "give") => void;
   onAdd: () => void;
+  /** Who items can be given to; none means no giving. */
+  recipients?: Recipient[];
+  onGive?: (id: ItemId, to: string, amount: number) => void;
   /** Above the grid, inside the drag area (so the equipped slots can take drops). */
   toolbar?: ReactNode;
 }
@@ -62,15 +80,27 @@ interface Drag {
   id: ItemId;
   /** Shift held when picked up: carrying half the stack. */
   splitting: number | undefined;
+  /** Picked up from the equipped slots rather than the grid. */
+  fromSlot: boolean;
 }
 
 /**
  * The bag: item tiles in a grid that grows as needed, the equipped slots, and a place to drop
  * things to remove them. Tiles move by mouse drag, a long press and drag on touch screens, or
  * the keyboard (Space picks up, arrows move, Space drops, Escape puts back). Dropping onto an
- * identical item stacks them; Shift while picking up carries half the stack.
+ * identical item stacks them; Shift while picking up carries half the stack. An item dragged
+ * out of the equipped slots is unequipped, and one dropped on a portrait is given away.
  */
-export function InventoryBoard({ items, visible, onChange, onOpen, onAdd, toolbar }: Props) {
+export function InventoryBoard({
+  items,
+  visible,
+  onChange,
+  onOpen,
+  onAdd,
+  recipients = [],
+  onGive,
+  toolbar,
+}: Props) {
   // A stable ID for dnd-kit, whose own counter differs between server and browser rendering.
   const dndId = useId();
   const instructionsId = useId();
@@ -80,6 +110,8 @@ export function InventoryBoard({ items, visible, onChange, onOpen, onAdd, toolba
 
   const [drag, setDrag] = useState<Drag>();
   const [stackTarget, setStackTarget] = useState<ItemId>();
+  /** What the dragged item is over, for the caption saying what dropping it will do. */
+  const [overId, setOverId] = useState<UniqueIdentifier>();
   const justDropped = useRef(false);
   const keyboardDrag = useRef(false);
 
@@ -94,7 +126,10 @@ export function InventoryBoard({ items, visible, onChange, onOpen, onAdd, toolba
     }),
   );
 
-  const byId = useCallback((id: UniqueIdentifier) => items.find((item) => item.id === id), [items]);
+  const byId = useCallback(
+    (id: UniqueIdentifier) => items.find((item) => item.id === itemIdOf(id)),
+    [items],
+  );
   const dragged = drag && byId(drag.id);
 
   /** What the carried item would be if dropped: half a stack, never equipped, when splitting. */
@@ -111,9 +146,12 @@ export function InventoryBoard({ items, visible, onChange, onOpen, onAdd, toolba
     const item = byId(active.id);
     const shift = activatorEvent instanceof MouseEvent && activatorEvent.shiftKey;
     keyboardDrag.current = activatorEvent instanceof KeyboardEvent;
+    const fromSlot = String(active.id).startsWith(SLOT_PREFIX);
     setDrag({
-      id: String(active.id),
-      splitting: shift && item && item.quantity > 1 ? Math.floor(item.quantity / 2) : undefined,
+      id: itemIdOf(active.id),
+      splitting:
+        shift && !fromSlot && item && item.quantity > 1 ? Math.floor(item.quantity / 2) : undefined,
+      fromSlot,
     });
     setTooltip(undefined);
   }
@@ -121,6 +159,7 @@ export function InventoryBoard({ items, visible, onChange, onOpen, onAdd, toolba
   function handleDragOver({ over }: DragOverEvent) {
     const item = drag && carried(drag);
     const target = over && byId(over.id);
+    setOverId(over?.id);
     setStackTarget(item && target && canStack(item, target) ? target.id : undefined);
   }
 
@@ -138,8 +177,13 @@ export function InventoryBoard({ items, visible, onChange, onOpen, onAdd, toolba
           ? { type: "remove", id: item.id }
           : { type: "quantity", id: item.id, quantity: item.quantity - half },
       );
+    } else if (String(over.id).startsWith(GIVE_PREFIX)) {
+      onGive?.(item.id, String(over.id).slice(GIVE_PREFIX.length), half ?? item.quantity);
+      return;
     } else if (over.id === EQUIP_ZONE) {
       if (!item.equipped) onChange({ type: "equip", id: item.id, equipped: true });
+    } else if (current.fromSlot) {
+      onChange({ type: "equip", id: item.id, equipped: false });
     } else if (target === over.id) {
       onChange(
         half === undefined
@@ -164,6 +208,7 @@ export function InventoryBoard({ items, visible, onChange, onOpen, onAdd, toolba
   function finishDrag() {
     setDrag(undefined);
     setStackTarget(undefined);
+    setOverId(undefined);
     // Dropping ends with a click on the tile, which would open its details: straight after a
     // mouse drag, or when the Space that dropped it is let go.
     justDropped.current = true;
@@ -184,16 +229,17 @@ export function InventoryBoard({ items, visible, onChange, onOpen, onAdd, toolba
     if (underPointer.length > 0) return underPointer;
     return closestCenter({
       ...args,
-      droppableContainers: args.droppableContainers.filter((container) => !ZONES.has(container.id)),
+      droppableContainers: args.droppableContainers.filter((container) => !isZone(container.id)),
     });
   }, []);
 
   const announcements: Announcements = {
     onDragStart: ({ active }) => {
       const item = byId(active.id);
-      return item
-        ? `Picked up ${item.name}. Use the arrow keys to move it, Space to drop it, Escape to put it back.`
-        : undefined;
+      if (!item) return undefined;
+      return String(active.id).startsWith(SLOT_PREFIX)
+        ? `Picked up ${item.name} from the equipped slots. Drop it in the bag to unequip it.`
+        : `Picked up ${item.name}. Use the arrow keys to move it, Space to drop it, Escape to put it back.`;
     },
     onDragOver: ({ active, over }) => announceOver(active.id, over?.id),
     onDragEnd: ({ active, over }) => {
@@ -201,6 +247,8 @@ export function InventoryBoard({ items, visible, onChange, onOpen, onAdd, toolba
       if (!item || !over) return item ? `Put ${item.name} back.` : undefined;
       if (over.id === REMOVE_ZONE) return `Removed ${item.name}.`;
       if (over.id === EQUIP_ZONE) return `Equipped ${item.name}.`;
+      const recipient = recipientOf(over.id);
+      if (recipient) return `Gave ${item.name} to ${recipient.name}.`;
       return `Dropped ${item.name}.`;
     },
     onDragCancel: ({ active }) => {
@@ -214,11 +262,19 @@ export function InventoryBoard({ items, visible, onChange, onOpen, onAdd, toolba
     if (!item || overId === undefined) return undefined;
     if (overId === EQUIP_ZONE) return "Over the equipped slots: drop to equip.";
     if (overId === REMOVE_ZONE) return "Over remove: drop to remove it.";
+    const recipient = recipientOf(overId);
+    if (recipient) return `Over ${recipient.name}: drop to give it to them.`;
     const target = byId(overId);
     if (!target) return undefined;
     if (drag && canStackOnto(drag, target)) return `Over ${target.name}: drop to stack.`;
     const position = items.indexOf(target) + 1;
     return `${item.name} is at position ${position} of ${items.length}.`;
+  }
+
+  function recipientOf(id: UniqueIdentifier): Recipient | undefined {
+    const key = String(id);
+    if (!key.startsWith(GIVE_PREFIX)) return undefined;
+    return recipients.find((recipient) => recipient.id === key.slice(GIVE_PREFIX.length));
   }
 
   function canStackOnto(current: Drag, target: InventoryItem) {
@@ -272,6 +328,10 @@ export function InventoryBoard({ items, visible, onChange, onOpen, onAdd, toolba
       case "S":
         if (item.quantity > 1) onOpen(item.id, "split");
         return true;
+      case "g":
+      case "G":
+        if (recipients.length > 0) onOpen(item.id, "give");
+        return true;
       case "+":
       case "=":
         onChange({ type: "quantity", id: item.id, quantity: item.quantity + 1 });
@@ -314,10 +374,20 @@ export function InventoryBoard({ items, visible, onChange, onOpen, onAdd, toolba
   const cells = shown.length + 1;
   const emptySlots = filtered ? 0 : ((columns - (cells % columns)) % columns) + columns;
   const equipped = items.filter((item) => item.equipped);
-  const stackOnto = stackTarget ? byId(stackTarget) : undefined;
-  const carriedItem = drag && carried(drag);
-  const stackTotal =
-    stackOnto && carriedItem ? stackOnto.quantity + carriedItem.quantity : undefined;
+  const caption = drag && dropCaption(drag);
+
+  /** What letting go here will do, when it isn't simply "move it here". */
+  function dropCaption(current: Drag): string | undefined {
+    if (overId === undefined) return undefined;
+    if (overId === REMOVE_ZONE) return "Remove";
+    if (overId === EQUIP_ZONE) return current.fromSlot ? undefined : "Equip";
+    const recipient = recipientOf(overId);
+    if (recipient) return `Give to ${recipient.name}`;
+    if (current.fromSlot) return "Unequip";
+    const onto = stackTarget ? byId(stackTarget) : undefined;
+    const item = carried(current);
+    return onto && item ? `Stack ×${onto.quantity + item.quantity}` : undefined;
+  }
 
   return (
     <DndContext
@@ -332,11 +402,18 @@ export function InventoryBoard({ items, visible, onChange, onOpen, onAdd, toolba
         announcements,
         screenReaderInstructions: {
           draggable:
-            "Enter opens the item. Space picks it up to move it or stack it onto an identical item. E equips, S splits a stack, plus and minus change the quantity, Delete removes it.",
+            "Enter opens the item. Space picks it up to move it or stack it onto an identical item. E equips or unequips, S splits a stack, G gives it to someone, plus and minus change the quantity, Delete removes it.",
         },
       }}
     >
-      <EquippedSlots items={equipped} dragging={!!drag} onOpen={onOpen} />
+      {recipients.length > 0 && <GiveTargets recipients={recipients} dragging={!!drag} />}
+      <EquippedSlots
+        items={equipped}
+        dragging={!!drag && !drag.fromSlot}
+        lifted={drag?.fromSlot ? drag.id : undefined}
+        onOpen={onOpen}
+        onUnequip={(id) => onChange({ type: "equip", id, equipped: false })}
+      />
       {toolbar}
       <SortableContext items={shown.map((item) => item.id)} strategy={strategy}>
         <ul
@@ -352,7 +429,7 @@ export function InventoryBoard({ items, visible, onChange, onOpen, onAdd, toolba
               disabled={filtered}
               tabbable={item.id === focusable}
               state={
-                drag?.id === item.id
+                drag?.id === item.id && !drag.fromSlot
                   ? drag.splitting === undefined
                     ? "placeholder"
                     : "idle"
@@ -419,9 +496,14 @@ export function InventoryBoard({ items, visible, onChange, onOpen, onAdd, toolba
         {drag && dragged ? (
           <div className="relative">
             <TileFace item={dragged} state="lifted" quantity={drag.splitting ?? dragged.quantity} />
-            {stackTotal !== undefined && (
-              <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 rounded-full bg-amber-600 px-2 py-0.5 text-xs font-bold whitespace-nowrap text-white shadow">
-                Stack ×{stackTotal}
+            {caption && (
+              <span
+                className={[
+                  "absolute -bottom-7 left-1/2 -translate-x-1/2 rounded-full px-2 py-0.5 text-xs font-bold whitespace-nowrap text-white shadow",
+                  overId === REMOVE_ZONE ? "bg-rose-600" : "bg-amber-600",
+                ].join(" ")}
+              >
+                {caption}
               </span>
             )}
           </div>
@@ -514,11 +596,17 @@ function SortableTile({
 function EquippedSlots({
   items,
   dragging,
+  lifted,
   onOpen,
+  onUnequip,
 }: {
   items: InventoryItem[];
+  /** Something from the grid is being dragged, which could be dropped here. */
   dragging: boolean;
+  /** The slot being dragged out, if any. */
+  lifted?: ItemId;
   onOpen: (id: ItemId) => void;
+  onUnequip: (id: ItemId) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: EQUIP_ZONE });
   const empty = Math.max(0, 4 - items.length);
@@ -530,30 +618,26 @@ function EquippedSlots({
       <div
         ref={setNodeRef}
         className={[
-          "flex flex-wrap gap-2 rounded-lg p-2 transition",
+          "flex flex-wrap gap-3 rounded-lg p-2 transition",
           isOver
             ? "bg-amber-100 ring-2 ring-amber-500 dark:bg-amber-950/60"
             : dragging
-              ? "bg-amber-50/60 ring-1 ring-amber-300 ring-dashed dark:bg-amber-950/20 dark:ring-amber-800"
+              ? "bg-amber-50/60 ring-1 ring-amber-300 dark:bg-amber-950/20 dark:ring-amber-800"
               : "bg-stone-100/60 dark:bg-stone-900/60",
         ].join(" ")}
       >
-        {items.length === 0 && !dragging && (
+        {items.length === 0 && (
           <p className="sr-only">Nothing equipped. Drag an item here, or press E on it.</p>
         )}
         <ul className="contents">
           {items.map((item) => (
-            <li key={item.id} className="w-12">
-              <button
-                type="button"
-                aria-label={tileLabel(item)}
-                title={item.name}
-                onClick={() => onOpen(item.id)}
-                className="block w-full rounded-lg focus-visible:outline-2 focus-visible:outline-amber-600"
-              >
-                <TileFace item={item} />
-              </button>
-            </li>
+            <EquippedSlot
+              key={item.id}
+              item={item}
+              lifted={lifted === item.id}
+              onOpen={onOpen}
+              onUnequip={onUnequip}
+            />
           ))}
         </ul>
         {Array.from({ length: empty }, (_, index) => (
@@ -568,6 +652,103 @@ function EquippedSlots({
         )}
       </div>
     </section>
+  );
+}
+
+/** An equipped item: click for details; drag it back into the bag, or press ✕ or E, to unequip. */
+function EquippedSlot({
+  item,
+  lifted,
+  onOpen,
+  onUnequip,
+}: {
+  item: InventoryItem;
+  lifted: boolean;
+  onOpen: (id: ItemId) => void;
+  onUnequip: (id: ItemId) => void;
+}) {
+  const { attributes, listeners, setNodeRef } = useDraggable({ id: SLOT_PREFIX + item.id });
+  return (
+    <li className="relative w-12 touch-manipulation">
+      <button
+        type="button"
+        ref={setNodeRef}
+        {...attributes}
+        {...listeners}
+        // Moving by keyboard happens in the grid; here E (or the ✕) unequips.
+        onKeyDown={(event) => {
+          if (event.key === "e" || event.key === "E") {
+            event.preventDefault();
+            onUnequip(item.id);
+          }
+        }}
+        aria-roledescription="equipped item"
+        aria-label={tileLabel(item)}
+        title={item.name}
+        onClick={() => onOpen(item.id)}
+        className="block w-full rounded-lg focus-visible:outline-2 focus-visible:outline-amber-600"
+      >
+        <TileFace item={item} state={lifted ? "placeholder" : "idle"} />
+      </button>
+      <button
+        type="button"
+        aria-label={`Unequip ${item.name}`}
+        title="Unequip"
+        onClick={() => onUnequip(item.id)}
+        className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full border border-stone-300 bg-white text-[10px] leading-none text-stone-600 shadow-sm hover:border-rose-400 hover:text-rose-700 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300"
+      >
+        ✕
+      </button>
+    </li>
+  );
+}
+
+/** Portraits to drop an item on to give it away. Drop targets only: by keyboard, it's G. */
+function GiveTargets({ recipients, dragging }: { recipients: Recipient[]; dragging: boolean }) {
+  return (
+    <section aria-label="Give to" className="mb-3">
+      <h3 className="mb-1 text-xs font-semibold tracking-wide text-stone-500 uppercase">Give to</h3>
+      <ul className="flex flex-wrap gap-2">
+        {recipients.map((recipient) => (
+          <GiveTarget key={recipient.id} recipient={recipient} dragging={dragging} />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function GiveTarget({ recipient, dragging }: { recipient: Recipient; dragging: boolean }) {
+  const { setNodeRef, isOver } = useDroppable({ id: GIVE_PREFIX + recipient.id });
+  return (
+    <li
+      ref={setNodeRef}
+      className={[
+        "flex items-center gap-2 rounded-full py-1 pr-3 pl-1 text-sm transition",
+        isOver
+          ? "scale-105 bg-amber-100 ring-2 ring-amber-500 dark:bg-amber-950/60"
+          : dragging
+            ? "bg-amber-50/60 ring-1 ring-amber-300 dark:bg-amber-950/20 dark:ring-amber-800"
+            : "bg-stone-100/60 dark:bg-stone-900/60",
+      ].join(" ")}
+    >
+      <span
+        aria-hidden="true"
+        className={[
+          "flex h-8 w-8 items-center justify-center rounded-full font-serif font-bold",
+          recipient.companion
+            ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-100"
+            : "bg-stone-200 text-stone-700 dark:bg-stone-700 dark:text-stone-100",
+        ].join(" ")}
+      >
+        {recipient.name.slice(0, 1).toUpperCase()}
+      </span>
+      <span>
+        {isOver ? `Give to ${recipient.name}` : recipient.name}
+        {recipient.companion && !isOver && (
+          <span className="ml-1 text-xs text-stone-500">companion</span>
+        )}
+      </span>
+    </li>
   );
 }
 

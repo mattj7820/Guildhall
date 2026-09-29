@@ -33,8 +33,9 @@ export interface InventoryItem {
   /** A line or two, written by the player or the DM. */
   description?: string;
   source?: ItemSource;
-  givenByDm?: boolean;
-  /** Given by the DM and not yet looked at by its owner. */
+  /** Who handed it over: "the DM", or another character by name. */
+  givenBy?: string;
+  /** Given by someone else and not yet looked at by its owner. */
   unseen?: boolean;
 }
 

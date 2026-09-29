@@ -3,8 +3,10 @@ import {
   applyInventoryChange,
   describeChange,
   emptyPurse,
+  giveItem,
   NAME_MAX,
   PURSE_MAX,
+  purseInGold,
   type InventoryState,
 } from "./inventory-changes";
 import { anItem } from "./test-builders";
@@ -106,5 +108,50 @@ describe("describeChange", () => {
     [{ type: "purse", coin: "gp", amount: 12 }, "Changed gp to 12"],
   ] as const)("describes %j", (change, text) => {
     expect(describeChange(before, change)).toBe(text);
+  });
+});
+
+describe("giveItem", () => {
+  const give = (amount: number) =>
+    giveItem(
+      state(anItem({ id: "a", name: "Potion", quantity: 3, equipped: true })),
+      state(anItem({ id: "x", name: "Potion", quantity: 1 })),
+      { id: "a", amount, newId: "new", givenBy: "Kit" },
+    );
+
+  it("hands over a whole stack, which arrives unequipped, new and marked with the giver", () => {
+    const transfer = give(3);
+    expect(transfer?.from.items).toEqual([]);
+    expect(transfer?.to.items.map((item) => item.id)).toEqual(["x", "new"]);
+    expect(transfer?.to.items[1]).toMatchObject({
+      name: "Potion",
+      quantity: 3,
+      equipped: false,
+      unseen: true,
+      givenBy: "Kit",
+    });
+  });
+
+  it("hands over part of a stack, keeping the rest", () => {
+    const transfer = give(1);
+    expect(transfer?.from.items[0].quantity).toBe(2);
+    expect(transfer?.to.items[1].quantity).toBe(1);
+  });
+
+  it.each([0, 4, 1.5])("refuses to give %s of 3", (amount) => {
+    expect(give(amount)).toBeUndefined();
+  });
+
+  it("refuses an item that has gone", () => {
+    expect(
+      giveItem(state(), state(), { id: "gone", amount: 1, newId: "n", givenBy: "Kit" }),
+    ).toBeUndefined();
+  });
+});
+
+describe("purseInGold", () => {
+  it("adds up every coin in gold pieces, to the copper", () => {
+    expect(purseInGold({ cp: 13, sp: 7, ep: 1, gp: 42, pp: 2 })).toBe(63.33);
+    expect(purseInGold(emptyPurse)).toBe(0);
   });
 });

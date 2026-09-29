@@ -7,9 +7,10 @@ import {
 } from "~/characters/inventory-changes";
 import { QUANTITY_MAX } from "~/characters/inventory";
 import { ITEM_ICONS } from "~/characters/item-icons";
-import type { InventoryItem } from "~/characters/types";
+import type { InventoryItem, ItemId } from "~/characters/types";
 import { newId } from "~/shared/ids";
 import { buttonClass, iconButtonClass, inputClass, labelClass } from "../styles";
+import type { Recipient } from "./InventoryBoard";
 import { ItemIconSvg } from "./ItemTile";
 
 /** A linked vault note as the viewer may see it, rendered on the server. */
@@ -27,18 +28,26 @@ export function ItemDetails({
   item,
   note,
   focus,
+  recipients = [],
   onChange,
+  onGive,
   onClose,
 }: {
   item: InventoryItem;
   note?: LinkedNote;
-  /** Open with the split control focused. */
-  focus?: "split";
+  /** Open with the split or give control focused. */
+  focus?: "split" | "give";
+  /** Who it can be given to; none hides giving. */
+  recipients?: Recipient[];
   onChange: (change: InventoryChange) => void;
+  onGive?: (id: ItemId, to: string, amount: number) => void;
   onClose: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const splitInput = useRef<HTMLInputElement>(null);
+  const giveSelect = useRef<HTMLSelectElement>(null);
+  const [giveTo, setGiveTo] = useState(recipients[0]?.id ?? "");
+  const [giveAmount, setGiveAmount] = useState(item.quantity);
   const [choosingIcon, setChoosingIcon] = useState(false);
   const [split, setSplit] = useState(Math.floor(item.quantity / 2));
   const edit = (changes: Extract<InventoryChange, { type: "edit" }>["changes"]) =>
@@ -47,6 +56,7 @@ export function ItemDetails({
   useEffect(() => {
     dialog.current?.showModal();
     if (focus === "split") splitInput.current?.focus();
+    if (focus === "give") giveSelect.current?.focus();
   }, [focus]);
 
   return (
@@ -150,9 +160,9 @@ export function ItemDetails({
                 Attuned
               </label>
             </div>
-            {item.givenByDm && (
+            {item.givenBy && (
               <p className="mt-2 text-xs font-semibold text-amber-800 dark:text-amber-400">
-                Given by the DM
+                Given by {item.givenBy}
               </p>
             )}
           </div>
@@ -235,6 +245,58 @@ export function ItemDetails({
               dangerouslySetInnerHTML={{ __html: note.html }}
             />
           </section>
+        )}
+
+        {recipients.length > 0 && onGive && (
+          <fieldset className="mt-4 flex flex-wrap items-center gap-2 border-t border-stone-200 pt-3 text-sm dark:border-stone-700">
+            <legend className="sr-only">Give</legend>
+            <label className="flex items-center gap-1">
+              Give
+              {item.quantity > 1 && (
+                <input
+                  type="number"
+                  aria-label="How many to give"
+                  min={1}
+                  max={item.quantity}
+                  value={giveAmount}
+                  onChange={(event) => setGiveAmount(Number(event.target.value))}
+                  className={`${inputClass} w-16`}
+                />
+              )}
+            </label>
+            <label className="flex items-center gap-1">
+              to
+              <select
+                ref={giveSelect}
+                value={giveTo}
+                onChange={(event) => setGiveTo(event.target.value)}
+                className={inputClass}
+              >
+                {recipients.map((recipient) => (
+                  <option key={recipient.id} value={recipient.id}>
+                    {recipient.name}
+                    {recipient.companion ? " (companion)" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className={buttonClass}
+              disabled={
+                !giveTo ||
+                !Number.isInteger(giveAmount) ||
+                giveAmount < 1 ||
+                giveAmount > item.quantity
+              }
+              onClick={() => {
+                onGive(item.id, giveTo, giveAmount);
+                dialog.current?.close();
+              }}
+            >
+              Give
+            </button>
+          </fieldset>
         )}
 
         <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-stone-200 pt-4 dark:border-stone-700">

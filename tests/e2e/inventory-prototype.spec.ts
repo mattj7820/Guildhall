@@ -10,7 +10,7 @@ const announcement = (page: Page, text: string) =>
   page.getByRole("status").filter({ hasText: text });
 
 async function openPrototype(page: Page) {
-  await page.goto("/prototype/inventory?layout=bag&bag");
+  await page.goto("/prototype/inventory?bag");
   await expect(grid(page)).toBeVisible();
 }
 
@@ -56,6 +56,37 @@ test("adds an item in a few keystrokes, and opens its details", async ({ page })
   await expect(details).toContainText("Given by the DM");
   await details.getByRole("button", { name: "Close" }).click();
   await expect(tile(page, "Sample ring")).toBeVisible();
+});
+
+test("unequips from the equipped slots without opening the item", async ({ page }) => {
+  await openPrototype(page);
+  const equipped = page.getByRole("region", { name: "Equipped" });
+
+  await equipped.getByRole("button", { name: "Unequip Dagger" }).click();
+  await expect(tile(page, "Dagger")).toBeVisible();
+
+  await equipped.getByRole("button", { name: "Leather armour, equipped" }).press("e");
+  await expect(tile(page, "Leather armour")).toBeVisible();
+  await expect(equipped.getByRole("button")).toHaveCount(0);
+});
+
+test("gives part of a stack to another character, who sees it as new", async ({ page }) => {
+  await openPrototype(page);
+
+  await tile(page, "Arrows, 20").focus();
+  await page.keyboard.press("g");
+  const details = page.getByRole("dialog", { name: "Arrows" });
+  await details.getByRole("spinbutton", { name: "How many to give" }).fill("5");
+  await details.getByRole("combobox").selectOption({ label: "Shared companion (companion)" });
+  await details.getByRole("button", { name: "Give", exact: true }).click();
+  await expect(tile(page, "Arrows, 15")).toBeVisible();
+
+  await page.getByRole("button", { name: "Shared companion" }).click();
+  await expect(tile(page, "Arrows, 5, new")).toBeVisible();
+  await tile(page, "Arrows, 5, new").click();
+  await expect(page.getByRole("dialog", { name: "Arrows" })).toContainText(
+    "Given by Prototype character",
+  );
 });
 
 test.describe("as a player", () => {
