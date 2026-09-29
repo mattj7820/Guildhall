@@ -646,8 +646,11 @@ compressed WebP (quality 82: lettering stays crisp, and a whole map is 1 to 3 MB
 tile is fully revealed, and an exact PNG copy to mask when it's partly revealed. Masking starts from
 the exact copy because a lossy one has already blended hidden pixels into their neighbours. In a
 masked tile, a pixel in a hidden cell is transparent black; revealed pixels keep their colour, and
-their opacity fades in over 2.5 cells from the fog's edge, so the soft edge eats into the reveal,
-never out of it. The page lists the tiles a player may have; each URL carries the image's version
+their opacity rises smoothly with the distance to the nearest hidden cell's centre, from nothing at
+a hidden cell's edge to fully shown 2.5 cells further in, so the soft edge eats into the reveal,
+never out of it. (Fading cell by cell showed the grid as a faint staircase when zoomed in, and
+distances to the cells' squares kept it; distances to their centres give smooth, fog-like
+contours.) The page lists the tiles a player may have; each URL carries the image's version
 and a hash of the fog around that tile, so a reveal changes only the URLs of tiles it touched and
 the browser keeps the rest. The tile route always answers from the fog as it is now, so an old or
 guessed URL gets no more than the fog allows. The whole image stays DM-only, even when a map is

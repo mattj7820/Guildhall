@@ -2,7 +2,7 @@ import type { EntityId, Viewer } from "~/campaign/types";
 import { canView } from "~/campaign/visibility";
 import { areaRevealed } from "~/maps/fog/coverage";
 import { encodeCells } from "~/maps/fog/mask";
-import { tileStates, TILE_OVERLAP } from "~/maps/fog/tiles";
+import { tileStates, TILE_OVERLAP, type FogField } from "~/maps/fog/tiles";
 import type { FogMask } from "~/maps/fog/types";
 import { polygonArea } from "~/maps/geometry";
 import { ancestors } from "~/maps/tree";
@@ -24,10 +24,10 @@ export interface MapViewInput {
   /** The map's fog of war as stored now. */
   fog: { mask: FogMask; version: number };
   /**
-   * Players only: the image's real size, the tile size, and the fog's cell opacities
-   * (`cellAlpha`), for listing the tiles they may have.
+   * Players only: the image's real size, the tile size, and the fog ready for working out
+   * pixels (`fogField`), for listing the tiles they may have.
    */
-  tiles?: { image: Size; size: number; alpha: Uint8Array };
+  tiles?: { image: Size; size: number; field: FogField };
 }
 
 /**
@@ -124,7 +124,7 @@ function playerImageView(
       ...tiles.image,
       size: tiles.size,
       overlap: TILE_OVERLAP,
-      tiles: tileStates(mask, tiles.alpha, tiles.image, tiles.size).map(({ x, y, key }) => ({
+      tiles: tileStates(tiles.field, tiles.image, tiles.size).map(({ x, y, key }) => ({
         x,
         y,
         url: mapTileUrl(map.id, x, y, `${found.version}.${key}`),

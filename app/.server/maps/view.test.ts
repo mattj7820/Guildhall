@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DM_VIEWER, PLAYER_VIEWER, type Viewer } from "~/campaign/types";
 import { maskFrom } from "~/maps/fog/test-builders";
-import { cellAlpha } from "~/maps/fog/tiles";
+import { fogField } from "~/maps/fog/tiles";
 import type { FogMask } from "~/maps/fog/types";
 import { buildArea, buildMap, link } from "~/maps/test-builders";
 import type { CampaignMap, NoteLink, Point } from "~/maps/types";
@@ -269,29 +269,20 @@ describe("mapView and the fog", () => {
   });
 
   it("lists the tiles players may have, versioned by the image and the fog around them", () => {
-    // An 800×200 image in 100-pixel tiles, a cell per tile, with the left half revealed: tiles 0
-    // to 3 of each row, whole well inside the reveal and masked where its edge fades in.
-    const mask = maskFrom(["####....", "####...."]);
-    const tiles = { image: { width: 800, height: 200 }, size: 100, alpha: cellAlpha(mask) };
+    // A 1600×100 image in 100-pixel tiles, a cell per tile, with the left half revealed: tiles 0
+    // to 7, whole well inside the reveal and masked near its edge, where it fades in.
+    const mask = maskFrom(["########........"]);
+    const tiles = { image: { width: 1600, height: 100 }, size: 100, field: fogField(mask) };
     const layer = view(map, PLAYER_VIEWER, { fog: fogged(mask), tiles })?.image.tiles;
-    expect(layer).toMatchObject({ width: 800, height: 200, size: 100, overlap: 1 });
-    expect(layer?.tiles.map(({ x, y }) => `${x},${y}`)).toEqual([
-      "0,0",
-      "1,0",
-      "2,0",
-      "3,0",
-      "0,1",
-      "1,1",
-      "2,1",
-      "3,1",
-    ]);
+    expect(layer).toMatchObject({ width: 1600, height: 100, size: 100, overlap: 1 });
+    expect(layer?.tiles.map(({ x }) => x)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
     expect(layer?.tiles[0].url).toBe("/maps/m/tiles/0/0?v=v1.full");
-    expect(layer?.tiles[3].url).toMatch(/^\/maps\/m\/tiles\/3\/0\?v=v1\.[0-9a-z]+$/);
+    expect(layer?.tiles[7].url).toMatch(/^\/maps\/m\/tiles\/7\/0\?v=v1\.[0-9a-z]+$/);
   });
 
   it("gives the DM the whole image rather than tiles", () => {
     const mask = maskFrom(["##..", "##.."]);
-    const tiles = { image: { width: 400, height: 200 }, size: 100, alpha: cellAlpha(mask) };
+    const tiles = { image: { width: 400, height: 200 }, size: 100, field: fogField(mask) };
     expect(view(map, DM_VIEWER, { fog: fogged(mask), tiles })?.image.tiles).toBeUndefined();
   });
 

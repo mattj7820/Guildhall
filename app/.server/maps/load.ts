@@ -78,7 +78,7 @@ export async function loadMapView(
       ? {
           image: await playerImages.size(source),
           size: playerImages.tileSize,
-          alpha: playerImages.playerFog(map.id, fog).alpha,
+          field: playerImages.playerFog(map.id, fog),
         }
       : undefined,
   });

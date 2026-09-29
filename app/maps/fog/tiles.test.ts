@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { maskFrom } from "./test-builders";
 import {
   cellAlpha,
+  fogField,
   FULL_TILE,
   pixelAlpha,
   tileCount,
@@ -50,7 +51,7 @@ describe("pixelAlpha", () => {
         width: 20 + Math.floor(random() * 200),
         height: 20 + Math.floor(random() * 200),
       };
-      const pixels = pixelAlpha(mask, cellAlpha(mask), image, [0, 0, image.width, image.height]);
+      const pixels = pixelAlpha(fogField(mask), image, [0, 0, image.width, image.height]);
       for (let y = 0; y < image.height; y++) {
         for (let x = 0; x < image.width; x++) {
           const col = Math.floor(((x + 0.5) / image.width) * cols);
@@ -63,14 +64,14 @@ describe("pixelAlpha", () => {
 
   it("shows every pixel of a fully revealed map", () => {
     const mask = maskFrom(Array(12).fill("############"));
-    const pixels = pixelAlpha(mask, cellAlpha(mask), { width: 120, height: 120 }, [0, 0, 120, 120]);
+    const pixels = pixelAlpha(fogField(mask), { width: 120, height: 120 }, [0, 0, 120, 120]);
     expect(pixels.every((alpha) => alpha === 255)).toBe(true);
   });
 
   it("fades a reveal in from its edge, and shows its middle fully", () => {
     // Revealed in the middle eight cells of twenty, on an image 10 pixels a cell.
     const mask = maskFrom(["......########......"]);
-    const row = pixelAlpha(mask, cellAlpha(mask), { width: 200, height: 10 }, [0, 5, 200, 1]);
+    const row = pixelAlpha(fogField(mask), { width: 200, height: 10 }, [0, 5, 200, 1]);
     expect(row[55]).toBe(0);
     expect(row[65]).toBeGreaterThan(0);
     expect(row[65]).toBeLessThan(255);
@@ -78,13 +79,26 @@ describe("pixelAlpha", () => {
     expect(row[145]).toBe(0);
   });
 
+  it("fades in from nothing at a hidden cell's edge, so the grid's steps don't show", () => {
+    const mask = maskFrom(["......########......"]);
+    const row = pixelAlpha(fogField(mask), { width: 200, height: 10 }, [0, 5, 200, 1]);
+    // Pixels 60 and 139 are the first and last revealed ones, right beside hidden cells.
+    expect(row[60]).toBeLessThan(5);
+    expect(row[139]).toBeLessThan(5);
+    // Rising steadily, with no jump.
+    for (let x = 61; x < 100; x++) {
+      expect(row[x]).toBeGreaterThanOrEqual(row[x - 1]);
+      expect(row[x] - row[x - 1]).toBeLessThan(20);
+    }
+  });
+
   it("gives the same pixels for a part of the image as for the whole", () => {
     const random = sequence(5);
     const mask = randomMask(random, 16, 8, 0.5);
-    const alpha = cellAlpha(mask);
+    const field = fogField(mask);
     const image = { width: 160, height: 80 };
-    const whole = pixelAlpha(mask, alpha, image, [0, 0, 160, 80]);
-    const part = pixelAlpha(mask, alpha, image, [40, 20, 30, 10]);
+    const whole = pixelAlpha(field, image, [0, 0, 160, 80]);
+    const part = pixelAlpha(field, image, [40, 20, 30, 10]);
     for (let y = 0; y < 10; y++) {
       for (let x = 0; x < 30; x++) expect(part[y * 30 + x]).toBe(whole[(20 + y) * 160 + 40 + x]);
     }
@@ -97,7 +111,7 @@ describe("tiles", () => {
   const SIZE = 16;
   const states = (rows: string[]) => {
     const mask = maskFrom(rows);
-    return tileStates(mask, cellAlpha(mask), IMAGE, SIZE);
+    return tileStates(fogField(mask), IMAGE, SIZE);
   };
   const HIDDEN = Array(8).fill("................");
   const REVEALED = Array(8).fill("################");
@@ -129,9 +143,22 @@ describe("tiles", () => {
     expect(left.every((tile) => tile.key !== FULL_TILE)).toBe(true);
   });
 
+  it("marks a tile whole only when every pixel in it is fully shown, for any fog", () => {
+    const random = sequence(23);
+    for (let trial = 0; trial < 30; trial++) {
+      const mask = randomMask(random, 16, 8, 0.9);
+      const field = fogField(mask);
+      for (const tile of tileStates(field, IMAGE, SIZE)) {
+        if (tile.key !== FULL_TILE) continue;
+        const pixels = pixelAlpha(field, IMAGE, tileRect(IMAGE, tile.x, tile.y, SIZE));
+        expect(pixels.every((alpha) => alpha === 255)).toBe(true);
+      }
+    }
+  });
+
   it("leaves out a tile whose own cells are all hidden, even beside a reveal", () => {
     const mask = maskFrom(Array(8).fill("####............"));
-    expect(tileState(mask, cellAlpha(mask), IMAGE, 1, 0, SIZE)).toBeUndefined();
+    expect(tileState(fogField(mask), IMAGE, 1, 0, SIZE)).toBeUndefined();
   });
 
   it("keeps a tile's key while the fog around it stays the same", () => {

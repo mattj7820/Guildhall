@@ -5,7 +5,7 @@
 import { createHash } from "node:crypto";
 import sharp from "sharp";
 import {
-  cellAlpha,
+  fogField,
   FULL_TILE,
   pixelAlpha,
   tileCount,
@@ -13,6 +13,7 @@ import {
   tileState,
   TILE_SIZE,
 } from "~/maps/fog/tiles";
+import type { FogField } from "~/maps/fog/tiles";
 import type { FogMask } from "~/maps/fog/types";
 import type { Size } from "~/maps/types";
 import type { FileCache } from "../data/file-cache";
@@ -35,29 +36,23 @@ export interface SourceImage {
   version: string;
 }
 
-/** One state of a map's fog, with each cell's opacity worked out (`cellAlpha`). */
-export interface PlayerFog {
-  mask: FogMask;
-  alpha: Uint8Array;
-}
-
 export class PlayerImages {
   private readonly sizes = new Map<string, Promise<Size>>();
   private readonly masked = new Map<string, Promise<Buffer>>();
-  private readonly fogs = new Map<string, { version: number; fog: PlayerFog }>();
+  private readonly fogs = new Map<string, { version: number; fog: FogField }>();
 
   constructor(
     private readonly cache: FileCache,
     readonly tileSize = TILE_SIZE,
   ) {}
 
-  /** The fog's cell opacities, worked out once per map and version rather than per tile. */
-  playerFog(mapId: string, { mask, version }: { mask: FogMask; version: number }): PlayerFog {
+  /** The fog ready for masking, worked out once per map and version rather than per tile. */
+  playerFog(mapId: string, { mask, version }: { mask: FogMask; version: number }): FogField {
     const kept = this.fogs.get(mapId);
     if (kept?.version === version && kept.fog.mask.cells.length === mask.cells.length) {
       return kept.fog;
     }
-    const fog = { mask, alpha: cellAlpha(mask) };
+    const fog = fogField(mask);
     this.fogs.set(mapId, { version, fog });
     return fog;
   }
@@ -82,7 +77,7 @@ export class PlayerImages {
    */
   async tile(
     source: SourceImage,
-    fog: PlayerFog,
+    fog: FogField,
     x: number,
     y: number,
   ): Promise<{ data: Buffer; key: string } | undefined> {
@@ -90,7 +85,7 @@ export class PlayerImages {
     const { columns, rows } = tileCount(size, this.tileSize);
     if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0) return undefined;
     if (x >= columns || y >= rows) return undefined;
-    const state = tileState(fog.mask, fog.alpha, size, x, y, this.tileSize);
+    const state = tileState(fog, size, x, y, this.tileSize);
     if (!state) return undefined;
     await this.cut(source);
     const read = (name: string) => this.cache.read(keyOf(source), source.version, name);
@@ -106,7 +101,7 @@ export class PlayerImages {
         // Masked from an exact copy: a lossy one would already have blended hidden pixels in.
         const exact = await read(`${x}-${y}.png`);
         if (!exact) throw new Error(`Tile ${x}-${y} of ${source.path} is missing from the cache`);
-        return mask(exact, pixelAlpha(fog.mask, fog.alpha, size, rect));
+        return mask(exact, pixelAlpha(fog, size, rect));
       },
     );
     return { data, key: state.key };
