@@ -102,6 +102,10 @@ First e2e run needs `npx playwright install chromium`.
   (parents derived from area links: breadcrumbs, attachable maps, `treeProblem`), `viewport.ts`
   (pan and zoom maths), `image-size.ts` (`sameShape`), `editor.ts` (the editor's reducer, with a
   draft outline that's never saved), `urls.ts`, and the `usePanZoom` hook.
+- `app/maps/fog/`: fog of war (isomorphic): `types.ts` (`FogMask`, `FogChange`), `mask.ts` (the
+  grid, run-length text form, cell ranges), `shapes.ts` (the cells a stroke or polygon covers),
+  `changes.ts` (`applyFogChange`, `inverseOf`), `coverage.ts` (`areaRevealed`: at least half),
+  `schema.ts` (zod for requests).
 - `app/characters/`: character sheets and bags (isomorphic): `types.ts` (`Character` is a
   `PlayerCharacter` with a `Sheet`, or a shared `Companion`; `InventoryItem`, `Purse`),
   `abilities.ts` (abilities, skills, `abilityModifier`, `signed`), `derive.ts` (`deriveSheet`: the

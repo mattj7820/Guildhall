@@ -573,3 +573,30 @@ items to each other and to the companion: a gift changes both bags in one update
 only from a bag they may change, to someone they can see, and nobody can take. Gifts arrive as a
 new tile saying who gave them, and can't be undone. The DM's additions to any bag are gifts "from
 the DM".
+
+## 35. Fog of war is a coarse mask in image fractions, changed by paint actions
+
+**Date:** 2026-09-29
+
+**Context.** Shared maps get fog of war: players see only what the DM has revealed, and the DM
+reveals more as the party explores, often mid-session. Reveals must survive a re-exported image
+(like outlines, decision 21), stay small enough to poll, and be undoable.
+
+**Options considered.**
+
+- **A log of vector operations** (strokes, polygons): exact edges and simple undo, but it grows all
+  session long, and every read, render and "is this area revealed?" gets slower with it.
+- **A coarse mask, changed by actions (chosen):** a grid of cells over the image, with 512 along
+  its longer side (2 to 15 image pixels on the campaign's maps), stored as run lengths: usually a
+  few hundred bytes, never more than about 44 KB, however much has been painted.
+- **A mask plus a recent log:** more moving parts than needed.
+
+**Decision.** The grid is in fractions of the image, so a re-export at another resolution lines
+up. A cell is revealed or not; a cell counts as covered by a shape when its centre is inside it,
+and a shape too small to hold a centre still covers the cell under it. Changes follow decision
+30: the DM's tools send `paint` actions (a brush stroke, an outline or rectangle, or everything),
+applied by one pure function in the browser at once and on the server to what's stored. Undo sends
+the inverse, which sets back only the cells that change flipped, so it never hides what was
+revealed meanwhile elsewhere. A new shared map starts fully fogged. Players see an area once at
+least half of its cells are revealed, so a brush grazing its edge doesn't give its name away. One
+fog per map for now; per-player fog or an "explored" memory would be further masks beside it.
