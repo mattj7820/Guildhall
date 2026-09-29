@@ -335,6 +335,41 @@ test.describe("Maps for players", () => {
     await player.context().close();
   });
 
+  test("a player sees the DM's reveals within seconds, without reloading", async ({
+    page,
+    browser,
+  }) => {
+    const { map } = await sharedMap(page);
+    const player = await asPlayerOne(browser);
+    await player.goto(map);
+    const tiles = player.locator('svg image[href*="/tiles/"]');
+    await expect(tiles).toHaveCount(1);
+    // Anything set on the page would be lost if it reloaded.
+    await player.evaluate(() => ((window as { stayed?: boolean }).stayed = true));
+
+    await changeFog(page, map, REVEAL_ALL);
+    await expect(tiles).toHaveCount(2, { timeout: 10_000 });
+    const areas = player.getByRole("group", { name: "Map areas" });
+    await expect(areas.getByRole("button", { name: "Cellar" })).toBeVisible();
+
+    await changeFog(page, map, { type: "paint", mode: "hide", shape: { kind: "all" } });
+    await expect(tiles).toHaveCount(0, { timeout: 10_000 });
+    await expect(player.getByText("Nothing explored here yet.")).toBeVisible();
+    await expect(areas.getByRole("button")).toHaveCount(0);
+    expect(await player.evaluate(() => (window as { stayed?: boolean }).stayed)).toBe(true);
+
+    // No longer shared: the map closes, as if it had never been there.
+    const unshare = await page.request.post(`${map}/edit`, {
+      headers: { Origin: ORIGIN },
+      data: { intent: "setVisibility", visibility: "dm" },
+    });
+    expect(unshare.status()).toBe(200);
+    await expect(player.getByRole("heading", { name: "Map not found" })).toBeVisible({
+      timeout: 10_000,
+    });
+    await player.context().close();
+  });
+
   test("players can't open the editor", async ({ page, browser }) => {
     const { map } = await sharedMap(page);
     const player = await asPlayerOne(browser);

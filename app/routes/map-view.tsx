@@ -1,5 +1,5 @@
 import { data, isRouteErrorResponse, Link } from "react-router";
-import { loadMapView } from "~/.server/maps/load";
+import { loadMapView, mapVersion } from "~/.server/maps/load";
 import { MapViewer } from "~/components/maps/MapViewer";
 import { PlayerMapViewer } from "~/components/maps/PlayerMapViewer";
 import { servicesContext, viewerContext } from "~/context";
@@ -17,14 +17,20 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   const map = maps.find((candidate) => candidate.id === params.id);
   // A map the viewer can't see gets the same 404 as one that doesn't exist.
   const view = map && (await loadMapView(services, map, maps, viewer));
-  if (!view) throw data("Map not found", { status: 404 });
+  if (!map || !view) throw data("Map not found", { status: 404 });
   // Only the DM gets the vault's image list (for a moved image); players get just the map.
-  if (viewer.role !== "dm") return { forDm: false as const, map: view };
+  if (viewer.role !== "dm") {
+    return { forDm: false as const, map: view, version: await mapVersion(services, map) };
+  }
   return { forDm: true as const, map: view, images: services.vault.current.mapImages() };
 }
 
 export default function MapPage({ loaderData }: Route.ComponentProps) {
-  if (!loaderData.forDm) return <PlayerMapViewer key={loaderData.map.id} map={loaderData.map} />;
+  if (!loaderData.forDm) {
+    return (
+      <PlayerMapViewer key={loaderData.map.id} map={loaderData.map} version={loaderData.version} />
+    );
+  }
   return <MapViewer key={loaderData.map.id} map={loaderData.map} images={loaderData.images} />;
 }
 

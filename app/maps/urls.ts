@@ -27,3 +27,8 @@ export function mapFogUrl(id: MapId): string {
 export function mapImageUrl(id: MapId, version: string): string {
   return `${mapUrl(id)}/image?v=${encodeURIComponent(version)}`;
 }
+
+/** What an open map polls to learn whether anything about it has changed. */
+export function mapVersionUrl(id: MapId): string {
+  return `${mapUrl(id)}/version`;
+}

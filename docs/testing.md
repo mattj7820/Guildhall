@@ -123,7 +123,9 @@ Dice decide initiative, tie-breaks and monster HP, so tests must control them.
 - **The player view of maps** is covered at unit level (`mapView`: hidden maps, secret and fogged
   areas, tiles) and end to end as Player One: shared maps in the menu and list, only the revealed
   tile on the page, an area under the fog absent even from the page's data, and a map that isn't
-  shared (its page, editor, image and tiles) a 404.
+  shared (its page, editor, image and tiles) a 404. The DM and Player One each get a browser: the
+  DM reveals, hides and stops sharing while the player's page is open, and it follows within
+  seconds without reloading (a value set on the page survives).
 - **Image health** (a moved, missing or reshaped image) is covered at unit level (`findImage`,
   `sameShape`, `mapView`): the e2e run can't move or change fixture files, which must stay
   untouched.

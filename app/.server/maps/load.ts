@@ -82,3 +82,28 @@ export async function loadMapView(
       : undefined,
   });
 }
+
+const vaultNumbers = new WeakMap<Vault, number>();
+let vaultsSeen = 0;
+
+/**
+ * Changes whenever anything a viewer sees of the map might: the map (its areas, links or sharing),
+ * its fog, its image file, or the vault's notes. A player's open map polls it and reloads its data
+ * only when it changes.
+ */
+export async function mapVersion(
+  services: Pick<Services, "config" | "vault" | "fogs">,
+  map: CampaignMap,
+): Promise<string> {
+  const vault = services.vault.current;
+  let vaultNumber = vaultNumbers.get(vault);
+  if (vaultNumber === undefined) {
+    vaultNumber = ++vaultsSeen;
+    vaultNumbers.set(vault, vaultNumber);
+  }
+  const [source, fog] = await Promise.all([
+    mapSource(services, map),
+    services.fogs.get(map.id, map.image),
+  ]);
+  return [map.updatedAt, fog.version, source?.version ?? "missing", vaultNumber].join(".");
+}

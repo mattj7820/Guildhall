@@ -103,7 +103,7 @@ First e2e run needs `npx playwright install chromium`.
   browser-safe `MapView`), `schema.ts` (zod), `geometry.ts` (normalised outlines), `tree.ts`
   (parents derived from area links: breadcrumbs, attachable maps, `treeProblem`), `viewport.ts`
   (pan and zoom maths), `image-size.ts` (`sameShape`), `editor.ts` (the editor's reducer, with a
-  draft outline that's never saved), `urls.ts`, and the `usePanZoom` hook.
+  draft outline that's never saved), `urls.ts`, and the `usePanZoom` and `useMapUpdates` (polling the map's version) hooks.
 - `app/maps/fog/`: fog of war (isomorphic): `types.ts` (`FogMask`, `FogChange`), `mask.ts` (the
   grid, run-length text form, cell ranges), `shapes.ts` (the cells a stroke or polygon covers),
   `changes.ts` (`applyFogChange`, `inverseOf`), `coverage.ts` (`areaRevealed`: at least half),
@@ -166,7 +166,8 @@ First e2e run needs `npx playwright install chromium`.
   only shared ones for players; create action), `map-view` (`/maps/:id`: the table view for the DM,
   the fogged view for players), `map-edit` (editor; save, createChild, setImage,
   setVisibility and delete actions; `?area=` preselects an area), `map-fog` (JSON: the DM's fog
-  changes), `map-tile` (resource route: one tile of a map's image as players may see it), `map-image` (resource route: a map's image by map
+  changes), `map-tile` (resource route: one tile of a map's image as players may see it), `map-version`
+  (JSON: what an open player map polls), `map-image` (resource route: a map's image by map
   ID), `vault-asset` (resource route), `view-mode` (the DM's preview toggle), `login` (sign-in
   page; dev sign-in action), `logout` (POST), `auth-discord` (starts Discord sign-in) and
   `auth-discord-callback`, `waiting` (for newcomers), `members` (DM-only: approve, assign,

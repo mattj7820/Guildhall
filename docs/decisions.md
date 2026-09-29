@@ -691,3 +691,17 @@ reads like nothing to find, not like a secret. There's no editing: the editor is
 missing map. Players pan and zoom freely; showing where the party is will come with tokens.
 Revealing an area never shares its note, which stays a vault decision (a later idea: revealing
 them together).
+
+## 40. Players' maps update by polling a version, ready for websockets
+
+**Date:** 2026-09-29
+
+A reveal should reach players within a few seconds, and there's no real-time infrastructure yet.
+An open player map asks `/maps/:id/version` every 3 seconds while its tab is visible, and again
+when it's shown or focused. The version changes with the map (areas, links, sharing), its fog, its
+image file and the vault's notes. When it changes, the page reloads its data in place (React
+Router's revalidation), through the same loader and `mapView` as the first load, so there's no
+second path deciding what a player may see; only tiles whose fog changed get new URLs, so only
+those download again. A map that's no longer shared answers 404, and the page closes to "Map not
+found". A reveal typically shows within 1 to 4 seconds. With websockets (the counters slice), the
+server will push the same version and nothing else needs to change.

@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { fogMask } from "~/maps/fog/editor";
 import type { AreaView, MapView, NoteLink, Size, TileLayer } from "~/maps/types";
-import { mapUrl } from "~/maps/urls";
+import { mapUrl, mapVersionUrl } from "~/maps/urls";
+import { useMapUpdates } from "~/maps/useMapUpdates";
 import { AreaShape } from "./AreaShape";
 import { useFogImage } from "./FogLayer";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
@@ -14,9 +15,11 @@ const REVEALED_ID = "revealed-by-fog";
 /**
  * A map as players see it: black where the fog is, the tiles they may have where it isn't, and
  * the areas they can see, drawn only over the revealed parts. The server has already left out
- * everything else, so this only lays out what it was given.
+ * everything else, so this only lays out what it was given. What the DM reveals shows within a
+ * few seconds, without reloading the page.
  */
-export function PlayerMapViewer({ map }: { map: MapView }) {
+export function PlayerMapViewer({ map, version }: { map: MapView; version: string }) {
+  useMapUpdates(mapVersionUrl(map.id), version);
   const [selectedId, setSelectedId] = useState<string>();
   const selected = map.areas.find((area) => area.id === selectedId);
   const mask = useMemo(() => fogMask(map.fog), [map.fog]);
