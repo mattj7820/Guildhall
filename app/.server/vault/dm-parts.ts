@@ -1,4 +1,13 @@
-import type { Blockquote, Heading, Nodes, Parent, Paragraph, Root, RootContent } from "mdast";
+import type {
+  Blockquote,
+  Heading,
+  Nodes,
+  Parent,
+  Paragraph,
+  PhrasingContent,
+  Root,
+  RootContent,
+} from "mdast";
 import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import { unified } from "unified";
@@ -108,12 +117,74 @@ function sectionEnd(parent: Parent, next: number, textLength: number): number {
   return last.position?.end.offset ?? textLength;
 }
 
-/** Removes the `[!dm]` marker from the start of a DM callout, for the DM's boxed view. */
-export function stripCalloutMarker(quote: Blockquote): void {
+/**
+ * For the DM's view: boxes every DM part. A DM section, its heading included, is wrapped in
+ * `div.dm-section`; a DM callout becomes `div.dm-callout` without its `[!dm]` marker. Parts
+ * inside parts are boxed too, so anything not in a box is something players see.
+ */
+export function remarkDmParts() {
+  return (tree: Root) => {
+    const parts = findDmParts(tree);
+    // Collected before any wrapping, which moves nodes and shifts indexes.
+    const callouts = parts
+      .filter((part) => part.kind === "callout")
+      .map(({ parent, index }) => parent.children[index] as Blockquote);
+    const sections = parts.filter((part) => part.kind === "section");
+    const outermost = sections.filter(
+      (part) =>
+        !sections.some(
+          (other) =>
+            other !== part &&
+            other.parent === part.parent &&
+            other.index < part.index &&
+            part.index < other.index + other.count,
+        ),
+    );
+
+    // Last first, so wrapping one section doesn't shift the indexes of those before it.
+    for (const { parent, index, count } of outermost.sort((a, b) => b.index - a.index)) {
+      const box = { type: "dmSection", data: dmBox("dm-section"), children: [] as RootContent[] };
+      box.children = parent.children.splice(index, count, box as unknown as RootContent);
+    }
+    for (const quote of callouts) {
+      stripCalloutMarker(quote);
+      quote.data = { ...quote.data, ...dmBox("dm-callout") };
+    }
+  };
+}
+
+/** Tells the HTML conversion to make a node a `div` with the given class. */
+function dmBox(className: string) {
+  return { hName: "div", hProperties: { className: [className] } };
+}
+
+/**
+ * Removes the `[!dm]` marker from the start of a DM callout, for the DM's boxed view. A title
+ * after the marker (`> [!dm] Who they work for`) becomes a bold first line, as in Obsidian.
+ */
+function stripCalloutMarker(quote: Blockquote): void {
   const first = quote.children[0] as Paragraph;
   const text = first.children[0];
   if (text.type !== "text") return;
-  text.value = text.value.replace(CALLOUT_MARKER, "").replace(/^[ \t]*\n?/, "");
-  if (text.value === "") first.children.shift();
+  const afterMarker = text.value.replace(CALLOUT_MARKER, "").replace(/^[ \t]+/, "");
+  const lineEnd = afterMarker.indexOf("\n");
+  const title = (lineEnd === -1 ? afterMarker : afterMarker.slice(0, lineEnd)).trim();
+  const rest = lineEnd === -1 ? "" : afterMarker.slice(lineEnd + 1);
+  const isWholeParagraph = lineEnd !== -1 || first.children.length === 1;
+
+  if (!title) {
+    text.value = rest;
+    if (!rest) first.children.shift();
+  } else if (isWholeParagraph) {
+    // The title is plain text on a line of its own: make it the callout's bold first line.
+    const titleNodes: PhrasingContent[] = [
+      { type: "strong", children: [{ type: "text", value: title }] },
+    ];
+    if (rest) titleNodes.push({ type: "break" }, { type: "text", value: rest });
+    first.children.splice(0, 1, ...titleNodes);
+  } else {
+    // A title with formatting or links in it: leave it as it is, just without the marker.
+    text.value = afterMarker;
+  }
   if (first.children.length === 0) quote.children.shift();
 }

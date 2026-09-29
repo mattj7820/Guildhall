@@ -177,4 +177,64 @@ describe("renderMarkdown", () => {
       expect(render('<span class="dm-comment evil">x</span>').html).not.toContain("evil");
     });
   });
+  describe("DM sections and DM callouts", () => {
+    const note = [
+      "Shared intro.",
+      "",
+      "> [!dm] Who they work for",
+      "> The villain. ![[map.png]]",
+      "",
+      "## DM",
+      "",
+      "Section secret, see [[Mira]].",
+      "",
+      "> [!dm]",
+      "> Callout inside the section.",
+      "",
+      "## Market",
+      "",
+      "Shared stalls.",
+    ].join("\n");
+
+    it("boxes each DM part for the DM, without the [!dm] marker", () => {
+      const { html } = render(note, "dm");
+      expect(html).toMatch(
+        /<div class="dm-callout">\s*<p><strong>Who they work for<\/strong><br>\nThe villain\./,
+      );
+      expect(html).toMatch(/<div class="dm-section"><h2 id="dm">DM<\/h2>/);
+      expect(html).not.toContain("[!dm]");
+      // The callout inside the section is boxed too: anything unboxed is what players see.
+      expect(html).toMatch(/<div class="dm-callout">\s*<p>Callout inside the section\.<\/p>/);
+      expect(html).toContain('<h2 id="market">Market</h2>');
+      expect(html).toContain('<a href="/wiki/NPCs/Mira" class="wikilink">Mira</a>');
+    });
+
+    it("keeps the Market section outside the DM box", () => {
+      const { html } = render(note, "dm");
+      const box = html.slice(html.indexOf('<div class="dm-section">'));
+      expect(box.indexOf("</div>")).toBeLessThan(box.indexOf('id="market"'));
+    });
+
+    it("gives players the shared parts only, and none of the DM parts' images", () => {
+      const { html, seenAssets } = render(note, "player");
+      expect(html).toContain("Shared intro.");
+      expect(html).toContain("Shared stalls.");
+      expect(html).not.toMatch(/villain|secret|Callout|dm-/i);
+      expect(seenAssets).toEqual([]);
+    });
+
+    it.each([
+      ["a title on its own", "> [!dm] Only a title", "<p><strong>Only a title</strong></p>"],
+      ["a folded one without a title", "> [!dm]-\n> Body", "<p>Body</p>"],
+      ["a title with a link in it", "> [!dm] About [[Mira]]\n> Body", "About <a"],
+    ])("shows the DM %s cleanly", (_name, markdown, expected) => {
+      const { html } = render(markdown, "dm");
+      expect(html).toContain(expected);
+      expect(html).not.toContain("[!dm");
+    });
+
+    it("doesn't box other callouts", () => {
+      expect(render("> [!note] Shared\n> text", "dm").html).not.toContain("dm-");
+    });
+  });
 });

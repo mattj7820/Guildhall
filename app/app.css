@@ -44,6 +44,35 @@
   @apply font-semibold;
 }
 
+/*
+ * DM sections (under a "## DM" heading) and DM callouts (> [!dm]), which players never receive.
+ * Boxed like DM comments, so anything not in a box is something players see.
+ */
+.note-body .dm-section,
+.note-body .dm-callout {
+  @apply my-4 rounded border-l-4 border-rose-400 bg-rose-50/70 px-4 py-2 text-stone-900 dark:border-rose-700 dark:bg-rose-950/40 dark:text-stone-100;
+}
+
+.note-body .dm-section::before,
+.note-body .dm-callout::before {
+  content: "DM only";
+  @apply mb-1 block text-xs font-semibold tracking-wide text-rose-800 uppercase dark:text-rose-300;
+}
+
+.note-body .dm-section > :first-child {
+  @apply mt-1;
+}
+
+/* The box says "DM only"; the section's own "DM" heading would just repeat it. */
+.note-body .dm-section > h1:first-child,
+.note-body .dm-section > h2:first-child,
+.note-body .dm-section > h3:first-child,
+.note-body .dm-section > h4:first-child,
+.note-body .dm-section > h5:first-child,
+.note-body .dm-section > h6:first-child {
+  @apply sr-only;
+}
+
 /* Statblocks, styled after the 5e books (see app/.server/vault/statblock/). */
 .statblock {
   --statblock-red: #7a200d;

@@ -8,7 +8,7 @@ import remarkRehype from "remark-rehype";
 import { unified } from "unified";
 import type { Role } from "~/campaign/types";
 import { applyComments } from "./comments";
-import { forPlayers } from "./dm-parts";
+import { forPlayers, remarkDmParts } from "./dm-parts";
 import { remarkWikilinks, type WikilinkOptions } from "./remark-wikilinks";
 import { rehypeStatblocks } from "./statblock/rehype-statblocks";
 
@@ -23,7 +23,7 @@ const schema: SanitizeSchema = {
     ...defaultSchema.attributes,
     a: allowClasses("a", ["wikilink", "wikilink-embed"]),
     span: allowClasses("span", ["wikilink-missing", "dm-comment"]),
-    div: allowClasses("div", ["dm-comment"]),
+    div: allowClasses("div", ["dm-comment", "dm-section", "dm-callout"]),
     audio: ["src", "controls", "preload", "ariaLabel"],
   },
 };
@@ -48,9 +48,10 @@ export interface RenderOptions extends WikilinkOptions {
 
 /** Renders a note's markdown body to sanitised HTML for the given viewer role. */
 export function renderMarkdown(markdown: string, options: RenderOptions): string {
-  const processor = unified()
-    .use(remarkParse)
-    .use(remarkGfm)
+  const processor = unified().use(remarkParse).use(remarkGfm);
+  // The DM sees DM parts boxed; players never get them (see `forPlayers` below).
+  if (options.role === "dm") processor.use(remarkDmParts);
+  processor
     .use(remarkWikilinks, options)
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)

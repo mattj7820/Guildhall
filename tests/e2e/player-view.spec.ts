@@ -67,6 +67,27 @@ test.describe("Player view", () => {
     await expect(noteBody(page)).not.toContainText("secret");
   });
 
+  test("hides DM sections and DM callouts inside player-visible notes", async ({ page }) => {
+    // "Fixture Informant" opens with a "# DM" section, and has a DM callout and a "## DM" section.
+    await openNote(page, "NPCs/Fixture Informant");
+    for (const secret of ["medlar", "loquat", "quince"]) {
+      await expect(noteBody(page)).toContainText(secret);
+    }
+    await expect(noteBody(page).getByRole("img")).toBeVisible();
+
+    await switchToPlayerView(page);
+    await expect(page.getByRole("heading", { level: 1, name: "Fixture Informant" })).toBeVisible();
+    await expect(noteBody(page)).toContainText("persimmon");
+    await expect(noteBody(page)).toContainText("damson");
+    for (const secret of ["medlar", "loquat", "quince", "[!dm]"]) {
+      await expect(noteBody(page)).not.toContainText(secret);
+    }
+    await expect(noteBody(page).getByRole("img")).toHaveCount(0);
+
+    await search(page, "quince");
+    await expect(page.getByText("Nothing matches “quince”.")).toBeVisible();
+  });
+
   test("blocks attachments that only DM-only notes use", async ({ page }) => {
     await page.goto("/wiki");
     expect((await page.request.get("/vault-asset/Attachments/dm-map.png")).status()).toBe(200);
