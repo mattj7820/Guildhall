@@ -1,20 +1,22 @@
 import { data, redirect, type ShouldRevalidateFunctionArgs } from "react-router";
-import { loadMapView } from "~/.server/maps/load";
-import { MapsDmOnlyNotice } from "~/components/maps/DmOnlyNotice";
+import { z } from "zod";
+import { loadMapView, mapSource } from "~/.server/maps/load";
 import { MapEditor } from "~/components/maps/MapEditor";
-import { servicesContext, viewerContext } from "~/context";
+import { servicesContext, viewerContext, type Services } from "~/context";
 import { mapChangesSchema, mapImageSchema } from "~/maps/schema";
+import type { CampaignMap } from "~/maps/types";
 import { mapUrl } from "~/maps/urls";
 import type { Route } from "./+types/map-edit";
 
 export function meta({ loaderData }: Route.MetaArgs) {
-  const name = loaderData && !loaderData.dmOnly ? loaderData.map.name : "Map";
+  const name = loaderData?.map.name ?? "Map";
   return [{ title: `Editing ${name} · Guildhall` }];
 }
 
 export async function loader({ request, params, context }: Route.LoaderArgs) {
   const viewer = context.get(viewerContext);
-  if (viewer.role !== "dm") return { dmOnly: true as const };
+  // Editing is the DM's: for anyone else it's the same 404 as a map that doesn't exist.
+  if (viewer.role !== "dm") throw data("Map not found", { status: 404 });
   const services = context.get(servicesContext);
   const maps = await services.maps.list();
   const map = maps.find((candidate) => candidate.id === params.id);
@@ -23,7 +25,6 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
 
   const current = services.vault.current;
   return {
-    dmOnly: false as const,
     map,
     view,
     /** Every map's links, so the editor can offer only maps that keep the tree a tree. */
@@ -42,19 +43,23 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
  * JSON from the editor:
  * - `{ intent: "save", name, note, areas }` autosaves the map;
  * - `{ intent: "createChild", name, image, note }` makes a new map for an area to lead to;
- * - `{ intent: "setImage", image }` records the image's new location or size.
+ * - `{ intent: "setImage", image }` records the image's new location or size;
+ * - `{ intent: "setVisibility", visibility }` shares the map with players, or stops sharing it.
+ *   Like the image, it isn't part of the autosave (or undo): sharing is a deliberate act.
  *
  * A form with `intent=delete` deletes the map.
  */
 export async function action({ request, params, context }: Route.ActionArgs) {
   if (context.get(viewerContext).role !== "dm") throw data("Not found", { status: 404 });
-  const { maps, vault } = context.get(servicesContext);
+  const services = context.get(servicesContext);
+  const { maps, fogs, vault } = services;
   const inVault = (path: string) => vault.current.mapImages().includes(path);
 
   if (!request.headers.get("Content-Type")?.includes("application/json")) {
     const form = await request.formData();
     if (form.get("intent") !== "delete") throw data("Unknown action", { status: 400 });
     await maps.delete(params.id);
+    await fogs.delete(params.id);
     return redirect("/maps");
   }
 
@@ -63,6 +68,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     name?: unknown;
     image?: unknown;
     note?: unknown;
+    visibility?: unknown;
   };
   switch (body.intent) {
     case "save": {
@@ -91,8 +97,27 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       }
       return (await maps.setImage(params.id, image.data)) ? { imageSet: true } : gone();
     }
+    case "setVisibility": {
+      const visibility = z.enum(["dm", "players"]).safeParse(body.visibility);
+      if (!visibility.success)
+        return data({ error: "Share with players, or keep it DM-only." }, 400);
+      const changed = await maps.setVisibility(params.id, visibility.data);
+      if (!changed) return gone();
+      if (changed.visibility === "players") void prepareTiles(services, changed);
+      return { shared: changed.visibility === "players" };
+    }
     default:
       throw data("Unknown action", { status: 400 });
+  }
+}
+
+/** Cuts the image's tiles in the background, so no player waits for them. */
+async function prepareTiles(services: Services, map: CampaignMap) {
+  try {
+    const source = await mapSource(services, map);
+    if (source) await services.playerImages.prepare(source);
+  } catch (error) {
+    console.error(`[maps] Couldn't prepare the tiles of "${map.name}"`, error);
   }
 }
 
@@ -110,7 +135,6 @@ export function shouldRevalidate({
 }
 
 export default function EditMap({ loaderData }: Route.ComponentProps) {
-  if (loaderData.dmOnly) return <MapsDmOnlyNotice />;
   return (
     <MapEditor
       key={loaderData.map.id}

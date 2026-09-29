@@ -19,8 +19,10 @@ read-only from Google Drive (see `docs/deployment.md`).
 
 - **Never write to, move or delete anything in the vault.** Read-only access only. An ESLint rule
   bans fs write APIs (and namespace `fs` imports) in `app/` and `server/`; don't work around it.
-  The single exception is `app/.server/data/json-store.ts`, which writes only inside `DATA_PATH`
-  (config refuses a data folder that overlaps the vault). New persistent data goes through it.
+  The two exceptions are `app/.server/data/json-store.ts` and `app/.server/data/file-cache.ts`
+  (generated files such as map tiles), which write only inside `DATA_PATH` (config refuses a data
+  folder that overlaps the vault). New persistent data goes through the JSON store. sharp may only
+  make buffers (`toFile` is banned too).
 - **Keep the repo shareable:** it's private on GitHub (so its code and CI can't be read without
   signing in), but it may be shown as a portfolio piece: never commit real vault content, personal
   file paths or secrets. Config lives in a gitignored `.env`; keep `.env.example` in sync when
@@ -101,7 +103,14 @@ First e2e run needs `npx playwright install chromium`.
   browser-safe `MapView`), `schema.ts` (zod), `geometry.ts` (normalised outlines), `tree.ts`
   (parents derived from area links: breadcrumbs, attachable maps, `treeProblem`), `viewport.ts`
   (pan and zoom maths), `image-size.ts` (`sameShape`), `editor.ts` (the editor's reducer, with a
-  draft outline that's never saved), `urls.ts`, and the `usePanZoom` hook.
+  draft outline that's never saved), `urls.ts`, and the `usePanZoom` and `useMapUpdates` (polling the map's version) hooks.
+- `app/maps/fog/`: fog of war (isomorphic): `types.ts` (`FogMask`, `FogChange`), `mask.ts` (the
+  grid, run-length text form, cell ranges), `shapes.ts` (the cells a stroke or polygon covers),
+  `changes.ts` (`applyFogChange`, `inverseOf`), `coverage.ts` (`areaRevealed`: at least half),
+  `tiles.ts` (`cellAlpha`, `pixelAlpha`: a pixel in a hidden cell is always transparent; which
+  tiles players may have, and their keys), `schema.ts` (zod for requests), `editor.ts`
+  (`FogEditor`: the DM's changes shown at once, saved in batches, undone with inverses) and its
+  `useFogEditor` hook.
 - `app/characters/`: character sheets and bags (isomorphic): `types.ts` (`Character` is a
   `PlayerCharacter` with a `Sheet`, or a shared `Companion`; `InventoryItem`, `Purse`),
   `abilities.ts` (abilities, skills, `abilityModifier`, `signed`), `derive.ts` (`deriveSheet`: the
@@ -141,16 +150,24 @@ First e2e run needs `npx playwright install chromium`.
 - `app/.server/combat/catalogue.ts`: vault statblocks and PCs as browser-safe shapes, with
   statblocks pre-rendered. `prepared-encounters.ts`: the prepared-encounter repository.
 - `app/.server/maps/`: `campaign-maps.ts` (the map repository over `maps.json`; tree rules checked
-  inside the write), `view.ts` (`mapView`: a map for a `Viewer`, with hidden things left out), and
-  `load.ts` (finds the image, versions its URL, renders linked notes).
+  inside the write; sharing), `map-fogs.ts` (each map's fog over `fog.json`),
+  `player-image.ts` (`PlayerImages`: cuts an image into tiles with sharp, and masks the partly
+  revealed ones from exact copies: the only way players get a map's pixels), `view.ts` (`mapView`:
+  a map for a `Viewer`, with hidden things and fogged areas left out), and `load.ts` (finds the
+  image, versions its URL, renders linked notes, reads the fog).
 - `app/.server/data/json-store.ts`: `JsonFile`, a validated, queued, atomically written JSON file.
+  `file-cache.ts`: `FileCache`, disposable generated files in `DATA_PATH/cache`, one folder per key
+  and version, made one set at a time.
 - `app/wiki/`: URL helpers and types shared with the browser.
 - `app/routes/`: `home`, `wiki` (layout + sidebar), `wiki-home` (landing page + `?q=` search),
   `wiki-note` (`/wiki/*`), `combat` (DM-only tracker; server `loader` + hydrating `clientLoader`;
   `?start=<id>` starts a prepared encounter), `combat-prepared` (list; create, duplicate and delete
-  actions), `combat-prepared-edit` (editor; autosave action), `maps` (tree of maps; create action),
-  `map-view` (`/maps/:id`, the table view), `map-edit` (editor; save, createChild, setImage and
-  delete actions; `?area=` preselects an area), `map-image` (resource route: a map's image by map
+  actions), `combat-prepared-edit` (editor; autosave action), `maps` (tree of maps: every map for the DM,
+  only shared ones for players; create action), `map-view` (`/maps/:id`: the table view for the DM,
+  the fogged view for players), `map-edit` (editor; save, createChild, setImage,
+  setVisibility and delete actions; `?area=` preselects an area), `map-fog` (JSON: the DM's fog
+  changes), `map-tile` (resource route: one tile of a map's image as players may see it), `map-version`
+  (JSON: what an open player map polls), `map-image` (resource route: a map's image by map
   ID), `vault-asset` (resource route), `view-mode` (the DM's preview toggle), `login` (sign-in
   page; dev sign-in action), `logout` (POST), `auth-discord` (starts Discord sign-in) and
   `auth-discord-callback`, `waiting` (for newcomers), `members` (DM-only: approve, assign,
@@ -167,7 +184,11 @@ First e2e run needs `npx playwright install chromium`.
   `ItemTooltip`, `ItemDetails`, `QuickAdd`, `Purse`, `UndoToast`.
 - `app/components/maps/`: `MapCanvas` (the SVG canvas), `MapViewer` and `MapEditor` (the two
   pages), `AreaShape`, `VertexHandles`, `DraftOutline`, `AreaForm`, `MapSettings`, `ImageHealth`,
-  `ImagePicker`, `NotePicker`, `NotePanel`, `MapBreadcrumbs`. Shared control classes are in
+  `ImagePicker`, `NotePicker`, `NotePanel`, `MapBreadcrumbs`, and for fog of war `ShareSwitch`,
+  `FogLayer` (the fog drawn from the cell opacities), `FogPainter` (brush, rectangle and area
+  tools), `FogToolbar`, `FogAreaList` (what players see of each area) and `useFogTools` (tool
+  state and keys). `PlayerMapViewer` is a map as players see it: tiles over black, and outlines
+  drawn only over what's revealed. Shared control classes are in
   `app/components/styles.ts`.
 
 ## Conventions
@@ -187,8 +208,11 @@ First e2e run needs `npx playwright install chromium`.
 - Maps: outlines are stored as fractions of the image (0..1), never pixels; the map records the
   pixel size they were drawn against. Maps and areas reference notes by entity ID and images by
   vault path. A map's parent is derived from area links, never stored (one parent per map). Map
-  images are served by map ID through `map-image`, not `vault-asset`. Map changes go through
-  `editorReducer`; the image changes only through its own action.
+  images are served by map ID through `map-image`, not `vault-asset`, and only ever to the DM.
+  Map changes go through `editorReducer`; the image and sharing change only through their own
+  actions. An area's `visibility` is `players` (seen once at least half revealed on a shared map)
+  or `dm` (secret). Fog changes are `FogChange`s through `applyFogChange`, in the browser and on
+  the server; undo sends `inverseOf`.
 - Characters: every change is a `CharacterAction` through `applyAction`, the same in the browser
   and on the server, which applies it to what's stored now (never save a whole sheet). Set actions
   carry `from` (what the sender saw). New IDs are made by the sender and carried in the action.

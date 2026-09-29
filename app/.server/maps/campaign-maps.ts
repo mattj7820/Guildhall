@@ -1,17 +1,35 @@
 import path from "node:path";
 import { z } from "zod";
-import type { EntityId } from "~/campaign/types";
+import type { EntityId, Visibility } from "~/campaign/types";
 import { campaignMapSchema, MAP_NAME_MAX } from "~/maps/schema";
 import { treeProblem, withoutMissingLinks } from "~/maps/tree";
 import type { CampaignMap, MapChanges, MapId, MapImage } from "~/maps/types";
 import { newId } from "~/shared/ids";
 import { JsonFile } from "../data/json-store";
 
-const fileSchema = z.object({
-  version: z.literal(1),
+const currentFile = z.object({
+  version: z.literal(2),
   maps: z.array(campaignMapSchema),
 });
-type MapsFile = z.infer<typeof fileSchema>;
+type MapsFile = z.infer<typeof currentFile>;
+
+/**
+ * Version 1 had no way to share a map, so its areas were all `dm` without meaning anything by it.
+ * From version 2 an area on a shared map is shown once it's revealed, unless it's `dm` (secret),
+ * so version 1's areas become `players`. Safe, since all of its maps were DM-only.
+ */
+const fileSchema: z.ZodType<MapsFile> = z.union([
+  currentFile,
+  z
+    .object({ version: z.literal(1), maps: z.array(campaignMapSchema) })
+    .transform(({ maps }): MapsFile => ({
+      version: 2,
+      maps: maps.map((map) => ({
+        ...map,
+        areas: map.areas.map((area) => ({ ...area, visibility: "players" })),
+      })),
+    })),
+]);
 
 export const DEFAULT_MAP_NAME = "Untitled map";
 
@@ -42,7 +60,7 @@ export class CampaignMaps {
     options: { now?: () => Date; createId?: () => string } = {},
   ): CampaignMaps {
     return new CampaignMaps(
-      new JsonFile(path.join(dataPath, "maps.json"), fileSchema, () => ({ version: 1, maps: [] })),
+      new JsonFile(path.join(dataPath, "maps.json"), fileSchema, () => ({ version: 2, maps: [] })),
       options.now,
       options.createId,
     );
@@ -112,15 +130,12 @@ export class CampaignMaps {
 
   /** Records a new location or size for the image, keeping the areas as they are. */
   setImage(id: MapId, image: MapImage): Promise<CampaignMap | undefined> {
-    return this.file.update((data) => {
-      const existing = data.maps.find((map) => map.id === id);
-      if (!existing) return { next: data, result: undefined };
-      const changed = { ...existing, image, updatedAt: this.now().toISOString() };
-      return {
-        next: { ...data, maps: data.maps.map((map) => (map.id === id ? changed : map)) },
-        result: changed,
-      };
-    });
+    return this.change(id, (map) => ({ ...map, image }));
+  }
+
+  /** Shares the map with players, or makes it DM-only again. Undefined if it no longer exists. */
+  setVisibility(id: MapId, visibility: Visibility): Promise<CampaignMap | undefined> {
+    return this.change(id, (map) => ({ ...map, visibility }));
   }
 
   /**
@@ -137,6 +152,22 @@ export class CampaignMaps {
           : map,
       );
       return { next: { ...data, maps }, result: true };
+    });
+  }
+
+  /** Changes one map, recording when. Undefined if it no longer exists. */
+  private change(
+    id: MapId,
+    update: (map: CampaignMap) => CampaignMap,
+  ): Promise<CampaignMap | undefined> {
+    return this.file.update((data) => {
+      const existing = data.maps.find((map) => map.id === id);
+      if (!existing) return { next: data, result: undefined };
+      const changed = { ...update(existing), updatedAt: this.now().toISOString() };
+      return {
+        next: { ...data, maps: data.maps.map((map) => (map.id === id ? changed : map)) },
+        result: changed,
+      };
     });
   }
 }

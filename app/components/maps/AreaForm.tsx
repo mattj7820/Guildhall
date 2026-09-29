@@ -106,6 +106,23 @@ export function AreaForm({
 
       <AreaNotePicker area={area} notes={notes} dispatch={dispatch} onBlur={onBlur} />
 
+      <label className="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          className="mt-1"
+          checked={area.visibility === "dm"}
+          onChange={(event) =>
+            dispatch({ type: "setAreaSecret", id: area.id, secret: event.target.checked })
+          }
+        />
+        <span>
+          <span className="font-medium">Secret</span>
+          <span className="block text-xs text-stone-500">
+            Players never see this area, even where the map is revealed.
+          </span>
+        </span>
+      </label>
+
       <div className="flex flex-wrap gap-2">
         {confirmingDelete ? (
           <>

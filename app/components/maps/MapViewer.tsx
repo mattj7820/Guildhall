@@ -1,31 +1,62 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { buttonClass, primaryButtonClass } from "~/components/styles";
+import { areaRevealed } from "~/maps/fog/coverage";
+import type { FogMask } from "~/maps/fog/types";
 import type { AreaView, MapView, Size } from "~/maps/types";
 import { mapEditUrl, mapUrl } from "~/maps/urls";
 import { AreaShape } from "./AreaShape";
+import { FogAreaList } from "./FogAreaList";
+import { FogLayer } from "./FogLayer";
+import { FogPainter } from "./FogPainter";
+import { FogToolbar } from "./FogToolbar";
 import { ImageHealth } from "./ImageHealth";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
 import { NotePanel } from "./NotePanel";
+import { ShareSwitch } from "./ShareSwitch";
+import { useFogTools } from "./useFogTools";
+
+/** How dark the fog is for the DM, who sees the map through it. */
+const DM_FOG_OPACITY = 0.6;
+
+/** The areas players see: not secret, and at least half revealed. For presenting a shared map. */
+function seenByPlayers(areas: AreaView[], mask: FogMask): AreaView[] {
+  return areas.filter((area) => !area.secret && areaRevealed(mask, area.outline));
+}
 
 /**
  * The table view: the map with its areas, and a side panel with the map's note and a list of its
  * areas. Areas with a map open it; others show here, with their note if they have one. Present
- * fills the screen with just the map, for sharing it on a call.
+ * fills the screen with just the map, for sharing it on a call; on a shared map it shows the fog
+ * as players see it. The DM always sees the fog of a shared map, see-through, and Fog opens the
+ * tools to reveal and hide.
  */
 export function MapViewer({ map, images }: { map: MapView; images: string[] }) {
   const [selectedId, setSelectedId] = useState<string>();
   const selected = map.areas.find((area) => area.id === selectedId);
   const [actualSize, setActualSize] = useState<Size>();
   const { stage, presenting, togglePresenting } = usePresenting();
+  const [fogMode, setFogMode] = useState(false);
+  const fog = useFogTools(map.id, map.fog, fogMode && !presenting);
+  const shared = !!map.shared;
+  const fogOpacity = presenting ? 1 : DM_FOG_OPACITY;
 
   return (
     <main className="flex h-[calc(100dvh-3.5rem)] flex-col">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-stone-200 px-4 py-2 dark:border-stone-800">
         <MapBreadcrumbs crumbs={map.breadcrumbs} />
         <h1 className="sr-only">{map.name}</h1>
-        <div className="ml-auto flex gap-2">
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <ShareSwitch mapId={map.id} shared={shared} />
+          <button
+            type="button"
+            aria-pressed={fogMode}
+            className={fogMode ? primaryButtonClass : buttonClass}
+            onClick={() => setFogMode(!fogMode)}
+          >
+            Fog
+          </button>
           <button type="button" className={buttonClass} onClick={togglePresenting}>
             Present
           </button>
@@ -35,6 +66,33 @@ export function MapViewer({ map, images }: { map: MapView; images: string[] }) {
         </div>
       </div>
       <ImageHealth map={map} images={images} actual={actualSize} />
+      {map.image.inSharedNote && (
+        <p
+          role="alert"
+          className="border-b border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"
+        >
+          This map's image is embedded in a wiki note players can read, so they can see all of it
+          there, whatever the fog hides here. Take it out of that note, or make the note DM-only.
+        </p>
+      )}
+      {fogMode && (
+        <FogToolbar
+          tool={fog.tool}
+          onTool={fog.setTool}
+          mode={fog.mode}
+          onToggleMode={fog.toggleMode}
+          radius={fog.radius}
+          onRadius={fog.setRadius}
+          onRevealAll={fog.revealAll}
+          onHideAll={fog.hideAll}
+          canUndo={fog.canUndo}
+          canRedo={fog.canRedo}
+          onUndo={() => fog.editor.undo()}
+          onRedo={() => fog.editor.redo()}
+          status={fog.status}
+          revealed={fog.revealed}
+        />
+      )}
 
       <div
         ref={stage}
@@ -48,20 +106,40 @@ export function MapViewer({ map, images }: { map: MapView; images: string[] }) {
             className="flex-1"
             onImageMeasured={setActualSize}
           >
-            {({ scale }) => (
-              <g aria-label="Map areas" role="group">
-                {map.areas.map((area) => (
-                  <AreaShape
-                    key={area.id}
-                    area={area}
-                    size={map.size}
-                    scale={scale}
-                    selected={area.id === selectedId}
-                    onSelect={(chosen) => setSelectedId(chosen.id)}
-                  />
-                ))}
-              </g>
-            )}
+            {(canvas) =>
+              fogMode && !presenting ? (
+                <FogPainter
+                  mask={fog.mask}
+                  size={map.size}
+                  canvas={canvas}
+                  tool={fog.tool}
+                  mode={fog.mode}
+                  radius={fog.radius}
+                  areas={map.areas}
+                  panning={fog.panning}
+                  opacity={fogOpacity}
+                  onChange={fog.change}
+                />
+              ) : (
+                <>
+                  {shared && <FogLayer mask={fog.mask} size={map.size} opacity={fogOpacity} />}
+                  <g aria-label="Map areas" role="group">
+                    {(presenting && shared ? seenByPlayers(map.areas, fog.mask) : map.areas).map(
+                      (area) => (
+                        <AreaShape
+                          key={area.id}
+                          area={area}
+                          size={map.size}
+                          scale={canvas.scale}
+                          selected={area.id === selectedId}
+                          onSelect={(chosen) => setSelectedId(chosen.id)}
+                        />
+                      ),
+                    )}
+                  </g>
+                </>
+              )
+            }
           </MapCanvas>
           {!presenting && map.areas.length > 0 && <Legend />}
           {presenting && (
@@ -79,7 +157,15 @@ export function MapViewer({ map, images }: { map: MapView; images: string[] }) {
             aria-label="Map details"
             className="flex w-full flex-col gap-4 overflow-y-auto border-stone-200 p-4 md:w-80 md:border-l dark:border-stone-800"
           >
-            {selected ? (
+            {fogMode ? (
+              <FogAreaList
+                areas={map.areas}
+                mask={fog.mask}
+                shared={shared}
+                onReveal={fog.revealArea}
+                onHide={fog.hideArea}
+              />
+            ) : selected ? (
               <SelectedArea
                 area={selected}
                 mapId={map.id}

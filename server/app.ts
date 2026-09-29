@@ -1,3 +1,4 @@
+import path from "node:path";
 import { createRequestHandler } from "@react-router/express";
 import express from "express";
 import { RouterContextProvider } from "react-router";
@@ -8,6 +9,9 @@ import { createAttemptCookie } from "~/.server/auth/discord-sign-in";
 import { cookieSettings, createSessions } from "~/.server/auth/sessions";
 import { Characters } from "~/.server/characters/characters";
 import { CampaignMaps } from "~/.server/maps/campaign-maps";
+import { MapFogs } from "~/.server/maps/map-fogs";
+import { PlayerImages } from "~/.server/maps/player-image";
+import { FileCache } from "~/.server/data/file-cache";
 import { Members } from "~/.server/members/members";
 import { LiveVault } from "~/.server/vault/live-vault";
 import { clientAddressContext, servicesContext, type Services } from "~/context";
@@ -36,6 +40,8 @@ async function createServices(): Promise<Services> {
     vault,
     preparedEncounters: PreparedEncounters.inFolder(config.dataPath),
     maps: CampaignMaps.inFolder(config.dataPath),
+    fogs: MapFogs.inFolder(config.dataPath),
+    playerImages: new PlayerImages(new FileCache(path.join(config.dataPath, "cache", "map-tiles"))),
     characters: Characters.inFolder(config.dataPath),
     members: Members.inFolder(config.dataPath),
     sessions: createSessions(cookies),

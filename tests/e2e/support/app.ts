@@ -147,7 +147,7 @@ export const editorAreas = (page: Page) =>
  * Where a point on the image is on screen, given as fractions of the image's width and height.
  * The canvas fits the whole image and centres it, so this allows for the space around it.
  */
-async function onImage(
+export async function onImage(
   page: Page,
   mapName: string,
   image: { width: number; height: number },

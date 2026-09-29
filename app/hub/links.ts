@@ -48,6 +48,16 @@ export function hubLinks(config: { roll20CampaignUrl?: string }, role: Role = "d
         href: "/characters",
         external: false,
       },
+      {
+        id: "maps",
+        title: "Maps",
+        description:
+          role === "dm"
+            ? "Vault maps with clickable areas that lead to deeper maps and wiki notes, and fog of war to reveal as the party explores."
+            : "The maps you've explored so far, opening up as the party goes.",
+        href: "/maps",
+        external: false,
+      },
       ...(role === "dm"
         ? [
             {
@@ -56,14 +66,6 @@ export function hubLinks(config: { roll20CampaignUrl?: string }, role: Role = "d
               description:
                 "Initiative, turns, monster HP and statblocks, with fights prepared ahead. DM only.",
               href: "/combat",
-              external: false,
-            },
-            {
-              id: "maps",
-              title: "Maps",
-              description:
-                "Vault maps with clickable areas that lead to deeper maps and wiki notes. DM only.",
-              href: "/maps",
               external: false,
             },
             {

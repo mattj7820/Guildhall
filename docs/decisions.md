@@ -573,3 +573,139 @@ items to each other and to the companion: a gift changes both bags in one update
 only from a bag they may change, to someone they can see, and nobody can take. Gifts arrive as a
 new tile saying who gave them, and can't be undone. The DM's additions to any bag are gifts "from
 the DM".
+
+## 35. Fog of war is a coarse mask in image fractions, changed by paint actions
+
+**Date:** 2026-09-29
+
+**Context.** Shared maps get fog of war: players see only what the DM has revealed, and the DM
+reveals more as the party explores, often mid-session. Reveals must survive a re-exported image
+(like outlines, decision 21), stay small enough to poll, and be undoable.
+
+**Options considered.**
+
+- **A log of vector operations** (strokes, polygons): exact edges and simple undo, but it grows all
+  session long, and every read, render and "is this area revealed?" gets slower with it.
+- **A coarse mask, changed by actions (chosen):** a grid of cells over the image, with 512 along
+  its longer side (2 to 15 image pixels on the campaign's maps), stored as run lengths: usually a
+  few hundred bytes, never more than about 44 KB, however much has been painted.
+- **A mask plus a recent log:** more moving parts than needed.
+
+**Decision.** The grid is in fractions of the image, so a re-export at another resolution lines
+up. A cell is revealed or not; a cell counts as covered by a shape when its centre is inside it,
+and a shape too small to hold a centre still covers the cell under it. Changes follow decision
+30: the DM's tools send `paint` actions (a brush stroke, an outline or rectangle, or everything),
+applied by one pure function in the browser at once and on the server to what's stored. Undo sends
+the inverse, which sets back only the cells that change flipped, so it never hides what was
+revealed meanwhile elsewhere. A new shared map starts fully fogged. Players see an area once at
+least half of its cells are revealed, so a brush grazing its edge doesn't give its name away. One
+fog per map for now; per-player fog or an "explored" memory would be further masks beside it.
+
+## 36. Sharing a map, and areas seen through the fog
+
+**Date:** 2026-09-29
+
+**Context.** Decision 24 gave maps and areas a `visibility`, failing closed to `dm`, with no way
+to change it. With fog of war, what players see of a shared map is decided by what's revealed.
+
+**Decision.** The DM shares a whole map from the editor, as its own action outside the autosave
+and undo, since sharing is deliberate. A shared map appears for players in the maps list and
+breadcrumbs exactly as `mapView` already works out, and starts fully fogged. On a shared map an
+area needs no sharing of its own: players see it once at least half of it is revealed (decision
+35). An area can be made secret (`visibility: dm`), for example a hidden door, and then players
+never see it, however much is revealed. New areas are `players`. `maps.json` moves to version 2 to
+change what an area's `dm` means: version 1 had no way to share, so its areas were all `dm` without
+meaning "secret", and reading a version 1 file turns them into `players`. That's safe because every
+version 1 map was DM-only. Players never get the whole image's address, even for a fully
+revealed map; the parts they may see come another way (decision 37). An area's links still follow
+their own targets: a link to a map shows only if that map is shared, and a note only if it's shared.
+Fog lives in its own `fog.json`, so changes during a session never race the editor's autosave.
+
+## 37. Players get maps as tiles, with the fog taken out on the server
+
+**Date:** 2026-09-29
+
+**Context.** Players must never receive hidden parts of a map image: covering them in the browser
+isn't enough, since the image file or the page's data would still hold them. The campaign's maps
+are big (3840×2160 to 5120×5120 and 3840×7680, up to 16 MB of PNG), reveals happen mid-session
+and should reach players within seconds, and the image library must work in the Docker image and
+on Windows.
+
+**Options considered.**
+
+- **Hiding in the browser:** leaks the whole image. Ruled out.
+- **One masked copy of the whole image per fog change:** simplest, but every reveal means about a
+  second of work on the server and players downloading 1 to 5 MB again.
+- **Tiles, masked only where the fog's edge crosses them (chosen):** a reveal changes only the
+  tiles along its edge, about 30 ms each on the server, and players fetch only those.
+- **Whole tiles only, with blocky fog:** no masking, but square 512-pixel reveals.
+
+**Decision.** `PlayerImages` (sharp, with libvips's prebuilt binaries) decodes each version of an
+image once and cuts it into 512-pixel tiles, each with a pixel of overlap so no seam shows:
+compressed WebP (quality 82: lettering stays crisp, and a whole map is 1 to 3 MB) to send when a
+tile is fully revealed, and an exact PNG copy to mask when it's partly revealed. Masking starts from
+the exact copy because a lossy one has already blended hidden pixels into their neighbours. In a
+masked tile, a pixel in a hidden cell is transparent black; revealed pixels keep their colour, and
+their opacity rises smoothly with the distance to the nearest hidden cell's centre, from nothing at
+a hidden cell's edge to fully shown 2.5 cells further in, so the soft edge eats into the reveal,
+never out of it. (Fading cell by cell showed the grid as a faint staircase when zoomed in, and
+distances to the cells' squares kept it; distances to their centres give smooth, fog-like
+contours.) The page lists the tiles a player may have; each URL carries the image's version
+and a hash of the fog around that tile, so a reveal changes only the URLs of tiles it touched and
+the browser keeps the rest. The tile route always answers from the fog as it is now, so an old or
+guessed URL gets no more than the fog allows. The whole image stays DM-only, even when a map is
+fully revealed.
+
+Cut tiles are cached in `DATA_PATH/cache` by a second module allowed to write
+(`app/.server/data/file-cache.ts`), since they're files rather than JSON: it writes only there, one
+folder per image and version, through a temporary folder renamed into place, one set at a time, and
+removes older versions. sharp only ever makes buffers (its `toFile` is lint-banned), so every write
+still goes through one of the two modules. The cache is disposable. Sharing a map cuts its tiles in
+the background (about 3 s for the largest map), so the first player doesn't wait. A small overview
+image was left out: shrinking the whole image blends pixels from both sides of the fog's edge, so a
+minimap needs a resampling that respects cells first.
+
+## 38. The DM's fog tools live on the map page
+
+**Date:** 2026-09-29
+
+Revealing happens mid-session, while the DM is looking at the map, so the tools are a **Fog** mode
+on the map page rather than in the editor: a brush with an adjustable size, a rectangle, and
+clicking an area's outline, each revealing or hiding (X, or hold Alt), plus reveal all and hide
+all. A stroke or rectangle shows in the fog as it's drawn and becomes one change, and one undo
+step, when released. The DM always sees a shared map's fog as a see-through veil drawn from the
+same cell opacities as players' tiles, and a list says which areas players see (with reveal and
+hide buttons that also work from the keyboard). The existing preview toggle shows exactly what
+players get. Presenting a shared map draws the fog solid and only the areas players see, since
+presenting is for showing the table. Saving follows the character sheets (decision 30): changes
+show at once, go in small batches, retry when offline, and undo sends the inverse.
+
+## 39. What players see of a map
+
+**Date:** 2026-09-29
+
+Players get Maps in the menu and on the hub, listing only shared maps, nested as they lead to each
+other; only the links between shared maps are sent, never area names or image files. A map's page
+is black except for the tiles they may have (decision 37). Areas they can see (decision 36) are
+drawn only over the revealed parts, so an outline never runs off into the fog; clicking one opens
+its deeper map if that's shared, or its note if it's shared and has anything left for players once
+DM parts are taken out. Otherwise the panel just says nothing more is known yet: an empty note
+reads like nothing to find, not like a secret. There's no editing: the editor is the same 404 as a
+missing map. Players pan and zoom freely; showing where the party is will come with tokens.
+Revealing an area never shares its note, which stays a vault decision (a later idea: revealing
+them together). One way round the fog is outside maps: a note players can read that embeds the map's
+image makes the wiki serve all of it (decision 3). The DM's map page warns when that's so.
+
+## 40. Players' maps update by polling a version, ready for websockets
+
+**Date:** 2026-09-29
+
+A reveal should reach players within a few seconds, and there's no real-time infrastructure yet.
+An open player map asks `/maps/:id/version` every 3 seconds while its tab is visible, and again
+when it's shown or focused. The version changes with the map (areas, links, sharing), its fog, its
+image file and the vault's notes. When it changes, the page reloads its data in place (React
+Router's revalidation), through the same loader and `mapView` as the first load, so there's no
+second path deciding what a player may see; only tiles whose fog changed get new URLs, so only
+those download again. A map that's no longer shared answers 404, and the page closes to "Map not
+found". A reveal typically shows within 1 to 4 seconds. With websockets (the counters slice), the
+server will push the same version and nothing else needs to change.

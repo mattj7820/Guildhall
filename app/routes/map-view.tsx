@@ -1,29 +1,36 @@
 import { data, isRouteErrorResponse, Link } from "react-router";
-import { loadMapView } from "~/.server/maps/load";
-import { MapsDmOnlyNotice } from "~/components/maps/DmOnlyNotice";
+import { loadMapView, mapVersion } from "~/.server/maps/load";
 import { MapViewer } from "~/components/maps/MapViewer";
+import { PlayerMapViewer } from "~/components/maps/PlayerMapViewer";
 import { servicesContext, viewerContext } from "~/context";
 import type { Route } from "./+types/map-view";
 
 export function meta({ loaderData }: Route.MetaArgs) {
-  const name = loaderData && !loaderData.dmOnly ? loaderData.map.name : "Map";
+  const name = loaderData?.map.name ?? "Map";
   return [{ title: `${name} · Guildhall` }];
 }
 
 export async function loader({ params, context }: Route.LoaderArgs) {
   const viewer = context.get(viewerContext);
-  if (viewer.role !== "dm") return { dmOnly: true as const };
   const services = context.get(servicesContext);
   const maps = await services.maps.list();
   const map = maps.find((candidate) => candidate.id === params.id);
   // A map the viewer can't see gets the same 404 as one that doesn't exist.
   const view = map && (await loadMapView(services, map, maps, viewer));
-  if (!view) throw data("Map not found", { status: 404 });
-  return { dmOnly: false as const, map: view, images: services.vault.current.mapImages() };
+  if (!map || !view) throw data("Map not found", { status: 404 });
+  // Only the DM gets the vault's image list (for a moved image); players get just the map.
+  if (viewer.role !== "dm") {
+    return { forDm: false as const, map: view, version: await mapVersion(services, map) };
+  }
+  return { forDm: true as const, map: view, images: services.vault.current.mapImages() };
 }
 
 export default function MapPage({ loaderData }: Route.ComponentProps) {
-  if (loaderData.dmOnly) return <MapsDmOnlyNotice />;
+  if (!loaderData.forDm) {
+    return (
+      <PlayerMapViewer key={loaderData.map.id} map={loaderData.map} version={loaderData.version} />
+    );
+  }
   return <MapViewer key={loaderData.map.id} map={loaderData.map} images={loaderData.images} />;
 }
 

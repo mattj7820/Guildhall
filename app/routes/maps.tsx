@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { data, Form, Link, redirect, useActionData, useNavigation } from "react-router";
 import { DataFileError } from "~/.server/data/json-store";
-import { MapsDmOnlyNotice } from "~/components/maps/DmOnlyNotice";
 import { ImagePicker } from "~/components/maps/ImagePicker";
 import { NotePicker } from "~/components/maps/NotePicker";
 import { inputClass, panelClass, primaryButtonClass, buttonClass } from "~/components/styles";
-import { servicesContext, viewerContext } from "~/context";
+import type { Viewer } from "~/campaign/types";
+import { canView } from "~/campaign/visibility";
+import { servicesContext, viewerContext, type Services } from "~/context";
 import { mapImageSchema, MAP_NAME_MAX } from "~/maps/schema";
 import { mapTree, type MapTreeNode } from "~/maps/tree";
 import type { MapImage } from "~/maps/types";
@@ -18,7 +19,7 @@ export function meta(_: Route.MetaArgs) {
 
 export async function loader({ context }: Route.LoaderArgs) {
   const viewer = context.get(viewerContext);
-  if (viewer.role !== "dm") return { dmOnly: true as const };
+  if (viewer.role !== "dm") return playersMaps(context.get(servicesContext), viewer);
   const { maps, vault } = context.get(servicesContext);
   const current = vault.current;
   const picker = {
@@ -32,10 +33,36 @@ export async function loader({ context }: Route.LoaderArgs) {
       areas: areas.map(({ id, name, map }) => ({ id, name, map })),
       imageMissing: !current.findImage(image.path),
     }));
-    return { dmOnly: false as const, tree: mapTree(list), ...picker };
+    return { forDm: true as const, tree: mapTree(list), ...picker };
   } catch (error) {
     if (error instanceof DataFileError) {
-      return { dmOnly: false as const, tree: [], error: error.message, ...picker };
+      return { forDm: true as const, tree: [], error: error.message, ...picker };
+    }
+    throw error;
+  }
+}
+
+/**
+ * The maps shared with players, nested as they lead to each other. Only the links between shared
+ * maps are sent: area names, image files and everything else stay on the server.
+ */
+async function playersMaps({ maps }: Services, viewer: Viewer) {
+  try {
+    const shared = (await maps.list()).filter((map) => canView(viewer, map.visibility));
+    const isShared = (id: string) => shared.some((map) => map.id === id);
+    const list = shared.map(({ id, name, areas }) => ({
+      id,
+      name,
+      areas: areas.flatMap((area) =>
+        area.map && isShared(area.map) ? [{ id: area.id, name: "", map: area.map }] : [],
+      ),
+      imageMissing: false,
+    }));
+    return { forDm: false as const, tree: mapTree(list) };
+  } catch (error) {
+    // The DM is told what's wrong with the file; players aren't told where it is.
+    if (error instanceof DataFileError) {
+      return { forDm: false as const, tree: [], error: "The maps can't be shown just now." };
     }
     throw error;
   }
@@ -68,31 +95,33 @@ export async function action({ request, context }: Route.ActionArgs) {
   return redirect(mapEditUrl(created.id));
 }
 
-type Loaded = Extract<Route.ComponentProps["loaderData"], { dmOnly: false }>;
+type Loaded = Extract<Route.ComponentProps["loaderData"], { forDm: true }>;
+type ListedMap = Route.ComponentProps["loaderData"]["tree"][number]["map"];
 
 export default function Maps({ loaderData }: Route.ComponentProps) {
   const [creating, setCreating] = useState(false);
-  if (loaderData.dmOnly) return <MapsDmOnlyNotice />;
+  const forDm = loaderData.forDm;
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-6">
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <h1 className="mr-auto font-serif text-3xl font-bold">Maps</h1>
-        {!creating && (
+        {forDm && !creating && (
           <button type="button" className={primaryButtonClass} onClick={() => setCreating(true)}>
             New map
           </button>
         )}
       </div>
 
-      {creating && <NewMapForm loaded={loaderData} onCancel={() => setCreating(false)} />}
+      {forDm && creating && <NewMapForm loaded={loaderData} onCancel={() => setCreating(false)} />}
 
       {"error" in loaderData && loaderData.error ? (
         <p role="alert" className="rounded-md bg-rose-100 px-3 py-2 text-sm text-rose-900">
           {loaderData.error}
         </p>
       ) : loaderData.tree.length === 0 ? (
-        !creating && (
+        !creating &&
+        (forDm ? (
           <div className={`${panelClass} text-center`}>
             <p className="font-semibold">No maps yet.</p>
             <p className="mt-1 text-sm text-stone-500">
@@ -100,17 +129,24 @@ export default function Maps({ loaderData }: Route.ComponentProps) {
               detailed maps or to wiki notes.
             </p>
           </div>
-        )
+        ) : (
+          <div className={`${panelClass} text-center`}>
+            <p className="font-semibold">No maps yet.</p>
+            <p className="mt-1 text-sm text-stone-500">
+              Maps appear here as the DM shares them, and open up as the party explores.
+            </p>
+          </div>
+        ))
       ) : (
         <nav aria-label="All maps" className={panelClass}>
-          <MapList nodes={loaderData.tree} />
+          <MapList nodes={loaderData.tree} forDm={forDm} />
         </nav>
       )}
     </main>
   );
 }
 
-function MapList({ nodes }: { nodes: MapTreeNode<Loaded["tree"][number]["map"]>[] }) {
+function MapList({ nodes, forDm }: { nodes: MapTreeNode<ListedMap>[]; forDm: boolean }) {
   return (
     <ul className="flex flex-col gap-1 [&_ul]:mt-1 [&_ul]:ml-5 [&_ul]:border-l [&_ul]:border-stone-200 [&_ul]:pl-3 dark:[&_ul]:border-stone-800">
       {nodes.map(({ map, children }) => (
@@ -119,23 +155,27 @@ function MapList({ nodes }: { nodes: MapTreeNode<Loaded["tree"][number]["map"]>[
             <Link to={mapUrl(map.id)} className="font-serif text-lg font-semibold hover:underline">
               {map.name}
             </Link>
-            <span className="text-xs text-stone-500">
-              {map.areas.length === 1 ? "1 area" : `${map.areas.length} areas`}
-            </span>
-            <Link
-              to={mapEditUrl(map.id)}
-              aria-label={`Edit ${map.name}`}
-              className="text-xs text-stone-500 hover:underline"
-            >
-              Edit
-            </Link>
+            {forDm && (
+              <>
+                <span className="text-xs text-stone-500">
+                  {map.areas.length === 1 ? "1 area" : `${map.areas.length} areas`}
+                </span>
+                <Link
+                  to={mapEditUrl(map.id)}
+                  aria-label={`Edit ${map.name}`}
+                  className="text-xs text-stone-500 hover:underline"
+                >
+                  Edit
+                </Link>
+              </>
+            )}
             {map.imageMissing && (
               <span className="text-xs font-semibold text-rose-700 dark:text-rose-400">
                 Image not found
               </span>
             )}
           </div>
-          {children.length > 0 && <MapList nodes={children} />}
+          {children.length > 0 && <MapList nodes={children} forDm={forDm} />}
         </li>
       ))}
     </ul>

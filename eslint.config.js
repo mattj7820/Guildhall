@@ -64,10 +64,11 @@ export default tseslint.config(
   {
     // Read-only guarantee: app and server code may not write to disk. Named imports of write
     // APIs are banned, and so are namespace imports of fs (which would bypass that check).
-    // The single exception is the JSON store, which writes only inside DATA_PATH; config
-    // refuses to start if that folder overlaps the vault.
+    // The two exceptions are the JSON store and the file cache (generated files such as map
+    // tiles), which write only inside DATA_PATH; config refuses to start if that folder overlaps
+    // the vault.
     files: ["app/**/*.{ts,tsx}", "server/**/*.ts"],
-    ignores: ["**/*.test.ts", "app/.server/data/json-store.ts"],
+    ignores: ["**/*.test.ts", "app/.server/data/json-store.ts", "app/.server/data/file-cache.ts"],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -88,6 +89,20 @@ export default tseslint.config(
             message: "The vault is read-only. Server code must not write to the filesystem.",
           })),
         ),
+      ],
+    },
+  },
+  {
+    // sharp can write files itself. It may only make buffers, which the file cache writes.
+    files: ["app/**/*.{ts,tsx}", "server/**/*.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "CallExpression[callee.property.name='toFile']",
+          message: "The vault is read-only. Make a buffer and write it through the file cache.",
+        },
       ],
     },
   },

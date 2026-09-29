@@ -3,6 +3,7 @@
  * and edits them.
  */
 import type { EntityId, Visibility } from "~/campaign/types";
+import type { FogView } from "./fog/types";
 
 export type MapId = string;
 export type AreaId = string;
@@ -73,11 +74,30 @@ export interface NoteLink {
  * means a single image with the same name was found elsewhere (DM only, with its new path).
  */
 export interface MapImageView {
+  /** DM only: the whole image. Players only ever get the parts the fog reveals. */
   url?: string;
+  /** Players only: the tiles of the image they may have. */
+  tiles?: TileLayer;
   status: "ok" | "moved" | "missing";
   /** DM only: where the image is recorded, and where it was found instead. */
   path?: string;
   movedTo?: string;
+  /**
+   * DM only: the image is embedded in a note players can read, so the wiki shows them all of it,
+   * whatever the fog hides here.
+   */
+  inSharedNote?: boolean;
+}
+
+/** The tiles of an image players may have, each drawn at its place on the map. */
+export interface TileLayer {
+  /** The image's real size in pixels, which tiles are cut from (maybe not the map's `size`). */
+  width: number;
+  height: number;
+  /** A tile's side in image pixels; each also overlaps its neighbours by `overlap`. */
+  size: number;
+  overlap: number;
+  tiles: { x: number; y: number; url: string }[];
 }
 
 /** An area as the viewer may see it: hidden targets are simply absent. */
@@ -89,6 +109,8 @@ export interface AreaView {
   note?: NoteLink;
   /** DM only: links that no longer lead anywhere. */
   broken: ("map" | "note")[];
+  /** DM only: players never see this area. */
+  secret?: boolean;
 }
 
 /** A map prepared for one viewer, safe to send to the browser. */
@@ -103,6 +125,13 @@ export interface MapView {
   noteBroken: boolean;
   /** Ancestors, outermost first, then this map. */
   breadcrumbs: MapLink[];
-  /** Largest first, so smaller areas inside larger ones are drawn on top and can be clicked. */
+  /**
+   * Largest first, so smaller areas inside larger ones are drawn on top and can be clicked. For
+   * players, only areas that aren't secret and are at least half revealed.
+   */
   areas: AreaView[];
+  /** What's revealed. For players it describes only what they can see anyway. */
+  fog: FogView;
+  /** DM only: whether players can see this map. */
+  shared?: boolean;
 }

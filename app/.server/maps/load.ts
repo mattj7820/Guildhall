@@ -1,10 +1,11 @@
 import { stat } from "node:fs/promises";
 import path from "node:path";
-import type { EntityId, Viewer } from "~/campaign/types";
+import { PLAYER_VIEWER, type EntityId, type Viewer } from "~/campaign/types";
 import type { Services } from "~/context";
 import type { CampaignMap, MapView, NoteLink } from "~/maps/types";
 import { noteUrl } from "~/wiki/urls";
 import type { Vault } from "../vault/vault";
+import type { SourceImage } from "./player-image";
 import { mapView } from "./view";
 
 /**
@@ -42,21 +43,68 @@ export function noteLink(vault: Vault, id: EntityId, viewer: Viewer): NoteLink |
   );
 }
 
+/** The map's image as it is in the vault now (perhaps moved), or undefined if it's missing. */
+export async function mapSource(
+  { config, vault }: Pick<Services, "config" | "vault">,
+  map: CampaignMap,
+): Promise<(SourceImage & { moved: boolean }) | undefined> {
+  const found = vault.current.findImage(map.image.path);
+  const absolute = found && vaultFile(config.vaultPath, found.path);
+  const version = found && (await imageVersion(config.vaultPath, found.path));
+  return found && absolute && version ? { ...found, absolute, version } : undefined;
+}
+
 /** The map prepared for the viewer, with its image found in the current vault. */
 export async function loadMapView(
-  { config, vault }: Pick<Services, "config" | "vault">,
+  services: Pick<Services, "config" | "vault" | "fogs" | "playerImages">,
   map: CampaignMap,
   maps: readonly CampaignMap[],
   viewer: Viewer,
 ): Promise<MapView | undefined> {
+  const { vault, fogs, playerImages } = services;
   const current = vault.current;
-  const found = current.findImage(map.image.path);
-  const version = found && (await imageVersion(config.vaultPath, found.path));
+  const source = await mapSource(services, map);
+  const fog = await fogs.get(map.id, map.image);
+  const forPlayers = viewer.role !== "dm" && source;
   return mapView({
     map,
     maps,
     viewer,
-    image: found && version ? { ...found, version } : undefined,
+    image: source,
     note: (id) => noteLink(current, id, viewer),
+    fog,
+    imageInSharedNote: !!source && current.getAsset(source.path, PLAYER_VIEWER) !== undefined,
+    tiles: forPlayers
+      ? {
+          image: await playerImages.size(source),
+          size: playerImages.tileSize,
+          field: playerImages.playerFog(map.id, fog),
+        }
+      : undefined,
   });
+}
+
+const vaultNumbers = new WeakMap<Vault, number>();
+let vaultsSeen = 0;
+
+/**
+ * Changes whenever anything a viewer sees of the map might: the map (its areas, links or sharing),
+ * its fog, its image file, or the vault's notes. A player's open map polls it and reloads its data
+ * only when it changes.
+ */
+export async function mapVersion(
+  services: Pick<Services, "config" | "vault" | "fogs">,
+  map: CampaignMap,
+): Promise<string> {
+  const vault = services.vault.current;
+  let vaultNumber = vaultNumbers.get(vault);
+  if (vaultNumber === undefined) {
+    vaultNumber = ++vaultsSeen;
+    vaultNumbers.set(vault, vaultNumber);
+  }
+  const [source, fog] = await Promise.all([
+    mapSource(services, map),
+    services.fogs.get(map.id, map.image),
+  ]);
+  return [map.updatedAt, fog.version, source?.version ?? "missing", vaultNumber].join(".");
 }

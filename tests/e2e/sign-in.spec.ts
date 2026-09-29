@@ -87,8 +87,10 @@ test.describe("A player", () => {
     expect((await page.goto("/wiki/Secrets/Villain%20Plan"))?.status()).toBe(404);
     await page.goto("/combat");
     await expect(page.getByText("The combat tracker is DM-only for now")).toBeVisible();
+    // Players see shared maps, but can't make them.
     await page.goto("/maps");
-    await expect(page.getByText("Maps are DM-only for now.")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Maps", level: 1 })).toBeVisible();
+    await expect(page.getByRole("button", { name: "New map" })).toHaveCount(0);
   });
 
   test("can't become the DM by setting the preview switch", async ({ page }) => {

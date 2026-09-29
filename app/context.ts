@@ -6,6 +6,8 @@ import type { Sessions } from "~/.server/auth/sessions";
 import type { PreparedEncounters } from "~/.server/combat/prepared-encounters";
 import type { Config } from "~/.server/config";
 import type { CampaignMaps } from "~/.server/maps/campaign-maps";
+import type { MapFogs } from "~/.server/maps/map-fogs";
+import type { PlayerImages } from "~/.server/maps/player-image";
 import type { Members } from "~/.server/members/members";
 import type { LiveVault } from "~/.server/vault/live-vault";
 import { DM_VIEWER, type Viewer } from "~/campaign/types";
@@ -18,6 +20,10 @@ export interface Services {
   preparedEncounters: PreparedEncounters;
   /** Interactive maps and their areas, kept in the data folder. */
   maps: CampaignMaps;
+  /** Each map's fog of war, kept in the data folder. */
+  fogs: MapFogs;
+  /** What players get of map images: tiles with the fogged parts taken out. */
+  playerImages: PlayerImages;
   /** Character sheets, shared companions and their bags, kept in the data folder. */
   characters: Characters;
   /** Everyone who has signed in, approved or waiting, kept in the data folder. */
