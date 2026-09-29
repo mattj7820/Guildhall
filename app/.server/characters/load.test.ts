@@ -4,7 +4,7 @@ import { aCharacter, aCompanion, anItem, aSheet } from "~/characters/test-builde
 import type { Character } from "~/characters/types";
 import { FIXTURE_VAULT } from "../../../tests/support/fixture-vault";
 import { Vault } from "../vault/vault";
-import { characterPage, partyCards, portraitPath } from "./load";
+import { characterPage, partyCards, portraitChoices, portraitPath } from "./load";
 
 /** Integration tests over the fixture vault: two PCs (Player One, Player Two) and a companion. */
 let vault: Vault;
@@ -135,6 +135,21 @@ describe("portraitPath", () => {
     // The informant's only image is in a DM section; a DM-only note gives players nothing.
     expect(portraitPath(vault, withNote("NPCs/Fixture Informant"), playerOne)).toBeUndefined();
     expect(portraitPath(vault, withNote("Secrets/Villain Plan"), playerOne)).toBeUndefined();
+  });
+
+  it("ignores a chosen image the viewer couldn't load anyway", () => {
+    expect(
+      portraitPath(vault, withNote("Party/Fixture PC One", "Attachments/dm-map.png"), playerOne),
+    ).toBeUndefined();
+    expect(
+      portraitPath(vault, withNote("Party/Fixture PC One", "Attachments/dm-map.png"), DM_VIEWER),
+    ).toBe("Attachments/dm-map.png");
+  });
+
+  it("offers as portraits only images the viewer may load", () => {
+    expect(portraitChoices(vault, playerOne)).toContain("Attachments/mira-portrait.png");
+    expect(portraitChoices(vault, playerOne)).not.toContain("Attachments/dm-map.png");
+    expect(portraitChoices(vault, DM_VIEWER)).toContain("Attachments/dm-map.png");
   });
 
   it("ignores a chosen image that has left the vault", () => {

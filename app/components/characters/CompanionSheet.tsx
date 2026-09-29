@@ -1,16 +1,23 @@
+import { useState } from "react";
 import { Link } from "react-router";
 import type { Companion } from "~/characters/types";
+import { useCharacterEditor } from "~/characters/useCharacterEditor";
 import { CHARACTERS_URL } from "~/characters/urls";
 import type { CharacterPage } from "~/characters/view";
+import { buttonClass } from "../styles";
 import { Portrait } from "./Portrait";
-import { HitPointsView, SheetPanel, StatBox } from "./SheetParts";
+import { EditorBar } from "./EditorBar";
+import { HitPointsPanel } from "./HitPointsPanel";
+import { StatBox } from "./SheetParts";
 
 /**
  * A companion the party shares: its statblock from the vault is its sheet, and Guildhall adds its
  * current hit points and a bag every player can use.
  */
 export function CompanionSheet({ page }: { page: CharacterPage }) {
-  const companion = page.character as Companion;
+  const editor = useCharacterEditor(page.character);
+  const companion = editor.character as Companion;
+  const [editing, setEditing] = useState(false);
   return (
     <main className="mx-auto max-w-5xl px-4 py-6">
       <p className="mb-3 text-sm">
@@ -26,14 +33,28 @@ export function CompanionSheet({ page }: { page: CharacterPage }) {
         </div>
       </header>
 
+      <EditorBar editor={editor}>
+        <button
+          type="button"
+          aria-pressed={editing}
+          onClick={() => setEditing(!editing)}
+          className={buttonClass}
+        >
+          {editing ? "Done editing" : "Edit hit points"}
+        </button>
+      </EditorBar>
+
       <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_2fr]">
         <StatBox label="Armour class">{page.armourClass ?? "—"}</StatBox>
         <StatBox label="Speed">
           <span className="text-lg">{page.speed ?? "—"}</span>
         </StatBox>
-        <SheetPanel title="Hit points" className="col-span-2 sm:col-span-1">
-          <HitPointsView hp={companion.hp} />
-        </SheetPanel>
+        <HitPointsPanel
+          hp={companion.hp}
+          editing={editing}
+          dispatch={editor.dispatch}
+          className="col-span-2 sm:col-span-1"
+        />
       </div>
 
       {page.statblockHtml && (

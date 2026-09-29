@@ -25,6 +25,7 @@ export default [
   route("characters", "routes/characters.tsx"),
   route("characters/:id", "routes/character.tsx"),
   route("characters/:id/portrait", "routes/character-portrait.ts"),
+  route("characters/:id/changes", "routes/character-changes.ts"),
   // Temporary: the inventory prototype, removed once the real bag is built.
   route("prototype/inventory", "routes/prototype-inventory.tsx"),
 ] satisfies RouteConfig;

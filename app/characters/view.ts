@@ -51,6 +51,10 @@ export interface CharacterPage {
   /** The sheet's own name, or the note's title. */
   name: string;
   portraitUrl?: string;
+  /** The image the note shows this viewer first: the portrait when none is chosen. */
+  notePortrait?: string;
+  /** Images this viewer may choose as a PC's portrait. */
+  portraitChoices?: string[];
   /** The note, if this viewer may read it in the wiki. */
   story?: { title: string; url: string; html: string };
   /** A companion's statblock, as this viewer may see it. */

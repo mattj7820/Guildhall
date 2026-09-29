@@ -97,10 +97,13 @@ export function characterPage(vault: Vault, character: Character, viewer: Viewer
   const portrait = portraitPath(vault, character, viewer);
   const statblock =
     character.kind === "companion" && note ? companionStatblock(vault, note, viewer) : undefined;
+  const fromNote = notePortrait(vault, character, viewer);
   return {
     character,
     name: nameOf(character, note),
     ...(portrait && { portraitUrl: portraitUrl(character.id, portrait) }),
+    ...(fromNote && { notePortrait: fromNote }),
+    ...(character.kind === "pc" && { portraitChoices: portraitChoices(vault, viewer) }),
     ...(readable && {
       story: {
         title: readable.title,
@@ -117,9 +120,9 @@ export function characterPage(vault: Vault, character: Character, viewer: Viewer
 }
 
 /**
- * The image to show as a character's portrait: the one chosen on the sheet, or else the first
- * image in its note, as this viewer may read the note (so never one from a DM part, or from a
- * note kept from them).
+ * The image to show as a character's portrait: the one chosen on the sheet, if this viewer may
+ * load it anyway, or else the first image in its note as this viewer may read the note. So it's
+ * never an image from a DM part, a hidden note, or one chosen that the viewer couldn't see.
  */
 export function portraitPath(
   vault: Vault,
@@ -127,9 +130,22 @@ export function portraitPath(
   viewer: Viewer,
 ): string | undefined {
   const chosen = character.kind === "pc" ? character.sheet.portrait : undefined;
-  if (chosen && vault.getAsset(chosen, DM_VIEWER)) return chosen;
+  if (chosen && vault.getAsset(chosen, viewer)) return chosen;
+  return notePortrait(vault, character, viewer);
+}
+
+/** The first image in the character's note, as this viewer may read it. */
+function notePortrait(vault: Vault, character: Character, viewer: Viewer): string | undefined {
   const note = vault.noteById(character.note, viewer);
   return note && vault.firstImage(note, viewer);
+}
+
+/** Images this viewer may choose as a portrait: those they could load anyway. */
+export function portraitChoices(vault: Vault, viewer: Viewer): string[] {
+  return vault
+    .mapImages()
+    .filter((path) => vault.getAsset(path, viewer))
+    .sort((a, b) => byName.compare(a, b));
 }
 
 /** The sheet's own name, the note's title, or a placeholder. */

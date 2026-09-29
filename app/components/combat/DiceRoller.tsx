@@ -14,7 +14,13 @@ const MODES: { value: RollMode; label: string }[] = [
  * Typed rolls (e.g. `2d6+3`) and the results of statblock clicks. Advantage and disadvantage
  * last for one d20 roll; Critical doubles the next damage roll's dice.
  */
-export function DiceRoller({ rolls }: { rolls: RollLogControls }) {
+export function DiceRoller({
+  rolls,
+  hint = "Or click a roll in the statblock. Advantage lasts one d20 roll; Critical doubles the next damage dice, and turns on after a natural 20.",
+}: {
+  rolls: RollLogControls;
+  hint?: string;
+}) {
   const { log } = rolls;
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -75,10 +81,7 @@ export function DiceRoller({ rolls }: { rolls: RollLogControls }) {
             Critical
           </label>
         </div>
-        <p className="text-xs text-stone-500">
-          Or click a roll in the statblock. Advantage lasts one d20 roll; Critical doubles the next
-          damage dice, and turns on after a natural 20.
-        </p>
+        <p className="text-xs text-stone-500">{hint}</p>
       </form>
       {rolls.error && (
         <p role="alert" className="mt-2 text-sm text-rose-700 dark:text-rose-400">

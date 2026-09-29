@@ -4,6 +4,9 @@ export const CHARACTERS_URL = "/characters";
 
 export const characterUrl = (id: CharacterId) => `/characters/${encodeURIComponent(id)}`;
 
+/** Where an open sheet saves its changes, and polls for others'. */
+export const changesUrl = (id: CharacterId) => `${characterUrl(id)}/changes`;
+
 /**
  * A character's portrait. The version changes when the image does, so a new portrait shows at
  * once; it's a hash rather than the file's path, which stays out of URLs.
