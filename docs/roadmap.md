@@ -20,6 +20,14 @@ locations, maps, characters, sessions).
 - **Interactive maps (first slice, DM only):** maps from vault images, with outlined areas that
   lead to deeper maps and wiki notes, nesting to any depth with breadcrumbs. Drawn and reshaped in
   an editor with undo; a clean view for the table. Kept in the data folder.
+- **Character sheets (first slice):** a sheet per PC note, typed in from paper, with the paper
+  sheet's own maths (modifiers, proficiency, passives) and typed overrides; click any bonus to roll
+  it; hit points with Heal and Damage. Players edit only their own; others see a summary. Changes
+  save as they're made, merge with the DM's, and can be undone.
+- **The bag:** a game-style inventory beside the sheet: item tiles with icons, drag to move, stack,
+  split, equip and remove (and all by keyboard), quick add, items linked to vault item notes (DM
+  parts hidden), coins, and giving: the DM to anyone, players to each other and to the party's
+  shared companion.
 - **Sign-in and hosting:** everyone signs in with Discord; newcomers wait for the DM, who lets
   them in and says which player they are. A Docker image with a Google Drive companion container
   that copies the vault read-only, ready for a Dokploy server (see `docs/deployment.md`).
@@ -37,8 +45,19 @@ locations, maps, characters, sessions).
 - **Roles, more:** DM-only powers such as hidden rolls, and perhaps co-DMs.
 - **Wiki, next steps:** backlinks, note transclusion (`![[Note]]`), Obsidian callouts,
   browsing by entity type, and perhaps Obsidian plugins later.
-- **Character sheets:** create a character in-app (D&D Beyond style), view the sheet, and click
-  stats to roll.
+- **Character sheets, next steps:**
+  - **Rules on top:** proficiency bonus from level; species and class features; attacks worked
+    out from equipped weapons; AC from armour; spells and slots; short and long rests. They'd add
+    to `deriveSheet` and could flag a typed number they disagree with. The SRD (5.1 and 5.2, CC BY
+    4.0) could supply the rules data and a catalogue of mundane gear for quick add, with its
+    attribution.
+  - **Live:** HP from sheets in the combat tracker's PC rows, and changes pushed to open sheets
+    over websockets instead of polling (with the counters-on-maps work).
+  - **Companions, more:** a fuller companion view (sidekick levels, its own rolls from the
+    statblock), beyond today's card, hit points and shared bag.
+  - **Bag, more:** vault images as item icons, an item's source linked to the map area where it
+    was found, a party loot view, weight and containers, and an Actions tab.
+  - Creating a character in the app from scratch (D&D Beyond style), once rules exist.
 - **Dice:** shared dice rolling, including DM hidden rolls. Complements physical dice on camera.
 - **Combat tracker, next steps:**
   - **Target and apply:** after a hit, click the target to apply the rolled damage.

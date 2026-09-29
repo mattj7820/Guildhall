@@ -10,7 +10,7 @@ a reverse proxy works the same way.
 Obsidian ─► Google Drive ─► vault-sync (rclone, read-only, every minute) ─► vault volume
                                                                                │ read-only
 Browser ─► https://<domain> ─► Traefik (HTTPS) ─► app (Guildhall) ─────────────┘
-                                                     └─► data volume (members, maps, encounters)
+                                                     └─► data volume (members, maps, encounters, characters)
 ```
 
 - **`app`** is the image built from the `Dockerfile`: Node 26, production packages only, running
