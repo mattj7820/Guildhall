@@ -709,3 +709,135 @@ second path deciding what a player may see; only tiles whose fog changed get new
 those download again. A map that's no longer shared answers 404, and the page closes to "Map not
 found". A reveal typically shows within 1 to 4 seconds. With websockets (the counters slice), the
 server will push the same version and nothing else needs to change.
+
+## 41. Live updates: websockets with `ws`, on the same server as the pages
+
+**Date:** 2026-09-29
+
+**Context.** Tokens on maps must move for everyone as they're dragged, and fog reveals should
+arrive at once rather than within a few seconds (decision 40). Decision 1 chose Express so that a
+websocket could run on the same server.
+
+**Options considered.**
+
+- **`ws` (chosen):** one small package with no dependencies. Guildhall writes its own few dozen
+  lines on top (rooms per map, reconnecting), which keeps the one rule that matters in its own
+  code: every message is built for the viewer who gets it (decision 42).
+- **Socket.IO:** reconnecting, rooms and a long-polling fallback built in, but a protocol and
+  client of its own, and its rooms make it easy to send the same message to everyone in one, which
+  is the wrong default here. The fallback already existed: polling the map's version.
+- **Server-sent events for pushes, with POSTs for moves:** simpler through proxies, but one way
+  only, and a drag would be a POST 20 times a second.
+
+**Decision.** `server.js` owns the HTTP server and hands every websocket upgrade to the app (in
+development through Vite, like requests, so a code change takes effect; the old connections are
+closed and browsers reconnect to the new code). A connection is signed in exactly like a page,
+through the same `identify` the root middleware uses, when it opens: someone signed out gets a
+401, someone waiting, or a page on another site, a 403. The Origin check is stricter than for
+forms: opening a websocket is a GET, which the form check lets through, and without it any site
+could open one as the signed-in user; browsers always send `Origin` there, so it's required. Each
+browser tab has one connection, opened while something watches a map, and reopened after a drop
+(after 1, 2, 5, then every 10 seconds, spread out so everyone doesn't come back at once), and
+when the DM's preview changes. Pages load their data through their loaders as before; the socket
+only pushes what changed. While it's down, open maps check their version every 3 seconds as
+before (decision 40), and say so ("Reconnecting…"). Stopping the server closes every connection
+as "restarting". Traefik passes websockets through with nothing to configure; the server pings
+every 25 seconds, which also finds connections that have died.
+
+## 42. Every live message is built for its viewer, on the server
+
+**Date:** 2026-09-29
+
+Players must never receive a token, or a message about one, that they shouldn't see: hiding it in
+the browser isn't enough (the same rule as pages, decision 24). So the hub's only way to send is
+`publish(map, viewer => message)`, which builds each connection's own copy from its `Viewer` (once
+per kind of viewer), or sends it nothing. There is no way to send one message to a whole room. A
+message that says how something is now (a map's version, its tokens) isn't sent to a connection
+that was last sent the same, so a player never hears that something changed when nothing they can
+see did: a DM moving a hidden marker sends players nothing at all. Watching a map a viewer can't
+see answers "gone", exactly as for a missing map; the connection stays watching it, to hear if
+it's shared later, so everything else about a map goes only to those who may see the map.
+Browsers send only small messages (watching a map, and dragging), checked with zod, 40 a second at
+most; saved changes still go through the usual endpoints, with their checks. A member's
+connections are closed when the DM removes them or makes them someone else's player (and every
+minute, a check against the member list catches anything else), so they sign in afresh or are
+refused.
+
+## 43. Tokens: party members in one place each, and the DM's markers
+
+**Date:** 2026-09-29
+
+**Context.** Exploration maps need to show where the party is, like a game's map screen: the DM
+and players move tokens, and everyone sees it. Battle maps (a grid, snapping, measuring, monsters
+from the combat tracker) come later, and the model should grow into them.
+
+**Decision.** A token is a party member (a PC or the shared companion, by their note, decision 29)
+or a DM marker (a name, one of eight colours, and a visibility that fails closed to DM-only), at a
+point in fractions of the image, like outlines. Tokens are kept in `tokens.json`, apart from maps
+and fog, written only when a move is let go. Changes are small actions (place, move, remove, edit
+a marker) applied by one pure function to what's stored now (decision 30); a move carries where
+its sender saw the token, and the last one wins. Who plays a party member comes from their note
+every time. Players may only move their own PC and the companion the party shares, about the map
+they're looking at; placing, removing, markers and moving between maps are the DM's. A token a
+player can't see, or can't move, is refused the same way whether it exists or not. Tokens keep
+their size on screen as the map zooms. Their data never includes a party member's note for
+players, since a note's path could name a secret.
+
+**Growing into battle maps.** A map gains an optional grid (a square's size and offset in image
+fractions; about 256 pixels on the campaign's Dungeondraft exports) and a way to size tokens by it
+rather than on screen. A token gains a size in squares and a third kind, a creature linked to a
+statblock and to its combatant in a server-held encounter (decision 13's path to sharing), whose
+initiative, hit points and turn order are pushed through the same hub with `encounterForViewer`.
+Snapping is a pure function applied where a move is made, so the move action doesn't change, and
+hidden monsters are markers' `dm` visibility again.
+
+## 44. Tokens and the fog
+
+**Date:** 2026-09-29
+
+A token is under the fog when the fog cell its centre is in is hidden, the same "centre" rule as
+painting (decision 35). Players always see their own party members (their PC, and the companion
+they share), even under the fog, drawn dimmed as "in the dark": it tells them only where they
+already know they are, and dragging your own token into the black is a way to say where the party
+goes next. Other party members, and markers the DM shows, appear only where it's revealed; DM-only
+markers never. Anything a player can't see isn't in their page's data, their map's version or any
+live message; a drag is shown only to those who could see the token where it is now. The DM sees
+every token, marked as under the fog or secret, and presenting shows what players see. Revealing
+stays the DM's: fog clearing as tokens move is a later idea.
+
+## 45. Where the party is, across nested maps
+
+**Date:** 2026-09-29
+
+**Options considered.** Separate tokens on every map (simple, but the town would still show the
+party at its gate after they'd gone into the keep); a party that follows its members into deeper
+maps as a group (wrong when the party splits); or **each party member in one place, a map and a
+point on it (chosen)**.
+
+**Decision.** Placing a party member on a map moves them there from wherever they were. The maps
+above show where they are: an area leading, at any depth, to a map with party members on it
+carries a badge of their faces. It's worked out from the map tree (decision 23), never stored, and
+players get a badge only through areas and links they can see, and only with those they'd see on
+that map, so a badge never gives a hidden place away. Moving between maps is the DM's, since
+entering somewhere is a story beat: "Bring here" on a party member, or "Bring everyone here" for
+the whole party side by side. The Maps page says where each player's own party members are (on a
+map they may open, or not yet on one), and Find centres a map on a party member.
+
+## 46. Moving tokens live, and who's holding one
+
+**Date:** 2026-09-29
+
+A prototype of dragging between two browsers settled the feel: sending a drag 20 times a second,
+with others' copies gliding between positions, felt smooth even with a quarter of a second's
+delay. While a token is dragged (or moved with the arrow keys), where it is goes over the socket
+20 times a second, checked like a saved move and shown only to those who may see it there; it's
+never saved. Letting go saves the move through the tokens endpoint. The mover's copy stays where
+it was put until the server answers, and holds still under the pointer whatever arrives, so it
+never jumps back. Others' copies glide for 80 ms between the positions they hear, and say who's
+moving the token. So two people can't fight over one, the first to pick a token up holds it until
+they let go, stop moving it for three seconds, or close the tab; anyone else who tries is told who
+has it, and their saved move is refused the same way. The DM can always take a token. If two grabs
+arrive together, the first to reach the server wins, and underneath it all the last move saved
+wins. Holds are kept in memory only. Tokens have their own live message, so a move doesn't change
+a map's version and reload anyone's page; while the connection is down, the version check brings
+the tokens too.

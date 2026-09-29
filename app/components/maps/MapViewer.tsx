@@ -73,8 +73,8 @@ export function MapViewer({
 
   function place(at: Point, scale: number) {
     if (placing?.kind === "party") {
-      // Side by side around the click, a token's width apart on screen.
-      const step = (TOKEN_RADIUS * 2.6) / scale / map.size.width;
+      // Side by side around the click, far enough apart on screen for their names.
+      const step = (TOKEN_RADIUS * 4.5) / scale / map.size.width;
       const first = at[0] - (step * (party.length - 1)) / 2;
       const placed = party.map((member, index): TokenAction => ({
         type: "place",

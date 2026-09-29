@@ -6,7 +6,8 @@ A personal hub for running a Dungeons & Dragons campaign. It links out to the to
 table and hosts its own modules: a **read-only wiki over an Obsidian vault**, with a preview of
 what the players are allowed to see, a **combat tracker** that runs monsters straight from the
 vault's statblocks, and **interactive maps** made from the vault's map images, with **fog of war**
-that opens up as the party explores. Players sign in
+that opens up as the party explores and **tokens** showing where everyone is, moved live by the
+DM and players alike. Players sign in
 with Discord, and it's built to be hosted, with the vault copied read-only from Google Drive.
 
 The long-term goal is interconnection: wiki, maps, characters, combat and dice all linking through
@@ -88,12 +89,24 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
   - Reveal as the party moves, mid-session: a brush with an adjustable size, a rectangle, or a
     click on an outlined area, and hide again the same way (hold Alt). Reveal all, hide all, undo
     and redo. The DM sees the whole map through the fog, and which areas players can see.
-  - Players see a reveal within seconds, without reloading, and pan and zoom freely. Areas appear
+  - Players see a reveal as it happens, without reloading, and pan and zoom freely. Areas appear
     once half of them is revealed, leading to deeper maps the DM has shared; a secret area never
     appears.
   - Hidden parts never leave the server: players get the image as tiles with the fogged pixels
     taken out, never the image itself, and tests prove a player's tiles are byte-for-byte the same
     whatever is under the fog. The fog's edge is soft and only ever eats into what's revealed.
+- **Tokens, shared live**, like a game's map screen showing where the party is.
+  - A token for each PC and the party's companion, with their portrait (or an initial), and the
+    DM's own markers (an NPC, a point of interest) with a name and a colour, DM-only unless shown.
+  - Players drag their own PC and the companion, or move them with the arrow keys; the DM moves
+    anything. Everyone sees a token move as it's dragged, and whoever picks one up holds it until
+    they let go, so nobody fights over the blink dog (the DM can always take it).
+  - Each party member is in one place: the maps above show who's inside an area, the Maps page says
+    where you are, and Find takes you to your token. The DM brings the party into a deeper map
+    with one click.
+  - Tokens under the fog never reach players, not in the page, its data or the live connection:
+    only their own, drawn "in the dark". Live updates run over websockets on the same server,
+    signed in like pages, with every message built for the person receiving it.
 - **What players see.** Notes are DM-only unless their frontmatter says `visibility: players`.
   Players never get DM-only notes: they're left out of navigation, search and links, and a direct
   URL gives the same 404 as a missing note. Inside a shared note, the DM's parts stay secret: a
@@ -162,15 +175,17 @@ Before running the end-to-end tests for the first time: `npx playwright install 
 
 ## Testing
 
-Unit tests cover vault parsing, Obsidian link resolution, rendering and visibility rules, the
-combat rules (initiative and reroll tie-breaks, turns and rounds, HP, dice, what a player may see)
-with scripted dice, and characters (the modifier maths, who may do what, every change and its
-undo, merging two people's edits, and the bag's rules for stacking, splitting and giving).
-Playwright covers the user journeys: the hub, wikilink navigation, search, the player view hiding
-DM content everywhere, running a fight, editing a sheet and rolling from it, and using the bag by
-mouse and keyboard. All tests run against an invented fixture vault, and the e2e run fails if that
-vault is modified in any way. CI runs lint, typecheck, unit tests (Linux and
-Windows) and e2e tests on every push. See [docs/testing.md](docs/testing.md) for the strategy.
+Unit tests cover vault parsing, Obsidian link resolution, rendering and visibility rules, the combat
+rules (initiative and reroll tie-breaks, turns and rounds, HP, dice, what a player may see) with
+scripted dice, and characters (the modifier maths, who may do what, every change and its undo,
+merging two people's edits, and the bag's rules for stacking, splitting and giving), and tokens (who
+may move and see what, and what the live connection may send to whom, checked on a real server).
+Playwright covers the user journeys: the hub, wikilink navigation, search, the player view hiding DM
+content everywhere, running a fight, editing a sheet and rolling from it, using the bag by mouse and
+keyboard, and the DM and a player moving tokens on the same map in two browsers. All tests run
+against an invented fixture vault, and the e2e run fails if that vault is modified in any way. CI
+runs lint, typecheck, unit tests (Linux and Windows) and e2e tests on every push. See
+[docs/testing.md](docs/testing.md) for the strategy.
 
 ## Tech stack
 
@@ -189,6 +204,8 @@ app/
   wiki/            Wiki types and URL helpers shared by server and browser
   maps/            Interactive maps model: areas, geometry, pan and zoom, the editor (isomorphic)
     fog/           Fog of war: the mask, reveals and hides, undo, pixels and tiles (isomorphic)
+    tokens/        Tokens: who may move and see what, moves as actions, drags (isomorphic)
+  live/            The browser's live connection, and the messages both ends send
   characters/      Sheets and bags: the model, changes as actions, undo, saving (isomorphic)
   members/         Who can sign in: member shapes shared with the browser
   .server/         Server-only code: config, the DM's preview cookie
@@ -196,14 +213,15 @@ app/
     members/       The member list and waiting list
     vault/         Vault reading, parsing, link resolution, rendering, search, statblocks
     combat/        The combat tracker's catalogue and the prepared-encounter store
-    maps/          The map and fog stores, maps prepared for a viewer, and players' map tiles
+    maps/          The map, fog and token stores, maps prepared for a viewer, players' map tiles
+    live/          Websockets: signing them in, rooms per map, messages built per viewer, holds
     characters/    The character store, who plays whom, and sheets prepared for a viewer
     data/          The JSON store and file cache: the only code that writes files, only in DATA_PATH
   routes/          Pages and resource routes
   components/      UI components (combat/, maps/, characters/ and inventory/ by module)
 server/app.ts      Express app: creates long-lived services, mounts React Router
 server/http.ts     Proxy trust, security headers, health check
-server.js          HTTP entry point (dev: Vite middleware; prod: static + build)
+server.js          HTTP entry point (dev: Vite middleware; prod: static + build), and websockets
 scripts/           One-off tools (importing the item icons)
 tests/
   fixtures/vault/  Invented Obsidian vault used by all tests

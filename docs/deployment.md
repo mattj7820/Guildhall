@@ -95,6 +95,13 @@ and dev sign-ins are refused from outside the container anyway.
 - **Health:** `GET /healthz` answers `{"status":"ok"}`. The image's `HEALTHCHECK` uses it.
 - **Logs:** `app` logs requests and vault reloads; `vault-sync` logs each file it copies or
   deletes.
+- **Live updates** (tokens, fog reveals) use a websocket at `/live` on the same address. Traefik
+  passes websockets through with nothing to configure, and so does Dokploy's domain setup. After
+  deploying, open a shared map: the top right says **Live**. If it keeps saying
+  "Reconnecting…", something in front of Guildhall is dropping websockets; maps still work, but
+  changes take a few seconds (they're checked by polling instead). The server pings every
+  connection every 25 seconds, so idle timeouts in a proxy don't close them. A redeploy closes
+  them all; browsers reconnect by themselves.
 
 ## Security notes
 
