@@ -184,3 +184,7 @@ Dockerfile, docker-compose.yml   The image, and the app beside its Google Drive 
 ## License
 
 [MIT](LICENSE)
+
+Item icons are from [game-icons.net](https://game-icons.net) by Lorc, Delapouite, Willdabeast,
+Lucas and Carl Olsen, licensed under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/).
+Each icon's author is recorded in `app/characters/item-icons.ts`.
