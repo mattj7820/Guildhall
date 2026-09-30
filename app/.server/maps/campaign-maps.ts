@@ -140,6 +140,11 @@ export class CampaignMaps {
     return this.change(id, (map) => ({ ...map, visibility }));
   }
 
+  /** Whether tokens snap to the map's grid. Undefined if the map no longer exists. */
+  setSnapping(id: MapId, snap: boolean): Promise<CampaignMap | undefined> {
+    return this.change(id, (map) => ({ ...map, snapToGrid: snap }));
+  }
+
   /**
    * False if there was nothing to delete. Areas that led to the map become not mapped yet, and its
    * own child maps become top-level maps.

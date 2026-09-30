@@ -36,6 +36,8 @@ export interface CampaignMap {
   areas: Area[];
   /** A battle grid over the image, making it a battle map. */
   grid?: MapGrid;
+  /** False when tokens move freely on the grid; they snap to its squares unless it says so. */
+  snapToGrid?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -137,6 +139,8 @@ export interface MapView {
   fog: FogView;
   /** Its battle grid, if it has one. */
   grid?: MapGrid;
+  /** Whether tokens snap to the grid's squares (only with a grid). */
+  snapToGrid?: boolean;
   /** DM only: whether players can see this map. */
   shared?: boolean;
 }

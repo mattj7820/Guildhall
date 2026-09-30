@@ -56,6 +56,7 @@ export const campaignMapSchema: z.ZodType<CampaignMap> = z.object({
   visibility,
   areas,
   grid: gridSchema.optional(),
+  snapToGrid: z.boolean().optional(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });

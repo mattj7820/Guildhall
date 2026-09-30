@@ -2,15 +2,22 @@ import { useFetcher } from "react-router";
 import type { MapId } from "~/maps/types";
 import { mapEditUrl } from "~/maps/urls";
 
+interface Props {
+  mapId: MapId;
+  label: string;
+  on: boolean;
+  /** What to send to the map's editor for the switch's new state. */
+  change: (on: boolean) => Record<string, string | boolean>;
+}
+
 /**
- * Shares the whole map with players, or keeps it DM-only. A shared map starts fully fogged, so
- * sharing shows players nothing until something is revealed. Saved at once, outside the editor's
- * autosave and undo: sharing is deliberate.
+ * A setting of the map changed from its page, saved at once, outside the editor's autosave and
+ * undo: sharing it with players, or snapping tokens to its grid.
  */
-export function ShareSwitch({ mapId, shared }: { mapId: MapId; shared: boolean }) {
+export function MapSwitch({ mapId, label, on: saved, change }: Props) {
   const fetcher = useFetcher();
-  const pending = fetcher.json as { visibility?: string } | undefined;
-  const on = pending?.visibility ? pending.visibility === "players" : shared;
+  // Shows the new state while it's being saved.
+  const on = fetcher.json ? !saved : saved;
 
   return (
     <button
@@ -19,10 +26,11 @@ export function ShareSwitch({ mapId, shared }: { mapId: MapId; shared: boolean }
       aria-checked={on}
       disabled={fetcher.state !== "idle"}
       onClick={() =>
-        fetcher.submit(
-          { intent: "setVisibility", visibility: on ? "dm" : "players" },
-          { method: "post", action: mapEditUrl(mapId), encType: "application/json" },
-        )
+        fetcher.submit(change(!on), {
+          method: "post",
+          action: mapEditUrl(mapId),
+          encType: "application/json",
+        })
       }
       className="flex items-center gap-2 rounded-md px-1.5 py-1 text-sm font-medium hover:bg-stone-100 disabled:opacity-70 dark:hover:bg-stone-800"
     >
@@ -34,7 +42,7 @@ export function ShareSwitch({ mapId, shared }: { mapId: MapId; shared: boolean }
           className={`absolute top-0.5 left-0 h-4 w-4 rounded-full bg-white shadow transition-transform ${on ? "translate-x-4" : "translate-x-0.5"}`}
         />
       </span>
-      Share with players
+      {label}
     </button>
   );
 }

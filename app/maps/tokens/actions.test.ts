@@ -74,6 +74,14 @@ describe("applyTokenAction", () => {
     expect(tokens).toEqual([{ ...marker, colour: "blue", visibility: "players" }]);
   });
 
+  it("sizes a token in squares, storing nothing for the usual one square", () => {
+    const large = applyTokenAction([pc], { type: "setSize", id: "pc", size: 2 });
+    expect(large.tokens).toEqual([{ ...pc, size: 2 }]);
+    const back = applyTokenAction(large.tokens, { type: "setSize", id: "pc", size: 1 });
+    expect(back.tokens).toEqual([pc]);
+    expect(back.changed).toBe(true);
+  });
+
   it("leaves a party member alone when asked to edit it as a marker", () => {
     expect(applyTokenAction([pc], { type: "editMarker", id: "pc", name: "Renamed" })).toEqual({
       tokens: [pc],

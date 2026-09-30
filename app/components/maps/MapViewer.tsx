@@ -20,7 +20,7 @@ import { ImageHealth } from "./ImageHealth";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
 import { NotePanel } from "./NotePanel";
-import { ShareSwitch } from "./ShareSwitch";
+import { MapSwitch } from "./MapSwitch";
 import { GridLayer } from "./GridLayer";
 import { InsideBadges } from "./InsideBadges";
 import { TOKEN_RADIUS, TokenLayer } from "./TokenLayer";
@@ -114,7 +114,20 @@ export function MapViewer({
         <MapBreadcrumbs crumbs={map.breadcrumbs} />
         <h1 className="sr-only">{map.name}</h1>
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <ShareSwitch mapId={map.id} shared={shared} />
+          <MapSwitch
+            mapId={map.id}
+            label="Share with players"
+            on={shared}
+            change={(on) => ({ intent: "setVisibility", visibility: on ? "players" : "dm" })}
+          />
+          {map.grid && (
+            <MapSwitch
+              mapId={map.id}
+              label="Snap to grid"
+              on={!!map.snapToGrid}
+              change={(snap) => ({ intent: "setSnapping", snap })}
+            />
+          )}
           <button
             type="button"
             aria-pressed={fogMode}
@@ -232,6 +245,8 @@ export function MapViewer({
                   selectedId={presenting ? undefined : selectedTokenId}
                   onSelect={presenting ? undefined : (token) => setSelectedTokenId(token.id)}
                   mover={presenting ? undefined : mapTokens}
+                  grid={map.grid}
+                  snap={map.snapToGrid}
                   takeHeld
                 />
                 {placing && !presenting && (

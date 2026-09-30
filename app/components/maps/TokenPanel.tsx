@@ -5,7 +5,10 @@ import type { TokenAction } from "~/maps/tokens/actions";
 import { MARKER_NAME_MAX } from "~/maps/tokens/schema";
 import {
   MARKER_COLOURS,
+  SIZE_NAMES,
+  TOKEN_SIZES,
   type MarkerColour,
+  type TokenSize,
   type PartyPlacement,
   type TokenView,
 } from "~/maps/tokens/types";
@@ -212,6 +215,22 @@ function SelectedToken({
             : "only the players who move it can see it."}
         </p>
       )}
+      <label className="flex items-center gap-2 text-sm">
+        <span className={labelClass}>Size</span>
+        <select
+          className={inputClass}
+          value={token.size}
+          onChange={(event) =>
+            send([{ type: "setSize", id: token.id, size: Number(event.target.value) as TokenSize }])
+          }
+        >
+          {TOKEN_SIZES.map((size) => (
+            <option key={size} value={size}>
+              {SIZE_NAMES[size]} ({size} × {size} squares)
+            </option>
+          ))}
+        </select>
+      </label>
       {token.kind === "marker" && (
         <MarkerForm
           initial={{

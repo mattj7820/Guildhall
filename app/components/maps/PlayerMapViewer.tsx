@@ -113,6 +113,8 @@ export function PlayerMapViewer({
                   size={map.size}
                   canvas={canvas}
                   mover={mapTokens}
+                  grid={map.grid}
+                  snap={map.snapToGrid}
                   sayMovable
                 />
               </>

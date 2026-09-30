@@ -23,6 +23,7 @@ describe("tokenSchema", () => {
     ["a very long name", { ...aMarker(), name: "x".repeat(61) }],
     ["an unknown kind", { ...aMarker(), kind: "monster" }],
     ["a party member with no note", { ...aCharacterToken(), note: "" }],
+    ["a size that isn't 1 to 4 squares", { ...aMarker(), size: 5 }],
   ])("refuses %s", (_name, token) => {
     expect(tokenSchema.safeParse(token).success).toBe(false);
   });

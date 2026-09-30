@@ -40,6 +40,7 @@ describe("tokensForViewer", () => {
           id: "shown",
           kind: "marker",
           at: LIT,
+          size: 1,
           name: "Fixture marker",
           colour: "red",
           movable: false,
@@ -73,7 +74,7 @@ describe("tokensForViewer", () => {
 
     it("shows a player other PCs only where it's revealed, and never lets them move them", () => {
       expect(view(playerOne, [pc("Party/Two", LIT)])).toEqual([
-        { id: "Party/Two", kind: "character", at: LIT, name: "Two", movable: false },
+        { id: "Party/Two", kind: "character", at: LIT, size: 1, name: "Two", movable: false },
       ]);
       expect(ids(playerOne, [pc("Party/Two", DARK)])).toEqual([]);
     });

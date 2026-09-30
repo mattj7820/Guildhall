@@ -133,6 +133,14 @@ describe("CampaignMaps", () => {
     expect(await maps.get(map.id)).not.toHaveProperty("grid");
   });
 
+  it("turns snapping to the grid off and on", async () => {
+    const maps = store();
+    const map = await maps.create({ name: "World", image: WORLD_IMAGE });
+    expect((await maps.setSnapping(map.id, false))?.snapToGrid).toBe(false);
+    expect((await maps.get(map.id))?.snapToGrid).toBe(false);
+    expect(await maps.setSnapping("gone", true)).toBeUndefined();
+  });
+
   it("links an area to another map", async () => {
     const maps = store();
     const world = await maps.create({ name: "World", image: WORLD_IMAGE });

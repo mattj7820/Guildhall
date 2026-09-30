@@ -400,6 +400,52 @@ test("the DM brings everyone into a deeper map, and players find where they are"
   await player.context().close();
 });
 
+test("on a battle map, tokens fill their squares and snap to them, unless the DM turns it off", async ({
+  page,
+  browser,
+}) => {
+  const { name, map } = await sharedMap(page);
+  // 64-pixel squares: 16 × 8 over the 1024×512 fixture.
+  const grid = { square: 0.0625, origin: [0, 0], lines: 0.4 };
+  const saved = await page.request.post(`${map}/edit`, {
+    headers: { Origin: ORIGIN },
+    data: { intent: "save", name, areas: [], grid },
+  });
+  expect(saved.status()).toBe(200);
+  await page.reload();
+  await placeMember(page, name, "Fixture PC One", LIT);
+  const player = await asPlayerOne(browser);
+  await player.goto(map);
+
+  // Dropped near the square in column 2, row 3, it settles in its middle: 160, 224 pixels.
+  await dragToken(player, name, "Fixture PC One", [0.147, 0.41]);
+  const centre = /^Fixture PC One at 15\.6%, 43\.8%/;
+  await expect(tokens(player).getByRole("button", { name: centre })).toBeVisible();
+  await expect(tokens(page).getByRole("button", { name: centre })).toBeVisible();
+
+  // A Large token fills four squares: twice as wide.
+  const ring = () => tokenNamed(player, "Fixture PC One").locator("circle").first().boundingBox();
+  const medium = (await ring())!.width;
+  await tokenNamed(page, "Fixture PC One").click();
+  await page.getByLabel("Size").selectOption({ label: "Large (2 × 2 squares)" });
+  await expect.poll(async () => (await ring())!.width / medium).toBeGreaterThan(1.8);
+
+  // Snapping off: tokens go exactly where they're put.
+  await page.getByRole("switch", { name: "Snap to grid" }).click();
+  await expect(page.getByRole("switch", { name: "Snap to grid" })).toHaveAttribute(
+    "aria-checked",
+    "false",
+  );
+  await player.reload();
+  await dragToken(player, name, "Fixture PC One", [0.147, 0.41]);
+  await expect
+    .poll(() =>
+      whereIs(page, "Fixture PC One").then((at) => near(at, [0.147, 0.41]) && at[0] !== 0.156),
+    )
+    .toBe(true);
+  await player.context().close();
+});
+
 test("a map that isn't shared takes no token changes from players", async ({ page, browser }) => {
   const name = uniqueName("Unshared");
   await createMap(page, { image: "Fixture Fog.png", name });

@@ -22,7 +22,7 @@ import { MapCanvas } from "./MapCanvas";
 import { GridLayer } from "./GridLayer";
 import { GridSettings } from "./GridSettings";
 import { MapSettings } from "./MapSettings";
-import { ShareSwitch } from "./ShareSwitch";
+import { MapSwitch } from "./MapSwitch";
 import { VertexHandles, type VertexDrag } from "./VertexHandles";
 
 /** Wait this long after the last change before saving, so typing doesn't save every key. */
@@ -116,7 +116,12 @@ export function MapEditor(props: MapEditorProps) {
           <p aria-live="polite" className="text-sm text-stone-500">
             {status && (status === "All changes saved" ? `✓ ${status}` : status)}
           </p>
-          <ShareSwitch mapId={map.id} shared={!!view.shared} />
+          <MapSwitch
+            mapId={map.id}
+            label="Share with players"
+            on={!!view.shared}
+            change={(on) => ({ intent: "setVisibility", visibility: on ? "players" : "dm" })}
+          />
           <button
             type="button"
             className={buttonClass}
