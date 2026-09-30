@@ -46,13 +46,21 @@ function snap(g: Grid, [x, y]: Px, size: number): Px {
 
 const corner = (g: Grid, [x, y]: Px): Px => snap(g, [x, y], 2);
 
-/** 5e: every square counts 5 ft, diagonals too, so it's the larger of the two gaps. */
-function squaresBetween(g: Grid, a: Px, b: Px): number {
-  return Math.max(
-    Math.abs(colOf(g, a[0]) - colOf(g, b[0])),
-    Math.abs(rowOf(g, a[1]) - rowOf(g, b[1])),
-  );
+/** The line's true length at the grid's scale: a square's side is 5 ft. */
+function feetAlong(g: Grid, points: Px[]): number {
+  let pixels = 0;
+  for (let i = 1; i < points.length; i++) {
+    pixels += Math.hypot(points[i][0] - points[i - 1][0], points[i][1] - points[i - 1][1]);
+  }
+  return (pixels / g.square) * FEET;
 }
+
+/** To the nearest half foot, without a trailing ".0". */
+const feetLabel = (feet: number) => `${Math.round(feet * 2) / 2} ft`;
+
+/** The grid's scale slider moves in steps like zooming, so small squares are as easy as big. */
+const toSlider = (square: number) => Math.log(square);
+const fromSlider = (value: number) => Math.round(Math.exp(value) * 2) / 2;
 
 type ShapeKind = "sphere" | "cube" | "cone" | "line";
 
@@ -200,13 +208,16 @@ export function GridPrototype({ map }: { map: MapView }) {
     );
   });
 
-  const rulerSquares = ruler
-    ? [...ruler.points, ruler.cursor].reduce(
-        (sum, point, index, all) =>
-          index === 0 ? 0 : sum + squaresBetween(grid, all[index - 1], point),
-        0,
-      )
-    : 0;
+  const rulerFeet = ruler ? feetAlong(grid, [...ruler.points, ruler.cursor]) : 0;
+  const biggestSquare = Math.min(size.width, size.height) / 4;
+
+  /** Changing tool tidies away what the last one drew. */
+  function chooseTool(next: Tool) {
+    if (next === tool) return;
+    setTool(next);
+    setRuler(undefined);
+    setShape(undefined);
+  }
 
   return (
     <main className="flex h-[calc(100dvh-3.5rem)] flex-col">
@@ -224,7 +235,7 @@ export function GridPrototype({ map }: { map: MapView }) {
               type="button"
               aria-pressed={tool === each}
               className={tool === each ? primaryButtonClass : buttonClass}
-              onClick={() => setTool(each)}
+              onClick={() => chooseTool(each)}
             >
               {each === "move" ? "Move tokens" : each === "measure" ? "Measure" : "Spell shape"}
             </button>
@@ -296,7 +307,7 @@ export function GridPrototype({ map }: { map: MapView }) {
                 <Ruler
                   points={[...ruler.points, ruler.cursor]}
                   scale={canvas.scale}
-                  label={`${rulerSquares * FEET} ft · ${rulerSquares} squares`}
+                  label={feetLabel(rulerFeet)}
                 />
               )}
               {tool !== "move" && (
@@ -340,19 +351,53 @@ export function GridPrototype({ map }: { map: MapView }) {
         <aside className="flex w-80 flex-col gap-4 overflow-y-auto border-l border-stone-200 p-4 text-sm dark:border-stone-800">
           <section className="flex flex-col gap-2">
             <h2 className={labelClass}>Grid</h2>
-            <label className="flex items-center gap-2">
-              Square
+            <label className="flex flex-col gap-1">
+              <span>
+                Grid scale: about {Math.round(size.width / grid.square)} ×{" "}
+                {Math.round(size.height / grid.square)} squares
+              </span>
+              <input
+                type="range"
+                aria-label="Grid scale"
+                min={toSlider(6)}
+                max={toSlider(biggestSquare)}
+                step={0.005}
+                value={toSlider(grid.square)}
+                onChange={(event) =>
+                  setGrid({ ...grid, square: fromSlider(Number(event.target.value)) })
+                }
+              />
+            </label>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-label="Smaller squares"
+                className={buttonClass}
+                onClick={() => setGrid({ ...grid, square: Math.max(6, grid.square - 0.5) })}
+              >
+                −
+              </button>
               <input
                 type="number"
-                min={10}
+                aria-label="Square size in pixels"
+                min={6}
+                step={0.5}
                 className={`${inputClass} w-24`}
                 value={grid.square}
                 onChange={(event) =>
-                  setGrid({ ...grid, square: Math.max(10, Number(event.target.value) || 10) })
+                  setGrid({ ...grid, square: Math.max(6, Number(event.target.value) || 6) })
                 }
               />
-              px
-            </label>
+              <button
+                type="button"
+                aria-label="Bigger squares"
+                className={buttonClass}
+                onClick={() => setGrid({ ...grid, square: grid.square + 0.5 })}
+              >
+                +
+              </button>
+              px a square
+            </div>
             <p className="text-stone-500">
               {suggested
                 ? `Suggested: ${suggested} px (${size.width / suggested} × ${size.height / suggested} squares)`
@@ -421,7 +466,7 @@ export function GridPrototype({ map }: { map: MapView }) {
                   className={`${shapeKind === kind ? primaryButtonClass : buttonClass} capitalize`}
                   onClick={() => {
                     setShapeKind(kind);
-                    setTool("shape");
+                    chooseTool("shape");
                     if (shape) setShape({ ...shape, kind });
                   }}
                 >
@@ -459,9 +504,10 @@ export function GridPrototype({ map }: { map: MapView }) {
           <section className="flex flex-col gap-1">
             <h2 className={labelClass}>Measure</h2>
             <p className="text-stone-500">
-              Drag to measure; press Space while dragging to add a turn. Escape clears.
+              Drag to measure the line's real length (a square is 5 ft); press Space while dragging
+              to add a turn. Escape clears.
             </p>
-            {ruler && <p>{`${rulerSquares * FEET} ft (${rulerSquares} squares)`}</p>}
+            {ruler && <p>{feetLabel(rulerFeet)}</p>}
           </section>
         </aside>
       </div>
