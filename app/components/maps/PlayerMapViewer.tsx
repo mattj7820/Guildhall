@@ -13,13 +13,10 @@ import { useFogImage } from "./FogLayer";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
 import { GridLayer } from "./GridLayer";
-import { feetAlong, formatFeet } from "~/maps/grid/distance";
-import { toPixels as gridInPixels, type MapGrid } from "~/maps/grid/grid";
+import type { MapGrid } from "~/maps/grid/grid";
 import { InsideBadges } from "./InsideBadges";
-import { MapToolbar } from "./MapToolbar";
-import { MeasureLayer } from "./MeasureLayer";
+import { useBattleTools } from "./useBattleTools";
 import { TokenDistances } from "./TokenDistances";
-import { useMapTools } from "./useMapTools";
 import { NotePanel } from "./NotePanel";
 import { TokenLayer } from "./TokenLayer";
 
@@ -44,13 +41,7 @@ export function PlayerMapViewer({
 }) {
   const mapTokens = useMapTokens(map.id, { tokens, inside });
   const [focus, setFocus] = useState<{ at: [number, number]; key: number }>();
-  const tools = useMapTools(!!map.grid);
-  const rulerLabel =
-    tools.ruler && map.grid
-      ? formatFeet(
-          feetAlong(gridInPixels(map.grid, map.size), [...tools.ruler.points, tools.ruler.cursor]),
-        )
-      : undefined;
+  const battle = useBattleTools({ map, tokens: mapTokens.tokens, enabled: true });
   const find = (token: TokenView) =>
     setFocus({ at: toPixels(token.at, map.size), key: (focus?.key ?? 0) + 1 });
   const status = useMapUpdates(map.id, mapVersionUrl(map.id), version, mapTokens.pushed);
@@ -76,14 +67,7 @@ export function PlayerMapViewer({
       </div>
       <div className="flex min-h-0 flex-1 flex-col bg-stone-50 md:flex-row dark:bg-stone-950">
         <div className="relative flex min-h-[50vh] flex-1">
-          {map.grid && (
-            <MapToolbar
-              tools={["select", "measure"]}
-              tool={tools.tool}
-              onTool={tools.choose}
-              result={rulerLabel}
-            />
-          )}
+          {battle.toolbar}
           <MapCanvas
             name={map.name}
             size={map.size}
@@ -138,18 +122,7 @@ export function PlayerMapViewer({
                   snap={map.snapToGrid}
                   sayMovable
                 />
-                {map.grid && (
-                  <MeasureLayer
-                    size={map.size}
-                    canvas={canvas}
-                    active={tools.tool === "measure"}
-                    ruler={tools.ruler}
-                    label={rulerLabel}
-                    onStart={tools.measure.start}
-                    onMove={tools.measure.move}
-                    onEnd={tools.measure.end}
-                  />
-                )}
+                {battle.layers(canvas)}
               </>
             )}
           </MapCanvas>

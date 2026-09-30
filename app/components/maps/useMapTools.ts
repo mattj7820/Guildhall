@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import type { SpellArea, SpellShape } from "~/maps/grid/shapes";
 
 export type MapTool = "select" | "measure" | "area";
 
@@ -14,21 +15,30 @@ export interface Ruler {
 const SHORTCUTS: Record<string, MapTool> = { v: "select", m: "measure", a: "area" };
 
 /**
- * Which map tool is in use, and what the measuring tool has drawn. Changing tool tidies away what
- * the last one drew; V, M and A choose tools; Escape clears; Space adds a turn to a ruler while
- * it's being dragged. `enabled` is false while other tools own the keys (the DM's fog tools).
+ * Which map tool is in use, and what the measuring and spell area tools have drawn. Changing tool
+ * tidies away what the last one drew; V, M and A choose tools; Escape clears; Space adds a turn
+ * to a ruler while it's being dragged. `enabled` is false while other tools own the keys (the
+ * DM's fog tools).
  */
 export function useMapTools(enabled: boolean) {
   const [tool, setTool] = useState<MapTool>("select");
   const [ruler, setRuler] = useState<Ruler>();
+  const [shape, setShape] = useState<SpellShape>("sphere");
+  const [feet, setFeet] = useState(20);
+  const [area, setArea] = useState<SpellArea>();
+
+  const clear = useCallback(() => {
+    setRuler(undefined);
+    setArea(undefined);
+  }, []);
 
   const choose = useCallback(
     (next: MapTool) => {
       if (next === tool) return;
       setTool(next);
-      setRuler(undefined);
+      clear();
     },
-    [tool],
+    [tool, clear],
   );
 
   useEffect(() => {
@@ -37,7 +47,7 @@ export function useMapTools(enabled: boolean) {
       const target = event.target as HTMLElement;
       if (target.closest("input, textarea, select, [contenteditable]")) return;
       if (event.ctrlKey || event.metaKey || event.altKey) return;
-      if (event.key === "Escape") return setRuler(undefined);
+      if (event.key === "Escape") return clear();
       if (event.key === " " && ruler?.dragging) {
         event.preventDefault();
         return setRuler({ ...ruler, points: [...ruler.points, ruler.cursor] });
@@ -47,7 +57,7 @@ export function useMapTools(enabled: boolean) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [enabled, ruler, choose]);
+  }, [enabled, ruler, choose, clear]);
 
   return {
     tool: enabled ? tool : ("select" as const),
@@ -58,6 +68,22 @@ export function useMapTools(enabled: boolean) {
       move: (at: Point) =>
         setRuler((current) => (current?.dragging ? { ...current, cursor: at } : current)),
       end: () => setRuler((current) => current && { ...current, dragging: false }),
+    },
+    area,
+    spell: {
+      shape,
+      feet,
+      /** Changing the shape or size changes the area already on the map, too. */
+      setShape: (next: SpellShape) => {
+        setShape(next);
+        setArea((current) => current && { ...current, shape: next });
+      },
+      setFeet: (next: number) => {
+        setFeet(next);
+        setArea((current) => current && { ...current, feet: next });
+      },
+      place: (origin: Point) => setArea({ shape, feet, origin, aim: origin }),
+      aim: (at: Point) => setArea((current) => current && { ...current, aim: at }),
     },
   };
 }

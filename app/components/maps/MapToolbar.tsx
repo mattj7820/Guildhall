@@ -93,7 +93,7 @@ export function MapToolbar({ tools, tool, onTool, result, children }: Props) {
       {result && (
         <p
           role="status"
-          aria-label="Measured"
+          aria-label="Tool result"
           className={`${floatingPanelClass} px-3 py-2 text-sm font-semibold`}
         >
           {result}

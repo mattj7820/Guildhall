@@ -22,12 +22,8 @@ import { MapCanvas } from "./MapCanvas";
 import { NotePanel } from "./NotePanel";
 import { MapSwitch } from "./MapSwitch";
 import { GridLayer } from "./GridLayer";
-import { feetAlong, formatFeet } from "~/maps/grid/distance";
-import { toPixels as gridInPixels } from "~/maps/grid/grid";
 import { InsideBadges } from "./InsideBadges";
-import { MapToolbar } from "./MapToolbar";
-import { MeasureLayer } from "./MeasureLayer";
-import { useMapTools } from "./useMapTools";
+import { useBattleTools } from "./useBattleTools";
 import { TOKEN_RADIUS, TokenLayer } from "./TokenLayer";
 import { TokenPanel, type Placing } from "./TokenPanel";
 import { useFogTools } from "./useFogTools";
@@ -77,13 +73,11 @@ export function MapViewer({
   const [selectedTokenId, setSelectedTokenId] = useState<string>();
   const selectedToken = tokens.find((token) => token.id === selectedTokenId);
   // The map's tools belong to battle maps, and step aside for the fog tools and placing tokens.
-  const tools = useMapTools(!!map.grid && !fogMode && !presenting && !placing);
-  const rulerLabel =
-    tools.ruler && map.grid
-      ? formatFeet(
-          feetAlong(gridInPixels(map.grid, map.size), [...tools.ruler.points, tools.ruler.cursor]),
-        )
-      : undefined;
+  const battle = useBattleTools({
+    map,
+    tokens: tokens,
+    enabled: !fogMode && !presenting && !placing,
+  });
 
   function place(at: Point, scale: number) {
     if (placing?.kind === "party") {
@@ -195,14 +189,7 @@ export function MapViewer({
         className="flex min-h-0 flex-1 flex-col bg-stone-50 md:flex-row dark:bg-stone-950"
       >
         <div className="relative flex min-h-[50vh] flex-1">
-          {map.grid && !fogMode && !presenting && (
-            <MapToolbar
-              tools={["select", "measure"]}
-              tool={tools.tool}
-              onTool={tools.choose}
-              result={rulerLabel}
-            />
-          )}
+          {battle.toolbar}
           <MapCanvas
             name={map.name}
             size={map.size}
@@ -270,18 +257,7 @@ export function MapViewer({
                   snap={map.snapToGrid}
                   takeHeld
                 />
-                {map.grid && (
-                  <MeasureLayer
-                    size={map.size}
-                    canvas={canvas}
-                    active={tools.tool === "measure"}
-                    ruler={tools.ruler}
-                    label={rulerLabel}
-                    onStart={tools.measure.start}
-                    onMove={tools.measure.move}
-                    onEnd={tools.measure.end}
-                  />
-                )}
+                {battle.layers(canvas)}
                 {placing && !presenting && (
                   <rect
                     {...map.size}

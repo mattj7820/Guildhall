@@ -98,7 +98,7 @@ test("anyone measures real distances on a battle map, and changing tool tidies u
   await page.mouse.down();
   await page.mouse.move(...(await at(288, 352)), { steps: 8 });
   await page.mouse.up();
-  await expect(page.getByRole("status", { name: "Measured" })).toHaveText("25 ft");
+  await expect(page.getByRole("status", { name: "Tool result" })).toHaveText("25 ft");
 
   // Choosing another tool (here by its key) clears the ruler.
   await page.keyboard.press("v");
@@ -106,11 +106,77 @@ test("anyone measures real distances on a battle map, and changing tool tidies u
     "aria-pressed",
     "true",
   );
-  await expect(page.getByRole("status", { name: "Measured" })).toHaveCount(0);
+  await expect(page.getByRole("status", { name: "Tool result" })).toHaveCount(0);
 });
 
 test("maps without a grid have no measuring tools", async ({ page }) => {
   await createMap(page, { image: "Fixture Fog.png", name: uniqueName("Plain") });
   await page.goto(page.url().replace(/\/edit$/, ""));
   await expect(page.getByRole("toolbar", { name: "Map tools" })).toHaveCount(0);
+});
+
+test("spell areas show the squares they cover and who's caught, named as spells name them", async ({
+  page,
+}) => {
+  const name = uniqueName("Fireball");
+  await createMap(page, { image: "Fixture Fog.png", name });
+  const map = page.url().replace(/\/edit$/, "");
+  const post = (path: string, data: object) =>
+    page.request.post(`${map}/${path}`, { headers: { Origin: ORIGIN }, data });
+  // 64-pixel squares; a marker in the square just below and right of the corner at (320, 256).
+  await post("edit", {
+    intent: "save",
+    name,
+    areas: [],
+    grid: { square: 0.0625, origin: [0, 0], lines: 0.4 },
+  });
+  const marker = uniqueName("Goblin");
+  const placed = await post("tokens", {
+    actions: [
+      {
+        type: "place",
+        token: {
+          kind: "marker",
+          id: marker,
+          map: map.split("/").pop(),
+          at: [352 / 1024, 288 / 512],
+          name: marker,
+          colour: "green",
+          visibility: "dm",
+        },
+      },
+    ],
+  });
+  expect(placed.status()).toBe(200);
+  await page.goto(map);
+
+  await page
+    .getByRole("toolbar", { name: "Map tools" })
+    .getByRole("button", { name: "Spell area" })
+    .click();
+  const options = page.getByRole("group", { name: "Spell area" });
+  for (const shape of ["Sphere", "Cube", "Cone", "Line"]) {
+    await expect(options.getByRole("button", { name: shape })).toBeVisible();
+  }
+  await options.getByRole("button", { name: "10 ft" }).click();
+
+  // A 10 ft sphere on the corner catches the marker; a cone aimed away from it doesn't.
+  const box = (await mapCanvas(page, name).boundingBox())!;
+  const at = async (x: number, y: number) => {
+    const point = await onImage(page, name, { width: 1024, height: 512 }, [x / 1024, y / 512]);
+    return [box.x + point.x, box.y + point.y] as const;
+  };
+  await page.mouse.click(...(await at(322, 254)));
+  const result = page.getByRole("status", { name: "Tool result" });
+  await expect(result).toHaveText(`In the area: ${marker}`);
+
+  await options.getByRole("button", { name: "Cone" }).click();
+  await page.mouse.move(...(await at(322, 254)));
+  await page.mouse.down();
+  await page.mouse.move(...(await at(100, 100)), { steps: 5 });
+  await page.mouse.up();
+  await expect(result).toHaveText("In the area: nobody");
+
+  await page.keyboard.press("Escape");
+  await expect(result).toHaveCount(0);
 });
