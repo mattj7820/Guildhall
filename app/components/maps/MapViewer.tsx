@@ -6,6 +6,7 @@ import type { FogMask } from "~/maps/fog/types";
 import type { AreaView, MapView, Size } from "~/maps/types";
 import { mapEditUrl, mapUrl } from "~/maps/urls";
 import { normalise, offset, toPixels } from "~/maps/geometry";
+import { snapToGrid, toPixels as gridInPixels } from "~/maps/grid/grid";
 import type { TokenAction } from "~/maps/tokens/actions";
 import type { InsideBadge, PartyPlacement, Token, TokenView } from "~/maps/tokens/types";
 import { useMapTokens } from "~/maps/tokens/useMapTokens";
@@ -79,18 +80,27 @@ export function MapViewer({
     enabled: !fogMode && !presenting && !placing,
   });
 
-  function place(at: Point, scale: number) {
+  /** Where a token placed here lands: on a square while tokens snap to the grid. */
+  const landing = (point: Point): Point => {
+    if (!map.grid || !map.snapToGrid) return point;
+    const [x, y] = snapToGrid(gridInPixels(map.grid, map.size), toPixels(point, map.size));
+    return normalise(x, y, map.size);
+  };
+
+  function place(clicked: Point, scale: number) {
+    const at = landing(clicked);
     if (placing?.kind === "party") {
-      // Side by side around the click, far enough apart on screen for their names.
-      const step = (TOKEN_RADIUS * 4.5) / scale / map.size.width;
-      const first = at[0] - (step * (party.length - 1)) / 2;
+      // Side by side around the click: in neighbouring squares on a battle map, else far enough
+      // apart on screen for their names.
+      const step = map.grid ? map.grid.square : (TOKEN_RADIUS * 4.5) / scale / map.size.width;
+      const first = at[0] - step * Math.floor((party.length - 1) / 2);
       const placed = party.map((member, index): TokenAction => ({
         type: "place",
         token: {
           kind: "character",
           id: newId(),
           map: map.id,
-          at: offset([first, at[1]], step * index, 0),
+          at: landing(offset([first, at[1]], step * index, 0)),
           note: member.note,
         },
       }));
@@ -143,10 +153,6 @@ export function MapViewer({
           >
             Fog
           </button>
-          {/* PROTOTYPE (removed before the PR) */}
-          <Link to={`${mapUrl(map.id)}/grid-prototype`} className={buttonClass}>
-            Grid (prototype)
-          </Link>
           <button type="button" className={buttonClass} onClick={togglePresenting}>
             Present
           </button>

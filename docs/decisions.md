@@ -841,3 +841,58 @@ arrive together, the first to reach the server wins, and underneath it all the l
 wins. Holds are kept in memory only. Tokens have their own live message, so a move doesn't change
 a map's version and reload anyone's page; while the connection is down, the version check brings
 the tokens too.
+
+## 47. Battle maps: a grid over any map
+
+**Date:** 2026-09-30
+
+**Context.** Fights still happen on Roll20. The campaign's battle maps are Dungeondraft exports
+with their own grid drawn in (about 256 pixels a square), but a fight can break out anywhere: a
+town map, a watabou building, a cave.
+
+**Decision.** A battle map is any map with a grid turned on; there's no separate kind of map. The
+grid is kept with the map in fractions of the image, like outlines: a square's side as a fraction
+of the image's width (so squares stay square), where two lines cross, and how strongly the lines
+are drawn (0 hides them, for images with their own). Squares are always 5 ft; a setting for other
+scales can come if a map needs one. It's set up in the editor's Battle map grid section, as part
+of the autosave and undo. A new grid starts at a size that fits the image exactly, trying
+Dungeondraft's 256 pixels first, then other common exports, and only if that makes at least 10
+squares along the longer side; otherwise about 20 across. The prototype showed that the scale
+matters most: on a town map the squares (and so the tokens) were far too big, so the scale is a
+slider that moves like zooming, with half-pixel steps and a count of squares across, plus an
+offset to line up with a grid in the image. Players get the grid of a map they can see, drawn only
+over what's revealed.
+
+## 48. Tokens on a battle map: filling their squares, sizes, and a snapping switch
+
+**Date:** 2026-09-30
+
+On a map with a grid, a token fills its squares, as on a real battle map, but never gets smaller
+than 12 pixels on screen, so it can still be found zoomed out. Tokens are 1 to 4 squares across
+(Medium or smaller, Large, Huge, Gargantuan); the DM sets a token's size in its panel, and size 1
+isn't stored. Tokens snap to squares as they're dragged or moved by the arrow keys (a square at a
+time): odd sizes in a square's middle, even sizes on a corner. The DM isn't strict about
+positioning and sometimes places tokens round obstacles or between squares, so snapping is a
+switch on the map's page, for the whole map, on unless turned off; holding Alt places one token
+freely. Snapping happens in the browser, where the move is made: the server stores whatever point
+it's sent, since where a token sits isn't a matter of who may see what.
+
+## 49. Measuring and spell areas: a toolbar over the map, on each viewer's own screen
+
+**Date:** 2026-09-30
+
+The map's tools live in a small toolbar over its top-left corner (Select and move V, Measure M,
+Spell area A), where people expect them on a VTT, leaving the side panel for notes and, next, the
+combat tracker. Changing tool clears what the last one drew; Escape clears too. They step aside
+for the DM's fog tools and while placing tokens.
+
+The ruler gives a line's true length at the grid's scale, to the nearest half foot, rather than
+counting squares as the rules do: the prototype showed that counting read wrong within a square
+and along diagonals, and the table wants to know how far things really are. Space adds a turn
+while dragging. Spell areas are the shapes spell descriptions use, named the same way on their
+buttons (Sphere, Cube, Cone, Line) so players recognise them: a cone is as wide as it is far, a
+line is 5 ft wide, a cube extends from its near face. A square is covered when its centre is
+inside, the same rule as painting the fog, and the tokens with any square covered are listed. A
+spell starts on a grid corner while tokens snap. Both are drawn only on the screen of whoever is
+measuring; sharing them with everyone can come later over the live connection. For measuring
+without a mouse, a chosen token lists how far every other token is.

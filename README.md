@@ -107,6 +107,14 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
   - Tokens under the fog never reach players, not in the page, its data or the live connection:
     only their own, drawn "in the dark". Live updates run over websockets on the same server,
     signed in like pages, with every message built for the person receiving it.
+- **Battle maps**: turn a grid on for any map (a Dungeondraft export, a town, a cave) and it
+  becomes a battle map.
+  - Squares of 5 ft, scaled to fit the map with a slider (it suggests the exact fit for
+    Dungeondraft exports), offset to line up with a grid in the image, and faint or hidden lines.
+  - Tokens fill their squares, from Medium to Gargantuan, and snap to them (a switch per map, or
+    hold Alt), by mouse or a square at a time with the arrow keys.
+  - A toolbar over the map: measure true distances, with turns; lay out a spell's sphere, cube,
+    cone or line and see which squares and who it catches. Just on your own screen.
 - **What players see.** Notes are DM-only unless their frontmatter says `visibility: players`.
   Players never get DM-only notes: they're left out of navigation, search and links, and a direct
   URL gives the same 404 as a missing note. Inside a shared note, the DM's parts stay secret: a
@@ -205,6 +213,7 @@ app/
   maps/            Interactive maps model: areas, geometry, pan and zoom, the editor (isomorphic)
     fog/           Fog of war: the mask, reveals and hides, undo, pixels and tiles (isomorphic)
     tokens/        Tokens: who may move and see what, moves as actions, drags (isomorphic)
+    grid/          Battle grids: squares and snapping, distances, spell areas (isomorphic)
   live/            The browser's live connection, and the messages both ends send
   characters/      Sheets and bags: the model, changes as actions, undo, saving (isomorphic)
   members/         Who can sign in: member shapes shared with the browser
