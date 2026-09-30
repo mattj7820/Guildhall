@@ -52,7 +52,11 @@ export function PlayerMapViewer({
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-stone-200 px-4 py-2 dark:border-stone-800">
         <MapBreadcrumbs crumbs={map.breadcrumbs} />
         <h1 className="sr-only">{map.name}</h1>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-3">
+          {/* PROTOTYPE (removed before the PR) */}
+          <Link to={`${mapUrl(map.id)}/grid-prototype`} className="text-sm underline">
+            Grid (prototype)
+          </Link>
           <LiveStatus status={status} />
         </div>
       </div>

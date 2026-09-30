@@ -122,6 +122,10 @@ export function MapViewer({
           >
             Fog
           </button>
+          {/* PROTOTYPE (removed before the PR) */}
+          <Link to={`${mapUrl(map.id)}/grid-prototype`} className={buttonClass}>
+            Grid (prototype)
+          </Link>
           <button type="button" className={buttonClass} onClick={togglePresenting}>
             Present
           </button>
