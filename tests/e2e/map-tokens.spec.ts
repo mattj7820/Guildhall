@@ -430,6 +430,12 @@ test("on a battle map, tokens fill their squares and snap to them, unless the DM
   await page.getByLabel("Size").selectOption({ label: "Large (2 × 2 squares)" });
   await expect.poll(async () => (await ring())!.width / medium).toBeGreaterThan(1.8);
 
+  // How far everyone else is, for measuring without a mouse.
+  await placeMember(page, name, "Fixture PC Two", LIT_TOO);
+  await expect(player.getByRole("list", { name: "Distances from Fixture PC One" })).toContainText(
+    /Fixture PC Two\s*[\d.]+ ft/,
+  );
+
   // Snapping off: tokens go exactly where they're put.
   await page.getByRole("switch", { name: "Snap to grid" }).click();
   await expect(page.getByRole("switch", { name: "Snap to grid" })).toHaveAttribute(

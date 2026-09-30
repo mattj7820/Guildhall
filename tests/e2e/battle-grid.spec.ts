@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { createMap, expectSaved, ORIGIN, uniqueName } from "./support/app";
+import { createMap, expectSaved, mapCanvas, onImage, ORIGIN, uniqueName } from "./support/app";
 import { SIGNED_IN } from "./support/sign-in";
 
 /**
@@ -65,4 +65,52 @@ test("the DM hides the grid's lines where the image has its own, and takes the g
   await expect(grid.getByLabel("Grid scale")).toHaveCount(0);
   await page.getByRole("button", { name: "Undo" }).click();
   await expect(grid.getByLabel("Grid scale")).toBeVisible();
+});
+
+test("anyone measures real distances on a battle map, and changing tool tidies up", async ({
+  page,
+}) => {
+  const name = uniqueName("Ruler");
+  await createMap(page, { image: "Fixture Fog.png", name });
+  const map = page.url().replace(/\/edit$/, "");
+  // 64-pixel squares: 16 × 8 over the 1024×512 fixture.
+  const saved = await page.request.post(`${map}/edit`, {
+    headers: { Origin: ORIGIN },
+    data: { intent: "save", name, areas: [], grid: { square: 0.0625, origin: [0, 0], lines: 0.4 } },
+  });
+  expect(saved.status()).toBe(200);
+  await page.goto(map);
+
+  const tools = page.getByRole("toolbar", { name: "Map tools" });
+  await tools.getByRole("button", { name: "Measure" }).click();
+  await expect(tools.getByRole("button", { name: "Measure" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  // Three squares across and four down: a true length of 25 ft, not the 20 of counting squares.
+  const box = (await mapCanvas(page, name).boundingBox())!;
+  const at = async (x: number, y: number) => {
+    const point = await onImage(page, name, { width: 1024, height: 512 }, [x / 1024, y / 512]);
+    return [box.x + point.x, box.y + point.y] as const;
+  };
+  await page.mouse.move(...(await at(96, 96)));
+  await page.mouse.down();
+  await page.mouse.move(...(await at(288, 352)), { steps: 8 });
+  await page.mouse.up();
+  await expect(page.getByRole("status", { name: "Measured" })).toHaveText("25 ft");
+
+  // Choosing another tool (here by its key) clears the ruler.
+  await page.keyboard.press("v");
+  await expect(tools.getByRole("button", { name: "Select and move" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByRole("status", { name: "Measured" })).toHaveCount(0);
+});
+
+test("maps without a grid have no measuring tools", async ({ page }) => {
+  await createMap(page, { image: "Fixture Fog.png", name: uniqueName("Plain") });
+  await page.goto(page.url().replace(/\/edit$/, ""));
+  await expect(page.getByRole("toolbar", { name: "Map tools" })).toHaveCount(0);
 });

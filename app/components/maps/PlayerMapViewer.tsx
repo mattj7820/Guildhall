@@ -13,7 +13,13 @@ import { useFogImage } from "./FogLayer";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
 import { GridLayer } from "./GridLayer";
+import { feetAlong, formatFeet } from "~/maps/grid/distance";
+import { toPixels as gridInPixels, type MapGrid } from "~/maps/grid/grid";
 import { InsideBadges } from "./InsideBadges";
+import { MapToolbar } from "./MapToolbar";
+import { MeasureLayer } from "./MeasureLayer";
+import { TokenDistances } from "./TokenDistances";
+import { useMapTools } from "./useMapTools";
 import { NotePanel } from "./NotePanel";
 import { TokenLayer } from "./TokenLayer";
 
@@ -38,6 +44,13 @@ export function PlayerMapViewer({
 }) {
   const mapTokens = useMapTokens(map.id, { tokens, inside });
   const [focus, setFocus] = useState<{ at: [number, number]; key: number }>();
+  const tools = useMapTools(!!map.grid);
+  const rulerLabel =
+    tools.ruler && map.grid
+      ? formatFeet(
+          feetAlong(gridInPixels(map.grid, map.size), [...tools.ruler.points, tools.ruler.cursor]),
+        )
+      : undefined;
   const find = (token: TokenView) =>
     setFocus({ at: toPixels(token.at, map.size), key: (focus?.key ?? 0) + 1 });
   const status = useMapUpdates(map.id, mapVersionUrl(map.id), version, mapTokens.pushed);
@@ -63,6 +76,14 @@ export function PlayerMapViewer({
       </div>
       <div className="flex min-h-0 flex-1 flex-col bg-stone-50 md:flex-row dark:bg-stone-950">
         <div className="relative flex min-h-[50vh] flex-1">
+          {map.grid && (
+            <MapToolbar
+              tools={["select", "measure"]}
+              tool={tools.tool}
+              onTool={tools.choose}
+              result={rulerLabel}
+            />
+          )}
           <MapCanvas
             name={map.name}
             size={map.size}
@@ -117,6 +138,18 @@ export function PlayerMapViewer({
                   snap={map.snapToGrid}
                   sayMovable
                 />
+                {map.grid && (
+                  <MeasureLayer
+                    size={map.size}
+                    canvas={canvas}
+                    active={tools.tool === "measure"}
+                    ruler={tools.ruler}
+                    label={rulerLabel}
+                    onStart={tools.measure.start}
+                    onMove={tools.measure.move}
+                    onEnd={tools.measure.end}
+                  />
+                )}
               </>
             )}
           </MapCanvas>
@@ -135,7 +168,7 @@ export function PlayerMapViewer({
           ) : (
             map.note && hasContent(map.note) && <NotePanel note={map.note} />
           )}
-          <PartyHere tokens={mapTokens.tokens} onFind={find} />
+          <PartyHere tokens={mapTokens.tokens} onFind={find} grid={map.grid} size={map.size} />
           <AreaList areas={map.areas} onSelect={(area) => setSelectedId(area.id)} />
         </aside>
       </div>
@@ -147,10 +180,15 @@ export function PlayerMapViewer({
 function PartyHere({
   tokens,
   onFind,
+  grid,
+  size,
 }: {
   tokens: TokenView[];
   onFind: (token: TokenView) => void;
+  grid?: MapGrid;
+  size: Size;
 }) {
+  const theirs = tokens.find((token) => token.movable);
   const party = tokens
     .filter((token) => token.kind === "character")
     .sort((a, b) => Number(b.movable) - Number(a.movable));
@@ -181,6 +219,14 @@ function PartyHere({
           </li>
         ))}
       </ul>
+      {grid && theirs && (
+        <div className="mt-3">
+          <h3 className="mb-1 text-xs font-semibold tracking-wide text-stone-500 uppercase">
+            How far from {theirs.name}
+          </h3>
+          <TokenDistances from={theirs} tokens={tokens} grid={grid} size={size} />
+        </div>
+      )}
     </section>
   );
 }
