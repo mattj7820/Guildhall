@@ -286,19 +286,32 @@ function TokenFace({ token, r }: { token: TokenView; r: number }) {
     );
   }
   const fill = token.colour ? MARKER_FILLS[token.colour] : "fill-stone-700";
+  const label = initials(token.name);
+  // Smaller for more letters, so "G12" still fits inside.
+  const fontSize = r * ([1, 1, 0.75, 0.6][label.length] ?? 0.5);
   return (
     <>
       <circle r={r} className={fill} />
       <text
         textAnchor="middle"
         dominantBaseline="central"
-        fontSize={r}
+        fontSize={fontSize}
         className="pointer-events-none fill-white font-serif font-bold select-none"
       >
-        {token.name.charAt(0).toUpperCase()}
+        {label}
       </text>
     </>
   );
+}
+
+/**
+ * What a token without a portrait shows: its first letter, and its number if it has one, so
+ * "Goblin 2" and "Goblin 3" can be told apart ("G2", "G3").
+ */
+export function initials(name: string): string {
+  const number = /\s(\d+)$/.exec(name)?.[1];
+  const first = name.charAt(0).toUpperCase();
+  return number ? `${first}${number}` : first;
 }
 
 /** What a screen reader hears, and what tests find a token by. */
