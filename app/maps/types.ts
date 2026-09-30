@@ -4,6 +4,7 @@
  */
 import type { EntityId, Visibility } from "~/campaign/types";
 import type { FogView } from "./fog/types";
+import type { MapGrid } from "./grid/grid";
 
 export type MapId = string;
 export type AreaId = string;
@@ -33,6 +34,10 @@ export interface CampaignMap {
   note?: EntityId;
   visibility: Visibility;
   areas: Area[];
+  /** A battle grid over the image, making it a battle map. */
+  grid?: MapGrid;
+  /** False when tokens move freely on the grid; they snap to its squares unless it says so. */
+  snapToGrid?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -51,7 +56,7 @@ export interface Area {
  * What the editor saves. The image is left out: it changes only through its own action (a moved
  * or resized image), so an editor's autosave can't put back an image replaced meanwhile.
  */
-export type MapChanges = Pick<CampaignMap, "name" | "note" | "areas">;
+export type MapChanges = Pick<CampaignMap, "name" | "note" | "areas" | "grid">;
 
 /** A link to a map, as shown in breadcrumbs, lists and area panels. */
 export interface MapLink {
@@ -132,6 +137,10 @@ export interface MapView {
   areas: AreaView[];
   /** What's revealed. For players it describes only what they can see anyway. */
   fog: FogView;
+  /** Its battle grid, if it has one. */
+  grid?: MapGrid;
+  /** Whether tokens snap to the grid's squares (only with a grid). */
+  snapToGrid?: boolean;
   /** DM only: whether players can see this map. */
   shared?: boolean;
 }

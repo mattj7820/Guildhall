@@ -6,6 +6,7 @@ import type { FogMask } from "~/maps/fog/types";
 import type { AreaView, MapView, Size } from "~/maps/types";
 import { mapEditUrl, mapUrl } from "~/maps/urls";
 import { normalise, offset, toPixels } from "~/maps/geometry";
+import { snapToGrid, toPixels as gridInPixels } from "~/maps/grid/grid";
 import type { TokenAction } from "~/maps/tokens/actions";
 import type { InsideBadge, PartyPlacement, Token, TokenView } from "~/maps/tokens/types";
 import { useMapTokens } from "~/maps/tokens/useMapTokens";
@@ -20,8 +21,10 @@ import { ImageHealth } from "./ImageHealth";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
 import { NotePanel } from "./NotePanel";
-import { ShareSwitch } from "./ShareSwitch";
+import { MapSwitch } from "./MapSwitch";
+import { GridLayer } from "./GridLayer";
 import { InsideBadges } from "./InsideBadges";
+import { useBattleTools } from "./useBattleTools";
 import { TOKEN_RADIUS, TokenLayer } from "./TokenLayer";
 import { TokenPanel, type Placing } from "./TokenPanel";
 import { useFogTools } from "./useFogTools";
@@ -70,19 +73,34 @@ export function MapViewer({
   const [placing, setPlacing] = useState<Placing>();
   const [selectedTokenId, setSelectedTokenId] = useState<string>();
   const selectedToken = tokens.find((token) => token.id === selectedTokenId);
+  // The map's tools belong to battle maps, and step aside for the fog tools and placing tokens.
+  const battle = useBattleTools({
+    map,
+    tokens: tokens,
+    enabled: !fogMode && !presenting && !placing,
+  });
 
-  function place(at: Point, scale: number) {
+  /** Where a token placed here lands: on a square while tokens snap to the grid. */
+  const landing = (point: Point): Point => {
+    if (!map.grid || !map.snapToGrid) return point;
+    const [x, y] = snapToGrid(gridInPixels(map.grid, map.size), toPixels(point, map.size));
+    return normalise(x, y, map.size);
+  };
+
+  function place(clicked: Point, scale: number) {
+    const at = landing(clicked);
     if (placing?.kind === "party") {
-      // Side by side around the click, far enough apart on screen for their names.
-      const step = (TOKEN_RADIUS * 4.5) / scale / map.size.width;
-      const first = at[0] - (step * (party.length - 1)) / 2;
+      // Side by side around the click: in neighbouring squares on a battle map, else far enough
+      // apart on screen for their names.
+      const step = map.grid ? map.grid.square : (TOKEN_RADIUS * 4.5) / scale / map.size.width;
+      const first = at[0] - step * Math.floor((party.length - 1) / 2);
       const placed = party.map((member, index): TokenAction => ({
         type: "place",
         token: {
           kind: "character",
           id: newId(),
           map: map.id,
-          at: offset([first, at[1]], step * index, 0),
+          at: landing(offset([first, at[1]], step * index, 0)),
           note: member.note,
         },
       }));
@@ -113,7 +131,20 @@ export function MapViewer({
         <MapBreadcrumbs crumbs={map.breadcrumbs} />
         <h1 className="sr-only">{map.name}</h1>
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <ShareSwitch mapId={map.id} shared={shared} />
+          <MapSwitch
+            mapId={map.id}
+            label="Share with players"
+            on={shared}
+            change={(on) => ({ intent: "setVisibility", visibility: on ? "players" : "dm" })}
+          />
+          {map.grid && (
+            <MapSwitch
+              mapId={map.id}
+              label="Snap to grid"
+              on={!!map.snapToGrid}
+              change={(snap) => ({ intent: "setSnapping", snap })}
+            />
+          )}
           <button
             type="button"
             aria-pressed={fogMode}
@@ -164,6 +195,7 @@ export function MapViewer({
         className="flex min-h-0 flex-1 flex-col bg-stone-50 md:flex-row dark:bg-stone-950"
       >
         <div className="relative flex min-h-[50vh] flex-1">
+          {battle.toolbar}
           <MapCanvas
             name={map.name}
             size={map.size}
@@ -177,6 +209,11 @@ export function MapViewer({
           >
             {(canvas) => (
               <>
+                {map.grid && (
+                  <g aria-label="Battle grid" role="img">
+                    <GridLayer grid={map.grid} size={map.size} />
+                  </g>
+                )}
                 {fogMode && !presenting ? (
                   <FogPainter
                     mask={fog.mask}
@@ -222,8 +259,11 @@ export function MapViewer({
                   selectedId={presenting ? undefined : selectedTokenId}
                   onSelect={presenting ? undefined : (token) => setSelectedTokenId(token.id)}
                   mover={presenting ? undefined : mapTokens}
+                  grid={map.grid}
+                  snap={map.snapToGrid}
                   takeHeld
                 />
+                {battle.layers(canvas)}
                 {placing && !presenting && (
                   <rect
                     {...map.size}
@@ -290,6 +330,8 @@ export function MapViewer({
                 onPlace={setPlacing}
                 onSelect={(token) => setSelectedTokenId(token?.id)}
                 onFind={find}
+                grid={map.grid}
+                size={map.size}
                 send={(actions) => void send(actions)}
               />
             )}

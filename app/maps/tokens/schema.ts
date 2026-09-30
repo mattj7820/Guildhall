@@ -2,7 +2,7 @@
 import { z } from "zod";
 import type { Visibility } from "~/campaign/types";
 import type { TokenAction } from "./actions";
-import { MARKER_COLOURS, type Token } from "./types";
+import { MARKER_COLOURS, TOKEN_SIZES, type Token } from "./types";
 
 export const MARKER_NAME_MAX = 60;
 /** Enough for every party member and plenty of markers on every map. */
@@ -16,14 +16,23 @@ const coordinate = z.number().min(0).max(1);
 const point = z.tuple([coordinate, coordinate]);
 const markerName = z.string().trim().min(1).max(MARKER_NAME_MAX);
 const colour = z.enum(MARKER_COLOURS);
+const size = z.union(TOKEN_SIZES.map((each) => z.literal(each)));
 
 export const tokenSchema: z.ZodType<Token> = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("character"), id, map: id, at: point, note: z.string().min(1) }),
+  z.object({
+    kind: z.literal("character"),
+    id,
+    map: id,
+    at: point,
+    size: size.optional(),
+    note: z.string().min(1),
+  }),
   z.object({
     kind: z.literal("marker"),
     id,
     map: id,
     at: point,
+    size: size.optional(),
     name: markerName,
     colour,
     visibility,
@@ -54,6 +63,7 @@ export const tokenActionSchema: z.ZodType<TokenAction> = z.discriminatedUnion("t
     map: id.optional(),
   }),
   z.object({ type: z.literal("remove"), id }),
+  z.object({ type: z.literal("setSize"), id, size }),
   z.object({
     type: z.literal("editMarker"),
     id,

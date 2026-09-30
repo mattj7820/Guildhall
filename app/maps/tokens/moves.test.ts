@@ -6,6 +6,7 @@ const token = (id: string, at: [number, number]): TokenView => ({
   id,
   kind: "character",
   at,
+  size: 1,
   name: id,
   movable: true,
 });

@@ -3,7 +3,7 @@
  * once) and on the server (to what's stored now), as for character sheets (decision 30).
  */
 import type { MapId, Point } from "../types";
-import type { MarkerToken, Token, TokenId } from "./types";
+import type { MarkerToken, Token, TokenId, TokenSize } from "./types";
 
 export type TokenAction =
   /**
@@ -17,6 +17,8 @@ export type TokenAction =
    */
   | { type: "move"; id: TokenId; to: Point; from?: Point; map?: MapId }
   | { type: "remove"; id: TokenId }
+  /** How many squares across it is on a battle map (the DM's). */
+  | { type: "setSize"; id: TokenId; size: TokenSize }
   | {
       type: "editMarker";
       id: TokenId;
@@ -59,6 +61,10 @@ export function applyTokenAction(tokens: readonly Token[], action: TokenAction):
       return tokens.some((token) => token.id === action.id)
         ? { tokens: tokens.filter((token) => token.id !== action.id), changed: true }
         : unchanged;
+    case "setSize":
+      return replace(tokens, action.id, (token) =>
+        action.size === 1 ? withoutSize(token) : { ...token, size: action.size },
+      );
     case "editMarker":
       return replace(tokens, action.id, (token) =>
         token.kind === "marker"
@@ -71,6 +77,13 @@ export function applyTokenAction(tokens: readonly Token[], action: TokenAction):
           : token,
       );
   }
+}
+
+/** Size 1 is the default, so it isn't stored. */
+function withoutSize(token: Token): Token {
+  const copy = { ...token };
+  delete copy.size;
+  return copy;
 }
 
 function replace(tokens: readonly Token[], id: TokenId, change: (token: Token) => Token): Applied {

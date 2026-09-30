@@ -8,6 +8,7 @@ import type { EntityId } from "~/campaign/types";
 import { record, redo, startHistory, undo, type History } from "~/shared/history";
 import { offset } from "./geometry";
 import { OUTLINE_MAX, OUTLINE_MIN } from "./schema";
+import type { MapGrid } from "./grid/grid";
 import type { Area, AreaId, MapChanges, MapId, Point } from "./types";
 
 export type EditorDoc = MapChanges;
@@ -41,6 +42,8 @@ export type EditorAction =
   | { type: "insertVertex"; id: AreaId; index: number; point: Point }
   | { type: "removeVertex"; id: AreaId; index: number }
   | { type: "editMap"; name?: string; note?: EntityId | null }
+  /** Turns the battle grid on (with its settings) or off. Dragging a slider is one undo step. */
+  | { type: "setGrid"; grid: MapGrid | null }
   | { type: "undo" }
   | { type: "redo" };
 
@@ -160,6 +163,11 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       if (action.name !== undefined) next.name = action.name;
       if (action.note !== undefined) setOptional(next, "note", action.note ?? undefined);
       return change(next, action.name !== undefined ? "map-name" : undefined);
+    }
+    case "setGrid": {
+      const next = { ...doc };
+      setOptional(next, "grid", action.grid ?? undefined);
+      return change(next, action.grid && doc.grid ? "grid" : undefined);
     }
     case "undo":
       return withValidSelection({ ...state, history: undo(state.history) });

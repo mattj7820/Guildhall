@@ -24,7 +24,20 @@ interface TokenBase {
   map: MapId;
   /** Its centre, in fractions of the image, like outlines. */
   at: Point;
+  /** Squares across on a battle map: 1 (Medium or smaller) to 4 (Gargantuan). 1 if not given. */
+  size?: TokenSize;
 }
+
+export const TOKEN_SIZES = [1, 2, 3, 4] as const;
+export type TokenSize = (typeof TOKEN_SIZES)[number];
+
+/** The rules' names for each size, as the DM chooses them. */
+export const SIZE_NAMES: Record<TokenSize, string> = {
+  1: "Medium",
+  2: "Large",
+  3: "Huge",
+  4: "Gargantuan",
+};
 
 /**
  * A party member (a PC or the companion), by their vault note. Each is in one place at a time:
@@ -50,6 +63,8 @@ export interface TokenView {
   id: TokenId;
   kind: Token["kind"];
   at: Point;
+  /** Squares across on a battle map. */
+  size: TokenSize;
   name: string;
   /** Party members with a portrait on their sheet. */
   portraitUrl?: string;

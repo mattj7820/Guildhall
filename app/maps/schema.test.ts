@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { campaignMapSchema, mapChangesSchema } from "./schema";
+import { campaignMapSchema, gridSchema, mapChangesSchema } from "./schema";
 import { buildArea, buildMap } from "./test-builders";
 
 describe("campaignMapSchema", () => {
@@ -65,6 +65,24 @@ describe("campaignMapSchema", () => {
     expect(campaignMapSchema.safeParse(buildMap({ id: "m", name: "x".repeat(101) })).success).toBe(
       false,
     );
+  });
+});
+
+describe("gridSchema", () => {
+  const grid = { square: 0.05, origin: [0, 0] as [number, number], lines: 0.35 };
+
+  it("accepts a grid, and a map without one", () => {
+    expect(gridSchema.parse(grid)).toEqual(grid);
+    expect(campaignMapSchema.safeParse(buildMap({ id: "m", grid })).success).toBe(true);
+  });
+
+  it.each([
+    ["no square", { ...grid, square: 0 }],
+    ["a square wider than the image", { ...grid, square: 1.5 }],
+    ["an origin off the image", { ...grid, origin: [1.2, 0] }],
+    ["lines stronger than solid", { ...grid, lines: 2 }],
+  ])("refuses %s", (_name, bad) => {
+    expect(gridSchema.safeParse(bad).success).toBe(false);
   });
 });
 

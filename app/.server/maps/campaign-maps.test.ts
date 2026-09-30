@@ -123,6 +123,24 @@ describe("CampaignMaps", () => {
     expect(saved && "note" in saved).toBe(false);
   });
 
+  it("saves a battle grid with the editor's changes, and takes it off again", async () => {
+    const maps = store();
+    const map = await maps.create({ name: "World", image: WORLD_IMAGE });
+    const grid = { square: 0.05, origin: [0, 0] as [number, number], lines: 0.35 };
+    await maps.update(map.id, changes(map, { grid }));
+    expect((await maps.get(map.id))?.grid).toEqual(grid);
+    await maps.update(map.id, changes(map, { grid: undefined }));
+    expect(await maps.get(map.id)).not.toHaveProperty("grid");
+  });
+
+  it("turns snapping to the grid off and on", async () => {
+    const maps = store();
+    const map = await maps.create({ name: "World", image: WORLD_IMAGE });
+    expect((await maps.setSnapping(map.id, false))?.snapToGrid).toBe(false);
+    expect((await maps.get(map.id))?.snapToGrid).toBe(false);
+    expect(await maps.setSnapping("gone", true)).toBeUndefined();
+  });
+
   it("links an area to another map", async () => {
     const maps = store();
     const world = await maps.create({ name: "World", image: WORLD_IMAGE });

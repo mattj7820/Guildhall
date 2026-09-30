@@ -44,7 +44,8 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
  * - `{ intent: "save", name, note, areas }` autosaves the map;
  * - `{ intent: "createChild", name, image, note }` makes a new map for an area to lead to;
  * - `{ intent: "setImage", image }` records the image's new location or size;
- * - `{ intent: "setVisibility", visibility }` shares the map with players, or stops sharing it.
+ * - `{ intent: "setVisibility", visibility }` shares the map with players, or stops sharing it;
+ * - `{ intent: "setSnapping", snap }` makes tokens snap to the grid's squares, or move freely.
  *   Like the image, it isn't part of the autosave (or undo): sharing is a deliberate act.
  *
  * A form with `intent=delete` deletes the map.
@@ -77,6 +78,7 @@ async function changeMap({ request, params, context }: Route.ActionArgs) {
     image?: unknown;
     note?: unknown;
     visibility?: unknown;
+    snap?: unknown;
   };
   switch (body.intent) {
     case "save": {
@@ -104,6 +106,11 @@ async function changeMap({ request, params, context }: Route.ActionArgs) {
         return data({ error: "That image isn't in the vault." }, 400);
       }
       return (await maps.setImage(params.id, image.data)) ? { imageSet: true } : gone();
+    }
+    case "setSnapping": {
+      const snap = z.boolean().safeParse(body.snap);
+      if (!snap.success) return data({ error: "Snap to the grid, or don't." }, 400);
+      return (await maps.setSnapping(params.id, snap.data)) ? { snap: snap.data } : gone();
     }
     case "setVisibility": {
       const visibility = z.enum(["dm", "players"]).safeParse(body.visibility);

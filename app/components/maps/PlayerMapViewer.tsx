@@ -12,7 +12,11 @@ import { AreaShape } from "./AreaShape";
 import { useFogImage } from "./FogLayer";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
+import { GridLayer } from "./GridLayer";
+import type { MapGrid } from "~/maps/grid/grid";
 import { InsideBadges } from "./InsideBadges";
+import { useBattleTools } from "./useBattleTools";
+import { TokenDistances } from "./TokenDistances";
 import { NotePanel } from "./NotePanel";
 import { TokenLayer } from "./TokenLayer";
 
@@ -37,6 +41,7 @@ export function PlayerMapViewer({
 }) {
   const mapTokens = useMapTokens(map.id, { tokens, inside });
   const [focus, setFocus] = useState<{ at: [number, number]; key: number }>();
+  const battle = useBattleTools({ map, tokens: mapTokens.tokens, enabled: true });
   const find = (token: TokenView) =>
     setFocus({ at: toPixels(token.at, map.size), key: (focus?.key ?? 0) + 1 });
   const status = useMapUpdates(map.id, mapVersionUrl(map.id), version, mapTokens.pushed);
@@ -52,12 +57,13 @@ export function PlayerMapViewer({
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-stone-200 px-4 py-2 dark:border-stone-800">
         <MapBreadcrumbs crumbs={map.breadcrumbs} />
         <h1 className="sr-only">{map.name}</h1>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-3">
           <LiveStatus status={status} />
         </div>
       </div>
       <div className="flex min-h-0 flex-1 flex-col bg-stone-50 md:flex-row dark:bg-stone-950">
         <div className="relative flex min-h-[50vh] flex-1">
+          {battle.toolbar}
           <MapCanvas
             name={map.name}
             size={map.size}
@@ -73,6 +79,12 @@ export function PlayerMapViewer({
                       <image href={revealed} {...map.size} preserveAspectRatio="none" />
                     </mask>
                   </defs>
+                )}
+                {/* Only over what's revealed, so it never runs off into the black. */}
+                {map.grid && revealed && (
+                  <g mask={`url(#${REVEALED_ID})`} aria-label="Battle grid" role="img">
+                    <GridLayer grid={map.grid} size={map.size} />
+                  </g>
                 )}
                 <g
                   aria-label="Map areas"
@@ -102,8 +114,11 @@ export function PlayerMapViewer({
                   size={map.size}
                   canvas={canvas}
                   mover={mapTokens}
+                  grid={map.grid}
+                  snap={map.snapToGrid}
                   sayMovable
                 />
+                {battle.layers(canvas)}
               </>
             )}
           </MapCanvas>
@@ -122,7 +137,7 @@ export function PlayerMapViewer({
           ) : (
             map.note && hasContent(map.note) && <NotePanel note={map.note} />
           )}
-          <PartyHere tokens={mapTokens.tokens} onFind={find} />
+          <PartyHere tokens={mapTokens.tokens} onFind={find} grid={map.grid} size={map.size} />
           <AreaList areas={map.areas} onSelect={(area) => setSelectedId(area.id)} />
         </aside>
       </div>
@@ -134,10 +149,15 @@ export function PlayerMapViewer({
 function PartyHere({
   tokens,
   onFind,
+  grid,
+  size,
 }: {
   tokens: TokenView[];
   onFind: (token: TokenView) => void;
+  grid?: MapGrid;
+  size: Size;
 }) {
+  const theirs = tokens.find((token) => token.movable);
   const party = tokens
     .filter((token) => token.kind === "character")
     .sort((a, b) => Number(b.movable) - Number(a.movable));
@@ -168,6 +188,14 @@ function PartyHere({
           </li>
         ))}
       </ul>
+      {grid && theirs && (
+        <div className="mt-3">
+          <h3 className="mb-1 text-xs font-semibold tracking-wide text-stone-500 uppercase">
+            How far from {theirs.name}
+          </h3>
+          <TokenDistances from={theirs} tokens={tokens} grid={grid} size={size} />
+        </div>
+      )}
     </section>
   );
 }

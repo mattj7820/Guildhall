@@ -114,6 +114,7 @@ export function mapView({
       cells: encodeCells(fog.mask.cells),
       version: fog.version,
     },
+    ...(map.grid ? { grid: map.grid, snapToGrid: map.snapToGrid !== false } : {}),
     ...(isDm ? { shared: map.visibility === "players" } : {}),
   };
 }

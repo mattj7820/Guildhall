@@ -19,8 +19,10 @@ import { DraftOutline } from "./DraftOutline";
 import { ImageHealth } from "./ImageHealth";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
+import { GridLayer } from "./GridLayer";
+import { GridSettings } from "./GridSettings";
 import { MapSettings } from "./MapSettings";
-import { ShareSwitch } from "./ShareSwitch";
+import { MapSwitch } from "./MapSwitch";
 import { VertexHandles, type VertexDrag } from "./VertexHandles";
 
 /** Wait this long after the last change before saving, so typing doesn't save every key. */
@@ -44,7 +46,7 @@ export function MapEditor(props: MapEditorProps) {
   const { map, view, viewUrl } = props;
   const [state, dispatch] = useReducer(
     editorReducer,
-    { name: map.name, note: map.note, areas: map.areas },
+    { name: map.name, note: map.note, areas: map.areas, ...(map.grid && { grid: map.grid }) },
     (doc: EditorDoc) => startEditor(doc, props.selectedArea),
   );
   const doc = currentDoc(state);
@@ -114,7 +116,12 @@ export function MapEditor(props: MapEditorProps) {
           <p aria-live="polite" className="text-sm text-stone-500">
             {status && (status === "All changes saved" ? `✓ ${status}` : status)}
           </p>
-          <ShareSwitch mapId={map.id} shared={!!view.shared} />
+          <MapSwitch
+            mapId={map.id}
+            label="Share with players"
+            on={!!view.shared}
+            change={(on) => ({ intent: "setVisibility", visibility: on ? "players" : "dm" })}
+          />
           <button
             type="button"
             className={buttonClass}
@@ -175,6 +182,7 @@ export function MapEditor(props: MapEditorProps) {
           >
             {(canvas) => (
               <>
+                {doc.grid && <GridLayer grid={doc.grid} size={view.size} />}
                 {doc.areas.map((area) => (
                   <EditableArea
                     key={area.id}
@@ -252,6 +260,7 @@ export function MapEditor(props: MapEditorProps) {
             onSelect={(id) => dispatch({ type: "select", id })}
           />
           <MapSettings doc={doc} notes={props.notes} dispatch={dispatch} onBlur={saveNow} />
+          <GridSettings grid={doc.grid} size={view.size} dispatch={dispatch} />
         </aside>
       </div>
     </main>

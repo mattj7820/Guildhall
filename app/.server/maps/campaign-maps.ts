@@ -110,7 +110,7 @@ export class CampaignMaps {
       if (!existing) return { next: data, result: undefined };
 
       const exists = (mapId: MapId) => data.maps.some((map) => map.id === mapId);
-      const { note, ...rest } = changes;
+      const { note, grid, ...rest } = changes;
       const changed: CampaignMap = {
         ...existing,
         ...rest,
@@ -120,6 +120,8 @@ export class CampaignMaps {
       };
       if (note) changed.note = note;
       else delete changed.note;
+      if (grid) changed.grid = grid;
+      else delete changed.grid;
 
       const maps = data.maps.map((map) => (map.id === id ? changed : map));
       const problem = treeProblem(maps);
@@ -136,6 +138,11 @@ export class CampaignMaps {
   /** Shares the map with players, or makes it DM-only again. Undefined if it no longer exists. */
   setVisibility(id: MapId, visibility: Visibility): Promise<CampaignMap | undefined> {
     return this.change(id, (map) => ({ ...map, visibility }));
+  }
+
+  /** Whether tokens snap to the map's grid. Undefined if the map no longer exists. */
+  setSnapping(id: MapId, snap: boolean): Promise<CampaignMap | undefined> {
+    return this.change(id, (map) => ({ ...map, snapToGrid: snap }));
   }
 
   /**

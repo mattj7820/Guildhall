@@ -122,6 +122,10 @@ First e2e run needs `npx playwright install chromium`.
   `visibility.ts` (`tokensForViewer`: fog, markers, a player's own "in the dark"), `moves.ts` (the
   browser's copy: its own drag and unanswered moves over the server's, and others' drags) and the
   `useMapTokens` hook.
+- `app/maps/grid/`: battle grids (isomorphic, pure): `grid.ts` (`MapGrid` in image fractions,
+  `toPixels`, `suggestSquare`, `startingGrid`, `snapToGrid` by token size, `gridPath`),
+  `distance.ts` (true lengths at 5 ft a square, `formatFeet`), `shapes.ts` (spell areas:
+  `insideArea`, `coveredSquares` by the centre rule, `areaPath`, `caughtIn`).
 - `app/live/`: the live connection (isomorphic): `messages.ts` (what each end sends; zod for the
   browser's), `client.ts` (`LiveClient`: one connection per tab, rooms, reconnecting), `throttle.ts`
   (20 drags a second) and `useLive.ts` (`useLiveMap`, `sendLive`).
@@ -208,11 +212,16 @@ First e2e run needs `npx playwright install chromium`.
 - `app/components/maps/`: `MapCanvas` (the SVG canvas; `focus` centres it), `MapViewer` and
   `MapEditor` (the two pages), `AreaShape`, `VertexHandles`, `DraftOutline`, `AreaForm`,
   `MapSettings`, `ImageHealth`, `ImagePicker`, `NotePicker`, `NotePanel`, `MapBreadcrumbs`, and for
-  fog of war `ShareSwitch`, `FogLayer` (the fog drawn from the cell opacities), `FogPainter` (brush,
+  fog of war `FogLayer` (the fog drawn from the cell opacities), `FogPainter` (brush,
   rectangle and area tools), `FogToolbar`, `FogAreaList` (what players see of each area) and
   `useFogTools` (tool state and keys). `PlayerMapViewer` is a map as players see it: tiles over
   black, and outlines drawn only over what's revealed. For tokens: `TokenLayer` (drawn over the fog,
-  dragged, moved by keys), `TokenPanel` (the DM's party and markers), `InsideBadges`.
+  dragged, moved by keys; filling and snapping to squares on a battle map), `TokenPanel` (the DM's
+  party and markers), `InsideBadges`, `TokenDistances`. For battle maps: `GridLayer`,
+  `GridSettings` (the editor's section), and `useBattleTools` (the toolbar over the map and what
+  its tools draw, for the DM and players alike), built from `MapToolbar`, `useMapTools` (which
+  tool, the ruler and spell area, shortcuts), `MeasureLayer`, `SpellAreaLayer` and
+  `SpellAreaOptions`. `MapSwitch` is a setting changed from the map's page (sharing, snapping).
   `app/components/LiveStatus.tsx` says whether a page is live. Shared control classes are in
   `app/components/styles.ts`.
 
@@ -236,7 +245,9 @@ First e2e run needs `npx playwright install chromium`.
   images are served by map ID through `map-image`, not `vault-asset`, and only ever to the DM.
   Map changes go through `editorReducer`; the image and sharing change only through their own
   actions. An area's `visibility` is `players` (seen once at least half revealed on a shared map)
-  or `dm` (secret). Fog changes are `FogChange`s through `applyFogChange`, in the browser and on
+  or `dm` (secret). A battle grid is also in fractions (a square's side as a fraction of the
+  width), saved with the editor; snapping is its own switch (`setSnapping`), and happens in the
+  browser. Fog changes are `FogChange`s through `applyFogChange`, in the browser and on
   the server; undo sends `inverseOf`.
 - Tokens: every change is a `TokenAction` through `applyTokenAction`, POSTed to
   `/maps/:id/tokens` and applied to what's stored (never a whole list). A party member is in one

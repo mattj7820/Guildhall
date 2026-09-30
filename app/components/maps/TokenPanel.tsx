@@ -1,15 +1,20 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import type { MapGrid } from "~/maps/grid/grid";
 import { Link } from "react-router";
 import { buttonClass, inputClass, labelClass, primaryButtonClass } from "~/components/styles";
 import type { TokenAction } from "~/maps/tokens/actions";
 import { MARKER_NAME_MAX } from "~/maps/tokens/schema";
 import {
   MARKER_COLOURS,
+  SIZE_NAMES,
+  TOKEN_SIZES,
   type MarkerColour,
+  type TokenSize,
   type PartyPlacement,
   type TokenView,
 } from "~/maps/tokens/types";
-import type { MapId } from "~/maps/types";
+import type { MapId, Size } from "~/maps/types";
+import { TokenDistances } from "./TokenDistances";
 import { mapUrl } from "~/maps/urls";
 
 /** What the DM's next click on the map will place. */
@@ -30,6 +35,9 @@ interface Props {
   /** Centres the map on a token. */
   onFind: (token: TokenView) => void;
   send: (actions: TokenAction[]) => void;
+  /** On a battle map, the chosen token lists how far the others are. */
+  grid?: MapGrid;
+  size: Size;
 }
 
 /**
@@ -47,6 +55,8 @@ export function TokenPanel({
   onSelect,
   onFind,
   send,
+  grid,
+  size,
 }: Props) {
   const [addingMarker, setAddingMarker] = useState(false);
   const markers = tokens.filter((token) => token.kind === "marker");
@@ -178,7 +188,9 @@ export function TokenPanel({
           token={selected}
           onClose={() => onSelect(undefined)}
           send={send}
-        />
+        >
+          {grid && <TokenDistances from={selected} tokens={tokens} grid={grid} size={size} />}
+        </SelectedToken>
       )}
     </section>
   );
@@ -188,10 +200,12 @@ function SelectedToken({
   token,
   onClose,
   send,
+  children,
 }: {
   token: TokenView;
   onClose: () => void;
   send: (actions: TokenAction[]) => void;
+  children?: ReactNode;
 }) {
   return (
     <section
@@ -212,6 +226,22 @@ function SelectedToken({
             : "only the players who move it can see it."}
         </p>
       )}
+      <label className="flex items-center gap-2 text-sm">
+        <span className={labelClass}>Size</span>
+        <select
+          className={inputClass}
+          value={token.size}
+          onChange={(event) =>
+            send([{ type: "setSize", id: token.id, size: Number(event.target.value) as TokenSize }])
+          }
+        >
+          {TOKEN_SIZES.map((size) => (
+            <option key={size} value={size}>
+              {SIZE_NAMES[size]} ({size} × {size} squares)
+            </option>
+          ))}
+        </select>
+      </label>
       {token.kind === "marker" && (
         <MarkerForm
           initial={{
@@ -244,6 +274,7 @@ function SelectedToken({
       >
         {token.kind === "marker" ? "Remove marker" : "Take off this map"}
       </button>
+      {children}
     </section>
   );
 }

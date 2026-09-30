@@ -1,5 +1,11 @@
-import { useRef, type KeyboardEvent, type PointerEvent } from "react";
+import { useMemo, useRef, type KeyboardEvent, type PointerEvent } from "react";
 import { normalise, offset, toPixels } from "~/maps/geometry";
+import {
+  snapToGrid,
+  toPixels as gridInPixels,
+  type MapGrid,
+  type PixelGrid,
+} from "~/maps/grid/grid";
 import type { ShownToken } from "~/maps/tokens/moves";
 import type { MarkerColour, TokenView } from "~/maps/tokens/types";
 import type { Point, Size } from "~/maps/types";
@@ -54,11 +60,15 @@ interface Props {
   sayMovable?: boolean;
   /** The DM may pick up a token someone else is moving; others wait until it's let go. */
   takeHeld?: boolean;
+  /** On a battle map, tokens fill their squares, and snap to them if `snap`. */
+  grid?: MapGrid;
+  snap?: boolean;
 }
 
 /**
- * Tokens drawn over the map and its fog, the same size on screen at every zoom. Only what the
- * server sent for this viewer is here; the DM's copy says what players can't see.
+ * Tokens drawn over the map and its fog: the same size on screen at every zoom, or on a battle map
+ * filling their squares. Only what the server sent for this viewer is here; the DM's copy says
+ * what players can't see.
  */
 export function TokenLayer({
   tokens,
@@ -69,7 +79,10 @@ export function TokenLayer({
   mover,
   sayMovable,
   takeHeld,
+  grid,
+  snap,
 }: Props) {
+  const squares = useMemo(() => grid && gridInPixels(grid, size), [grid, size]);
   return (
     <g aria-label="Tokens" role="group">
       <defs>
@@ -87,6 +100,8 @@ export function TokenLayer({
           onSelect={onSelect}
           mover={token.movable && (!token.movingBy || takeHeld) ? mover : undefined}
           sayMovable={sayMovable}
+          squares={squares}
+          snap={!!snap}
         />
       ))}
     </g>
@@ -101,6 +116,8 @@ function TokenMark({
   onSelect,
   mover,
   sayMovable,
+  squares,
+  snap,
 }: {
   token: ShownToken;
   size: Size;
@@ -109,13 +126,26 @@ function TokenMark({
   onSelect?: (token: TokenView) => void;
   mover?: TokenMover;
   sayMovable?: boolean;
+  squares?: PixelGrid;
+  snap: boolean;
 }) {
   const press = useRef<{ x: number; y: number; from: Point; at?: Point } | null>(null);
   const keys = useRef<{ from: Point; at: Point; timer?: ReturnType<typeof setTimeout> } | null>(
     null,
   );
   const { scale } = canvas;
-  const r = TOKEN_RADIUS / scale;
+  // Filling its squares (inside its ring, with a little space round it), but never so small on
+  // screen it can't be found.
+  const r = squares
+    ? Math.max((token.size * squares.square) / 2 - 3 / scale - squares.square * 0.04, 6 / scale)
+    : TOKEN_RADIUS / scale;
+
+  /** Where a token dropped here settles: on its squares when snapping, unless Alt is held. */
+  const settle = (at: Point, free: boolean): Point => {
+    if (!squares || !snap || free) return at;
+    const [sx, sy] = snapToGrid(squares, toPixels(at, size), token.size);
+    return normalise(sx, sy, size);
+  };
   const [x, y] = toPixels(token.at, size);
   const dim = token.hidden || token.inTheDark;
   const interactive = !!onSelect || !!mover;
@@ -136,7 +166,8 @@ function TokenMark({
       keys.current = null;
       return mover.cancel(token.id);
     }
-    const step = (event.shiftKey ? KEY_STEP * 5 : KEY_STEP) / scale;
+    // A square at a time when snapping, or a few pixels on screen; Shift goes five times as far.
+    const step = (event.shiftKey ? 5 : 1) * (squares && snap ? squares.square : KEY_STEP / scale);
     const moves: Record<string, [number, number]> = {
       ArrowLeft: [-step / size.width, 0],
       ArrowRight: [step / size.width, 0],
@@ -149,7 +180,7 @@ function TokenMark({
     // The map pans with the arrow keys too; a focused token takes them instead.
     event.stopPropagation();
     const from = keys.current?.from ?? token.at;
-    const to = offset(keys.current?.at ?? token.at, move[0], move[1]);
+    const to = settle(offset(keys.current?.at ?? settle(token.at, false), move[0], move[1]), false);
     clearTimeout(keys.current?.timer);
     keys.current = {
       from,
@@ -194,8 +225,9 @@ function TokenMark({
         if (!current || !mover) return;
         const distance = Math.hypot(event.clientX - current.x, event.clientY - current.y);
         if (!current.at && distance < DRAG_THRESHOLD) return;
-        const at = pointerAt(event);
-        if (!at) return;
+        const pointer = pointerAt(event);
+        if (!pointer) return;
+        const at = settle(pointer, event.altKey);
         current.at = at;
         mover.drag(token.id, at);
       }}

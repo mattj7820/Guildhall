@@ -32,6 +32,11 @@ locations, maps, characters, sessions).
   an area, the Maps page says where you are, and Find takes you to your token. Tokens under the fog
   never reach players (except their own, "in the dark"). Fog reveals arrive the same way, live,
   over websockets on the same server, with polling when the connection drops.
+- **Battle maps (first slice):** any map becomes a battle map with a grid of 5 ft squares, set up
+  in the editor (scaled to fit, offset to line up with a grid in the image, lines faint or
+  hidden). Tokens fill their squares, come in sizes from Medium to Gargantuan, and snap to squares
+  (a switch per map, and Alt to place freely). A toolbar over the map measures true distances
+  with turns, and lays out spell areas (sphere, cube, cone, line) showing who's caught.
 - **Character sheets (first slice):** a sheet per PC note, typed in from paper, with the paper
   sheet's own maths (modifiers, proficiency, passives) and typed overrides; click any bonus to roll
   it; hit points with Heal and Damage. Players edit only their own; others see a summary. Changes
@@ -49,14 +54,20 @@ locations, maps, characters, sessions).
 - **Player view polish (next):** go through the wiki and combat tracker as a signed-in player:
   the turn order for everyone, and each player's own characters shown as theirs
   (`Viewer.playerId` is now set).
-- **Battle maps (towards dropping Roll20):** a grid on a map (a square's size and offset, in image
-  fractions), tokens sized in squares and snapping to them, measuring distances, and monster
-  tokens linked to the combat tracker: initiative, HP and conditions on the token, and the turn
-  order for everyone, from a server-held encounter pushed through the live hub (decisions 13 and
-  43 say how the model grows).
+- **Battle maps, next (towards dropping Roll20):**
+  - **The shared fight on the map (next slice):** the combat tracker's encounter held on the
+    server (the same reducer) and pushed through the live hub; the tracker in the map page's side
+    panel; monster tokens linked to their combatants (sized from their statblocks), the active
+    one ringed, HP bars for the DM only, conditions on tokens; the turn order for players, who
+    move only on their own turn (the DM can override, and switch to free movement). `/combat`
+    stays, as the same tracker for fights without a map.
+  - **Effects:** an event channel over the live hub (hits, misses, damage), with a turn banner,
+    floating damage and a hit or miss flash, respecting reduced motion. Attack animations later.
+  - Rulers and spell areas shown to everyone; placing a spell area from a token by keyboard.
 - **Tokens, next steps:** fog clearing around the party as their tokens move, if the DM wants it;
-  icons on markers; a lock for the DM to stop players moving mid-scene; undo for the DM's moves;
-  tokens for NPCs linked to their notes; touch dragging for tablets and phones.
+  the DM's fog tools and token placing in the map's toolbar; icons on markers; a lock for the DM to
+  stop players moving mid-scene; undo for the DM's moves; tokens for NPCs linked to their notes;
+  touch dragging for tablets and phones.
 - **Live, more:** the same hub for shared dice rolls (with the DM's hidden rolls), character sheet
   changes pushed rather than polled, and the combat tracker's turn order for players.
 - **Hosting, next steps:** backups of the data folder (Dokploy volume backups, or a nightly copy to
