@@ -134,6 +134,27 @@ describe("editing areas", () => {
   });
 });
 
+describe("the battle grid", () => {
+  const grid = { square: 0.05, origin: [0, 0] as [number, number], lines: 0.35 };
+
+  it("turns the grid on and off, each an undo step", () => {
+    const on = run(startEditor(doc()), { type: "setGrid", grid });
+    expect(currentDoc(on).grid).toEqual(grid);
+    const off = editorReducer(on, { type: "setGrid", grid: null });
+    expect(currentDoc(off)).not.toHaveProperty("grid");
+    expect(currentDoc(editorReducer(off, { type: "undo" })).grid).toEqual(grid);
+  });
+
+  it("makes one undo step of dragging a grid setting", () => {
+    const state = run(
+      startEditor(doc({ grid })),
+      { type: "setGrid", grid: { ...grid, square: 0.04 } },
+      { type: "setGrid", grid: { ...grid, square: 0.03 } },
+    );
+    expect(currentDoc(editorReducer(state, { type: "undo" })).grid).toEqual(grid);
+  });
+});
+
 describe("reshaping an area", () => {
   it("moves a point", () => {
     const state = editorReducer(withSquare(), {

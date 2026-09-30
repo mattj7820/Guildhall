@@ -12,6 +12,7 @@ import { AreaShape } from "./AreaShape";
 import { useFogImage } from "./FogLayer";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
+import { GridLayer } from "./GridLayer";
 import { InsideBadges } from "./InsideBadges";
 import { NotePanel } from "./NotePanel";
 import { TokenLayer } from "./TokenLayer";
@@ -77,6 +78,12 @@ export function PlayerMapViewer({
                       <image href={revealed} {...map.size} preserveAspectRatio="none" />
                     </mask>
                   </defs>
+                )}
+                {/* Only over what's revealed, so it never runs off into the black. */}
+                {map.grid && revealed && (
+                  <g mask={`url(#${REVEALED_ID})`} aria-label="Battle grid" role="img">
+                    <GridLayer grid={map.grid} size={map.size} />
+                  </g>
                 )}
                 <g
                   aria-label="Map areas"

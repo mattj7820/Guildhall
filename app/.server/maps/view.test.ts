@@ -139,6 +139,16 @@ describe("mapView for the DM", () => {
 describe("mapView for players", () => {
   const shown = { visibility: "players" as const };
 
+  it("gives players a shared map's battle grid, as the DM gets it", () => {
+    const grid = { square: 0.05, origin: [0, 0] as [number, number], lines: 0.35 };
+    const map = buildMap({ id: "m", visibility: "players", grid });
+    expect(view(map, PLAYER_VIEWER)?.grid).toEqual(grid);
+    expect(view(map, DM_VIEWER)?.grid).toEqual(grid);
+    expect(view(buildMap({ id: "m", visibility: "players" }), PLAYER_VIEWER)).not.toHaveProperty(
+      "grid",
+    );
+  });
+
   it("treats a hidden map exactly like a missing one", () => {
     expect(view(buildMap({ id: "m" }), PLAYER_VIEWER)).toBeUndefined();
   });

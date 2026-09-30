@@ -21,6 +21,7 @@ import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
 import { NotePanel } from "./NotePanel";
 import { ShareSwitch } from "./ShareSwitch";
+import { GridLayer } from "./GridLayer";
 import { InsideBadges } from "./InsideBadges";
 import { TOKEN_RADIUS, TokenLayer } from "./TokenLayer";
 import { TokenPanel, type Placing } from "./TokenPanel";
@@ -181,6 +182,11 @@ export function MapViewer({
           >
             {(canvas) => (
               <>
+                {map.grid && (
+                  <g aria-label="Battle grid" role="img">
+                    <GridLayer grid={map.grid} size={map.size} />
+                  </g>
+                )}
                 {fogMode && !presenting ? (
                   <FogPainter
                     mask={fog.mask}

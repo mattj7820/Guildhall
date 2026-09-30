@@ -110,7 +110,7 @@ export class CampaignMaps {
       if (!existing) return { next: data, result: undefined };
 
       const exists = (mapId: MapId) => data.maps.some((map) => map.id === mapId);
-      const { note, ...rest } = changes;
+      const { note, grid, ...rest } = changes;
       const changed: CampaignMap = {
         ...existing,
         ...rest,
@@ -120,6 +120,8 @@ export class CampaignMaps {
       };
       if (note) changed.note = note;
       else delete changed.note;
+      if (grid) changed.grid = grid;
+      else delete changed.grid;
 
       const maps = data.maps.map((map) => (map.id === id ? changed : map));
       const problem = treeProblem(maps);

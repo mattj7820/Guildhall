@@ -1,6 +1,7 @@
 /** zod schemas for map data that crosses a trust boundary: the data file and requests. */
 import { z } from "zod";
 import type { Visibility } from "~/campaign/types";
+import type { MapGrid } from "./grid/grid";
 import type { Area, CampaignMap, MapChanges, MapImage } from "./types";
 
 export const MAP_NAME_MAX = 100;
@@ -41,6 +42,12 @@ const areas = z
     message: "Two areas have the same ID",
   });
 
+export const gridSchema: z.ZodType<MapGrid> = z.object({
+  square: z.number().positive().max(1),
+  origin: z.tuple([coordinate, coordinate]),
+  lines: z.number().min(0).max(1),
+});
+
 export const campaignMapSchema: z.ZodType<CampaignMap> = z.object({
   id: z.string().min(1),
   name: z.string().max(MAP_NAME_MAX),
@@ -48,6 +55,7 @@ export const campaignMapSchema: z.ZodType<CampaignMap> = z.object({
   note: entityId.optional(),
   visibility,
   areas,
+  grid: gridSchema.optional(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });
@@ -57,4 +65,5 @@ export const mapChangesSchema: z.ZodType<MapChanges> = z.object({
   name: z.string().max(MAP_NAME_MAX),
   note: entityId.optional(),
   areas,
+  grid: gridSchema.optional(),
 });
