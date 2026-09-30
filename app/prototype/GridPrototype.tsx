@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useState, type PointerEvent } from "react";
 import { MapCanvas, type CanvasTools } from "~/components/maps/MapCanvas";
 import { Tiles } from "~/components/maps/PlayerMapViewer";
-import { buttonClass, inputClass, labelClass, primaryButtonClass } from "~/components/styles";
+import { buttonClass, inputClass, labelClass } from "~/components/styles";
 import type { MapView, Size } from "~/maps/types";
 
 type Px = [number, number];
@@ -167,9 +167,21 @@ export function GridPrototype({ map }: { map: MapView }) {
   const [ruler, setRuler] = useState<{ points: Px[]; cursor: Px; dragging: boolean }>();
   const [shape, setShape] = useState<Shape & { dragging: boolean }>();
 
-  // Space adds a waypoint while measuring; Escape clears what's drawn.
+  // Space adds a waypoint while measuring; Escape clears what's drawn; V, M and A pick tools.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      const typing = event.target instanceof HTMLInputElement;
+      const shortcut = !typing && !event.ctrlKey && !event.metaKey && !event.altKey;
+      const tools: Record<string, Tool> = { v: "move", m: "measure", a: "shape" };
+      if (shortcut && tools[event.key.toLowerCase()]) {
+        const next = tools[event.key.toLowerCase()];
+        setTool(next);
+        if (next !== tool) {
+          setRuler(undefined);
+          setShape(undefined);
+        }
+        return;
+      }
       if (event.key === "Escape") {
         setRuler(undefined);
         setShape(undefined);
@@ -181,7 +193,7 @@ export function GridPrototype({ map }: { map: MapView }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [ruler]);
+  }, [ruler, tool]);
 
   const covered = useMemo(() => {
     if (!shape) return [];
@@ -228,126 +240,137 @@ export function GridPrototype({ map }: { map: MapView }) {
         <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-900 dark:bg-amber-900 dark:text-amber-100">
           Prototype: nothing is saved, and the fog is ignored
         </span>
-        <div role="group" aria-label="Tool" className="ml-auto flex gap-1">
-          {(["move", "measure", "shape"] as const).map((each) => (
-            <button
-              key={each}
-              type="button"
-              aria-pressed={tool === each}
-              className={tool === each ? primaryButtonClass : buttonClass}
-              onClick={() => chooseTool(each)}
-            >
-              {each === "move" ? "Move tokens" : each === "measure" ? "Measure" : "Spell shape"}
-            </button>
-          ))}
-        </div>
       </div>
       <div className="flex min-h-0 flex-1">
-        <MapCanvas
-          name={map.name}
-          size={size}
-          imageUrl={map.image.url}
-          className="flex-1"
-          backdrop={map.image.tiles && <Tiles size={size} layer={map.image.tiles} />}
-        >
-          {(canvas) => (
-            <>
-              <GridLines grid={grid} size={size} strength={strength} />
-              {shape && (
-                <g className="pointer-events-none">
-                  {covered.map(([c, r]) => (
-                    <rect
-                      key={`${c}-${r}`}
-                      x={grid.ox + c * grid.square}
-                      y={grid.oy + r * grid.square}
-                      width={grid.square}
-                      height={grid.square}
-                      className="fill-rose-500/30"
-                    />
-                  ))}
-                  {shape.kind === "sphere" ? (
-                    <circle
-                      cx={shape.origin[0]}
-                      cy={shape.origin[1]}
-                      r={(shape.feet / FEET) * grid.square}
-                      className="fill-none stroke-rose-600"
-                      strokeWidth={2}
-                      vectorEffect="non-scaling-stroke"
-                    />
-                  ) : (
-                    <path
-                      d={shapeOutline(grid, shape)}
-                      className="fill-none stroke-rose-600"
-                      strokeWidth={2}
-                      vectorEffect="non-scaling-stroke"
-                    />
-                  )}
-                </g>
-              )}
-              {tokens.map((token) => (
-                <Token
-                  key={token.id}
-                  token={token}
-                  grid={grid}
-                  canvas={canvas}
-                  scaleWithMap={scaleWithMap}
-                  movable={tool === "move"}
-                  onMove={(at, free) =>
-                    setTokens((all) =>
-                      all.map((each) =>
-                        each.id === token.id
-                          ? { ...each, at: snapping && !free ? snap(grid, at, each.size) : at }
-                          : each,
-                      ),
-                    )
-                  }
-                />
-              ))}
-              {ruler && (
-                <Ruler
-                  points={[...ruler.points, ruler.cursor]}
-                  scale={canvas.scale}
-                  label={feetLabel(rulerFeet)}
-                />
-              )}
-              {tool !== "move" && (
-                <rect
-                  {...size}
-                  fill="transparent"
-                  className="cursor-crosshair"
-                  onPointerDown={(event: PointerEvent<SVGRectElement>) => {
-                    if (event.button !== 0) return;
-                    event.stopPropagation();
-                    event.currentTarget.setPointerCapture(event.pointerId);
-                    const at = canvas.clientToImage(event.clientX, event.clientY);
-                    if (!at) return;
-                    if (tool === "measure") setRuler({ points: [at], cursor: at, dragging: true });
-                    else {
-                      const origin = snapping ? corner(grid, at) : at;
-                      setShape({
-                        kind: shapeKind,
-                        feet: shapeFeet,
-                        origin,
-                        target: at,
-                        dragging: true,
-                      });
+        <div className="relative flex min-w-0 flex-1">
+          <MapToolbar
+            tool={tool}
+            onTool={chooseTool}
+            shapeKind={shapeKind}
+            onShapeKind={(kind) => {
+              setShapeKind(kind);
+              if (shape) setShape({ ...shape, kind });
+            }}
+            shapeFeet={shapeFeet}
+            onShapeFeet={(feet) => {
+              setShapeFeet(feet);
+              if (shape) setShape({ ...shape, feet });
+            }}
+            result={
+              tool === "measure" && ruler
+                ? feetLabel(rulerFeet)
+                : tool === "shape" && shape
+                  ? `In the area: ${caught.length > 0 ? caught.map((token) => token.name).join(", ") : "nobody"}`
+                  : undefined
+            }
+          />
+          <MapCanvas
+            name={map.name}
+            size={size}
+            imageUrl={map.image.url}
+            className="flex-1"
+            backdrop={map.image.tiles && <Tiles size={size} layer={map.image.tiles} />}
+          >
+            {(canvas) => (
+              <>
+                <GridLines grid={grid} size={size} strength={strength} />
+                {shape && (
+                  <g className="pointer-events-none">
+                    {covered.map(([c, r]) => (
+                      <rect
+                        key={`${c}-${r}`}
+                        x={grid.ox + c * grid.square}
+                        y={grid.oy + r * grid.square}
+                        width={grid.square}
+                        height={grid.square}
+                        className="fill-rose-500/30"
+                      />
+                    ))}
+                    {shape.kind === "sphere" ? (
+                      <circle
+                        cx={shape.origin[0]}
+                        cy={shape.origin[1]}
+                        r={(shape.feet / FEET) * grid.square}
+                        className="fill-none stroke-rose-600"
+                        strokeWidth={2}
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    ) : (
+                      <path
+                        d={shapeOutline(grid, shape)}
+                        className="fill-none stroke-rose-600"
+                        strokeWidth={2}
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    )}
+                  </g>
+                )}
+                {tokens.map((token) => (
+                  <Token
+                    key={token.id}
+                    token={token}
+                    grid={grid}
+                    canvas={canvas}
+                    scaleWithMap={scaleWithMap}
+                    movable={tool === "move"}
+                    onMove={(at, free) =>
+                      setTokens((all) =>
+                        all.map((each) =>
+                          each.id === token.id
+                            ? { ...each, at: snapping && !free ? snap(grid, at, each.size) : at }
+                            : each,
+                        ),
+                      )
                     }
-                  }}
-                  onPointerMove={(event) => {
-                    const at = canvas.clientToImage(event.clientX, event.clientY);
-                    if (!at) return;
-                    if (ruler?.dragging) setRuler({ ...ruler, cursor: at });
-                    if (shape?.dragging) setShape({ ...shape, target: at });
-                  }}
-                  onPointerUp={() => {
-                    if (ruler?.dragging) setRuler({ ...ruler, dragging: false });
-                    if (shape?.dragging) setShape({ ...shape, dragging: false });
-                  }}
-                />
-              )}
-            </>
-          )}
-        </MapCanvas>
+                  />
+                ))}
+                {ruler && (
+                  <Ruler
+                    points={[...ruler.points, ruler.cursor]}
+                    scale={canvas.scale}
+                    label={feetLabel(rulerFeet)}
+                  />
+                )}
+                {tool !== "move" && (
+                  <rect
+                    {...size}
+                    fill="transparent"
+                    className="cursor-crosshair"
+                    onPointerDown={(event: PointerEvent<SVGRectElement>) => {
+                      if (event.button !== 0) return;
+                      event.stopPropagation();
+                      event.currentTarget.setPointerCapture(event.pointerId);
+                      const at = canvas.clientToImage(event.clientX, event.clientY);
+                      if (!at) return;
+                      if (tool === "measure")
+                        setRuler({ points: [at], cursor: at, dragging: true });
+                      else {
+                        const origin = snapping ? corner(grid, at) : at;
+                        setShape({
+                          kind: shapeKind,
+                          feet: shapeFeet,
+                          origin,
+                          target: at,
+                          dragging: true,
+                        });
+                      }
+                    }}
+                    onPointerMove={(event) => {
+                      const at = canvas.clientToImage(event.clientX, event.clientY);
+                      if (!at) return;
+                      if (ruler?.dragging) setRuler({ ...ruler, cursor: at });
+                      if (shape?.dragging) setShape({ ...shape, target: at });
+                    }}
+                    onPointerUp={() => {
+                      if (ruler?.dragging) setRuler({ ...ruler, dragging: false });
+                      if (shape?.dragging) setShape({ ...shape, dragging: false });
+                    }}
+                  />
+                )}
+              </>
+            )}
+          </MapCanvas>
+        </div>
         <aside className="flex w-80 flex-col gap-4 overflow-y-auto border-l border-stone-200 p-4 text-sm dark:border-stone-800">
           <section className="flex flex-col gap-2">
             <h2 className={labelClass}>Grid</h2>
@@ -454,60 +477,6 @@ export function GridPrototype({ map }: { map: MapView }) {
               />
               Tokens fill their squares (else fixed on screen)
             </label>
-          </section>
-          <section className="flex flex-col gap-2">
-            <h2 className={labelClass}>Spell shape</h2>
-            <div className="flex flex-wrap gap-1">
-              {(["sphere", "cube", "cone", "line"] as const).map((kind) => (
-                <button
-                  key={kind}
-                  type="button"
-                  aria-pressed={shapeKind === kind}
-                  className={`${shapeKind === kind ? primaryButtonClass : buttonClass} capitalize`}
-                  onClick={() => {
-                    setShapeKind(kind);
-                    chooseTool("shape");
-                    if (shape) setShape({ ...shape, kind });
-                  }}
-                >
-                  {kind}
-                </button>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {[10, 15, 20, 30, 60].map((feet) => (
-                <button
-                  key={feet}
-                  type="button"
-                  aria-pressed={shapeFeet === feet}
-                  className={shapeFeet === feet ? primaryButtonClass : buttonClass}
-                  onClick={() => {
-                    setShapeFeet(feet);
-                    if (shape) setShape({ ...shape, feet });
-                  }}
-                >
-                  {feet} ft
-                </button>
-              ))}
-            </div>
-            <p className="text-stone-500">
-              Click to place it (on a grid corner when snapping), drag to aim. Escape clears.
-            </p>
-            {shape && (
-              <p>
-                In the area:{" "}
-                {caught.length > 0 ? caught.map((token) => token.name).join(", ") : "nobody"} (
-                {covered.length} squares)
-              </p>
-            )}
-          </section>
-          <section className="flex flex-col gap-1">
-            <h2 className={labelClass}>Measure</h2>
-            <p className="text-stone-500">
-              Drag to measure the line's real length (a square is 5 ft); press Space while dragging
-              to add a turn. Escape clears.
-            </p>
-            {ruler && <p>{feetLabel(rulerFeet)}</p>}
           </section>
         </aside>
       </div>
@@ -629,5 +598,139 @@ function Ruler({ points, scale, label }: { points: Px[]; scale: number; label: s
         {label}
       </text>
     </g>
+  );
+}
+
+const TOOLS: { tool: Tool; label: string; key: string; icon: string }[] = [
+  { tool: "move", label: "Select and move", key: "V", icon: "M5 3l6 17 2.2-7 7-2.2z" },
+  {
+    tool: "measure",
+    label: "Measure",
+    key: "M",
+    icon: "M3 16.5 16.5 3 21 7.5 7.5 21zM7 12.5l1.8 1.8M10 9.5l1.8 1.8M13 6.5l1.8 1.8",
+  },
+  {
+    tool: "shape",
+    label: "Spell area",
+    key: "A",
+    icon: "M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z",
+  },
+];
+
+const SHAPES: { kind: ShapeKind; icon: string }[] = [
+  { kind: "sphere", icon: "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16z" },
+  { kind: "cube", icon: "M5 5h14v14H5z" },
+  { kind: "cone", icon: "M4 12 20 4v16z" },
+  { kind: "line", icon: "M3 10h18v4H3z" },
+];
+
+function Icon({ d }: { d: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
+      <path
+        d={d}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+const toolButton = (active: boolean) =>
+  `flex size-9 items-center justify-center rounded-md ${
+    active
+      ? "bg-amber-700 text-white dark:bg-amber-600"
+      : "text-stone-700 hover:bg-stone-200 dark:text-stone-200 dark:hover:bg-stone-700"
+  }`;
+
+/** The map's tools, over its top-left corner: select, measure, spell area (with its shapes). */
+function MapToolbar({
+  tool,
+  onTool,
+  shapeKind,
+  onShapeKind,
+  shapeFeet,
+  onShapeFeet,
+  result,
+}: {
+  tool: Tool;
+  onTool: (tool: Tool) => void;
+  shapeKind: ShapeKind;
+  onShapeKind: (kind: ShapeKind) => void;
+  shapeFeet: number;
+  onShapeFeet: (feet: number) => void;
+  result?: string;
+}) {
+  return (
+    <div className="pointer-events-none absolute top-3 left-3 z-10 flex items-start gap-2">
+      <div
+        role="toolbar"
+        aria-label="Map tools"
+        aria-orientation="vertical"
+        className="pointer-events-auto flex flex-col gap-1 rounded-lg bg-white/95 p-1 shadow-md dark:bg-stone-900/95"
+      >
+        {TOOLS.map((each) => (
+          <button
+            key={each.tool}
+            type="button"
+            aria-label={each.label}
+            aria-pressed={tool === each.tool}
+            aria-keyshortcuts={each.key}
+            title={`${each.label} (${each.key})`}
+            className={toolButton(tool === each.tool)}
+            onClick={() => onTool(each.tool)}
+          >
+            <Icon d={each.icon} />
+          </button>
+        ))}
+      </div>
+      {tool === "shape" && (
+        <div
+          role="group"
+          aria-label="Spell area"
+          className="pointer-events-auto flex flex-col gap-1 rounded-lg bg-white/95 p-1 shadow-md dark:bg-stone-900/95"
+        >
+          <div className="flex gap-1">
+            {SHAPES.map(({ kind, icon }) => (
+              <button
+                key={kind}
+                type="button"
+                aria-label={kind}
+                aria-pressed={shapeKind === kind}
+                title={kind[0].toUpperCase() + kind.slice(1)}
+                className={toolButton(shapeKind === kind)}
+                onClick={() => onShapeKind(kind)}
+              >
+                <Icon d={icon} />
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-1">
+            {[10, 15, 20, 30, 60].map((feet) => (
+              <button
+                key={feet}
+                type="button"
+                aria-pressed={shapeFeet === feet}
+                className={`${toolButton(shapeFeet === feet)} w-auto px-1.5 text-xs font-semibold`}
+                onClick={() => onShapeFeet(feet)}
+              >
+                {feet} ft
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {result && (
+        <p
+          role="status"
+          className="pointer-events-auto rounded-lg bg-white/95 px-3 py-2 text-sm font-semibold shadow-md dark:bg-stone-900/95"
+        >
+          {result}
+        </p>
+      )}
+    </div>
   );
 }
