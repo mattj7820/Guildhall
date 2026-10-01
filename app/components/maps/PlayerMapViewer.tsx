@@ -14,6 +14,9 @@ import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
 import { GridLayer } from "./GridLayer";
 import type { MapGrid } from "~/maps/grid/grid";
+import { usePlayerFight, type PlayerFightView } from "~/combat/usePlayerFight";
+import { EndMyTurn } from "~/components/combat/PlayerFight";
+import { TurnStrip } from "~/components/combat/TurnStrip";
 import { InsideBadges } from "./InsideBadges";
 import { useBattleTools } from "./useBattleTools";
 import { TokenDistances } from "./TokenDistances";
@@ -33,12 +36,17 @@ export function PlayerMapViewer({
   tokens,
   inside,
   version,
+  fight: fightFromPage,
 }: {
   map: MapView;
   tokens: TokenView[];
   inside: InsideBadge[];
   version: string;
+  /** The fight the table is in, as this player may see it. */
+  fight: PlayerFightView | null;
 }) {
+  const { fight, endTurn, ending } = usePlayerFight(fightFromPage);
+  const fightHere = fight?.map === map.id && fight.view.started ? fight : undefined;
   const mapTokens = useMapTokens(map.id, { tokens, inside });
   const [focus, setFocus] = useState<{ at: [number, number]; key: number }>();
   const battle = useBattleTools({ map, tokens: mapTokens.tokens, enabled: true });
@@ -64,6 +72,11 @@ export function PlayerMapViewer({
       <div className="flex min-h-0 flex-1 flex-col bg-stone-50 md:flex-row dark:bg-stone-950">
         <div className="relative flex min-h-[50vh] flex-1">
           {battle.toolbar}
+          {fightHere && (
+            <TurnStrip floating round={fightHere.view.round} turnOrder={fightHere.view.turnOrder}>
+              <EndMyTurn fight={fightHere} onEnd={endTurn} ending={ending} />
+            </TurnStrip>
+          )}
           <MapCanvas
             name={map.name}
             size={map.size}

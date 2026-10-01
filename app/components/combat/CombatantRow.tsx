@@ -1,7 +1,7 @@
 import type { FormEvent } from "react";
 import type { EncounterAction } from "~/combat/encounter";
 import { isBloodied, isDown } from "~/combat/turns";
-import { CONDITIONS, type Combatant, type MonsterCombatant } from "~/combat/types";
+import { CONDITIONS, type Combatant, type HitPoints, type MonsterCombatant } from "~/combat/types";
 import { buttonClass, iconButtonClass, inputClass } from "~/components/styles";
 
 type Dispatch = (action: EncounterAction) => void;
@@ -20,6 +20,7 @@ export function CombatantRow({
   dispatch,
   onShowStatblock,
   onRerollHp,
+  sheetHp,
 }: {
   combatant: Combatant;
   mode?: "live" | "prep";
@@ -31,6 +32,8 @@ export function CombatantRow({
   onShowStatblock: () => void;
   /** Prep mode: rolls the monster's HP again; absent when its statblock is gone. */
   onRerollHp?: () => void;
+  /** A party member's hit points, from their character sheet. */
+  sheetHp?: HitPoints;
 }) {
   const { id, name } = combatant;
   const down = isDown(combatant);
@@ -68,6 +71,12 @@ export function CombatantRow({
                 ? `AC ${combatant.armorClass}`
                 : "Monster"
               : `${combatant.entityId && !combatant.statblock ? "PC" : "Companion"} · ${combatant.controller.name}`}
+            {sheetHp && (
+              <span className="ml-2 font-semibold text-stone-700 tabular-nums dark:text-stone-300">
+                HP {sheetHp.current}/{sheetHp.max}
+                {sheetHp.temp > 0 && ` (+${sheetHp.temp} temp)`}
+              </span>
+            )}
           </p>
         </div>
         {combatant.statblock && (

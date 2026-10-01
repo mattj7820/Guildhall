@@ -5,7 +5,7 @@
  */
 import type { Viewer } from "~/campaign/types";
 import type { MapId } from "~/maps/types";
-import type { Encounter } from "./types";
+import type { CombatantId, Encounter, HitPoints } from "./types";
 import { encounterForViewer, type EncounterView } from "./visibility";
 import { isWholeParty } from "./types";
 
@@ -18,7 +18,7 @@ export interface Fight {
 }
 
 /** The fight as one person may see it. */
-export type FightView =
+export type FightView = (
   | { forDm: true; encounter: Encounter; revision: number; map?: MapId }
   | {
       forDm: false;
@@ -26,7 +26,11 @@ export type FightView =
       map?: MapId;
       /** Whether it's the turn of someone this player controls, so they may end it. */
       theirTurn: boolean;
-    };
+    }
+) & {
+  /** Party members' hit points from their sheets: all for the DM, a player's own for them. */
+  hp?: Record<CombatantId, HitPoints>;
+};
 
 export function fightForViewer(fight: Fight, viewer: Viewer): FightView {
   if (viewer.role === "dm") {

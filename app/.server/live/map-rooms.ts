@@ -1,10 +1,10 @@
 import type { Viewer } from "~/campaign/types";
 import { canView } from "~/campaign/visibility";
 import type { Services } from "~/context";
-import { fightForViewer } from "~/combat/fight";
 import { FIGHT_ROOM, type ServerMessage } from "~/live/messages";
 import type { MapId } from "~/maps/types";
 import { mapVersion } from "../maps/load";
+import { fightView } from "../combat/fight-view";
 import { loadMapTokens } from "../maps/tokens";
 
 type Deps = Pick<Services, "config" | "vault" | "maps" | "fogs" | "tokens" | "characters">;
@@ -21,11 +21,15 @@ export async function mapState(services: Deps, id: MapId, viewer: Viewer): Promi
 
 /** The fight the table is in, as one viewer may see it. */
 export async function fightState(
-  services: Pick<Services, "fight">,
+  services: Pick<Services, "fight" | "characters">,
   viewer: Viewer,
 ): Promise<ServerMessage> {
   const fight = await services.fight.get();
-  return { type: "fight", map: FIGHT_ROOM, fight: fight ? fightForViewer(fight, viewer) : null };
+  return {
+    type: "fight",
+    map: FIGHT_ROOM,
+    fight: fight ? await fightView(services, fight, viewer) : null,
+  };
 }
 
 /**

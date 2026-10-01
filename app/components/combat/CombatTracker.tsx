@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useFetcher, useNavigate } from "react-router";
 import { startPrepared, type PartyChoice } from "~/combat/prepared";
+import type { FightView } from "~/combat/fight";
 import type { DmFight } from "~/combat/fight-saver";
 import { browserStorage, clearEncounter, type LoadResult } from "~/combat/storage";
 import { useSharedFight } from "~/combat/useSharedFight";
@@ -31,13 +32,13 @@ export function CombatTracker({
 }: {
   catalogue: CombatCatalogue;
   /** The fight the table is in, from the server. */
-  fight: DmFight | null;
+  fight: (DmFight & Pick<FightView, "hp">) | null;
   /** A fight this browser kept from before fights were kept on the server. */
   saved: LoadResult;
   /** A prepared encounter to start (`?start=`); null if it no longer exists. */
   starting?: PreparedEncounter | null;
 }) {
-  const { tracker, status } = useSharedFight(fight);
+  const { tracker, status, hp } = useSharedFight(fight);
   const { encounter, dispatch } = tracker;
   // A fight left in this browser from before can be brought over, once, if there's none here.
   const [leftover, setLeftover] = useState(() =>
@@ -158,6 +159,7 @@ export function CombatTracker({
                     combatant={combatant}
                     isActive={combatant.id === encounter.activeId}
                     isShown={combatant.id === shownId}
+                    sheetHp={hp[combatant.id]}
                     isFirst={index === 0}
                     isLast={index === encounter.combatants.length - 1}
                     dispatch={dispatch}

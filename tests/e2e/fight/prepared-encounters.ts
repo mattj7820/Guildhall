@@ -186,7 +186,7 @@ test.describe("Prepared encounters", () => {
   test("are DM-only", async ({ page }) => {
     await page.goto("/combat/prepared");
     await switchToPlayerView(page);
-    await expect(page.getByText("The combat tracker is DM-only for now.")).toBeVisible();
+    await expect(page.getByText("Prepared encounters are the DM's.")).toBeVisible();
     await expect(preparedList(page)).toHaveCount(0);
   });
 });

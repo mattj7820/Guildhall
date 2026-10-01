@@ -1,6 +1,7 @@
 import { combatCatalogue } from "~/.server/combat/catalogue";
 import { browserStorage, loadEncounter } from "~/combat/storage";
-import { DmOnlyNotice } from "~/components/combat/CombatNav";
+import { fightView } from "~/.server/combat/fight-view";
+import { PlayerFight } from "~/components/combat/PlayerFight";
 import { CombatTracker } from "~/components/combat/CombatTracker";
 import { servicesContext, viewerContext } from "~/context";
 import type { Route } from "./+types/combat";
@@ -10,19 +11,23 @@ export function meta(_: Route.MetaArgs) {
 }
 
 /**
- * The vault's statblocks and party, and with `?start=<id>` the prepared encounter to start.
- * DM only: nothing is sent to the player preview.
+ * For the DM: the vault's statblocks and party, the fight the table is in, and with `?start=<id>`
+ * the prepared encounter to start. For players: the fight as they may see it, and nothing else.
  */
 export async function loader({ request, context }: Route.LoaderArgs) {
   const viewer = context.get(viewerContext);
-  if (viewer.role !== "dm") return { dmOnly: true as const };
-  const { vault, preparedEncounters, fight } = context.get(servicesContext);
+  const services = context.get(servicesContext);
+  const { vault, preparedEncounters, fight } = services;
   const current = await fight.get();
+  const view = current ? await fightView(services, current, viewer) : null;
+  if (viewer.role !== "dm") {
+    return { dmOnly: true as const, fight: view && !view.forDm ? view : null };
+  }
   const startId = new URL(request.url).searchParams.get("start");
   return {
     dmOnly: false as const,
     catalogue: combatCatalogue(vault.current, viewer),
-    fight: current ? { encounter: current.encounter, revision: current.revision } : null,
+    fight: view?.forDm ? view : null,
     starting: startId ? ((await preparedEncounters.get(startId)) ?? null) : undefined,
   };
 }
@@ -47,7 +52,7 @@ export function HydrateFallback() {
 }
 
 export default function Combat({ loaderData }: Route.ComponentProps) {
-  if (loaderData.dmOnly) return <DmOnlyNotice />;
+  if (loaderData.dmOnly) return <PlayerFight fight={loaderData.fight} />;
   return (
     <CombatTracker
       catalogue={loaderData.catalogue}

@@ -30,8 +30,9 @@ const sendSave: SendSave = async (body) => {
  * undo, as before) and saved to the server, which shows everyone; the server's newer fight (a
  * player ending their turn, another tab) is taken up as it's pushed.
  */
-export function useSharedFight(fight: DmFight | null, map?: MapId) {
+export function useSharedFight(fight: (DmFight & Pick<FightView, "hp">) | null, map?: MapId) {
   const [status, setStatus] = useState<SaveStatus>("saved");
+  const [hp, setHp] = useState(fight?.hp ?? {});
   const adopt = useRef<(encounter: Encounter) => void>(() => {});
   const [saver] = useState(
     () =>
@@ -63,8 +64,10 @@ export function useSharedFight(fight: DmFight | null, map?: MapId) {
     if (message.type !== "fight") return;
     const pushed = message.fight;
     if (pushed && !pushed.forDm) return;
+    // Sheets change whatever the tracker is doing.
+    setHp(pushed?.hp ?? {});
     if (saver.pushed(pushed)) adopt.current(pushed?.encounter ?? createEncounter());
   });
 
-  return { tracker, status };
+  return { tracker, status, hp };
 }

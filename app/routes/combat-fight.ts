@@ -1,6 +1,6 @@
 import { data } from "react-router";
 import { z } from "zod";
-import { fightForViewer } from "~/combat/fight";
+import { fightView } from "~/.server/combat/fight-view";
 import { encounterSchema } from "~/combat/schema";
 import { servicesContext, viewerContext } from "~/context";
 import type { Route } from "./+types/combat-fight";
@@ -16,9 +16,10 @@ import type { Route } from "./+types/combat-fight";
  */
 export async function loader({ context }: Route.LoaderArgs) {
   const viewer = context.get(viewerContext);
-  const fight = await context.get(servicesContext).fight.get();
+  const services = context.get(servicesContext);
+  const fight = await services.fight.get();
   return Response.json(
-    { fight: fight ? fightForViewer(fight, viewer) : null },
+    { fight: fight ? await fightView(services, fight, viewer) : null },
     { headers: { "Cache-Control": "no-store" } },
   );
 }
@@ -50,7 +51,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     const fight = await services.fight.endTurn(viewer);
     if (!fight) return Response.json({ error: "It isn't your turn." }, { status: 409 });
     await services.live.fightChanged();
-    return Response.json({ fight: fightForViewer(fight, viewer) });
+    return Response.json({ fight: await fightView(services, fight, viewer) });
   }
 
   // Everything else is the DM's.
@@ -66,11 +67,11 @@ export async function action({ request, context }: Route.ActionArgs) {
     return Response.json(
       {
         error: "The fight changed meanwhile.",
-        fight: saved.stale ? fightForViewer(saved.stale, viewer) : null,
+        fight: saved.stale ? await fightView(services, saved.stale, viewer) : null,
       },
       { status: 409 },
     );
   }
   await services.live.fightChanged();
-  return Response.json({ fight: fightForViewer(saved.fight, viewer) });
+  return Response.json({ fight: await fightView(services, saved.fight, viewer) });
 }

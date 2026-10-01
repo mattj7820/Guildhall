@@ -79,14 +79,18 @@ test.describe("A player", () => {
     await page.goto("/");
     await expect(page.getByText("Player One")).toBeVisible();
     await expect(main(page).getByRole("link", { name: "Wiki" })).toBeVisible();
-    await expect(main(page).getByRole("link", { name: "Combat" })).toHaveCount(0);
+    // Combat is the players' view of the fight, not the DM's tracker.
+    await expect(main(page).getByRole("link", { name: "Combat" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Preview as player" })).toHaveCount(0);
   });
 
   test("can't open DM-only notes or tools", async ({ page }) => {
     expect((await page.goto("/wiki/Secrets/Villain%20Plan"))?.status()).toBe(404);
     await page.goto("/combat");
-    await expect(page.getByText("The combat tracker is DM-only for now")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Combat", level: 1 })).toBeVisible();
+    await expect(page.getByRole("form", { name: "Add monsters" })).toHaveCount(0);
+    await page.goto("/combat/prepared");
+    await expect(page.getByText("Prepared encounters are the DM's.")).toBeVisible();
     // Players see shared maps, but can't make them.
     await page.goto("/maps");
     await expect(page.getByRole("heading", { name: "Maps", level: 1 })).toBeVisible();
@@ -100,6 +104,7 @@ test.describe("A player", () => {
       form: { role: "dm", redirectTo: "/" },
     });
     await page.goto("/combat");
-    await expect(page.getByText("The combat tracker is DM-only for now")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Combat", level: 1 })).toBeVisible();
+    await expect(page.getByRole("form", { name: "Add monsters" })).toHaveCount(0);
   });
 });

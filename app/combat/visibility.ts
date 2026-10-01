@@ -24,7 +24,7 @@ export interface EncounterView {
   started: boolean;
   round: number;
   /** Everyone's name and whose turn it is, and nothing else about them. */
-  turnOrder: { id: CombatantId; name: string; isActive: boolean }[];
+  turnOrder: { id: CombatantId; name: string; kind: Combatant["kind"]; isActive: boolean }[];
   /** Details only for combatants the viewer controls. */
   details: Record<CombatantId, { conditions: Condition[]; note: string }>;
 }
@@ -42,6 +42,7 @@ export function encounterForViewer(encounter: Encounter, viewer: Viewer): Encoun
     turnOrder: encounter.combatants.map((c) => ({
       id: c.id,
       name: c.name,
+      kind: c.kind,
       isActive: c.id === encounter.activeId,
     })),
     details: Object.fromEntries(

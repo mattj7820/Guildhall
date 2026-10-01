@@ -4,8 +4,10 @@ import {
   addMonsters,
   combatant,
   face,
+  createMap,
   fightSaved,
   ORIGIN,
+  uniqueName,
   openCombat,
   scriptDice,
   setInitiative,
@@ -283,19 +285,81 @@ test.describe("Combat tracker", () => {
     await expect(page.getByRole("alert")).toContainText("Couldn't read");
   });
 
-  test("is DM-only: the player preview gets a notice and no hub card or nav link", async ({
-    page,
-  }) => {
+  test("players get Combat in the menu, and see when there's no fight", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("link", { name: /Combat tracker/ })).toBeVisible();
     await switchToPlayerView(page);
-    await expect(page.getByRole("link", { name: /Combat tracker/ })).toHaveCount(0);
-    await expect(
-      page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Combat" }),
-    ).toHaveCount(0);
-
-    await page.goto("/combat");
-    await expect(page.getByText("The combat tracker is DM-only for now.")).toBeVisible();
+    await page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "Combat" })
+      .click();
+    await expect(page.getByText("No fight right now.")).toBeVisible();
     await expect(turnOrder(page)).toHaveCount(0);
+  });
+
+  test("players follow the fight, see their own, and end their own turn", async ({
+    page,
+    browser,
+  }) => {
+    await buildEncounter(page);
+    const context = await browser.newContext({
+      baseURL: ORIGIN,
+      storageState: SIGNED_IN.playerOne,
+    });
+    const player = await context.newPage();
+    await player.goto("/combat");
+    await expect(player.getByText("No fight right now.")).toBeVisible();
+
+    await page.getByRole("button", { name: "Start combat" }).click();
+    const whoseTurn = player.getByRole("status", { name: "Whose turn" });
+    await expect(whoseTurn).toHaveText("Round 1 · Fixture PC One's turn");
+    await expect(
+      player.getByRole("list", { name: "Turn strip" }).getByRole("listitem"),
+    ).toHaveCount(4);
+    // Their own character, and nothing of the monsters' HP or the DM's notes.
+    await expect(player.getByRole("listitem", { name: "Fixture PC One" })).toBeVisible();
+    expect(await player.content()).not.toContain("HP 7/7");
+
+    await player.getByRole("button", { name: "End my turn" }).click();
+    await expect(turnStatus(page)).toContainText("Fixture Minion 1's turn");
+    await expect(whoseTurn).toHaveText("Round 1 · Fixture Minion 1's turn");
+    await expect(player.getByRole("button", { name: "End my turn" })).toHaveCount(0);
+    await context.close();
+  });
+
+  test("players see the turn strip over the map the fight is on", async ({ page, browser }) => {
+    const name = uniqueName("Arena");
+    await createMap(page, { image: "Fixture Fog.png", name });
+    const map = page.url().replace(/\/edit$/, "");
+    await page.request.post(`${map}/edit`, {
+      headers: { Origin: ORIGIN },
+      data: { intent: "setVisibility", visibility: "players" },
+    });
+    await buildEncounter(page);
+    await page.getByRole("button", { name: "Start combat" }).click();
+    await fightSaved(page);
+    // Set on the map page in Combat mode; here straight through the endpoint.
+    const { fight } = await (await page.request.get("/combat/fight")).json();
+    const onMap = await page.request.post("/combat/fight", {
+      headers: { Origin: ORIGIN },
+      data: {
+        intent: "save",
+        encounter: fight.encounter,
+        after: fight.revision,
+        map: map.split("/").pop(),
+      },
+    });
+    expect(onMap.status()).toBe(200);
+
+    const context = await browser.newContext({
+      baseURL: ORIGIN,
+      storageState: SIGNED_IN.playerOne,
+    });
+    const player = await context.newPage();
+    await player.goto(map);
+    await expect(player.getByRole("status", { name: "Whose turn" })).toHaveText(
+      "Round 1 · Fixture PC One's turn",
+    );
+    await expect(player.getByRole("button", { name: "End my turn" })).toBeVisible();
+    await context.close();
   });
 });
