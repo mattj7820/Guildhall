@@ -30,6 +30,7 @@ import type { MapView, Point } from "~/maps/types";
 import { mapUrl } from "~/maps/urls";
 import { newId } from "~/shared/ids";
 import { EndFight } from "./EndFight";
+import { TOKEN_RADIUS } from "./TokenLayer";
 
 interface Options {
   map: MapView;
@@ -133,7 +134,10 @@ export function useMapFight({
     let x = at[0];
     const placed = unplaced.map((monster): TokenAction => {
       const size = squaresOf(monster);
-      const width = map.grid ? map.grid.square * size : 40 / scale / map.size.width;
+      // On a battle map, their squares; otherwise far enough apart on screen for their names.
+      const width = map.grid
+        ? map.grid.square * size
+        : (TOKEN_RADIUS * 4.5) / scale / map.size.width;
       let point = offset([x, at[1]], width / 2, 0);
       x += width;
       if (pixels && map.snapToGrid) {

@@ -349,7 +349,10 @@ export function MapViewer({
         {!presenting && (
           <aside
             aria-label="Map details"
-            className="flex w-full flex-col gap-4 overflow-y-auto border-stone-200 p-4 md:w-80 md:border-l dark:border-stone-800"
+            className={`flex w-full flex-col gap-4 overflow-y-auto border-stone-200 p-4 md:border-l dark:border-stone-800 ${
+              // The tracker needs the room.
+              combat ? "md:w-[27rem]" : "md:w-80"
+            }`}
           >
             {combat ? (
               <>
