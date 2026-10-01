@@ -18,8 +18,8 @@ const sam = { id: "sam", name: "Sam" };
 const jo = { id: "jo", name: "Jo" };
 
 const party: PartyChoice[] = [
-  { entityId: "Party/Aria", name: "Aria", noteUrl: "/wiki/Party/Aria", player: sam },
-  { entityId: "Party/Brim", name: "Brim", noteUrl: "/wiki/Party/Brim", player: jo },
+  { kind: "pc", entityId: "Party/Aria", name: "Aria", noteUrl: "/wiki/Party/Aria", player: sam },
+  { kind: "pc", entityId: "Party/Brim", name: "Brim", noteUrl: "/wiki/Party/Brim", player: jo },
 ];
 
 function prepared(combatants: PreparedEncounter["encounter"]["combatants"]): PreparedEncounter {

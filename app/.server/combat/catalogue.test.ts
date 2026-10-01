@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { DM_VIEWER } from "~/campaign/types";
-import type { CombatCatalogue } from "~/combat/types";
+import { WHOLE_PARTY, type CombatCatalogue } from "~/combat/types";
 import { FIXTURE_VAULT } from "../../../tests/support/fixture-vault";
 import { Vault } from "../vault/vault";
 import { combatCatalogue } from "./catalogue";
@@ -57,19 +57,29 @@ describe("combatCatalogue", () => {
     );
   });
 
-  it("lists the party with the player who controls each character", () => {
+  it("lists the party with the player who controls each character, then the shared companion", () => {
     expect(catalogue.party).toEqual([
       {
+        kind: "pc",
         entityId: "Party/Fixture PC One",
         name: "Fixture PC One",
         noteUrl: "/wiki/Party/Fixture%20PC%20One",
         player: { id: "player one", name: "Player One" },
       },
       {
+        kind: "pc",
         entityId: "Party/Fixture PC Two",
         name: "Fixture PC Two",
         noteUrl: "/wiki/Party/Fixture%20PC%20Two",
         player: { id: "player two", name: "Player Two" },
+      },
+      {
+        kind: "companion",
+        entityId: "Bestiary/Fixture Companion",
+        name: "Fixture Companion",
+        noteUrl: "/wiki/Bestiary/Fixture%20Companion",
+        player: WHOLE_PARTY,
+        statblock: { entityId: "Bestiary/Fixture Companion", name: expect.any(String) },
       },
     ]);
   });

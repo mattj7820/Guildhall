@@ -31,6 +31,7 @@ export function startPrepared(
         name: member.name,
         controller: member.player,
         entityId: member.entityId,
+        statblock: member.statblock,
       },
       rng,
     );

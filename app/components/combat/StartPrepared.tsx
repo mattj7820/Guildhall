@@ -21,7 +21,20 @@ export function StartPrepared({
   onStart: (chosen: PartyChoice[]) => void;
 }) {
   const playable = party.filter((member): member is PartyChoice => Boolean(member.player));
-  const [chosen, setChosen] = useState(() => new Set(playable.map((member) => member.entityId)));
+  // A companion already in the prepared fight (added with its statblock) isn't added twice.
+  const alreadyIn = new Set(
+    prepared.encounter.combatants.flatMap((c) =>
+      c.kind === "player" && c.statblock ? [c.statblock.entityId] : [],
+    ),
+  );
+  const [chosen, setChosen] = useState(
+    () =>
+      new Set(
+        playable
+          .filter((member) => member.kind === "pc" || !alreadyIn.has(member.entityId))
+          .map((member) => member.entityId),
+      ),
+  );
   const { monsters, companions } = summarise(prepared.encounter);
 
   function submit(event: FormEvent<HTMLFormElement>) {

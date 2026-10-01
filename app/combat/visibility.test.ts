@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DM_VIEWER, PLAYER_VIEWER, type Viewer } from "~/campaign/types";
 import { encounter, inCombat, monster, player } from "./test-builders";
+import { WHOLE_PARTY } from "./types";
 import { canSeeCombatantDetails, encounterForViewer } from "./visibility";
 
 const playerOne: Viewer = { role: "player", playerId: "player one" };
@@ -28,6 +29,12 @@ describe("canSeeCombatantDetails", () => {
   it("lets a player see only the combatants they control, companions included", () => {
     const visible = fight.combatants.filter((c) => canSeeCombatantDetails(playerOne, c));
     expect(visible.map((c) => c.name)).toEqual(["Aria", "Blink Dog"]);
+  });
+
+  it("lets every player see a companion the whole party shares, even one assigned to no one", () => {
+    const shared = player("Blink Dog", { controller: WHOLE_PARTY });
+    expect(canSeeCombatantDetails({ role: "player", playerId: "jo" }, shared)).toBe(true);
+    expect(canSeeCombatantDetails(PLAYER_VIEWER, shared)).toBe(true);
   });
 
   it("never lets a player see a monster's details", () => {

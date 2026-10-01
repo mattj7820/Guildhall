@@ -67,7 +67,7 @@ export function CombatantRow({
               ? combatant.armorClass !== undefined
                 ? `AC ${combatant.armorClass}`
                 : "Monster"
-              : `${combatant.entityId ? "PC" : "Companion"} · ${combatant.controller.name}`}
+              : `${combatant.entityId && !combatant.statblock ? "PC" : "Companion"} · ${combatant.controller.name}`}
           </p>
         </div>
         {combatant.statblock && (

@@ -31,14 +31,29 @@ export interface CreatureOption {
   html: string;
 }
 
-/** A player character from a `type: pc` note. */
+/** A party member from the vault: a `type: pc` note, or the party's `type: companion`. */
 export interface PartyMember {
+  kind: "pc" | "companion";
   entityId: EntityId;
   name: string;
   noteUrl: string;
-  /** From the note's `player` frontmatter; undefined until the DM writes it. */
+  /**
+   * Who controls them, from the note's `player` frontmatter: undefined for a PC until the DM writes
+   * it; the whole party for a companion that names no one.
+   */
   player?: Player;
+  /** A companion's statblock, shown when it's their turn. */
+  statblock?: StatblockRef;
 }
+
+/**
+ * The controller of a companion the whole party shares: every player may see its details. Its ID
+ * is empty, which no player's can be (a blank name isn't a player).
+ */
+export const WHOLE_PARTY: Player = { id: "", name: "the party" };
+
+/** Whether a controller is the whole party (compared by ID, since it may have come as JSON). */
+export const isWholeParty = (player: Player | undefined) => player?.id === WHOLE_PARTY.id;
 
 /** What the vault offers the combat tracker. */
 export interface CombatCatalogue {

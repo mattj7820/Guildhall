@@ -1,5 +1,11 @@
 import type { Viewer } from "~/campaign/types";
-import type { Combatant, CombatantId, Condition, Encounter } from "./types";
+import {
+  isWholeParty,
+  type Combatant,
+  type CombatantId,
+  type Condition,
+  type Encounter,
+} from "./types";
 
 /**
  * Whether a viewer may see a combatant's details (conditions, notes). The DM sees everything; a
@@ -7,11 +13,10 @@ import type { Combatant, CombatantId, Condition, Encounter } from "./types";
  */
 export function canSeeCombatantDetails(viewer: Viewer, combatant: Combatant): boolean {
   if (viewer.role === "dm") return true;
-  return (
-    combatant.kind === "player" &&
-    viewer.playerId !== undefined &&
-    combatant.controller.id === viewer.playerId
-  );
+  if (combatant.kind !== "player") return false;
+  // A companion the whole party shares is every player's, whoever they are.
+  if (isWholeParty(combatant.controller)) return true;
+  return viewer.playerId !== undefined && combatant.controller.id === viewer.playerId;
 }
 
 /** What a player may know about an encounter. Not used by a page yet: the tracker is DM-only. */

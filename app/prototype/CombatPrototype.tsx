@@ -4,6 +4,7 @@
 // active one is ringed, monsters show HP bars. Everything lives in this page; nothing is saved,
 // and party members move only here.
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 import { AddCombatants } from "~/components/combat/AddCombatants";
 import { CombatantRow } from "~/components/combat/CombatantRow";
 import { DiceRoller } from "~/components/combat/DiceRoller";
@@ -11,6 +12,7 @@ import { StatblockPanel } from "~/components/combat/StatblockPanel";
 import { TiePrompts } from "~/components/combat/TiePrompts";
 import { TurnBar } from "~/components/combat/TurnBar";
 import { GridLayer } from "~/components/maps/GridLayer";
+import { buttonClass, panelClass, primaryButtonClass } from "~/components/styles";
 import { MapCanvas, type CanvasTools } from "~/components/maps/MapCanvas";
 import { initials, TOKEN_RADIUS, TokenLayer } from "~/components/maps/TokenLayer";
 import { createEncounter } from "~/combat/encounter";
@@ -43,6 +45,7 @@ export function CombatPrototype({
   );
   const [positions, setPositions] = useState<Positions>({});
   const [adding, setAdding] = useState(true);
+  const navigate = useNavigate();
   const [moved, setMoved] = useState<Positions>({});
   const [selectedId, setSelectedId] = useState<string>();
   const shownId = selectedId ?? encounter.activeId ?? undefined;
@@ -174,6 +177,9 @@ export function CombatPrototype({
           </MapCanvas>
         </div>
         <aside className="flex w-[27rem] flex-col gap-3 overflow-y-auto border-l border-stone-200 p-3 dark:border-stone-800">
+          {encounter.combatants.length > 0 && (
+            <EndFight onEnd={() => void navigate(`/maps/${map.id}`)} />
+          )}
           <TurnBar
             encounter={encounter}
             dispatch={dispatch}
@@ -218,6 +224,41 @@ export function CombatPrototype({
         </aside>
       </div>
     </main>
+  );
+}
+
+/**
+ * Ends the fight and goes back to the map. The real one will clear the monsters' tokens, or leave
+ * them where they fell; here they only ever lived in this page.
+ */
+function EndFight({ onEnd }: { onEnd: () => void }) {
+  const [asking, setAsking] = useState(false);
+  if (!asking) {
+    return (
+      <button type="button" className={`${buttonClass} self-end`} onClick={() => setAsking(true)}>
+        End fight
+      </button>
+    );
+  }
+  return (
+    <div
+      role="group"
+      aria-label="End the fight"
+      className={`${panelClass} flex flex-col gap-2 text-sm`}
+    >
+      <p className="font-semibold">End the fight and go back to the map?</p>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" className={primaryButtonClass} onClick={onEnd}>
+          Clear the monsters
+        </button>
+        <button type="button" className={buttonClass} onClick={onEnd}>
+          Leave them on the map
+        </button>
+        <button type="button" className={buttonClass} onClick={() => setAsking(false)}>
+          Keep fighting
+        </button>
+      </div>
+    </div>
   );
 }
 

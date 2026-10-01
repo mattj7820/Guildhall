@@ -168,6 +168,20 @@ test.describe("Combat tracker", () => {
     ).toBeVisible();
   });
 
+  test("adds the party's shared companion in one click, with its statblock", async ({ page }) => {
+    await openCombat(page);
+    await expect(page.getByText("the whole party's")).toBeVisible();
+    await page.getByRole("button", { name: "Add Fixture Companion" }).click();
+
+    const companion = combatant(page, "Fixture Companion");
+    await expect(companion).toContainText("Companion · the party");
+    await companion.getByRole("button", { name: "Show statblock for Fixture Companion" }).click();
+    await expect(
+      page.getByRole("region", { name: "Statblock: Fixture Companion", exact: true }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Add Fixture Companion" })).toHaveCount(0);
+  });
+
   test("rolls dice expressions with advantage", async ({ page }) => {
     await openCombat(page);
     await page.getByLabel("Dice to roll").fill("1d20+2");
