@@ -8,11 +8,12 @@ Guildhall links out to those tools and grows its own modules. The point of build
 campaign model (NPCs, locations, maps, characters, sessions). See `docs/roadmap.md`.
 
 Built so far: hub home page, read-only Obsidian wiki with a DM preview of the players' view, a
-DM-only combat tracker (the live fight is kept in the browser; prepared encounters in the data
-folder), DM-only interactive maps (vault images with outlined areas leading to deeper maps and
-notes; kept in the data folder), fog of war and tokens on maps (the party's and the DM's markers,
-moved live over websockets; kept in the data folder), character sheets with a game-style bag
-(players edit their own, the DM gives items; kept in the data folder), and sign-in with Discord,
+combat tracker (one fight for the table, kept in the data folder and pushed live; players follow it
+and end their own turn; run beside a map, with monsters' tokens; prepared encounters, which can
+start on a map), DM-only interactive maps (vault images with outlined areas leading to deeper maps
+and notes; kept in the data folder), fog of war and tokens on maps (the party's and the DM's
+markers, moved live over websockets; kept in the data folder), character sheets with a game-style
+bag (players edit their own, the DM gives items; kept in the data folder), and sign-in with Discord,
 where the DM lets players in and says who they play. It's built to be hosted: a Docker image, with
 the vault copied read-only from Google Drive (see `docs/deployment.md`).
 
@@ -78,10 +79,10 @@ First e2e run needs `npx playwright install chromium`.
 - `server.js`: HTTP entry (Vite middleware in dev, static and build in prod), hands websocket
   upgrades to the app, and a clean shutdown on SIGTERM.
 - `server/app.ts`: creates long-lived services once (config, `LiveVault`, `PreparedEncounters`,
-  `CampaignMaps`, `MapFogs`, `MapTokens`, `Characters`, `Members`, sessions, Discord sign-in, and
-  `Live`) and passes them to React Router through `servicesContext`; also the connection's
-  address, for dev sign-in. Exports `handleUpgrade` for websockets.
-  `server/http.ts`: trusting the proxy, security headers, `/healthz`.
+  `CurrentFight`, `CampaignMaps`, `MapFogs`, `MapTokens`, `Characters`, `Members`, sessions, Discord
+  sign-in, and `Live`) and passes them to React Router through `servicesContext`; also the
+  connection's address, for dev sign-in. Exports `handleUpgrade` for websockets. `server/http.ts`:
+  trusting the proxy, security headers, `/healthz`.
 - `app/root.tsx`: its middleware is `authMiddleware` (`app/.server/auth/middleware.ts`), which
   checks the Origin of posts, reads the session, decides access, and sets `accountContext` and
   `viewerContext`. **Loaders read the viewer from context and pass it into every vault query.**
@@ -101,8 +102,12 @@ First e2e run needs `npx playwright install chromium`.
 - `app/combat/`: the combat tracker's model (isomorphic): `types.ts`, `encounter.ts` (reducer,
   action creators, `perform`), `initiative.ts` (ordering, reroll tie-breaks), `turns.ts`, `hp.ts`,
   `visibility.ts` (`encounterForViewer`), `schema.ts` (zod),
-  `storage.ts` (localStorage), `prepared.ts` (`startPrepared`, `toPrepared`, `summarise`), and the
-  `useEncounter` hook.
+  `storage.ts` (localStorage: only a fight left from before, to bring over), `prepared.ts`
+  (`startPrepared`, `startPreparedOnMap`, `toPrepared`, `preparedStartUrl`, `summarise`), and the
+  `useEncounter` hook. The shared fight: `fight.ts` (`Fight`, `fightForViewer`, `isTheirTurn`,
+  `fightAllowsMove`), `fight-saver.ts` (`FightSaver`: whole-encounter saves after a revision,
+  retries, taking up the server's newer fight), `useSharedFight` (the DM's tracker over it) and
+  `usePlayerFight` (a player's view, and ending their turn).
 - `app/maps/`: the interactive maps model (isomorphic): `types.ts` (`CampaignMap`, `Area`, and the
   browser-safe `MapView`), `schema.ts` (zod), `geometry.ts` (normalised outlines), `tree.ts`
   (parents derived from area links: breadcrumbs, attachable maps, `treeProblem`), `viewport.ts`
@@ -116,19 +121,21 @@ First e2e run needs `npx playwright install chromium`.
   tiles players may have, and their keys), `schema.ts` (zod for requests), `editor.ts`
   (`FogEditor`: the DM's changes shown at once, saved in batches, undone with inverses) and its
   `useFogEditor` hook.
-- `app/maps/tokens/`: tokens (isomorphic): `types.ts` (`Token` is a party member by note, or a
-  DM marker; `TokenView` is one viewer's copy; `InsideBadge`, `Whereabouts`), `schema.ts` (zod),
-  `actions.ts` (`TokenAction`, `applyTokenAction`), `permissions.ts` (`canMoveToken`, `mayApply`),
-  `visibility.ts` (`tokensForViewer`: fog, markers, a player's own "in the dark"), `moves.ts` (the
-  browser's copy: its own drag and unanswered moves over the server's, and others' drags) and the
-  `useMapTokens` hook.
+- `app/maps/tokens/`: tokens (isomorphic): `types.ts` (`Token` is a party member by note, a DM
+  marker, or a monster in the fight by its combatant; `TokenView` is one viewer's copy;
+  `InsideBadge`, `Whereabouts`), `schema.ts` (zod), `actions.ts` (`TokenAction`,
+  `applyTokenAction`), `permissions.ts` (`canMoveToken`, `mayApply`), `visibility.ts`
+  (`tokensForViewer`: fog, markers, a player's own "in the dark", monsters from the fight, and who
+  may move on their turn), `moves.ts` (the browser's copy: its own drag and unanswered moves over
+  the server's, and others' drags) and the `useMapTokens` hook.
 - `app/maps/grid/`: battle grids (isomorphic, pure): `grid.ts` (`MapGrid` in image fractions,
   `toPixels`, `suggestSquare`, `startingGrid`, `snapToGrid` by token size, `gridPath`),
   `distance.ts` (true lengths at 5 ft a square, `formatFeet`), `shapes.ts` (spell areas:
   `insideArea`, `coveredSquares` by the centre rule, `areaPath`, `caughtIn`).
 - `app/live/`: the live connection (isomorphic): `messages.ts` (what each end sends; zod for the
-  browser's), `client.ts` (`LiveClient`: one connection per tab, rooms, reconnecting), `throttle.ts`
-  (20 drags a second) and `useLive.ts` (`useLiveMap`, `sendLive`).
+  browser's; `FIGHT_ROOM`, the room for the fight), `client.ts` (`LiveClient`: one connection per
+  tab, rooms, reconnecting), `throttle.ts` (20 drags a second) and `useLive.ts` (`useLiveMap`,
+  `sendLive`).
 - `app/characters/`: character sheets and bags (isomorphic): `types.ts` (`Character` is a
   `PlayerCharacter` with a `Sheet`, or a shared `Companion`; `InventoryItem`, `Purse`),
   `abilities.ts` (abilities, skills, `abilityModifier`, `signed`), `derive.ts` (`deriveSheet`: the
@@ -165,32 +172,39 @@ First e2e run needs `npx playwright install chromium`.
     `findImage()`, which finds a moved image by its unique file name, and `firstImage()`, a note's
     first image as a viewer sees it). `live-vault.ts` rebuilds it on file changes.
     `serve-image.ts` streams a vault image the caller has already allowed (maps, portraits).
-- `app/.server/combat/catalogue.ts`: vault statblocks and PCs as browser-safe shapes, with
-  statblocks pre-rendered. `prepared-encounters.ts`: the prepared-encounter repository.
+- `app/.server/combat/catalogue.ts`: vault statblocks (with their size in squares), PCs and
+  companions as browser-safe shapes, with statblocks pre-rendered. `prepared-encounters.ts`: the
+  prepared-encounter repository. `current-fight.ts`: `CurrentFight`, the fight over `fight.json`
+  (saves after a revision, a player's end of turn, free movement, ending). `fight-view.ts`:
+  `fightView`, the fight for one viewer with party hit points from their sheets.
 - `app/.server/maps/`: `campaign-maps.ts` (the map repository over `maps.json`; tree rules checked
   inside the write; sharing), `map-fogs.ts` (each map's fog over `fog.json`),
   `player-image.ts` (`PlayerImages`: cuts an image into tiles with sharp, and masks the partly
   revealed ones from exact copies: the only way players get a map's pixels), `view.ts` (`mapView`:
   a map for a `Viewer`, with hidden things and fogged areas left out), and `load.ts` (finds the
   image, versions its URL, renders linked notes, reads the fog).
-- `app/.server/maps/`, for tokens: `map-tokens.ts` (the repository over `tokens.json`, applying
-  only allowed actions), `tokens.ts` (`loadMapTokens`: a viewer's tokens and who's inside which
-  area; `whereabouts`; `partyPlacements`, the DM's party panel).
+- `app/.server/maps/`, for tokens: `map-tokens.ts` (the repository over `tokens.json`, applying only
+  allowed actions; `removeCombatants` when monsters leave the fight), `tokens.ts` (`loadMapTokens`:
+  a viewer's tokens and who's inside which area; `whereabouts`; `partyPlacements`, the DM's party
+  panel).
 - `app/.server/live/`: websockets. `sockets.ts` (`LiveSockets`: signs an upgrade in with
   `identify`, and a strict Origin check), `hub.ts` (`LiveHub`: connections, rooms per map,
   `publish` building each viewer's copy, not repeating a state, limits, pings, rechecking members),
   `map-rooms.ts` (a map's state and tokens for one viewer), `holds.ts` (who's moving which token),
-  `live.ts` (`Live`, in the services: `mapChanged`, `memberChanged`, drags).
+  `live.ts` (`Live`, in the services: `mapChanged`, `memberChanged`, `fightChanged`, drags).
 - `app/.server/data/json-store.ts`: `JsonFile`, a validated, queued, atomically written JSON file.
   `file-cache.ts`: `FileCache`, disposable generated files in `DATA_PATH/cache`, one folder per key
   and version, made one set at a time.
 - `app/wiki/`: URL helpers and types shared with the browser.
 - `app/routes/`: `home`, `wiki` (layout + sidebar), `wiki-home` (landing page + `?q=` search),
-  `wiki-note` (`/wiki/*`), `combat` (DM-only tracker; server `loader` + hydrating `clientLoader`;
-  `?start=<id>` starts a prepared encounter), `combat-prepared` (list; create, duplicate and delete
-  actions), `combat-prepared-edit` (editor; autosave action), `maps` (tree of maps: every map for
-  the DM, only shared ones for players; create action), `map-view` (`/maps/:id`: the table view for
-  the DM, the fogged view for players), `map-edit` (editor; save, createChild, setImage,
+  `wiki-note` (`/wiki/*`), `combat` (the DM's tracker, or a player's view of the fight; a hydrating
+  `clientLoader` adds a fight left in the browser from before; `?start=<id>` starts a prepared
+  encounter), `combat-fight` (JSON: GET the fight as the viewer may see it; POST the DM's saves,
+  free movement and ending, and a player's end of turn), `combat-prepared` (list; create, duplicate
+  and delete actions), `combat-prepared-edit` (editor; autosave action), `maps` (tree of maps: every
+  map for the DM, only shared ones for players; create action), `map-view` (`/maps/:id`: the table
+  view for the DM, with Combat and `?start=<id>` for a prepared fight there; the fogged view for
+  players, with the fight's turn strip), `map-edit` (editor; save, createChild, setImage,
   setVisibility and delete actions; `?area=` preselects an area), `map-fog` (JSON: the DM's fog
   changes), `map-tile` (resource route: one tile of a map's image as players may see it),
   `map-version` (JSON: what an open player map polls while its live connection is down: the version
@@ -203,7 +217,9 @@ First e2e run needs `npx playwright install chromium`.
   actions), `character-give` (JSON: a gift to another bag), `character-portrait` (resource route),
   `credits` (icon credits).
 - `app/components/combat/`: the tracker's UI (`CombatTracker` lays it out), and the prepared
-  encounter editor (`PreparedEditor`). `CombatantRow` and `AddCombatants` have a `"prep"` mode.
+  encounter editor (`PreparedEditor`). `TurnStrip` (the turn order as round faces, over a map or
+  in a page), `PlayerFight` (a player's Combat page, and `EndMyTurn`), `FightStatus` (saving,
+  offline, replaced). `CombatantRow` and `AddCombatants` have a `"prep"` mode.
 - `app/components/characters/`: `CharacterSheet` (with edit mode, click-to-roll and the docked
   bag), `CompanionSheet`, `PartyCard`, `SheetBag` (a bag saved through the editor), `EditorBar`,
   `HitPointsPanel`, `Fields`, `SheetParts`, `Portrait`. `app/components/inventory/`: `Bag`,
@@ -212,18 +228,19 @@ First e2e run needs `npx playwright install chromium`.
 - `app/components/maps/`: `MapCanvas` (the SVG canvas; `focus` centres it), `MapViewer` and
   `MapEditor` (the two pages), `AreaShape`, `VertexHandles`, `DraftOutline`, `AreaForm`,
   `MapSettings`, `ImageHealth`, `ImagePicker`, `NotePicker`, `NotePanel`, `MapBreadcrumbs`, and for
-  fog of war `FogLayer` (the fog drawn from the cell opacities), `FogPainter` (brush,
-  rectangle and area tools), `FogToolbar`, `FogAreaList` (what players see of each area) and
-  `useFogTools` (tool state and keys). `PlayerMapViewer` is a map as players see it: tiles over
-  black, and outlines drawn only over what's revealed. For tokens: `TokenLayer` (drawn over the fog,
-  dragged, moved by keys; filling and snapping to squares on a battle map), `TokenPanel` (the DM's
-  party and markers), `InsideBadges`, `TokenDistances`. For battle maps: `GridLayer`,
-  `GridSettings` (the editor's section), and `useBattleTools` (the toolbar over the map and what
-  its tools draw, for the DM and players alike), built from `MapToolbar`, `useMapTools` (which
-  tool, the ruler and spell area, shortcuts), `MeasureLayer`, `SpellAreaLayer` and
-  `SpellAreaOptions`. `MapSwitch` is a setting changed from the map's page (sharing, snapping).
-  `app/components/LiveStatus.tsx` says whether a page is live. Shared control classes are in
-  `app/components/styles.ts`.
+  fog of war `FogLayer` (the fog drawn from the cell opacities), `FogPainter` (brush, rectangle and
+  area tools), `FogToolbar`, `FogAreaList` (what players see of each area) and `useFogTools` (tool
+  state and keys). `PlayerMapViewer` is a map as players see it: tiles over black, and outlines
+  drawn only over what's revealed. For tokens: `TokenLayer` (drawn over the fog, dragged, moved by
+  keys; filling and snapping to squares on a battle map), `TokenPanel` (the DM's party and markers),
+  `InsideBadges`, `TokenDistances`. For battle maps: `GridLayer`, `GridSettings` (the editor's
+  section), and `useBattleTools` (the toolbar over the map and what its tools draw, for the DM and
+  players alike), built from `MapToolbar`, `useMapTools` (which tool, the ruler and spell area,
+  shortcuts), `MeasureLayer`, `SpellAreaLayer` and `SpellAreaOptions`. `MapSwitch` is a setting
+  changed from the map's page (sharing, snapping). For the fight: `useMapFight` (Combat on the map
+  page: the tracker panel, what's drawn over the map, placing monsters, starting a prepared fight
+  there) and `EndFight`. `app/components/LiveStatus.tsx` says whether a page is live. Shared control
+  classes are in `app/components/styles.ts`.
 
 ## Conventions
 
@@ -254,6 +271,13 @@ First e2e run needs `npx playwright install chromium`.
   place (a map and a point); who may move them comes from their note every time. Players move
   only their own PC and the shared companion, about the map they're on. Players' token data comes
   only from `tokensForViewer`, never the stored tokens; party members' notes are DM-only data.
+- The fight: one at a time, in `fight.json`. The DM's tracker saves the whole encounter with the
+  revision it last had (a stale save gets the newer fight back, to take up); players only end
+  their own turn, checked on the server. Everyone's copy comes from `fightView`, never the stored
+  fight; a hidden monster is absent for players. A monster's token takes its name, HP and hiding
+  from the fight each time it's sent; monsters leaving the fight take their tokens with them, on
+  the server. Who may move in a fight is `fightAllowsMove`, everywhere a move is decided. Tell
+  `Live` when it changes (`fightChanged`, also after a sheet change, for party HP).
 - Live messages: the only way to send is `LiveHub.publish(map, viewer => message)` (or `reply`
   for one connection, built for its viewer); never send one message to a room. Anything on a map
   goes through `Live.publishOnMap`, which checks the viewer may see the map. State messages (a

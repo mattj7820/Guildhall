@@ -28,7 +28,8 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
     laid out like the 5e books.
   - Folder-tree navigation and full-text search (prefix and fuzzy, boosted by title and aliases).
   - Picks up edits made in Obsidian on the next page load.
-- **Combat tracker** (DM only), made for a second screen next to the VTT and voice chat:
+- **Combat tracker**, made for a second screen next to the VTT and voice chat, or run from a
+  battle map:
   - Builds an encounter from the vault: monsters from any statblock (numbered "Goblin 1",
     "Goblin 2"…, with hit points rolled from their hit dice), the party from PC notes, and
     companions assigned to a player for the battle.
@@ -42,12 +43,19 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
   - **Click to roll** from the statblock: attacks (`+4 to hit`), damage (`5 (1d6 + 2)`), ability
     checks, saves, skills and recharges, labelled "Goblin 1 · Scimitar attack". A natural 20 arms
     a critical-damage roll with doubled dice, and advantage applies to one roll at a time.
-  - A dice roller (`2d6+3`, advantage and disadvantage), undo, and an encounter that survives a
-    page reload (kept in the browser's local storage).
+  - A dice roller (`2d6+3`, advantage and disadvantage), and undo.
+  - **One fight for the table**, kept on the server: it survives reloads and restarts, and every
+    change reaches everyone at once. Players follow it on their Combat page (or over the map): the
+    turn order, their own characters' conditions and hit points (from their sheets), and an "End
+    my turn" button. They never get monsters' hit points, initiative numbers or the DM's notes.
+    The DM's tracker shows the party's hit points from their sheets too.
+  - Monsters can be **hidden** from players (an ambusher) until the DM reveals them: left out of
+    their turn order and their map entirely.
   - **Prepared encounters:** set up fights before the session (monsters with their HP rolled,
     companions, notes), then start one at the table. Just untick anyone absent and type the
     players' initiative. They're reusable templates you can edit, duplicate and delete, saved in
-    Guildhall's data folder.
+    Guildhall's data folder. Set one up on a map and it starts there, with the monsters where you
+    put them; bring the party in with a click.
 - **Character sheets**, one per PC note, laid out like the paper sheet:
   - Numbers are typed in as they are on paper; the sheet works out only what paper does
     (modifiers, save and skill bonuses with proficiency or expertise, initiative, passive scores),
@@ -115,6 +123,12 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
     hold Alt), by mouse or a square at a time with the arrow keys.
   - A toolbar over the map: measure true distances, with turns; lay out a spell's sphere, cube,
     cone or line and see which squares and who it catches. Just on your own screen.
+  - **The fight on the map:** Combat puts the tracker beside the map and a turn strip across it.
+    Monsters joining are placed with a click, sized from their statblocks; their tokens show the
+    DM an HP bar, go grey when down, and leave when the monster does. Whoever's turn it is is
+    ringed, for everyone. Players move only on their own turn, unless the DM switches on free
+    movement (the DM moves anything). End fight clears the monsters, or leaves them where they
+    fell.
 - **What players see.** Notes are DM-only unless their frontmatter says `visibility: players`.
   Players never get DM-only notes: they're left out of navigation, search and links, and a direct
   URL gives the same 404 as a missing note. Inside a shared note, the DM's parts stay secret: a
@@ -206,7 +220,8 @@ reasons are in [docs/decisions.md](docs/decisions.md).
 ```
 app/
   campaign/        Shared campaign model: roles, players, visibility, entity types (isomorphic)
-  combat/          Combat tracker model and rules: encounters, initiative, turns, HP (isomorphic)
+  combat/          Combat tracker model and rules: encounters, initiative, turns, HP, the
+                   shared fight and what each person sees of it (isomorphic)
   dice/            Dice expressions and rolling, with injectable randomness (isomorphic)
   hub/             Hub links configuration
   wiki/            Wiki types and URL helpers shared by server and browser
@@ -221,7 +236,7 @@ app/
     auth/          Sessions, who may reach what, Discord sign-in, dev sign-in
     members/       The member list and waiting list
     vault/         Vault reading, parsing, link resolution, rendering, search, statblocks
-    combat/        The combat tracker's catalogue and the prepared-encounter store
+    combat/        The combat tracker's catalogue, the prepared-encounter store and the fight
     maps/          The map, fog and token stores, maps prepared for a viewer, players' map tiles
     live/          Websockets: signing them in, rooms per map, messages built per viewer, holds
     characters/    The character store, who plays whom, and sheets prepared for a viewer

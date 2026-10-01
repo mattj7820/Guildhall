@@ -896,3 +896,70 @@ inside, the same rule as painting the fog, and the tokens with any square covere
 spell starts on a grid corner while tokens snap. Both are drawn only on the screen of whoever is
 measuring; sharing them with everyone can come later over the live connection. For measuring
 without a mouse, a chosen token lists how far every other token is.
+
+## 50. The shared fight: the DM's tracker writes it, the server keeps it
+
+**Date:** 2026-10-01
+
+The table has one fight at a time, kept in `fight.json` in the data folder and seen by everyone,
+rather than in the DM's browser. The DM's tracker stays as it was (dice rolled in the browser,
+undo, the same reducer) and saves the whole encounter after each change, saying which revision it
+last had. If the stored fight has moved on (another tab, or a player ending their turn), nothing is
+written and the newer fight comes back to be taken up, with a notice: simpler than merging
+actions, and with one person running the fight, a conflict is rare and the newer fight is the
+right answer. A save that can't reach the server is retried every few seconds and says so. The
+only thing players change is ending their own turn, checked on the server against the fight as
+it is then. Fights left in a browser from before can be brought over once.
+
+## 51. What players see of the fight
+
+**Date:** 2026-10-01
+
+Players get the turn order with everyone's names (monsters' names too, as the DM chose), whose
+turn it is and the round; for their own characters and the companion the party shares, conditions,
+notes and hit points. Hit points come from character sheets, not the tracker, since sheets are
+where players keep them; a sheet change is pushed to everyone watching the fight. Monsters' hit
+points, initiative numbers and the DM's notes never leave the server. Each viewer's copy is built
+on the server (`fightForViewer`, `fightView`), for the page and every push alike. A hidden monster
+(an ambusher) is left out of players' turn order and maps entirely, and its turn looks to them like
+a moment between turns, so it can't be told apart from a monster that isn't there.
+
+## 52. The fight on the map page, and monsters' tokens
+
+**Date:** 2026-10-01
+
+The fight is run from the map's page (Combat, beside Fog), with the tracker in the side panel, the
+turn strip over the map and the dice log in its corner; `/combat` stays the same tracker for fights
+without a map. Changing the fight from a map brings it to that map. A monster's token is a third
+kind of token, linked to its combatant: its name, hit points, being down and being hidden come from
+the fight each time tokens are sent, so they can't drift apart, and every fight change re-sends
+the tokens on watched maps. Monsters join without a place and the next click puts them down, side
+by side, sized from their statblock's size (Large 2 squares, and so on). When a save takes monsters
+out of the fight, the server takes their tokens with them, wherever they are. End fight asks
+whether to clear the monsters or leave them where they fell, as markers (a hidden one still for
+the DM only) to tidy later. On battle maps, token names show on hover, for the selected token and
+for whoever's turn it is, since a fight fills the map.
+
+## 53. Moving in a fight: on your own turn
+
+**Date:** 2026-10-01
+
+In a fight on a map, a player moves someone who's in it only on that combatant's turn; the DM moves
+anything, any time, and a Free movement switch lets players move whenever they like (kept with the
+fight, not changing its revision, so the tracker's saves aren't made stale). Before the fight
+starts, and for anyone not in it, movement is as before. One pure rule, `fightAllowsMove`, is used
+by the page request, by live drags (rechecked as the turn changes) and for which tokens players
+are told they can move. Live drags now see the fight too, so the DM dragging a hidden monster is
+never shown to players.
+
+## 54. Prepared fights on maps
+
+**Date:** 2026-10-01
+
+A fight set up on a map can be saved as a prepared encounter with the map and where its monsters
+stand (by combatant, in fractions of the image, like everything else on maps). Starting it opens
+the map in Combat, where the DM picks who's playing as usual and the monsters go back where they
+were put, under their new IDs. The party isn't placed with the encounter: they're wherever the
+story took them, so "Bring the party here" drops everyone in with a click when the fight begins. A
+monster added in the editor since has no place yet and is placed with a click; one removed is
+left out. If the map has been deleted, it starts in the tracker as before.
