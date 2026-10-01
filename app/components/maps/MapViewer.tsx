@@ -28,7 +28,7 @@ import { GridLayer } from "./GridLayer";
 import { InsideBadges } from "./InsideBadges";
 import { useBattleTools } from "./useBattleTools";
 import { useMapFight } from "./useMapFight";
-import { StuntDefs, StuntLayer, StuntPalette, useStunts } from "./Stunts";
+import { FlashOverlay, StuntDefs, StuntLayer, StuntPalette, useStunts } from "./Stunts";
 import { TOKEN_RADIUS, TokenLayer } from "./TokenLayer";
 import { PlacingHint, TokenPanel, type Placing } from "./TokenPanel";
 import { useFogTools } from "./useFogTools";
@@ -113,11 +113,9 @@ export function MapViewer({
   const [stuntMode, setStuntMode] = useState(false);
   const stunts = useStunts();
   const stuntArmed = stuntMode && !!stunts.armed;
-  /** About a token's size in image pixels: a square on a battle map. */
-  const stuntRadius = (scale: number, squares = 1) =>
-    map.grid
-      ? (map.grid.square * map.size.width * squares) / 2
-      : ((TOKEN_RADIUS + 6) * squares) / scale;
+  /** A stunt anywhere on the map: about three squares across. */
+  const pointStuntRadius = (scale: number) =>
+    map.grid ? map.grid.square * map.size.width * 1.5 : 110 / scale;
 
   /** Where a token placed here lands: on a square while tokens snap to the grid. */
   const landing = (point: Point): Point => {
@@ -256,6 +254,7 @@ export function MapViewer({
         className="flex min-h-0 flex-1 flex-col bg-stone-50 md:flex-row dark:bg-stone-950"
       >
         <div className={`relative flex min-h-[50vh] flex-1 ${stunts.shaking ? "stunt-shake" : ""}`}>
+          <FlashOverlay flashKey={stunts.flashKey} />
           {stuntMode && (
             <StuntPalette
               stunts={stunts}
@@ -334,7 +333,7 @@ export function MapViewer({
                     onClick={(event) => {
                       event.stopPropagation();
                       const point = canvas.clientToImage(event.clientX, event.clientY);
-                      if (point) stunts.play(point, stuntRadius(canvas.scale));
+                      if (point) stunts.play(point, pointStuntRadius(canvas.scale));
                     }}
                   />
                 )}
@@ -349,7 +348,7 @@ export function MapViewer({
                       ? (token) =>
                           stunts.play(
                             toPixels(token.at, map.size),
-                            stuntRadius(canvas.scale, token.size),
+                            pointStuntRadius(canvas.scale),
                             token.id,
                           )
                       : presenting

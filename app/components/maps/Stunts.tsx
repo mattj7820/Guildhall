@@ -1,14 +1,14 @@
 // PROTOTYPE (made real before the PR): stunts play on the DM's own screen only, for now.
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, type CSSProperties } from "react";
 import { assetUrl } from "~/wiki/urls";
 import type { Point, Size } from "~/maps/types";
-import { buttonClass, inputClass } from "~/components/styles";
+import { buttonClass } from "~/components/styles";
 import type { CanvasTools } from "./MapCanvas";
 import { floatingPanelClass, toolButtonClass } from "./MapToolbar";
 import type { TokenStunt } from "./TokenLayer";
 
-/** Played at a point (a token's, or anywhere on the map). */
-export type PointStuntKind = "impact" | "flash" | "smoke" | "fire" | "number";
+/** Played at a point on the map (a token's, or anywhere). */
+export type PointStuntKind = "impact" | "flash" | "smoke";
 /** Played by a token itself. */
 export type TokenStuntKind = TokenStunt["kind"];
 export type StuntKind = PointStuntKind | TokenStuntKind;
@@ -17,9 +17,8 @@ export interface PointStunt {
   kind: PointStuntKind;
   /** Image pixels. */
   at: Point;
-  /** Its size in image pixels: about a token's. */
+  /** Its size in image pixels: a few squares across. */
   radius: number;
-  text?: string;
   key: number;
 }
 
@@ -27,8 +26,6 @@ const POINT_KINDS: { kind: PointStuntKind; label: string }[] = [
   { kind: "impact", label: "Impact" },
   { kind: "flash", label: "Flash" },
   { kind: "smoke", label: "Smoke" },
-  { kind: "fire", label: "Fire" },
-  { kind: "number", label: "Number" },
 ];
 const TOKEN_KINDS: { kind: TokenStuntKind; label: string }[] = [
   { kind: "hit", label: "Hit" },
@@ -38,18 +35,21 @@ const TOKEN_KINDS: { kind: TokenStuntKind; label: string }[] = [
 const isTokenKind = (kind: StuntKind): kind is TokenStuntKind =>
   TOKEN_KINDS.some((each) => each.kind === kind);
 
-/** How long each plays, in milliseconds, before it's tidied away. */
-const DURATION: Record<StuntKind, number> = {
-  impact: 700,
-  flash: 900,
-  smoke: 1800,
-  fire: 1600,
-  number: 1600,
-  hit: 600,
-  glow: 1400,
+/**
+ * How long each plays, in milliseconds, before it's tidied away: long enough for the table to
+ * take it in. The animations in app.css are timed to fit.
+ */
+export const STUNT_MS: Record<StuntKind, number> = {
+  impact: 3200,
+  flash: 3000,
+  smoke: 5600,
+  hit: 1200,
+  glow: 3200,
   fall: 1200,
 };
 const SHAKE_MS = 500;
+/** The whole map flashing white, for the flash. */
+const FLASH_MS = 1400;
 
 /**
  * The DM's stunts: which one is ready to play, what's playing, and the screen shake. A stunt is
@@ -57,19 +57,23 @@ const SHAKE_MS = 500;
  */
 export function useStunts() {
   const [armed, setArmed] = useState<StuntKind>();
-  const [text, setText] = useState("-12");
   const [points, setPoints] = useState<PointStunt[]>([]);
   const [onTokens, setOnTokens] = useState<Record<string, TokenStunt>>({});
   const [shake, setShake] = useState(0);
+  const [flash, setFlash] = useState(0);
   const counter = useRef(0);
 
-  const playAt = useCallback((kind: PointStuntKind, at: Point, radius: number, label?: string) => {
+  const playAt = useCallback((kind: PointStuntKind, at: Point, radius: number) => {
     const key = ++counter.current;
-    setPoints((current) => [...current, { kind, at, radius, text: label, key }]);
+    setPoints((current) => [...current, { kind, at, radius, key }]);
     setTimeout(
       () => setPoints((current) => current.filter((each) => each.key !== key)),
-      DURATION[kind],
+      STUNT_MS[kind],
     );
+    if (kind === "flash") {
+      setFlash(key);
+      setTimeout(() => setFlash((current) => (current === key ? 0 : current)), FLASH_MS);
+    }
   }, []);
 
   const playOn = useCallback((kind: TokenStuntKind, token: string) => {
@@ -85,7 +89,7 @@ export function useStunts() {
           delete rest[token];
           return rest;
         }),
-      DURATION[kind],
+      STUNT_MS[kind],
     );
   }, []);
 
@@ -96,7 +100,7 @@ export function useStunts() {
       if (token) playOn(armed, token);
       return !!token;
     }
-    playAt(armed, at, radius, armed === "number" ? text : undefined);
+    playAt(armed, at, radius);
     return true;
   }
 
@@ -108,11 +112,11 @@ export function useStunts() {
   return {
     armed,
     setArmed,
-    text,
-    setText,
     points,
     onTokens,
     shaking: shake !== 0,
+    /** Changes with each flash, so the overlay plays again. */
+    flashKey: flash,
     play,
     shakeScreen,
     /** Stands fallen tokens back up. */
@@ -133,11 +137,22 @@ export function StuntPalette({
   onClose: () => void;
 }) {
   const choose = (kind: StuntKind) => stunts.setArmed(stunts.armed === kind ? undefined : kind);
+  const button = ({ kind, label }: { kind: StuntKind; label: string }) => (
+    <button
+      key={kind}
+      type="button"
+      aria-pressed={stunts.armed === kind}
+      className={`${toolButtonClass(stunts.armed === kind)} text-xs`}
+      onClick={() => choose(kind)}
+    >
+      {label}
+    </button>
+  );
   return (
     <div
       role="toolbar"
       aria-label="Stunts"
-      className={`${floatingPanelClass} absolute top-3 right-3 z-10 flex w-60 flex-col gap-2 p-2 text-sm`}
+      className={`${floatingPanelClass} absolute top-3 right-3 z-10 flex w-56 flex-col gap-2 p-2 text-sm`}
     >
       <div className="flex items-center">
         <span className="mr-auto font-semibold">Stunts</span>
@@ -147,47 +162,14 @@ export function StuntPalette({
       </div>
       <p className="text-xs text-stone-500">Pick one, then click the map or a token.</p>
       <div className="flex flex-wrap gap-1">
-        {POINT_KINDS.map(({ kind, label }) => (
-          <button
-            key={kind}
-            type="button"
-            aria-pressed={stunts.armed === kind}
-            className={`${toolButtonClass(stunts.armed === kind)} text-xs`}
-            onClick={() => choose(kind)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      {stunts.armed === "number" && (
-        <label className="flex items-center gap-2 text-xs">
-          Text
-          <input
-            value={stunts.text}
-            maxLength={12}
-            onChange={(event) => stunts.setText(event.target.value)}
-            className={`${inputClass} w-24`}
-          />
-        </label>
-      )}
-      <span className="text-xs font-semibold text-stone-500">On a token</span>
-      <div className="flex flex-wrap gap-1">
-        {TOKEN_KINDS.map(({ kind, label }) => (
-          <button
-            key={kind}
-            type="button"
-            aria-pressed={stunts.armed === kind}
-            className={`${toolButtonClass(stunts.armed === kind)} text-xs`}
-            onClick={() => choose(kind)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-1">
+        {POINT_KINDS.map(button)}
         <button type="button" className={`${buttonClass} text-xs`} onClick={stunts.shakeScreen}>
           Shake
         </button>
+      </div>
+      <span className="text-xs font-semibold text-stone-500">On a token</span>
+      <div className="flex flex-wrap gap-1">
+        {TOKEN_KINDS.map(button)}
         <button type="button" className={`${buttonClass} text-xs`} onClick={stunts.reset}>
           Stand them up
         </button>
@@ -219,10 +201,21 @@ export function soundName(path: string): string {
   return path.replace(/^[^/]*\//, "").replace(/\.[^.]+$/, "");
 }
 
+/** The whole map flashing white, over everything, for the flash. */
+export function FlashOverlay({ flashKey }: { flashKey: number }) {
+  if (!flashKey) return null;
+  return (
+    <div
+      key={flashKey}
+      aria-hidden="true"
+      className="stunt-screen-flash pointer-events-none absolute inset-0 z-[5] bg-white"
+    />
+  );
+}
+
 /** The point stunts playing now, drawn over the tokens. */
 export function StuntLayer({
   stunts,
-  canvas,
 }: {
   stunts: readonly PointStunt[];
   size: Size;
@@ -232,73 +225,107 @@ export function StuntLayer({
     <g className="pointer-events-none" aria-hidden="true">
       {stunts.map((stunt) => (
         <g key={stunt.key} transform={`translate(${stunt.at[0]} ${stunt.at[1]})`}>
-          <StuntShape stunt={stunt} scale={canvas.scale} />
+          <StuntShape stunt={stunt} />
         </g>
       ))}
     </g>
   );
 }
 
-function StuntShape({ stunt, scale }: { stunt: PointStunt; scale: number }) {
+/** Spread evenly round a circle, so the debris and smoke look scattered but never clump. */
+const around = (count: number) =>
+  Array.from({ length: count }, (_, index) => {
+    const angle = (index / count) * Math.PI * 2 + (index % 2) * 0.3;
+    return { index, dx: Math.cos(angle), dy: Math.sin(angle), wobble: ((index * 37) % 10) / 10 };
+  });
+
+function StuntShape({ stunt }: { stunt: PointStunt }) {
   const r = stunt.radius;
   switch (stunt.kind) {
     case "impact":
       return (
         <>
-          <circle r={r} className="stunt-ring fill-none stroke-amber-200" strokeWidth={r * 0.25} />
-          <circle
-            r={r * 0.7}
-            className="stunt-ring stunt-late fill-none stroke-orange-500"
-            strokeWidth={r * 0.18}
-          />
-        </>
-      );
-    case "flash":
-      return <circle r={r * 2} className="stunt-flash" fill="url(#stunt-flash)" />;
-    case "smoke":
-      return (
-        <>
-          {[-0.5, 0, 0.5].map((dx, index) => (
+          {/* Scorched ground, left behind for a moment. */}
+          <circle r={r * 0.55} className="stunt-scorch" fill="url(#stunt-scorch)" />
+          <circle r={r * 0.9} className="stunt-core" fill="url(#stunt-fire-core)" />
+          {[0, 1, 2].map((wave) => (
             <circle
-              key={dx}
-              cx={dx * r}
-              r={r * 0.6}
-              className="stunt-smoke fill-stone-400/70"
-              style={{ animationDelay: `${index * 150}ms` }}
+              key={wave}
+              r={r}
+              className="stunt-ring fill-none stroke-amber-100"
+              strokeWidth={r * (0.12 - wave * 0.03)}
+              style={{ animationDelay: `${wave * 260}ms` }}
+            />
+          ))}
+          {around(14).map(({ index, dx, dy, wobble }) => (
+            <circle
+              key={index}
+              r={r * (0.04 + wobble * 0.04)}
+              className="stunt-debris fill-stone-800"
+              style={
+                {
+                  "--to-x": `${dx * r * (1.2 + wobble)}px`,
+                  "--to-y": `${dy * r * (1.2 + wobble)}px`,
+                  animationDelay: `${wobble * 120}ms`,
+                } as CSSProperties
+              }
             />
           ))}
         </>
       );
-    case "fire":
+    case "flash":
+      return <circle r={r * 2.5} className="stunt-flash" fill="url(#stunt-flash)" />;
+    case "smoke":
       return (
-        <>
-          <ellipse rx={r * 0.8} ry={r} className="stunt-fire fill-orange-600/80" />
-          <ellipse rx={r * 0.5} ry={r * 0.7} className="stunt-fire stunt-late fill-amber-300/90" />
-        </>
-      );
-    case "number":
-      return (
-        <text
-          textAnchor="middle"
-          fontSize={22 / scale}
-          strokeWidth={4 / scale}
-          className="stunt-number fill-rose-600 stroke-white font-serif font-bold [paint-order:stroke]"
-        >
-          {stunt.text}
-        </text>
+        <g filter="url(#stunt-soft)">
+          {[{ index: -1, dx: 0, dy: 0, wobble: 0.5 }, ...around(9)].map(
+            ({ index, dx, dy, wobble }) => (
+              <circle
+                key={index}
+                cx={dx * r * 0.55}
+                cy={dy * r * 0.45}
+                r={r * (0.5 + wobble * 0.35)}
+                className={`stunt-smoke ${index % 2 ? "fill-stone-500/80" : "fill-stone-300/80"}`}
+                style={{ animationDelay: `${(index + 1) * 90}ms` }}
+              />
+            ),
+          )}
+        </g>
       );
   }
 }
 
-/** Shared by the stunts: the flash's light. */
+/** Shared by the stunts: gradients and the smoke's softness. */
 export function StuntDefs() {
   return (
     <defs>
       <radialGradient id="stunt-flash">
         <stop offset="0%" stopColor="white" stopOpacity="1" />
-        <stop offset="40%" stopColor="#fef3c7" stopOpacity="0.8" />
+        <stop offset="35%" stopColor="#fffbeb" stopOpacity="0.9" />
         <stop offset="100%" stopColor="#fef3c7" stopOpacity="0" />
       </radialGradient>
+      <radialGradient id="stunt-fire-core">
+        <stop offset="0%" stopColor="white" stopOpacity="1" />
+        <stop offset="30%" stopColor="#fde68a" stopOpacity="0.95" />
+        <stop offset="65%" stopColor="#f97316" stopOpacity="0.7" />
+        <stop offset="100%" stopColor="#7c2d12" stopOpacity="0" />
+      </radialGradient>
+      <radialGradient id="stunt-scorch">
+        <stop offset="0%" stopColor="#1c1917" stopOpacity="0.8" />
+        <stop offset="70%" stopColor="#292524" stopOpacity="0.45" />
+        <stop offset="100%" stopColor="#292524" stopOpacity="0" />
+      </radialGradient>
+      {/* In the cloud's own proportions, so it's as soft at any size. */}
+      <filter
+        id="stunt-soft"
+        x="-30%"
+        y="-30%"
+        width="160%"
+        height="160%"
+        primitiveUnits="objectBoundingBox"
+      >
+        <feGaussianBlur stdDeviation="0.03" />
+      </filter>
     </defs>
   );
 }

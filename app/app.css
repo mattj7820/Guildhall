@@ -177,123 +177,141 @@
   }
 }
 
-/* Stunts: brief effects the DM plays for a moment at the table. */
+/* Stunts: effects the DM plays for a moment at the table, big and long enough to take in. */
+.stunt-core,
 .stunt-ring,
+.stunt-debris,
+.stunt-scorch,
 .stunt-flash,
-.stunt-smoke,
-.stunt-fire,
-.stunt-number {
+.stunt-smoke {
   transform-box: fill-box;
   transform-origin: center;
-  animation-fill-mode: forwards;
-  animation-timing-function: ease-out;
+  animation-fill-mode: both;
+}
+.stunt-core {
+  animation: stunt-core 1400ms ease-out both;
 }
 .stunt-ring {
-  animation-name: stunt-ring;
-  animation-duration: 600ms;
+  animation: stunt-ring 1600ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
-.stunt-late {
-  animation-delay: 100ms;
-  opacity: 0;
+.stunt-debris {
+  transform-box: view-box;
+  transform-origin: 0 0;
+  animation: stunt-debris 1500ms cubic-bezier(0.1, 0.8, 0.3, 1) both;
+}
+.stunt-scorch {
+  animation: stunt-scorch 3200ms ease-in both;
 }
 .stunt-flash {
-  animation-name: stunt-flash;
-  animation-duration: 900ms;
+  animation: stunt-flash 3000ms ease-out both;
 }
 .stunt-smoke {
-  opacity: 0;
-  animation-name: stunt-smoke;
-  animation-duration: 1500ms;
+  animation: stunt-smoke 4800ms ease-out both;
 }
-.stunt-fire {
-  animation-name: stunt-fire;
-  animation-duration: 1500ms;
+.stunt-screen-flash {
+  animation: stunt-screen-flash 1400ms ease-out both;
 }
-.stunt-number {
-  animation-name: stunt-number;
-  animation-duration: 1500ms;
-}
-@keyframes stunt-ring {
-  from {
-    transform: scale(0.2);
+@keyframes stunt-core {
+  0% {
+    transform: scale(0.1);
+    opacity: 0;
+  }
+  12% {
+    transform: scale(1);
     opacity: 1;
   }
-  to {
-    transform: scale(1.6);
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+@keyframes stunt-ring {
+  0% {
+    transform: scale(0.15);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+@keyframes stunt-debris {
+  0% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(var(--to-x), var(--to-y));
+    opacity: 0;
+  }
+}
+@keyframes stunt-scorch {
+  0% {
+    opacity: 0;
+  }
+  15%,
+  60% {
+    opacity: 1;
+  }
+  100% {
     opacity: 0;
   }
 }
 @keyframes stunt-flash {
   0% {
-    transform: scale(0.3);
+    transform: scale(0.2);
     opacity: 0;
   }
-  20% {
+  10% {
     transform: scale(1);
     opacity: 1;
   }
+  40% {
+    opacity: 0.85;
+  }
   100% {
-    transform: scale(1.2);
+    transform: scale(1.15);
     opacity: 0;
   }
 }
 @keyframes stunt-smoke {
   0% {
-    transform: translateY(0) scale(0.5);
-    opacity: 0.8;
-  }
-  100% {
-    transform: translateY(-120%) scale(1.6);
-    opacity: 0;
-  }
-}
-@keyframes stunt-fire {
-  0% {
-    transform: scale(0.3, 0.2);
+    transform: translateY(10%) scale(0.3);
     opacity: 0;
   }
   15% {
-    transform: scale(1, 1.1);
-    opacity: 1;
-  }
-  35% {
-    transform: scale(0.9, 1.25);
+    opacity: 0.95;
   }
   55% {
-    transform: scale(1.05, 1);
+    opacity: 0.85;
   }
-  75% {
-    transform: scale(0.95, 1.2);
+  100% {
+    transform: translateY(-45%) scale(1.5);
+    opacity: 0;
+  }
+}
+@keyframes stunt-screen-flash {
+  0% {
+    opacity: 0;
+  }
+  8% {
     opacity: 0.9;
   }
   100% {
-    transform: scale(0.6, 1.4) translateY(-20%);
-    opacity: 0;
-  }
-}
-@keyframes stunt-number {
-  0% {
-    transform: translateY(0);
-    opacity: 0;
-  }
-  15% {
-    opacity: 1;
-  }
-  70% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-150%);
     opacity: 0;
   }
 }
 
-/* On a token: a hit shudders red, a glow pulses green, a fall tips it over and leaves it down. */
+/* On a token: a hit shudders with a red pulse, a glow pulses green, a fall tips it over and
+leaves it down. */
 .token-stunt-hit {
-  animation: token-hit 500ms ease-out;
+  animation: token-hit 1100ms ease-out;
 }
 .token-stunt-glow {
-  animation: token-glow 1300ms ease-in-out;
+  animation: token-glow 3000ms ease-in-out;
 }
 .token-stunt-fall {
   transform-box: fill-box;
@@ -306,15 +324,22 @@
     transform: translateX(0);
     filter: none;
   }
+  10% {
+    transform: translateX(-3%);
+    filter: drop-shadow(0 0 10px rgb(220 38 38)) brightness(1.15);
+  }
   20% {
-    transform: translateX(-12%);
-    filter: drop-shadow(0 0 6px rgb(220 38 38)) sepia(1) saturate(4) hue-rotate(-50deg);
+    transform: translateX(3%);
   }
-  45% {
-    transform: translateX(10%);
+  30% {
+    transform: translateX(-2%);
   }
-  70% {
-    transform: translateX(-5%);
+  40% {
+    transform: translateX(1%);
+    filter: drop-shadow(0 0 12px rgb(220 38 38));
+  }
+  50% {
+    transform: translateX(0);
   }
 }
 @keyframes token-glow {
@@ -322,8 +347,13 @@
   100% {
     filter: none;
   }
-  50% {
-    filter: drop-shadow(0 0 10px rgb(74 222 128)) brightness(1.3);
+  25%,
+  70% {
+    filter: drop-shadow(0 0 14px rgb(74 222 128)) drop-shadow(0 0 4px rgb(187 247 208))
+      brightness(1.35);
+  }
+  47% {
+    filter: drop-shadow(0 0 6px rgb(74 222 128)) brightness(1.1);
   }
 }
 @keyframes token-fall {
