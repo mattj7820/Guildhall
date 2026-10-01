@@ -67,11 +67,13 @@ export async function action({ request, context }: Route.ActionArgs) {
     return Response.json({ fight: await fightView(services, changed, viewer) });
   }
   if (body.data.intent === "end") {
-    const ended = await services.fight.get();
+    const ended = await services.fight.end();
     const maps = ended
-      ? await services.tokens.endFight(ended.encounter, body.data.monsters === "leave")
+      ? await services.tokens.removeCombatants(
+          ended.encounter.combatants,
+          body.data.monsters === "leave",
+        )
       : [];
-    await services.fight.end();
     await services.live.fightChanged();
     await Promise.all(maps.map((map) => services.live.mapChanged(map)));
     return Response.json({ fight: null });
@@ -87,6 +89,11 @@ export async function action({ request, context }: Route.ActionArgs) {
       { status: 409 },
     );
   }
+  // Monsters taken out of the fight (or a new fight replacing it) take their tokens with them.
+  const now = new Set(saved.fight.encounter.combatants.map((c) => c.id));
+  const gone = saved.previous?.encounter.combatants.filter((c) => !now.has(c.id)) ?? [];
+  const maps = gone.length > 0 ? await services.tokens.removeCombatants(gone, false) : [];
   await services.live.fightChanged();
+  await Promise.all(maps.map((changed) => services.live.mapChanged(changed)));
   return Response.json({ fight: await fightView(services, saved.fight, viewer) });
 }

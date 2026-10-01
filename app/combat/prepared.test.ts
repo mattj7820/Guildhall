@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { sequenceRng } from "~/dice/rng";
 import { addMonsters, createEncounter, perform, rerollHp } from "./encounter";
-import { startPrepared, summarise, toPrepared, type PartyChoice } from "./prepared";
+import {
+  startPrepared,
+  startPreparedOnMap,
+  summarise,
+  toPrepared,
+  type PartyChoice,
+} from "./prepared";
 import { encounter, idSequence, inCombat, monster, names, player } from "./test-builders";
 import type { MonsterCombatant, PreparedEncounter } from "./types";
 
@@ -54,6 +60,31 @@ describe("preparing monsters", () => {
     const rng = sequenceRng([6, 5]);
     const after = perform(state, rerollHp(minion, "Goblin 1", rng), rng);
     expect((after.combatants[0] as MonsterCombatant).hp).toEqual({ current: 11, max: 11, temp: 0 });
+  });
+});
+
+describe("startPreparedOnMap", () => {
+  it("puts the monsters where they were placed, by their new IDs", () => {
+    const template: PreparedEncounter = {
+      ...prepared([monster("Goblin 1"), monster("Goblin 2"), monster("Goblin 3")]),
+      placement: {
+        map: "mill",
+        // Goblin 3 joined after the others were placed, and Goblin 9 has since been removed.
+        at: { "Goblin 1": [0.1, 0.2], "Goblin 2": [0.3, 0.4], "Goblin 9": [0.5, 0.5] },
+      },
+    };
+    const { encounter: started, placed } = startPreparedOnMap(
+      template,
+      [],
+      sequenceRng([10, 15, 5]),
+      idSequence("live"),
+    );
+    const idOf = (name: string) => started.combatants.find((c) => c.name === name)?.id;
+    expect(placed).toEqual([
+      { combatant: idOf("Goblin 1"), at: [0.1, 0.2] },
+      { combatant: idOf("Goblin 2"), at: [0.3, 0.4] },
+    ]);
+    expect(placed.map((each) => each.combatant)).not.toContain("Goblin 1");
   });
 });
 

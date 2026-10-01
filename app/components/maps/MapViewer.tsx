@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import type { DmFightView } from "~/combat/fight";
-import type { CombatCatalogue } from "~/combat/types";
+import type { CombatCatalogue, PreparedEncounter } from "~/combat/types";
 import { buttonClass, primaryButtonClass } from "~/components/styles";
 import { areaRevealed } from "~/maps/fog/coverage";
 import type { FogMask } from "~/maps/fog/types";
@@ -29,7 +29,7 @@ import { InsideBadges } from "./InsideBadges";
 import { useBattleTools } from "./useBattleTools";
 import { useMapFight } from "./useMapFight";
 import { TOKEN_RADIUS, TokenLayer } from "./TokenLayer";
-import { TokenPanel, type Placing } from "./TokenPanel";
+import { PlacingHint, TokenPanel, type Placing } from "./TokenPanel";
 import { useFogTools } from "./useFogTools";
 
 /** How dark the fog is for the DM, who sees the map through it. */
@@ -55,6 +55,7 @@ export function MapViewer({
   images,
   fight: fightFromPage,
   catalogue,
+  starting,
 }: {
   map: MapView;
   tokens: TokenView[];
@@ -64,6 +65,8 @@ export function MapViewer({
   /** The fight the table is in, wherever it is. */
   fight: DmFightView | null;
   catalogue: CombatCatalogue;
+  /** A prepared fight to start here; null if it no longer exists. */
+  starting?: PreparedEncounter | null;
 }) {
   const [selectedId, setSelectedId] = useState<string>();
   const selected = map.areas.find((area) => area.id === selectedId);
@@ -81,7 +84,16 @@ export function MapViewer({
   const [placing, setPlacing] = useState<Placing>();
   const [selectedTokenId, setSelectedTokenId] = useState<string>();
   const selectedToken = tokens.find((token) => token.id === selectedTokenId);
-  const fight = useMapFight({ map, fight: fightFromPage, catalogue, tokens, send, onFind: find });
+  const fight = useMapFight({
+    map,
+    fight: fightFromPage,
+    catalogue,
+    tokens,
+    send,
+    onFind: find,
+    starting,
+    onBringParty: () => setPlacing({ kind: "party", name: "the whole party" }),
+  });
   const combat = fight.open && !fogMode;
   const placingMonsters = combat && fight.placing && !presenting;
   // The map's tools belong to battle maps, and step aside for the fog tools and placing tokens.
@@ -340,7 +352,12 @@ export function MapViewer({
             className="flex w-full flex-col gap-4 overflow-y-auto border-stone-200 p-4 md:w-80 md:border-l dark:border-stone-800"
           >
             {combat ? (
-              fight.panel
+              <>
+                {placing && (
+                  <PlacingHint placing={placing} onCancel={() => setPlacing(undefined)} />
+                )}
+                {fight.panel}
+              </>
             ) : fogMode ? (
               <FogAreaList
                 areas={map.areas}

@@ -87,7 +87,7 @@ describe("MapTokens", () => {
     ]);
   });
 
-  describe("ending a fight", () => {
+  describe("monsters leaving the fight", () => {
     const fight = encounter([monster("Goblin 1"), monster("Ambusher", { hidden: true })]);
     const onMap = (combatant: string, map = "world"): Token => ({
       kind: "combatant",
@@ -102,14 +102,17 @@ describe("MapTokens", () => {
       const tokens = MapTokens.inFolder(folder);
       await tokens.apply("world", [place(onMap("Goblin 1")), place(inn)], everything);
       await tokens.apply("keep", [place(onMap("Ambusher", "keep"))], everything);
-      expect((await tokens.endFight(fight, false)).sort()).toEqual(["keep", "world"]);
+      expect((await tokens.removeCombatants(fight.combatants, false)).sort()).toEqual([
+        "keep",
+        "world",
+      ]);
       expect(await tokens.list()).toEqual([inn]);
     });
 
     it("leaves them where they fell as markers, a hidden one for the DM only", async () => {
       const tokens = MapTokens.inFolder(folder);
       await tokens.apply("world", [place(onMap("Goblin 1")), place(onMap("Ambusher"))], everything);
-      await tokens.endFight(fight, true);
+      await tokens.removeCombatants(fight.combatants, true);
       expect(await tokens.list()).toEqual([
         expect.objectContaining({
           kind: "marker",
@@ -124,7 +127,7 @@ describe("MapTokens", () => {
     it("leaves tokens of monsters from other fights alone", async () => {
       const tokens = MapTokens.inFolder(folder);
       await tokens.apply("world", [place(onMap("Someone else"))], everything);
-      expect(await tokens.endFight(fight, false)).toEqual([]);
+      expect(await tokens.removeCombatants(fight.combatants, false)).toEqual([]);
       expect(await tokens.list()).toHaveLength(1);
     });
   });

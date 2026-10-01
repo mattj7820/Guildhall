@@ -21,7 +21,8 @@ const fileSchema = z.object({
 });
 type FightFile = z.infer<typeof fileSchema>;
 
-export type Saved = { fight: Fight } | { stale: Fight | undefined };
+/** Saved, with the fight it replaced; or stale, with the newer fight. */
+export type Saved = { fight: Fight; previous?: Fight } | { stale: Fight | undefined };
 
 /**
  * The fight the table is in, kept in `fight.json` in the data folder so it survives reloads and
@@ -55,7 +56,10 @@ export class CurrentFight {
         ...((map ?? data.fight?.map) && { map: map ?? data.fight?.map }),
         ...(data.fight?.freeMovement && { freeMovement: true }),
       };
-      return { next: { ...data, fight }, result: { fight } };
+      return {
+        next: { ...data, fight },
+        result: { fight, ...(data.fight && { previous: data.fight }) },
+      };
     });
   }
 
@@ -87,8 +91,8 @@ export class CurrentFight {
     });
   }
 
-  /** The fight is over: there's none until the next starts. */
-  end(): Promise<void> {
-    return this.file.update(() => ({ next: { version: 1 as const }, result: undefined }));
+  /** The fight is over: there's none until the next starts. Answers with the fight that ended. */
+  end(): Promise<Fight | undefined> {
+    return this.file.update((data) => ({ next: { version: 1 as const }, result: data.fight }));
   }
 }

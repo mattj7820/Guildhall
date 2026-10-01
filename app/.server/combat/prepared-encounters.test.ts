@@ -101,6 +101,15 @@ describe("PreparedEncounters", () => {
     expect((await prepared.get(original.id))?.encounter.combatants).toHaveLength(2);
   });
 
+  it("keeps where a fight set up on a map stands, through edits and copies", async () => {
+    const prepared = store();
+    const placement = { map: "mill", at: { "Goblin 1": [0.2, 0.3] as [number, number] } };
+    const original = await prepared.create({ name: "Mill ambush", encounter: ambush(), placement });
+    await prepared.update(original.id, { notes: "Fixture: tests placements" });
+    expect((await prepared.get(original.id))?.placement).toEqual(placement);
+    expect((await prepared.duplicate(original.id))?.placement).toEqual(placement);
+  });
+
   it("deletes an encounter", async () => {
     const prepared = store();
     const { id } = await prepared.create();

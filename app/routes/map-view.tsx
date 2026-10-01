@@ -5,7 +5,8 @@ import { loadMapView, mapVersion } from "~/.server/maps/load";
 import { loadMapTokens, partyPlacements } from "~/.server/maps/tokens";
 import { MapViewer } from "~/components/maps/MapViewer";
 import { PlayerMapViewer } from "~/components/maps/PlayerMapViewer";
-import { servicesContext, viewerContext } from "~/context";
+import type { PreparedEncounter } from "~/combat/types";
+import { servicesContext, viewerContext, type Services } from "~/context";
 import type { Route } from "./+types/map-view";
 
 export function meta({ loaderData }: Route.MetaArgs) {
@@ -13,7 +14,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
   return [{ title: `${name} · Guildhall` }];
 }
 
-export async function loader({ params, context }: Route.LoaderArgs) {
+export async function loader({ params, request, context }: Route.LoaderArgs) {
   const viewer = context.get(viewerContext);
   const services = context.get(servicesContext);
   const maps = await services.maps.list();
@@ -50,7 +51,18 @@ export async function loader({ params, context }: Route.LoaderArgs) {
     images: services.vault.current.mapImages(),
     fight: fight?.forDm ? fight : null,
     catalogue: combatCatalogue(services.vault.current, viewer),
+    starting: await startingPrepared(services, request),
   };
+}
+
+/** A prepared fight to start here (`?start=<id>`); null if it no longer exists. */
+async function startingPrepared(
+  services: Pick<Services, "preparedEncounters">,
+  request: Request,
+): Promise<PreparedEncounter | null | undefined> {
+  const id = new URL(request.url).searchParams.get("start");
+  if (!id) return undefined;
+  return (await services.preparedEncounters.get(id)) ?? null;
 }
 
 export default function MapPage({ loaderData }: Route.ComponentProps) {
@@ -76,6 +88,7 @@ export default function MapPage({ loaderData }: Route.ComponentProps) {
       images={loaderData.images}
       fight={loaderData.fight}
       catalogue={loaderData.catalogue}
+      starting={loaderData.starting}
     />
   );
 }

@@ -26,9 +26,12 @@ const AUTOSAVE_DELAY_MS = 500;
 export function PreparedEditor({
   prepared,
   catalogue,
+  startUrl,
 }: {
   prepared: PreparedEncounter;
   catalogue: CombatCatalogue;
+  /** On its map, if it was set up on one. */
+  startUrl: string;
 }) {
   const [name, setName] = useState(prepared.name);
   const [notes, setNotes] = useState(prepared.notes);
@@ -141,11 +144,7 @@ export function PreparedEditor({
             >
               Undo
             </button>
-            <Link
-              to={`/combat?start=${encodeURIComponent(prepared.id)}`}
-              onClick={saveNow}
-              className={primaryButtonClass}
-            >
+            <Link to={startUrl} onClick={saveNow} className={primaryButtonClass}>
               Start
             </Link>
           </div>

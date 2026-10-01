@@ -1,5 +1,6 @@
 import { data, redirect, type ShouldRevalidateFunctionArgs } from "react-router";
 import { combatCatalogue } from "~/.server/combat/catalogue";
+import { preparedStartUrl } from "~/combat/prepared";
 import { preparedChangesSchema } from "~/combat/schema";
 import { DmOnlyNotice } from "~/components/combat/CombatNav";
 import { PreparedEditor } from "~/components/combat/PreparedEditor";
@@ -14,10 +15,16 @@ export function meta({ loaderData }: Route.MetaArgs) {
 export async function loader({ params, context }: Route.LoaderArgs) {
   const viewer = context.get(viewerContext);
   if (viewer.role !== "dm") return { dmOnly: true as const };
-  const { preparedEncounters, vault } = context.get(servicesContext);
+  const { preparedEncounters, vault, maps } = context.get(servicesContext);
   const prepared = await preparedEncounters.get(params.id);
   if (!prepared) throw data("Prepared encounter not found", { status: 404 });
-  return { dmOnly: false as const, prepared, catalogue: combatCatalogue(vault.current, viewer) };
+  const mapIds = new Set((await maps.list()).map((map) => map.id));
+  return {
+    dmOnly: false as const,
+    prepared,
+    catalogue: combatCatalogue(vault.current, viewer),
+    startUrl: preparedStartUrl(prepared, mapIds),
+  };
 }
 
 /**
@@ -70,6 +77,7 @@ export default function EditPrepared({ loaderData }: Route.ComponentProps) {
       key={loaderData.prepared.id}
       prepared={loaderData.prepared}
       catalogue={loaderData.catalogue}
+      startUrl={loaderData.startUrl}
     />
   );
 }

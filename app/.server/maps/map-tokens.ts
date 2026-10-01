@@ -1,7 +1,7 @@
 import path from "node:path";
 import { z } from "zod";
 import { applyTokenAction, mapsTouched, type TokenAction } from "~/maps/tokens/actions";
-import type { Encounter } from "~/combat/types";
+import type { Combatant } from "~/combat/types";
 import { MARKER_NAME_MAX, tokensSchema } from "~/maps/tokens/schema";
 import type { Token } from "~/maps/tokens/types";
 import type { MapId } from "~/maps/types";
@@ -78,16 +78,16 @@ export class MapTokens {
   }
 
   /**
-   * When a fight ends, its monsters' tokens are cleared, or left where they fell as markers the
-   * DM can tidy later (seen by players, unless the monster was hidden). Answers with the maps
-   * whose tokens changed.
+   * When monsters leave the fight (taken out of it, or the fight ending), their tokens are
+   * cleared, or left where they fell as markers the DM can tidy later (seen by players, unless
+   * the monster was hidden). Answers with the maps whose tokens changed.
    */
-  endFight(encounter: Encounter, leave: boolean): Promise<MapId[]> {
+  removeCombatants(combatants: readonly Combatant[], leave: boolean): Promise<MapId[]> {
     return this.file.update((data) => {
       const changed = new Set<MapId>();
       const tokens = data.tokens.flatMap((token): Token[] => {
         if (token.kind !== "combatant") return [token];
-        const monster = encounter.combatants.find((c) => c.id === token.combatant);
+        const monster = combatants.find((c) => c.id === token.combatant);
         if (!monster) return [token];
         changed.add(token.map);
         if (!leave) return [];

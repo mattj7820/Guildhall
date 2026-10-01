@@ -1,12 +1,22 @@
 import { useMemo, useState, type ReactNode } from "react";
-import type { EncounterAction } from "~/combat/encounter";
+import { useNavigate } from "react-router";
 import type { DmFightView } from "~/combat/fight";
-import { statblockKey, type CombatCatalogue, type Combatant } from "~/combat/types";
+import { startPreparedOnMap, type PartyChoice } from "~/combat/prepared";
+import {
+  statblockKey,
+  type CombatCatalogue,
+  type Combatant,
+  type PreparedEncounter,
+  type PreparedPlacement,
+} from "~/combat/types";
 import { useSharedFight } from "~/combat/useSharedFight";
 import { AddCombatants } from "~/components/combat/AddCombatants";
 import { CombatantRow } from "~/components/combat/CombatantRow";
 import { DiceRoller } from "~/components/combat/DiceRoller";
 import { FightStatus } from "~/components/combat/FightStatus";
+import { SaveAsPrepared } from "~/components/combat/SaveAsPrepared";
+import { StartPrepared } from "~/components/combat/StartPrepared";
+import { buttonClass } from "~/components/styles";
 import { StatblockPanel } from "~/components/combat/StatblockPanel";
 import { TiePrompts } from "~/components/combat/TiePrompts";
 import { TurnBar } from "~/components/combat/TurnBar";
@@ -17,6 +27,7 @@ import { snapToGrid, toPixels as gridInPixels } from "~/maps/grid/grid";
 import type { TokenAction } from "~/maps/tokens/actions";
 import type { TokenView } from "~/maps/tokens/types";
 import type { MapView, Point } from "~/maps/types";
+import { mapUrl } from "~/maps/urls";
 import { newId } from "~/shared/ids";
 import { EndFight } from "./EndFight";
 
@@ -28,6 +39,10 @@ interface Options {
   send: (actions: TokenAction[]) => unknown;
   /** Centres the map on a token. */
   onFind: (token: TokenView) => void;
+  /** A prepared fight to start here; null if it no longer exists. */
+  starting?: PreparedEncounter | null;
+  /** The next click on the map places the whole party. */
+  onBringParty: () => void;
 }
 
 /**
@@ -36,7 +51,16 @@ interface Options {
  * without a place, and the next click on the map puts them there, sized from their statblocks.
  * Whatever's changed here moves the fight to this map.
  */
-export function useMapFight({ map, fight, catalogue, tokens, send, onFind }: Options) {
+export function useMapFight({
+  map,
+  fight,
+  catalogue,
+  tokens,
+  send,
+  onFind,
+  starting,
+  onBringParty,
+}: Options) {
   const { tracker, status, hp, freeMovement, changeFreeMovement } = useSharedFight(fight, map.id);
   const { encounter } = tracker;
   const rolls = useRollLog(tracker.rng);
@@ -44,7 +68,10 @@ export function useMapFight({ map, fight, catalogue, tokens, send, onFind }: Opt
     () => new Map(catalogue.creatures.map((creature) => [creature.key, creature])),
     [catalogue.creatures],
   );
-  const [open, setOpen] = useState(() => !!fight && fight.map === map.id);
+  const [open, setOpen] = useState(
+    () => starting !== undefined || (!!fight && fight.map === map.id),
+  );
+  const navigate = useNavigate();
   const [shownId, setShownId] = useState<string>();
   const [adding, setAdding] = useState(true);
   const shown = encounter.combatants.find((c) => c.id === (shownId ?? encounter.activeId));
@@ -54,13 +81,50 @@ export function useMapFight({ map, fight, catalogue, tokens, send, onFind }: Opt
   const squaresOf = (c: Combatant) =>
     (c.statblock && creatures.get(statblockKey(c.statblock))?.squares) || 1;
 
-  /** Taking a monster out of the fight takes its token off the map too. */
-  const dispatch = (action: EncounterAction) => {
-    if (action.type === "remove") {
-      const token = tokenOf(action.id);
-      if (token?.kind === "combatant") void send([{ type: "remove", id: token.id }]);
-    }
-    tracker.dispatch(action);
+  // Taking a monster out of the fight takes its token with it, on the server.
+  const { dispatch } = tracker;
+
+  /**
+   * A prepared fight starting here: the chosen party joins, and the monsters stand where they
+   * were put. The party is brought onto the map separately, wherever they are now.
+   */
+  function start(prepared: PreparedEncounter, party: PartyChoice[]) {
+    const { encounter: started, placed } = startPreparedOnMap(prepared, party, tracker.rng);
+    tracker.replace(started);
+    void send(
+      placed.map(({ combatant, at }): TokenAction => {
+        const monster = started.combatants.find((c) => c.id === combatant);
+        const size = monster ? squaresOf(monster) : 1;
+        return {
+          type: "place",
+          token: {
+            kind: "combatant",
+            id: newId(),
+            map: map.id,
+            at,
+            ...(size > 1 && { size }),
+            combatant,
+          },
+        };
+      }),
+    );
+    void fetch(`/combat/prepared/${encodeURIComponent(prepared.id)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ intent: "markRun" }),
+    });
+    void navigate(mapUrl(map.id), { replace: true });
+  }
+
+  /** Where the monsters stand here, for keeping the fight as a prepared one. */
+  const placement: PreparedPlacement = {
+    map: map.id,
+    at: Object.fromEntries(
+      encounter.combatants.flatMap((c) => {
+        const token = c.kind === "monster" ? tokenOf(c.id) : undefined;
+        return token ? [[c.id, token.at]] : [];
+      }),
+    ),
   };
 
   /** The monsters without a place go side by side from the click, on squares on a battle map. */
@@ -99,6 +163,21 @@ export function useMapFight({ map, fight, catalogue, tokens, send, onFind }: Opt
 
   const panel = (
     <section aria-label="Fight" className="flex flex-col gap-3">
+      {starting && (
+        <StartPrepared
+          key={starting.id}
+          prepared={starting}
+          party={catalogue.party}
+          replacesFight={encounter.combatants.length > 0}
+          onStart={(party) => start(starting, party)}
+          cancelTo={mapUrl(map.id)}
+        />
+      )}
+      {starting === null && (
+        <p role="alert" className="rounded-md bg-amber-100 px-3 py-2 text-sm text-amber-900">
+          That prepared encounter doesn't exist any more.
+        </p>
+      )}
       {fight?.map && fight.map !== map.id && encounter.combatants.length > 0 && (
         <p className="text-sm text-amber-800 dark:text-amber-300">
           This fight is on another map. Changing it here brings it to this one.
@@ -147,6 +226,9 @@ export function useMapFight({ map, fight, catalogue, tokens, send, onFind }: Opt
           ))}
         </ol>
       )}
+      <button type="button" className={`${buttonClass} self-start`} onClick={onBringParty}>
+        Bring the party here
+      </button>
       <details open={adding} onToggle={(event) => setAdding(event.currentTarget.open)}>
         <summary className="cursor-pointer font-semibold">Add to the fight</summary>
         <div className="mt-2">
@@ -158,6 +240,9 @@ export function useMapFight({ map, fight, catalogue, tokens, send, onFind }: Opt
           />
         </div>
       </details>
+      {encounter.phase === "setup" && encounter.combatants.length > 0 && (
+        <SaveAsPrepared encounter={encounter} placement={placement} />
+      )}
       <StatblockPanel
         combatantName={shown?.name}
         creature={shown?.statblock ? creatures.get(statblockKey(shown.statblock)) : undefined}

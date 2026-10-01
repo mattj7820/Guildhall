@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createEncounter } from "~/combat/encounter";
 import { newId } from "~/shared/ids";
 import { PREPARED_NAME_MAX, preparedEncounterSchema } from "~/combat/schema";
-import type { Encounter, PreparedEncounter } from "~/combat/types";
+import type { Encounter, PreparedEncounter, PreparedPlacement } from "~/combat/types";
 import { JsonFile } from "../data/json-store";
 
 const fileSchema = z.object({
@@ -18,6 +18,7 @@ export interface PreparedChanges {
   name?: string;
   notes?: string;
   encounter?: Encounter;
+  placement?: PreparedPlacement;
 }
 
 /**
@@ -65,6 +66,7 @@ export class PreparedEncounters {
       createdAt: timestamp,
       updatedAt: timestamp,
       encounter: changes.encounter ?? createEncounter(this.createId()),
+      ...(changes.placement && { placement: changes.placement }),
     };
     return this.file.update((data) => ({
       next: { ...data, encounters: [...data.encounters, prepared] },
@@ -94,6 +96,7 @@ export class PreparedEncounters {
       name: `${original.name} (copy)`.slice(0, PREPARED_NAME_MAX),
       notes: original.notes,
       encounter: { ...original.encounter, id: this.createId() },
+      ...(original.placement && { placement: original.placement }),
     });
   }
 

@@ -76,10 +76,17 @@ describe("CurrentFight", () => {
     expect(await fights.setFreeMovement(false)).not.toHaveProperty("freeMovement");
   });
 
+  it("says which fight a save replaced, so monsters who left can be cleared away", async () => {
+    const fights = CurrentFight.inFolder(folder);
+    expect(await fights.save(encounter(combatants), 0)).not.toHaveProperty("previous");
+    const saved = await fights.save(encounter(combatants.slice(0, 1)), 1);
+    expect(saved).toMatchObject({ previous: { revision: 1 } });
+  });
+
   it("ends the fight", async () => {
     const fights = CurrentFight.inFolder(folder);
     await fights.save(encounter(combatants), 0);
-    await fights.end();
+    expect(await fights.end()).toMatchObject({ revision: 1 });
     expect(await fights.get()).toBeUndefined();
     // A new fight starts from the beginning.
     expect(await fights.save(encounter(combatants), 0)).toHaveProperty("fight");

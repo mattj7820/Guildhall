@@ -3,6 +3,7 @@
  * the vault) and the browser (which runs encounters).
  */
 import type { EntityId, Player } from "~/campaign/types";
+import type { MapId, Point } from "~/maps/types";
 
 /** Points at one statblock in the vault: the note's stable ID plus the statblock's name. */
 export interface StatblockRef {
@@ -159,4 +160,12 @@ export interface PreparedEncounter {
   updatedAt: string;
   lastRunAt?: string;
   encounter: Encounter;
+  /** Set up on a map: it starts there, with its monsters where the DM put them. */
+  placement?: PreparedPlacement;
+}
+
+/** A prepared fight's map, and where its monsters stand on it (by combatant, in fractions). */
+export interface PreparedPlacement {
+  map: MapId;
+  at: Record<CombatantId, Point>;
 }

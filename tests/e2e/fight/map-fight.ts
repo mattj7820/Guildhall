@@ -168,4 +168,45 @@ test.describe("A fight on a map", () => {
     await page.getByRole("button", { name: "Clear the monsters" }).click();
     await expect(token(page, "Fixture Minion 1")).toHaveCount(1);
   });
+
+  test("prepares a fight on a map, and starts it there with the monsters in place", async ({
+    page,
+  }) => {
+    const { url, name } = await arena(page);
+    await scriptDice(page, [d6(3), d6(4), d6(6), d6(6)]);
+    await addMonsters(page, "Fixture Minion", 2);
+    await mapCanvas(page, name).click();
+    await expect(token(page, "Fixture Minion 2")).toBeVisible();
+    const placedAt = await token(page, "Fixture Minion 2").getAttribute("aria-label");
+
+    const encounterName = uniqueName("Ambush");
+    await page.getByText("Save as a prepared encounter").click();
+    await page.getByLabel("Prepared encounter name").fill(encounterName);
+    await page.getByRole("button", { name: "Save as prepared" }).click();
+    await expect(page.getByText(`Saved as “${encounterName}”.`)).toBeVisible();
+    await page.getByRole("button", { name: "End fight" }).click();
+    await page.getByRole("button", { name: "Clear the monsters" }).click();
+    await expect(token(page, "Fixture Minion 2")).toHaveCount(0);
+
+    await page.goto("/combat/prepared");
+    await expect(page.getByRole("listitem").filter({ hasText: encounterName })).toContainText(
+      `Set up on ${name}`,
+    );
+    await page.getByRole("link", { name: `Start ${encounterName}` }).click();
+    await page.waitForURL((current) => current.searchParams.has("start"));
+    expect(page.url().split("?")[0]).toBe(url);
+    const panel = page.getByRole("region", { name: `Start “${encounterName}”` });
+    await panel.getByRole("button", { name: "Add to tracker" }).click();
+
+    await expect(page).not.toHaveURL(/start=/);
+    // Where it was put, with the hit points it was prepared with.
+    await expect(token(page, "Fixture Minion 2")).toHaveAttribute("aria-label", placedAt!);
+    await expect(combatant(page, "Fixture PC One")).toBeVisible();
+    // The party comes in with a click, from wherever they are.
+    await page.getByRole("button", { name: "Bring the party here" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Click the map to place" })).toHaveText(
+      /the whole party/,
+    );
+    await page.getByRole("button", { name: "Cancel" }).click();
+  });
 });
