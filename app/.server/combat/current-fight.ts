@@ -15,6 +15,7 @@ const fileSchema = z.object({
       encounter: encounterSchema,
       revision: z.number().int().nonnegative(),
       map: z.string().min(1).optional(),
+      freeMovement: z.boolean().optional(),
     })
     .optional(),
 });
@@ -52,6 +53,7 @@ export class CurrentFight {
         encounter,
         revision: current + 1,
         ...((map ?? data.fight?.map) && { map: map ?? data.fight?.map }),
+        ...(data.fight?.freeMovement && { freeMovement: true }),
       };
       return { next: { ...data, fight }, result: { fight } };
     });
@@ -68,6 +70,20 @@ export class CurrentFight {
         revision: fight.revision + 1,
       };
       return { next: { ...data, fight: next }, result: next };
+    });
+  }
+
+  /**
+   * The DM lets players move whenever they like, or only on their turn. Not a change to the
+   * encounter, so the revision stays: the tracker's saves aren't made stale by it.
+   */
+  setFreeMovement(on: boolean): Promise<Fight | undefined> {
+    return this.file.update((data) => {
+      if (!data.fight) return { next: data, result: undefined };
+      const fight: Fight = { ...data.fight };
+      if (on) fight.freeMovement = true;
+      else delete fight.freeMovement;
+      return { next: { ...data, fight }, result: fight };
     });
   }
 

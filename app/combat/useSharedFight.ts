@@ -3,7 +3,7 @@ import { useLiveMap } from "~/live/useLive";
 import { FIGHT_ROOM } from "~/live/messages";
 import type { MapId } from "~/maps/types";
 import { createEncounter } from "./encounter";
-import type { FightView } from "./fight";
+import type { DmFightView, FightView } from "./fight";
 import { FightSaver, type DmFight, type SaveStatus, type SendSave } from "./fight-saver";
 import type { Encounter } from "./types";
 import { useEncounter } from "./useEncounter";
@@ -30,9 +30,10 @@ const sendSave: SendSave = async (body) => {
  * undo, as before) and saved to the server, which shows everyone; the server's newer fight (a
  * player ending their turn, another tab) is taken up as it's pushed.
  */
-export function useSharedFight(fight: (DmFight & Pick<FightView, "hp">) | null, map?: MapId) {
+export function useSharedFight(fight: (DmFight & Partial<DmFightView>) | null, map?: MapId) {
   const [status, setStatus] = useState<SaveStatus>("saved");
   const [hp, setHp] = useState(fight?.hp ?? {});
+  const [freeMovement, setFreeMovement] = useState(!!fight?.freeMovement);
   const adopt = useRef<(encounter: Encounter) => void>(() => {});
   const [saver] = useState(
     () =>
@@ -64,10 +65,22 @@ export function useSharedFight(fight: (DmFight & Pick<FightView, "hp">) | null, 
     if (message.type !== "fight") return;
     const pushed = message.fight;
     if (pushed && !pushed.forDm) return;
-    // Sheets change whatever the tracker is doing.
+    // Sheets and settings change whatever the tracker is doing.
     setHp(pushed?.hp ?? {});
+    setFreeMovement(!!pushed?.freeMovement);
     if (saver.pushed(pushed)) adopt.current(pushed?.encounter ?? createEncounter());
   });
 
-  return { tracker, status, hp };
+  /** Lets players move whenever they like, or only on their turn. */
+  const changeFreeMovement = async (on: boolean) => {
+    setFreeMovement(on);
+    const response = await fetch(FIGHT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ intent: "setFreeMovement", on }),
+    }).catch(() => undefined);
+    if (!response?.ok) setFreeMovement(!on);
+  };
+
+  return { tracker, status, hp, freeMovement, changeFreeMovement };
 }

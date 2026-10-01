@@ -5,6 +5,7 @@ import type { Character } from "~/characters/types";
 import type { Services } from "~/context";
 import { FIGHT_ROOM, type ClientMessage } from "~/live/messages";
 import type { FogMask } from "~/maps/fog/types";
+import { fightAllowsMove, type Fight } from "~/combat/fight";
 import { canMoveToken } from "~/maps/tokens/permissions";
 import type { Token, TokenId } from "~/maps/tokens/types";
 import { tokensForViewer } from "~/maps/tokens/visibility";
@@ -24,6 +25,7 @@ interface DragContext {
   tokens: Token[];
   fog: FogMask;
   characters: Character[];
+  fight: Fight | undefined;
   readAt: number;
 }
 const DRAG_CONTEXT_MS = 1000;
@@ -76,6 +78,8 @@ export class Live {
 
   /** The fight changed (or started, or ended): everyone watching it hears it as they may see it. */
   async fightChanged(): Promise<void> {
+    // Whose turn it is decides who may drag.
+    this.dragContexts.clear();
     await this.hub.publish(FIGHT_ROOM, (viewer) => fightState(this.services, viewer));
     // Monsters' tokens take their names, hit points and hiding from the fight, wherever they are.
     await Promise.all(
@@ -132,6 +136,9 @@ export class Live {
     const controllers =
       token?.kind === "character" ? partyControllers(vault)(token.note) : "unknown";
     if (!token || !canMoveToken(viewer, token, controllers)) return;
+    if (token.kind === "character" && !fightAllowsMove(context.fight, mapId, token.note, viewer)) {
+      return;
+    }
 
     const name = account.member.name;
     const grab = this.holds.grab(mapId, id, {
@@ -153,6 +160,7 @@ export class Live {
           viewer: other,
           fog: context.fog,
           party: partyFor(vault, context.characters, other),
+          fight: context.fight,
         });
         return seen.length > 0
           ? { type: "moving", map: mapId, token: id, at, by: name }
@@ -167,12 +175,13 @@ export class Live {
     if (cached && Date.now() - cached.readAt < DRAG_CONTEXT_MS) return cached;
     const map = await this.services.maps.get(mapId);
     if (!map) return undefined;
-    const [tokens, fog, characters] = await Promise.all([
+    const [tokens, fog, characters, fight] = await Promise.all([
       this.services.tokens.onMap(mapId),
       this.services.fogs.get(mapId, map.image),
       this.services.characters.list(),
+      this.services.fight.get(),
     ]);
-    const context = { map, tokens, fog: fog.mask, characters, readAt: Date.now() };
+    const context = { map, tokens, fog: fog.mask, characters, fight, readAt: Date.now() };
     this.dragContexts.set(mapId, context);
     return context;
   }

@@ -10,6 +10,7 @@ import type { Route } from "./+types/combat-fight";
  * POST:
  * - `{ intent: "save", encounter, after, map? }` (the DM): saves the tracker's encounter, if the
  *   stored fight is still the revision it last had; otherwise 409 with the newer fight;
+ * - `{ intent: "setFreeMovement", on }` (the DM): players move any time, or on their turn;
  * - `{ intent: "end", monsters? }` (the DM): the fight is over, and its monsters' tokens are
  *   cleared, or left (`monsters: "leave"`) as markers;
  * - `{ intent: "endTurn" }` (a player): ends their own turn, if it is theirs.
@@ -32,6 +33,7 @@ const bodySchema = z.discriminatedUnion("intent", [
     after: z.number().int().nonnegative(),
     map: z.string().min(1).max(100).optional(),
   }),
+  z.object({ intent: z.literal("setFreeMovement"), on: z.boolean() }),
   /** The monsters' tokens are cleared, or left where they fell as markers. */
   z.object({ intent: z.literal("end"), monsters: z.enum(["clear", "leave"]).default("clear") }),
   z.object({ intent: z.literal("endTurn") }),
@@ -58,6 +60,12 @@ export async function action({ request, context }: Route.ActionArgs) {
 
   // Everything else is the DM's.
   if (viewer.role !== "dm") throw data("Not found", { status: 404 });
+  if (body.data.intent === "setFreeMovement") {
+    const changed = await services.fight.setFreeMovement(body.data.on);
+    if (!changed) return Response.json({ error: "There's no fight." }, { status: 404 });
+    await services.live.fightChanged();
+    return Response.json({ fight: await fightView(services, changed, viewer) });
+  }
   if (body.data.intent === "end") {
     const ended = await services.fight.get();
     const maps = ended

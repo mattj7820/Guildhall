@@ -66,6 +66,16 @@ describe("CurrentFight", () => {
     expect(active?.name).toBe("Goblin 1");
   });
 
+  it("lets players move freely, kept through the tracker's saves, without a new revision", async () => {
+    const fights = CurrentFight.inFolder(folder);
+    expect(await fights.setFreeMovement(true)).toBeUndefined();
+    await fights.save(encounter(combatants), 0);
+    expect(await fights.setFreeMovement(true)).toMatchObject({ freeMovement: true, revision: 1 });
+    await fights.save(encounter(combatants), 1);
+    expect((await fights.get())?.freeMovement).toBe(true);
+    expect(await fights.setFreeMovement(false)).not.toHaveProperty("freeMovement");
+  });
+
   it("ends the fight", async () => {
     const fights = CurrentFight.inFolder(folder);
     await fights.save(encounter(combatants), 0);

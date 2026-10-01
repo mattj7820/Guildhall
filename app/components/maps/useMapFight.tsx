@@ -37,7 +37,7 @@ interface Options {
  * Whatever's changed here moves the fight to this map.
  */
 export function useMapFight({ map, fight, catalogue, tokens, send, onFind }: Options) {
-  const { tracker, status, hp } = useSharedFight(fight, map.id);
+  const { tracker, status, hp, freeMovement, changeFreeMovement } = useSharedFight(fight, map.id);
   const { encounter } = tracker;
   const rolls = useRollLog(tracker.rng);
   const creatures = useMemo(
@@ -110,6 +110,19 @@ export function useMapFight({ map, fight, catalogue, tokens, send, onFind }: Opt
           <EndFight onEnded={() => setOpen(false)} className="ml-auto" />
         )}
       </div>
+      {encounter.phase === "active" && (
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={freeMovement}
+            onChange={(event) => void changeFreeMovement(event.target.checked)}
+          />
+          Free movement
+          <span className="text-stone-500">
+            {freeMovement ? "players move any time" : "players move on their turn"}
+          </span>
+        </label>
+      )}
       <TurnBar
         encounter={encounter}
         dispatch={dispatch}

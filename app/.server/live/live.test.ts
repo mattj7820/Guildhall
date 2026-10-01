@@ -308,6 +308,55 @@ describe("Live", () => {
       expect(dm.received.filter(moving("two"))).toEqual([]);
     });
 
+    it("in a fight on the map, passes on a player's drag only on their turn", async () => {
+      await placeOn(shared.id, aCharacterToken({ id: "one", map: shared.id, at: LIT }));
+      const fighting = [
+        player_("Fixture PC One", { entityId: "Party/Fixture PC One" }),
+        monster("Goblin 1"),
+      ];
+      await services.fight.save(inCombat(fighting, "Goblin 1"), 0, shared.id);
+      await live.fightChanged();
+      const player = await connect(DISCORD_IDS.playerOne, "player one");
+      const dm = await connect(DISCORD_IDS.dm);
+      await watching(player, dm);
+
+      player.send({ type: "drag", map: shared.id, token: "one", at: [0.2, 0.2] });
+      await briefly();
+      expect(dm.received.filter(moving("one"))).toEqual([]);
+
+      await services.fight.save(inCombat(fighting, "Fixture PC One"), 1);
+      await live.fightChanged();
+      const own = dm.next(moving("one"));
+      player.send({ type: "drag", map: shared.id, token: "one", at: [0.3, 0.3] });
+      await own;
+    });
+
+    it("never shows players the DM dragging a hidden monster", async () => {
+      await services.fight.save(
+        inCombat([monster("Ambusher", { hidden: true }), monster("Goblin 1")], "Goblin 1"),
+        0,
+        shared.id,
+      );
+      const token = (id: string, combatant: string): Token => ({
+        kind: "combatant",
+        id,
+        map: shared.id,
+        at: LIT,
+        combatant,
+      });
+      await placeOn(shared.id, token("ambusher", "Ambusher"));
+      await placeOn(shared.id, token("goblin", "Goblin 1"));
+      const player = await connect(DISCORD_IDS.playerOne, "player one");
+      const dm = await connect(DISCORD_IDS.dm);
+      await watching(player, dm);
+
+      dm.send({ type: "drag", map: shared.id, token: "ambusher", at: [0.3, 0.3] });
+      const goblin = player.next(moving("goblin"));
+      dm.send({ type: "drag", map: shared.id, token: "goblin", at: [0.3, 0.3] });
+      await goblin;
+      expect(player.received.filter(moving("ambusher"))).toEqual([]);
+    });
+
     it("keeps a token for whoever picked it up, and lets the DM take it", async () => {
       await placeOn(
         shared.id,

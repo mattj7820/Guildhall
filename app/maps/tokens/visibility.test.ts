@@ -112,12 +112,15 @@ describe("tokensForViewer", () => {
   });
 
   describe("monsters in the fight", () => {
-    const fight = encounter([
-      monster("Goblin 1", { hp: { current: 4, max: 7, temp: 0 } }),
-      monster("Goblin 2", { hp: { current: 0, max: 7, temp: 0 } }),
-      monster("Ambusher", { hidden: true }),
-      player("One", { entityId: "Party/One" }),
-    ]);
+    const fight = {
+      revision: 1,
+      encounter: encounter([
+        monster("Goblin 1", { hp: { current: 4, max: 7, temp: 0 } }),
+        monster("Goblin 2", { hp: { current: 0, max: 7, temp: 0 } }),
+        monster("Ambusher", { hidden: true }),
+        player("One", { entityId: "Party/One" }),
+      ]),
+    };
     const token = (combatant: string, at = LIT): Token => ({
       kind: "combatant",
       id: `t-${combatant}`,

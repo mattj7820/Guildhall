@@ -179,7 +179,7 @@ export async function loadTokens(
     viewer,
     fog: mask,
     party: partyFor(services.vault.current, characters, viewer),
-    fight: fight?.encounter,
+    fight,
   });
 }
 

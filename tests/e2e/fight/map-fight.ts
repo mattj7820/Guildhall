@@ -108,6 +108,25 @@ test.describe("A fight on a map", () => {
     await context.close();
   });
 
+  test("lets players move any time with Free movement, kept on reload", async ({ page }) => {
+    const { name } = await arena(page);
+    await twoMinionsPlaced(page, name);
+    const free = page.getByRole("checkbox", { name: /Free movement/ });
+    await expect(free).not.toBeChecked();
+    await free.check();
+    await expect(page.getByText("players move any time")).toBeVisible();
+    await expect
+      .poll(async () => (await (await page.request.get("/combat/fight")).json()).fight.freeMovement)
+      .toBe(true);
+    // The fight is on this map, so its page opens in Combat.
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Combat", exact: true })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(page.getByRole("checkbox", { name: /Free movement/ })).toBeChecked();
+  });
+
   test("takes a monster's token off the map when it leaves the fight", async ({ page }) => {
     const { name } = await arena(page);
     await twoMinionsPlaced(page, name);

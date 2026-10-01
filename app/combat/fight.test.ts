@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DM_VIEWER, PLAYER_VIEWER, type Viewer } from "~/campaign/types";
-import { fightForViewer, isTheirTurn, type Fight } from "./fight";
+import { fightAllowsMove, fightForViewer, isTheirTurn, type Fight } from "./fight";
 import { encounter, inCombat, monster, player } from "./test-builders";
 import { WHOLE_PARTY } from "./types";
 
@@ -18,6 +18,42 @@ const fightOn = (activeName: string): Fight => ({
   encounter: inCombat(combatants, activeName),
   revision: 3,
   map: "cave",
+});
+
+describe("fightAllowsMove", () => {
+  const party = [
+    player("Aria", { controller: one, entityId: "Party/Aria", initiative: 18 }),
+    player("Brim", { controller: two, entityId: "Party/Brim", initiative: 14 }),
+    monster("Goblin 1", { initiative: 9 }),
+  ];
+  const fight = (active: string, more: Partial<Fight> = {}): Fight => ({
+    encounter: inCombat(party, active),
+    revision: 1,
+    map: "cave",
+    ...more,
+  });
+
+  it("lets players move someone in the fight only on their turn", () => {
+    expect(fightAllowsMove(fight("Aria"), "cave", "Party/Aria", playerOne)).toBe(true);
+    expect(fightAllowsMove(fight("Brim"), "cave", "Party/Aria", playerOne)).toBe(false);
+    expect(fightAllowsMove(fight("Goblin 1"), "cave", "Party/Aria", playerOne)).toBe(false);
+  });
+
+  it("lets the DM move anyone, any time", () => {
+    expect(fightAllowsMove(fight("Goblin 1"), "cave", "Party/Aria", DM_VIEWER)).toBe(true);
+  });
+
+  it("doesn't hold back free movement, other maps, those not fighting, or a fight not started", () => {
+    const off = fight("Brim");
+    expect(fightAllowsMove({ ...off, freeMovement: true }, "cave", "Party/Aria", playerOne)).toBe(
+      true,
+    );
+    expect(fightAllowsMove(off, "town", "Party/Aria", playerOne)).toBe(true);
+    expect(fightAllowsMove(off, "cave", "Party/Cleo", playerOne)).toBe(true);
+    const setup = { ...off, encounter: { ...off.encounter, phase: "setup" as const } };
+    expect(fightAllowsMove(setup, "cave", "Party/Aria", playerOne)).toBe(true);
+    expect(fightAllowsMove(undefined, "cave", "Party/Aria", playerOne)).toBe(true);
+  });
 });
 
 describe("fightForViewer", () => {

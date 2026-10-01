@@ -3,7 +3,7 @@
  * tracker writes it whole (it's the only one changing it, apart from players ending their turn),
  * and each person gets their own view of it. Isomorphic and pure.
  */
-import type { Viewer } from "~/campaign/types";
+import type { EntityId, Viewer } from "~/campaign/types";
 import type { MapId } from "~/maps/types";
 import type { CombatantId, Encounter, HitPoints } from "./types";
 import { encounterForViewer, type EncounterView } from "./visibility";
@@ -15,11 +15,19 @@ export interface Fight {
   revision: number;
   /** The map it's fought on, if any. */
   map?: MapId;
+  /** Players move their tokens whenever they like, not only on their turn. */
+  freeMovement?: boolean;
 }
 
 /** The fight as one person may see it. */
 export type FightView = (
-  | { forDm: true; encounter: Encounter; revision: number; map?: MapId }
+  | {
+      forDm: true;
+      encounter: Encounter;
+      revision: number;
+      map?: MapId;
+      freeMovement?: boolean;
+    }
   | {
       forDm: false;
       view: EncounterView;
@@ -45,6 +53,7 @@ export function fightForViewer(fight: Fight, viewer: Viewer): FightView {
       encounter: fight.encounter,
       revision: fight.revision,
       ...(fight.map && { map: fight.map }),
+      ...(fight.freeMovement && { freeMovement: true }),
     };
   }
   return {
@@ -53,6 +62,24 @@ export function fightForViewer(fight: Fight, viewer: Viewer): FightView {
     ...(fight.map && { map: fight.map }),
     theirTurn: isTheirTurn(fight.encounter, viewer),
   };
+}
+
+/**
+ * Whether the fight lets this viewer move a party member's token on this map: in a fight on the
+ * map, a player moves someone in it only on their turn, unless the DM has said movement is free.
+ * The DM moves anything, any time. Who may move the token at all is decided elsewhere.
+ */
+export function fightAllowsMove(
+  fight: Fight | undefined,
+  map: MapId,
+  note: EntityId,
+  viewer: Viewer,
+): boolean {
+  if (viewer.role === "dm" || !fight || fight.map !== map || fight.freeMovement) return true;
+  const { encounter } = fight;
+  if (encounter.phase !== "active") return true;
+  const fighting = encounter.combatants.find((c) => c.kind === "player" && c.entityId === note);
+  return !fighting || fighting.id === encounter.activeId;
 }
 
 /**
