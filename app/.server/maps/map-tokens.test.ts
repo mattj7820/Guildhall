@@ -2,7 +2,9 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { encounter, monster } from "~/combat/test-builders";
 import type { TokenAction } from "~/maps/tokens/actions";
+import type { Token } from "~/maps/tokens/types";
 import { aCharacterToken, aMarker } from "~/maps/tokens/test-builders";
 import { DataFileError } from "../data/json-store";
 import { MapTokens } from "./map-tokens";
@@ -17,7 +19,7 @@ const everything = () => true;
 const pc = aCharacterToken({ id: "pc", map: "world", at: [0.1, 0.1] });
 const inn = aMarker({ id: "inn", map: "world" });
 const cellar = aMarker({ id: "cellar", map: "keep" });
-const place = (token: typeof pc | typeof inn): TokenAction => ({ type: "place", token });
+const place = (token: Token): TokenAction => ({ type: "place", token });
 
 describe("MapTokens", () => {
   it("has no tokens until some are placed", async () => {
@@ -83,6 +85,51 @@ describe("MapTokens", () => {
       [0.2, 0.2],
       [0.8, 0.8],
     ]);
+  });
+
+  describe("monsters leaving the fight", () => {
+    const fight = encounter([monster("Goblin 1"), monster("Ambusher", { hidden: true })]);
+    const onMap = (combatant: string, map = "world"): Token => ({
+      kind: "combatant",
+      id: `t-${combatant}`,
+      map,
+      at: [0.5, 0.5],
+      size: 2,
+      combatant,
+    });
+
+    it("clears the fight's monsters, and says which maps changed", async () => {
+      const tokens = MapTokens.inFolder(folder);
+      await tokens.apply("world", [place(onMap("Goblin 1")), place(inn)], everything);
+      await tokens.apply("keep", [place(onMap("Ambusher", "keep"))], everything);
+      expect((await tokens.removeCombatants(fight.combatants, false)).sort()).toEqual([
+        "keep",
+        "world",
+      ]);
+      expect(await tokens.list()).toEqual([inn]);
+    });
+
+    it("leaves them where they fell as markers, a hidden one for the DM only", async () => {
+      const tokens = MapTokens.inFolder(folder);
+      await tokens.apply("world", [place(onMap("Goblin 1")), place(onMap("Ambusher"))], everything);
+      await tokens.removeCombatants(fight.combatants, true);
+      expect(await tokens.list()).toEqual([
+        expect.objectContaining({
+          kind: "marker",
+          name: "Goblin 1",
+          visibility: "players",
+          size: 2,
+        }),
+        expect.objectContaining({ kind: "marker", name: "Ambusher", visibility: "dm" }),
+      ]);
+    });
+
+    it("leaves tokens of monsters from other fights alone", async () => {
+      const tokens = MapTokens.inFolder(folder);
+      await tokens.apply("world", [place(onMap("Someone else"))], everything);
+      expect(await tokens.removeCombatants(fight.combatants, false)).toEqual([]);
+      expect(await tokens.list()).toHaveLength(1);
+    });
   });
 
   it("forgets a deleted map's tokens, leaving others", async () => {

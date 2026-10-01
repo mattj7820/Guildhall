@@ -3,6 +3,7 @@
  * checked by the server, drawn and moved in the browser.
  */
 import type { EntityId, Visibility } from "~/campaign/types";
+import type { CombatantId } from "~/combat/types";
 import type { AreaId, MapId, Point } from "../types";
 
 export type TokenId = string;
@@ -56,7 +57,16 @@ export interface MarkerToken extends TokenBase {
   visibility: Visibility;
 }
 
-export type Token = CharacterToken | MarkerToken;
+/**
+ * A monster in the fight, by its combatant: its name, size and hit points come from the fight.
+ * Placed when it joins the fight on a map, and cleared (or left as a marker) when the fight ends.
+ */
+export interface CombatantToken extends TokenBase {
+  kind: "combatant";
+  combatant: CombatantId;
+}
+
+export type Token = CharacterToken | MarkerToken | CombatantToken;
 
 /** A token as one viewer may see it, ready to draw. */
 export interface TokenView {
@@ -80,6 +90,12 @@ export interface TokenView {
   visibility?: Visibility;
   /** DM only: which party member, for the party panel. (A note's path could name a secret.) */
   note?: EntityId;
+  /** The combatant it stands for in the fight: a monster's own, or a party member's. */
+  combatant?: CombatantId;
+  /** A monster at 0 hit points. */
+  down?: boolean;
+  /** DM only: a monster's hit points, for its bar. */
+  hp?: { current: number; max: number };
 }
 
 /** A party member as a badge shows them. */

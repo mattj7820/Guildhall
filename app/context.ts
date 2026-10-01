@@ -4,6 +4,7 @@ import type { DiscordAuth } from "~/.server/auth/discord";
 import type { Characters } from "~/.server/characters/characters";
 import type { Sessions } from "~/.server/auth/sessions";
 import type { Live } from "~/.server/live/live";
+import type { CurrentFight } from "~/.server/combat/current-fight";
 import type { PreparedEncounters } from "~/.server/combat/prepared-encounters";
 import type { Config } from "~/.server/config";
 import type { CampaignMaps } from "~/.server/maps/campaign-maps";
@@ -18,6 +19,8 @@ import { DM_VIEWER, type Viewer } from "~/campaign/types";
 export interface Services {
   config: Config;
   vault: LiveVault;
+  /** The fight the table is in, kept in the data folder and shown to everyone. */
+  fight: CurrentFight;
   /** Combat encounters prepared ahead of a session, kept in the data folder. */
   preparedEncounters: PreparedEncounters;
   /** Interactive maps and their areas, kept in the data folder. */

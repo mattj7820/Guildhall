@@ -64,7 +64,7 @@ export function partyFor(
   };
 }
 
-type Deps = Pick<Services, "vault" | "characters" | "tokens" | "fogs">;
+type Deps = Pick<Services, "vault" | "characters" | "tokens" | "fogs" | "fight">;
 
 /**
  * Who's inside each area of a map that leads to a deeper map, as this viewer may see them: the
@@ -168,16 +168,18 @@ export async function loadTokens(
   viewer: Viewer,
   fog?: FogMask,
 ): Promise<TokenView[]> {
-  const [tokens, characters, mask] = await Promise.all([
+  const [tokens, characters, mask, fight] = await Promise.all([
     services.tokens.onMap(map.id),
     services.characters.list(),
     fog ?? services.fogs.get(map.id, map.image).then((stored) => stored.mask),
+    services.fight.get(),
   ]);
   return tokensForViewer({
     tokens,
     viewer,
     fog: mask,
     party: partyFor(services.vault.current, characters, viewer),
+    fight,
   });
 }
 

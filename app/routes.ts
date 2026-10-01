@@ -8,6 +8,7 @@ export default [
     route("*", "routes/wiki-note.tsx"),
   ]),
   route("combat", "routes/combat.tsx"),
+  route("combat/fight", "routes/combat-fight.ts"),
   route("combat/prepared", "routes/combat-prepared.tsx"),
   route("combat/prepared/:id", "routes/combat-prepared-edit.tsx"),
   route("maps", "routes/maps.tsx"),

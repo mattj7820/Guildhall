@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DM_VIEWER, PLAYER_VIEWER, type Viewer } from "~/campaign/types";
 import { encounter, inCombat, monster, player } from "./test-builders";
+import { WHOLE_PARTY } from "./types";
 import { canSeeCombatantDetails, encounterForViewer } from "./visibility";
 
 const playerOne: Viewer = { role: "player", playerId: "player one" };
@@ -30,6 +31,12 @@ describe("canSeeCombatantDetails", () => {
     expect(visible.map((c) => c.name)).toEqual(["Aria", "Blink Dog"]);
   });
 
+  it("lets every player see a companion the whole party shares, even one assigned to no one", () => {
+    const shared = player("Blink Dog", { controller: WHOLE_PARTY });
+    expect(canSeeCombatantDetails({ role: "player", playerId: "jo" }, shared)).toBe(true);
+    expect(canSeeCombatantDetails(PLAYER_VIEWER, shared)).toBe(true);
+  });
+
   it("never lets a player see a monster's details", () => {
     const goblin = fight.combatants.find((c) => c.kind === "monster")!;
     expect(canSeeCombatantDetails(playerOne, goblin)).toBe(false);
@@ -52,6 +59,17 @@ describe("encounterForViewer", () => {
         { id: "Goblin 1", name: "Goblin 1", isActive: false },
       ],
     });
+  });
+
+  it("leaves a hidden monster out entirely, even on its own turn", () => {
+    const ambush = inCombat(
+      [player("Aria", { controller: one }), monster("Ambusher", { hidden: true })],
+      "Ambusher",
+    );
+    const view = encounterForViewer(ambush, playerOne);
+    expect(view.turnOrder.map((entry) => entry.name)).toEqual(["Aria"]);
+    expect(view.turnOrder.some((entry) => entry.isActive)).toBe(false);
+    expect(JSON.stringify(view)).not.toContain("Ambusher");
   });
 
   it("gives details only for the viewer's own combatants", () => {

@@ -1,16 +1,16 @@
 import { useMemo, useState } from "react";
 import { Link, useFetcher, useNavigate } from "react-router";
 import { startPrepared, type PartyChoice } from "~/combat/prepared";
-import { createEncounter } from "~/combat/encounter";
-import { browserStorage, saveEncounter, type LoadResult } from "~/combat/storage";
+import type { FightView } from "~/combat/fight";
+import type { DmFight } from "~/combat/fight-saver";
+import { browserStorage, clearEncounter, type LoadResult } from "~/combat/storage";
+import { useSharedFight } from "~/combat/useSharedFight";
 import {
   statblockKey,
   type CombatantId,
   type CombatCatalogue,
-  type Encounter,
   type PreparedEncounter,
 } from "~/combat/types";
-import { useEncounter } from "~/combat/useEncounter";
 import { useRollLog } from "~/dice/useRollLog";
 import { AddCombatants } from "./AddCombatants";
 import { CombatantRow } from "./CombatantRow";
@@ -18,6 +18,7 @@ import { CombatNav } from "./CombatNav";
 import { SaveAsPrepared } from "./SaveAsPrepared";
 import { StartPrepared } from "./StartPrepared";
 import { DiceRoller } from "./DiceRoller";
+import { FightStatus } from "./FightStatus";
 import { StatblockPanel } from "./StatblockPanel";
 import { panelClass } from "~/components/styles";
 import { TiePrompts } from "./TiePrompts";
@@ -25,23 +26,31 @@ import { TurnBar } from "./TurnBar";
 
 export function CombatTracker({
   catalogue,
+  fight,
   saved,
   starting,
 }: {
   catalogue: CombatCatalogue;
+  /** The fight the table is in, from the server. */
+  fight: (DmFight & Pick<FightView, "hp">) | null;
+  /** A fight this browser kept from before fights were kept on the server. */
   saved: LoadResult;
   /** A prepared encounter to start (`?start=`); null if it no longer exists. */
   starting?: PreparedEncounter | null;
 }) {
-  const [initial] = useState(() =>
-    saved.status === "restored" ? saved.encounter : createEncounter(),
-  );
-  const [save] = useState(() => {
-    const storage = browserStorage();
-    return (encounter: Encounter) => (storage ? saveEncounter(storage, encounter) : false);
-  });
-  const tracker = useEncounter(initial, save);
+  const { tracker, status, hp } = useSharedFight(fight);
   const { encounter, dispatch } = tracker;
+  // A fight left in this browser from before can be brought over, once, if there's none here.
+  const [leftover, setLeftover] = useState(() =>
+    !fight && saved.status === "restored" && saved.encounter.combatants.length > 0
+      ? saved.encounter
+      : undefined,
+  );
+  function forgetLeftover() {
+    const storage = browserStorage();
+    if (storage) clearEncounter(storage);
+    setLeftover(undefined);
+  }
   const rolls = useRollLog(tracker.rng);
 
   const creatures = useMemo(
@@ -96,17 +105,26 @@ export function CombatTracker({
           </Link>
         </p>
       )}
-      {saved.status === "unreadable" && (
-        <p role="alert" className="mb-4 rounded-md bg-amber-100 px-3 py-2 text-sm text-amber-900">
-          Couldn't restore the saved encounter (it may be from an older version), so this is a new
-          one. The old one is replaced as soon as you change anything.
-        </p>
+      {leftover && (
+        <div role="alert" className="mb-4 rounded-md bg-amber-100 px-3 py-2 text-sm text-amber-900">
+          This browser has a fight from before fights were kept for everyone to see.{" "}
+          <button
+            type="button"
+            className="underline"
+            onClick={() => {
+              tracker.replace(leftover);
+              forgetLeftover();
+            }}
+          >
+            Bring it over
+          </button>{" "}
+          or{" "}
+          <button type="button" className="underline" onClick={forgetLeftover}>
+            forget it
+          </button>
+        </div>
       )}
-      {tracker.saveFailed && (
-        <p role="alert" className="mb-4 rounded-md bg-rose-100 px-3 py-2 text-sm text-rose-900">
-          This browser isn't saving the encounter, so reloading the page would lose it.
-        </p>
-      )}
+      <FightStatus status={status} />
 
       <TurnBar
         encounter={encounter}
@@ -141,6 +159,7 @@ export function CombatTracker({
                     combatant={combatant}
                     isActive={combatant.id === encounter.activeId}
                     isShown={combatant.id === shownId}
+                    sheetHp={hp[combatant.id]}
                     isFirst={index === 0}
                     isLast={index === encounter.combatants.length - 1}
                     dispatch={dispatch}

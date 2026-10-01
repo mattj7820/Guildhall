@@ -9,12 +9,14 @@ locations, maps, characters, sessions).
 - **Hub shell:** a home page linking to table tools (Roll20) and to Guildhall's own modules.
 - **Campaign wiki (read-only):** browse and search the Obsidian vault, with DM/player preview.
   Shared notes can keep DM-only parts: a `## DM` section or a `> [!dm]` callout.
-- **Combat tracker (first slice, DM only):** encounters built from vault statblocks and PC notes,
-  initiative with reroll tie-breaks, turns and rounds, monster HP and conditions, the statblock
-  alongside, a dice roller and undo. The encounter is kept in the browser.
+- **Combat tracker:** encounters built from vault statblocks and PC notes, initiative with
+  reroll tie-breaks, turns and rounds, monster HP and conditions, the statblock alongside, a dice
+  roller and undo. One fight for the table, kept on the server and pushed live: players follow
+  the turn order, see their own characters (hit points from their sheets) and end their own turn.
+  Hidden monsters (ambushers) stay out of players' sight until revealed.
 - **Prepared encounters:** set up fights before a session (monsters with rolled HP, companions,
   notes), then start them at the table by picking who's playing. Kept in the server's data folder,
-  and reusable.
+  and reusable. One set up on a map starts there, with its monsters in place.
 - **Click-to-roll:** attacks, damage, checks, saves, skills and recharges roll straight from the
   tracker's statblocks, labelled, with natural 20s arming a critical-damage roll.
 - **Interactive maps (first slice):** maps from vault images, with outlined areas that lead to
@@ -37,6 +39,11 @@ locations, maps, characters, sessions).
   hidden). Tokens fill their squares, come in sizes from Medium to Gargantuan, and snap to squares
   (a switch per map, and Alt to place freely). A toolbar over the map measures true distances
   with turns, and lays out spell areas (sphere, cube, cone, line) showing who's caught.
+- **The shared fight on the map:** Combat on a map's page runs the tracker beside it, with a turn
+  strip over it. Monsters' tokens are linked to their combatants (sized from their statblocks, an
+  HP bar for the DM, grey when down), the active one ringed for everyone. Players move only on
+  their own turn, unless the DM allows free movement. End fight clears the monsters or leaves
+  them as markers.
 - **Character sheets (first slice):** a sheet per PC note, typed in from paper, with the paper
   sheet's own maths (modifiers, proficiency, passives) and typed overrides; click any bonus to roll
   it; hit points with Heal and Damage. Players edit only their own; others see a summary. Changes
@@ -51,25 +58,21 @@ locations, maps, characters, sessions).
 
 ## Parking lot
 
-- **Player view polish (next):** go through the wiki and combat tracker as a signed-in player:
-  the turn order for everyone, and each player's own characters shown as theirs
-  (`Viewer.playerId` is now set).
+- **Player view polish:** go through the wiki as a signed-in player, with each player's own
+  characters shown as theirs.
 - **Battle maps, next (towards dropping Roll20):**
-  - **The shared fight on the map (next slice):** the combat tracker's encounter held on the
-    server (the same reducer) and pushed through the live hub; the tracker in the map page's side
-    panel; monster tokens linked to their combatants (sized from their statblocks), the active
-    one ringed, HP bars for the DM only, conditions on tokens; the turn order for players, who
-    move only on their own turn (the DM can override, and switch to free movement). `/combat`
-    stays, as the same tracker for fights without a map.
-  - **Effects:** an event channel over the live hub (hits, misses, damage), with a turn banner,
+  - **Effects (next):** an event channel over the live hub (hits, misses, damage), with a turn banner,
     floating damage and a hit or miss flash, respecting reduced motion. Attack animations later.
   - Rulers and spell areas shown to everyone; placing a spell area from a token by keyboard.
+  - **The fight, more:** conditions shown on tokens; a player's own tokens' turns flagged ("your
+    turn") with a sound; moving a whole fight to another map; tidying markers left after a fight
+    in one click; a fight's party brought in by those chosen to play, not the whole party.
 - **Tokens, next steps:** fog clearing around the party as their tokens move, if the DM wants it;
   the DM's fog tools and token placing in the map's toolbar; icons on markers; a lock for the DM to
   stop players moving mid-scene; undo for the DM's moves; tokens for NPCs linked to their notes;
   touch dragging for tablets and phones.
 - **Live, more:** the same hub for shared dice rolls (with the DM's hidden rolls), character sheet
-  changes pushed rather than polled, and the combat tracker's turn order for players.
+  changes pushed rather than polled.
 - **Hosting, next steps:** backups of the data folder (Dokploy volume backups, or a nightly copy to
   a separate Drive folder), a "last synced" indicator and "Sync now" for the vault copy, and
   Discord avatars.
@@ -82,8 +85,7 @@ locations, maps, characters, sessions).
     to `deriveSheet` and could flag a typed number they disagree with. The SRD (5.1 and 5.2, CC BY
     4.0) could supply the rules data and a catalogue of mundane gear for quick add, with its
     attribution.
-  - **Live:** HP from sheets in the combat tracker's PC rows, and changes pushed to open sheets
-    over websockets instead of polling (with the counters-on-maps work).
+  - **Live:** changes pushed to open sheets over websockets instead of polling.
   - **Companions, more:** a fuller companion view (sidekick levels, its own rolls from the
     statblock), beyond today's card, hit points and shared bag.
   - **Bag, more:** vault images as item icons, an item's source linked to the map area where it
@@ -93,10 +95,8 @@ locations, maps, characters, sessions).
 - **Combat tracker, next steps:**
   - **Target and apply:** after a hit, click the target to apply the rolled damage.
   - Click-to-roll in wiki statblocks, and in the prepared-encounter editor.
-  - **Player view:** the turn order for everyone, with details only for your own PC and
-    companions. The model and filter exist (`encounterForViewer`); this needs real player
-    identities and a server-held, shared encounter (websockets on the same Express server).
-  - Hidden combatants (ambushers), condition durations, a tablet layout.
+  - Condition durations, a tablet layout, damage to PCs from the tracker applied to their
+    sheets.
   - Prepared encounters, next steps: link one to a wiki location or session note, group them by
     session, import Initiative Tracker `encounter` blocks from Obsidian.
   - Later: an overlay on the battle map, with flashy turn transitions and, one day, attack

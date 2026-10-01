@@ -3,6 +3,7 @@ import type { EntityId, Viewer } from "~/campaign/types";
 import { characterAccess, type Controllers } from "~/characters/permissions";
 import { pointRevealed } from "../fog/mask";
 import type { FogMask } from "../fog/types";
+import { fightAllowsMove, type Fight } from "~/combat/fight";
 import type { Token, TokenView } from "./types";
 
 /** A party member as this viewer may know them: missing if they may not know of them at all. */
@@ -18,6 +19,8 @@ interface Input {
   viewer: Viewer;
   fog: FogMask;
   party: (note: EntityId) => PartyMember | undefined;
+  /** The fight the table is in, which monsters' tokens stand for, and party members are in. */
+  fight?: Fight;
 }
 
 /**
@@ -29,10 +32,35 @@ interface Input {
  * Anything else is left out entirely, so it can't be found in the page's data. The DM gets every
  * token, with what players can't see of it. Tokens under the fog are "under" by their centre.
  */
-export function tokensForViewer({ tokens, viewer, fog, party }: Input): TokenView[] {
+export function tokensForViewer({ tokens, viewer, fog, party, fight }: Input): TokenView[] {
   const views: TokenView[] = [];
   for (const token of tokens) {
     const revealed = pointRevealed(fog, token.at);
+    if (token.kind === "combatant") {
+      const monster = fight?.encounter.combatants.find((c) => c.id === token.combatant);
+      const secret = monster?.kind !== "monster" || !!monster.hidden;
+      // Players see a monster in the fight, unless it's hidden, where it's revealed.
+      if (viewer.role !== "dm" && (secret || !revealed)) continue;
+      views.push({
+        id: token.id,
+        kind: "combatant",
+        at: token.at,
+        size: token.size ?? 1,
+        name: monster?.name ?? "Not in the fight",
+        movable: viewer.role === "dm",
+        combatant: token.combatant,
+        ...(monster?.kind === "monster" && monster.hp.current <= 0
+          ? { colour: "grey" as const, down: true }
+          : { colour: "red" as const }),
+        ...(viewer.role === "dm" && {
+          ...(monster?.kind === "monster" && {
+            hp: { current: monster.hp.current, max: monster.hp.max },
+          }),
+          ...(secret ? { hidden: "secret" as const } : !revealed && { hidden: "fog" as const }),
+        }),
+      });
+      continue;
+    }
     if (token.kind === "marker") {
       const secret = token.visibility !== "players";
       if (viewer.role !== "dm" && (secret || !revealed)) continue;
@@ -58,6 +86,9 @@ export function tokensForViewer({ tokens, viewer, fog, party }: Input): TokenVie
     if (access === "none") continue;
     const theirs = access === "edit";
     if (viewer.role !== "dm" && !theirs && !revealed) continue;
+    const inFight = fight?.encounter.combatants.find(
+      (c) => c.kind === "player" && c.entityId === token.note,
+    );
     views.push({
       id: token.id,
       kind: "character",
@@ -65,7 +96,8 @@ export function tokensForViewer({ tokens, viewer, fog, party }: Input): TokenVie
       size: token.size ?? 1,
       name: member.name,
       ...(member.portraitUrl && { portraitUrl: member.portraitUrl }),
-      movable: theirs,
+      movable: theirs && fightAllowsMove(fight, token.map, token.note, viewer),
+      ...(inFight && { combatant: inFight.id }),
       ...(viewer.role === "dm"
         ? { note: token.note, ...(!revealed && { hidden: "fog" as const }) }
         : !revealed && { inTheDark: true }),

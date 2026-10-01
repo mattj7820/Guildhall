@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
+import type { DmFightView } from "~/combat/fight";
+import type { CombatCatalogue, PreparedEncounter } from "~/combat/types";
 import { buttonClass, primaryButtonClass } from "~/components/styles";
 import { areaRevealed } from "~/maps/fog/coverage";
 import type { FogMask } from "~/maps/fog/types";
@@ -25,8 +27,9 @@ import { MapSwitch } from "./MapSwitch";
 import { GridLayer } from "./GridLayer";
 import { InsideBadges } from "./InsideBadges";
 import { useBattleTools } from "./useBattleTools";
+import { useMapFight } from "./useMapFight";
 import { TOKEN_RADIUS, TokenLayer } from "./TokenLayer";
-import { TokenPanel, type Placing } from "./TokenPanel";
+import { PlacingHint, TokenPanel, type Placing } from "./TokenPanel";
 import { useFogTools } from "./useFogTools";
 
 /** How dark the fog is for the DM, who sees the map through it. */
@@ -50,12 +53,20 @@ export function MapViewer({
   inside: insideFromPage,
   party,
   images,
+  fight: fightFromPage,
+  catalogue,
+  starting,
 }: {
   map: MapView;
   tokens: TokenView[];
   inside: InsideBadge[];
   party: PartyPlacement[];
   images: string[];
+  /** The fight the table is in, wherever it is. */
+  fight: DmFightView | null;
+  catalogue: CombatCatalogue;
+  /** A prepared fight to start here; null if it no longer exists. */
+  starting?: PreparedEncounter | null;
 }) {
   const [selectedId, setSelectedId] = useState<string>();
   const selected = map.areas.find((area) => area.id === selectedId);
@@ -73,12 +84,28 @@ export function MapViewer({
   const [placing, setPlacing] = useState<Placing>();
   const [selectedTokenId, setSelectedTokenId] = useState<string>();
   const selectedToken = tokens.find((token) => token.id === selectedTokenId);
+  const fight = useMapFight({
+    map,
+    fight: fightFromPage,
+    catalogue,
+    tokens,
+    send,
+    onFind: find,
+    starting,
+    onBringParty: () => setPlacing({ kind: "party", name: "the whole party" }),
+  });
+  const combat = fight.open && !fogMode;
+  const placingMonsters = combat && fight.placing && !presenting;
   // The map's tools belong to battle maps, and step aside for the fog tools and placing tokens.
   const battle = useBattleTools({
     map,
     tokens: tokens,
-    enabled: !fogMode && !presenting && !placing,
+    enabled: !fogMode && !presenting && !placing && !placingMonsters,
   });
+  const selectToken = (token: TokenView) => {
+    setSelectedTokenId(token.id);
+    fight.selectToken(token);
+  };
 
   /** Where a token placed here lands: on a square while tokens snap to the grid. */
   const landing = (point: Point): Point => {
@@ -147,6 +174,17 @@ export function MapViewer({
           )}
           <button
             type="button"
+            aria-pressed={combat}
+            className={combat ? primaryButtonClass : buttonClass}
+            onClick={() => {
+              fight.setOpen(!combat);
+              setFogMode(false);
+            }}
+          >
+            Combat
+          </button>
+          <button
+            type="button"
             aria-pressed={fogMode}
             className={fogMode ? primaryButtonClass : buttonClass}
             onClick={() => setFogMode(!fogMode)}
@@ -196,6 +234,7 @@ export function MapViewer({
       >
         <div className="relative flex min-h-[50vh] flex-1">
           {battle.toolbar}
+          {combat && !presenting && fight.overMap}
           <MapCanvas
             name={map.name}
             size={map.size}
@@ -205,6 +244,7 @@ export function MapViewer({
             onKeyDown={(event) => {
               if (event.key === "Escape" && placing) setPlacing(undefined);
             }}
+
             focus={focus}
           >
             {(canvas) => (
@@ -257,13 +297,29 @@ export function MapViewer({
                   size={map.size}
                   canvas={canvas}
                   selectedId={presenting ? undefined : selectedTokenId}
-                  onSelect={presenting ? undefined : (token) => setSelectedTokenId(token.id)}
+                  onSelect={presenting ? undefined : selectToken}
+                  activeId={fight.activeTokenId}
                   mover={presenting ? undefined : mapTokens}
                   grid={map.grid}
                   snap={map.snapToGrid}
                   takeHeld
                 />
                 {battle.layers(canvas)}
+                {placingMonsters && !placing && (
+                  <rect
+                    {...map.size}
+                    fill="transparent"
+                    className="cursor-crosshair"
+                    aria-label="Place the monsters"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      const point = canvas.clientToImage(event.clientX, event.clientY);
+                      if (point) {
+                        fight.placeMonsters(normalise(point[0], point[1], map.size), canvas.scale);
+                      }
+                    }}
+                  />
+                )}
                 {placing && !presenting && (
                   <rect
                     {...map.size}
@@ -279,7 +335,7 @@ export function MapViewer({
               </>
             )}
           </MapCanvas>
-          {!presenting && map.areas.length > 0 && <Legend />}
+          {!presenting && !combat && map.areas.length > 0 && <Legend />}
           {presenting && (
             <button
               type="button"
@@ -293,9 +349,19 @@ export function MapViewer({
         {!presenting && (
           <aside
             aria-label="Map details"
-            className="flex w-full flex-col gap-4 overflow-y-auto border-stone-200 p-4 md:w-80 md:border-l dark:border-stone-800"
+            className={`flex w-full flex-col gap-4 overflow-y-auto border-stone-200 p-4 md:border-l dark:border-stone-800 ${
+              // The tracker needs the room.
+              combat ? "md:w-[27rem]" : "md:w-80"
+            }`}
           >
-            {fogMode ? (
+            {combat ? (
+              <>
+                {placing && (
+                  <PlacingHint placing={placing} onCancel={() => setPlacing(undefined)} />
+                )}
+                {fight.panel}
+              </>
+            ) : fogMode ? (
               <FogAreaList
                 areas={map.areas}
                 mask={fog.mask}
@@ -319,7 +385,7 @@ export function MapViewer({
                 </p>
               )
             )}
-            {!fogMode && (
+            {!fogMode && !combat && (
               <TokenPanel
                 mapId={map.id}
                 party={party}
@@ -335,7 +401,7 @@ export function MapViewer({
                 send={(actions) => void send(actions)}
               />
             )}
-            <AreaList areas={map.areas} onSelect={(area) => setSelectedId(area.id)} />
+            {!combat && <AreaList areas={map.areas} onSelect={(area) => setSelectedId(area.id)} />}
           </aside>
         )}
       </div>

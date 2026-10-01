@@ -2,7 +2,9 @@ import type { Player } from "~/campaign/types";
 import type { Rng } from "~/dice/rng";
 import { createEncounter, perform, rollMonsterInitiatives } from "./encounter";
 import { newId } from "~/shared/ids";
-import type { Combatant, Encounter, PartyMember, PreparedEncounter } from "./types";
+import type { MapId, Point } from "~/maps/types";
+import { mapUrl } from "~/maps/urls";
+import type { Combatant, CombatantId, Encounter, PartyMember, PreparedEncounter } from "./types";
 
 /** A party member who can join a fight: one whose note says who plays them. */
 export type PartyChoice = PartyMember & { player: Player };
@@ -18,9 +20,41 @@ export function startPrepared(
   rng: Rng,
   createId: () => string = newId,
 ): Encounter {
+  return start(prepared, party, rng, createId).encounter;
+}
+
+/**
+ * Starting a prepared fight set up on a map: the fight as `startPrepared`, and where its monsters
+ * stand, by their new IDs. A monster added since it was placed has no place yet.
+ */
+export function startPreparedOnMap(
+  prepared: PreparedEncounter,
+  party: PartyChoice[],
+  rng: Rng,
+  createId: () => string = newId,
+): { encounter: Encounter; placed: { combatant: CombatantId; at: Point }[] } {
+  const { encounter, ids } = start(prepared, party, rng, createId);
+  const placed = Object.entries(prepared.placement?.at ?? {}).flatMap(([was, at]) => {
+    const combatant = ids.get(was);
+    return combatant ? [{ combatant, at }] : [];
+  });
+  return { encounter, placed };
+}
+
+function start(
+  prepared: PreparedEncounter,
+  party: PartyChoice[],
+  rng: Rng,
+  createId: () => string,
+): { encounter: Encounter; ids: Map<CombatantId, CombatantId> } {
+  const ids = new Map<CombatantId, CombatantId>();
   let state: Encounter = {
     ...createEncounter(createId()),
-    combatants: prepared.encounter.combatants.map((c) => ({ ...unrolled(c), id: createId() })),
+    combatants: prepared.encounter.combatants.map((c) => {
+      const id = createId();
+      ids.set(c.id, id);
+      return { ...unrolled(c), id };
+    }),
   };
   for (const member of party) {
     state = perform(
@@ -31,11 +65,12 @@ export function startPrepared(
         name: member.name,
         controller: member.player,
         entityId: member.entityId,
+        statblock: member.statblock,
       },
       rng,
     );
   }
-  return perform(state, rollMonsterInitiatives(state, rng), rng);
+  return { encounter: perform(state, rollMonsterInitiatives(state, rng), rng), ids };
 }
 
 /**
@@ -49,6 +84,19 @@ export function toPrepared(encounter: Encounter): Encounter {
       .filter((c) => c.kind === "monster" || !c.entityId)
       .map(unrolled),
   };
+}
+
+/**
+ * Where starting a prepared encounter happens: on its map, if it was set up on one that's still
+ * there, else in the tracker.
+ */
+export function preparedStartUrl(
+  prepared: Pick<PreparedEncounter, "id" | "placement">,
+  maps: ReadonlySet<MapId>,
+): string {
+  const start = `?start=${encodeURIComponent(prepared.id)}`;
+  const map = prepared.placement?.map;
+  return map && maps.has(map) ? `${mapUrl(map)}${start}` : `/combat${start}`;
 }
 
 /** "3× Goblin, 1× Bugbear" and "Blink Dog (Sam)", for the list of prepared encounters. */

@@ -1,7 +1,7 @@
 import type { FormEvent } from "react";
 import type { EncounterAction } from "~/combat/encounter";
 import { isBloodied, isDown } from "~/combat/turns";
-import { CONDITIONS, type Combatant, type MonsterCombatant } from "~/combat/types";
+import { CONDITIONS, type Combatant, type HitPoints, type MonsterCombatant } from "~/combat/types";
 import { buttonClass, iconButtonClass, inputClass } from "~/components/styles";
 
 type Dispatch = (action: EncounterAction) => void;
@@ -20,6 +20,7 @@ export function CombatantRow({
   dispatch,
   onShowStatblock,
   onRerollHp,
+  sheetHp,
 }: {
   combatant: Combatant;
   mode?: "live" | "prep";
@@ -31,6 +32,8 @@ export function CombatantRow({
   onShowStatblock: () => void;
   /** Prep mode: rolls the monster's HP again; absent when its statblock is gone. */
   onRerollHp?: () => void;
+  /** A party member's hit points, from their character sheet. */
+  sheetHp?: HitPoints;
 }) {
   const { id, name } = combatant;
   const down = isDown(combatant);
@@ -61,13 +64,22 @@ export function CombatantRow({
             {name}
             {down && <Badge tone="down">Down</Badge>}
             {isBloodied(combatant) && <Badge tone="bloodied">Bloodied</Badge>}
+            {combatant.kind === "monster" && combatant.hidden && (
+              <Badge tone="hidden">Hidden</Badge>
+            )}
           </p>
           <p className="text-xs text-stone-500">
             {combatant.kind === "monster"
               ? combatant.armorClass !== undefined
                 ? `AC ${combatant.armorClass}`
                 : "Monster"
-              : `${combatant.entityId ? "PC" : "Companion"} · ${combatant.controller.name}`}
+              : `${combatant.entityId && !combatant.statblock ? "PC" : "Companion"} · ${combatant.controller.name}`}
+            {sheetHp && (
+              <span className="ml-2 font-semibold text-stone-700 tabular-nums dark:text-stone-300">
+                HP {sheetHp.current}/{sheetHp.max}
+                {sheetHp.temp > 0 && ` (+${sheetHp.temp} temp)`}
+              </span>
+            )}
           </p>
         </div>
         {combatant.statblock && (
@@ -79,6 +91,18 @@ export function CombatantRow({
             onClick={onShowStatblock}
           >
             📜
+          </button>
+        )}
+        {live && combatant.kind === "monster" && (
+          <button
+            type="button"
+            className={iconButtonClass}
+            aria-pressed={!!combatant.hidden}
+            aria-label={`Hide ${name} from players`}
+            title="Hidden from players (an ambusher): not in their turn order, nor on their map"
+            onClick={() => dispatch({ type: "setHidden", id, hidden: !combatant.hidden })}
+          >
+            {combatant.hidden ? "🙈" : "👁"}
           </button>
         )}
         {live && (
@@ -205,11 +229,14 @@ function PrepHp({
   );
 }
 
-function Badge({ tone, children }: { tone: "down" | "bloodied"; children: string }) {
-  const colours =
-    tone === "down"
-      ? "bg-stone-700 text-white"
-      : "bg-rose-100 text-rose-900 dark:bg-rose-950 dark:text-rose-200";
+const BADGE_COLOURS = {
+  down: "bg-stone-700 text-white",
+  bloodied: "bg-rose-100 text-rose-900 dark:bg-rose-950 dark:text-rose-200",
+  hidden: "bg-violet-100 text-violet-900 dark:bg-violet-950 dark:text-violet-200",
+};
+
+function Badge({ tone, children }: { tone: keyof typeof BADGE_COLOURS; children: string }) {
+  const colours = BADGE_COLOURS[tone];
   return (
     <span className={`ml-2 rounded px-1.5 py-0.5 text-xs font-semibold uppercase ${colours}`}>
       {children}

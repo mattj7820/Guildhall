@@ -46,6 +46,9 @@ export async function openCombat(page: Page) {
   await expect(turnStatus(page)).toBeVisible();
 }
 
+/** Waits until the fight's last change has reached the server. */
+export const fightSaved = (page: Page) => expect(page.getByText("Saving…")).toHaveCount(0);
+
 /** The value Math.random must return for a die with `sides` to land on `face`. */
 export const face = (sides: number, value: number) => (value - 0.5) / sides;
 

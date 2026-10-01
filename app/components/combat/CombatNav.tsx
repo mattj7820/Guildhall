@@ -1,4 +1,4 @@
-import { NavLink } from "react-router";
+import { Link, NavLink } from "react-router";
 
 /** Switches between the live fight and the encounters prepared for later. */
 export function CombatNav() {
@@ -23,14 +23,17 @@ export function CombatNav() {
   );
 }
 
-/** What the player preview sees on any combat page. */
+/** What players see on the DM's combat pages: prepared encounters. */
 export function DmOnlyNotice() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="font-serif text-3xl font-bold">Combat tracker</h1>
+      <h1 className="font-serif text-3xl font-bold">Prepared encounters</h1>
       <p className="mt-2">
-        The combat tracker is DM-only for now. A player view, showing the turn order and your own
-        characters, is planned.
+        Prepared encounters are the DM's. The fight you're in is on{" "}
+        <Link to="/combat" className="text-amber-800 underline dark:text-amber-400">
+          Combat
+        </Link>
+        .
       </p>
     </main>
   );

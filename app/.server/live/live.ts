@@ -3,8 +3,9 @@ import type { Duplex } from "node:stream";
 import { canView } from "~/campaign/visibility";
 import type { Character } from "~/characters/types";
 import type { Services } from "~/context";
-import type { ClientMessage } from "~/live/messages";
+import { FIGHT_ROOM, type ClientMessage } from "~/live/messages";
 import type { FogMask } from "~/maps/fog/types";
+import { fightAllowsMove, type Fight } from "~/combat/fight";
 import { canMoveToken } from "~/maps/tokens/permissions";
 import type { Token, TokenId } from "~/maps/tokens/types";
 import { tokensForViewer } from "~/maps/tokens/visibility";
@@ -13,7 +14,7 @@ import { ancestors } from "~/maps/tree";
 import { partyControllers, partyFor } from "../maps/tokens";
 import { Holds } from "./holds";
 import { LiveHub, type BuildMessage, type Connection } from "./hub";
-import { mapState, tokensState } from "./map-rooms";
+import { fightState, mapState, tokensState } from "./map-rooms";
 import { LiveSockets } from "./sockets";
 
 type Deps = Omit<Services, "live">;
@@ -24,6 +25,7 @@ interface DragContext {
   tokens: Token[];
   fog: FogMask;
   characters: Character[];
+  fight: Fight | undefined;
   readAt: number;
 }
 const DRAG_CONTEXT_MS = 1000;
@@ -43,6 +45,7 @@ export class Live {
     this.hub = new LiveHub({
       members: services.members,
       join: async (map, viewer) => {
+        if (map === FIGHT_ROOM) return [await fightState(services, viewer)];
         const state = await mapState(services, map, viewer);
         if (state.type === "gone") return [state];
         const tokens = await tokensState(services, map, viewer);
@@ -71,6 +74,20 @@ export class Live {
     for (const each of around) {
       await this.publishOnMap(each, (viewer) => tokensState(this.services, each, viewer));
     }
+  }
+
+  /** The fight changed (or started, or ended): everyone watching it hears it as they may see it. */
+  async fightChanged(): Promise<void> {
+    // Whose turn it is decides who may drag.
+    this.dragContexts.clear();
+    await this.hub.publish(FIGHT_ROOM, (viewer) => fightState(this.services, viewer));
+    // Monsters' tokens take their names, hit points and hiding from the fight, wherever they are.
+    await Promise.all(
+      this.hub
+        .watchedMaps()
+        .filter((map) => map !== FIGHT_ROOM)
+        .map((map) => this.publishOnMap(map, (viewer) => tokensState(this.services, map, viewer))),
+    );
   }
 
   /** The vault changed, which any map's notes or image may depend on. */
@@ -119,6 +136,9 @@ export class Live {
     const controllers =
       token?.kind === "character" ? partyControllers(vault)(token.note) : "unknown";
     if (!token || !canMoveToken(viewer, token, controllers)) return;
+    if (token.kind === "character" && !fightAllowsMove(context.fight, mapId, token.note, viewer)) {
+      return;
+    }
 
     const name = account.member.name;
     const grab = this.holds.grab(mapId, id, {
@@ -140,6 +160,7 @@ export class Live {
           viewer: other,
           fog: context.fog,
           party: partyFor(vault, context.characters, other),
+          fight: context.fight,
         });
         return seen.length > 0
           ? { type: "moving", map: mapId, token: id, at, by: name }
@@ -154,12 +175,13 @@ export class Live {
     if (cached && Date.now() - cached.readAt < DRAG_CONTEXT_MS) return cached;
     const map = await this.services.maps.get(mapId);
     if (!map) return undefined;
-    const [tokens, fog, characters] = await Promise.all([
+    const [tokens, fog, characters, fight] = await Promise.all([
       this.services.tokens.onMap(mapId),
       this.services.fogs.get(mapId, map.image),
       this.services.characters.list(),
+      this.services.fight.get(),
     ]);
-    const context = { map, tokens, fog: fog.mask, characters, readAt: Date.now() };
+    const context = { map, tokens, fog: fog.mask, characters, fight, readAt: Date.now() };
     this.dragContexts.set(mapId, context);
     return context;
   }

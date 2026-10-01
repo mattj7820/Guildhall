@@ -20,11 +20,11 @@ export function useEncounter(
   const latest = useRef(history);
 
   const commit = useCallback(
-    (next: History<Encounter>) => {
+    (next: History<Encounter>, saving = true) => {
       if (next === latest.current) return;
       latest.current = next;
       setHistory(next);
-      if (save) setSaveFailed(!save(next.present));
+      if (save && saving) setSaveFailed(!save(next.present));
     },
     [save],
   );
@@ -35,9 +35,12 @@ export function useEncounter(
     [commit, rng],
   );
 
-  /** Swaps in a whole encounter (a new one, or a prepared one starting). Undo brings the old back. */
+  /**
+   * Swaps in a whole encounter (a new one, or a prepared one starting). Undo brings the old back.
+   * `saving: false` is for one that came from where it would be saved (the server's newer fight).
+   */
   const replace = useCallback(
-    (encounter: Encounter) => commit(record(latest.current, encounter)),
+    (encounter: Encounter, saving = true) => commit(record(latest.current, encounter), saving),
     [commit],
   );
 

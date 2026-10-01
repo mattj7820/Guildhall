@@ -4,6 +4,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Services } from "~/context";
+import { inCombat, monster, player as player_ } from "~/combat/test-builders";
+import { FIGHT_ROOM } from "~/live/messages";
 import { aCharacterToken, aMarker } from "~/maps/tokens/test-builders";
 import type { Token } from "~/maps/tokens/types";
 import type { CampaignMap, Point } from "~/maps/types";
@@ -12,6 +14,7 @@ import { createSessions } from "../auth/sessions";
 import { loadConfig } from "../config";
 import { CampaignMaps } from "../maps/campaign-maps";
 import { Characters } from "../characters/characters";
+import { CurrentFight } from "../combat/current-fight";
 import { MapFogs } from "../maps/map-fogs";
 import { MapTokens } from "../maps/map-tokens";
 import { Members } from "../members/members";
@@ -58,6 +61,7 @@ beforeEach(async () => {
     maps: CampaignMaps.inFolder(folder),
     fogs: MapFogs.inFolder(folder),
     tokens: MapTokens.inFolder(folder),
+    fight: CurrentFight.inFolder(folder),
     characters: Characters.inFolder(folder),
     members: Members.inFolder(folder),
     sessions: createSessions({ secrets: ["test-secret-test-secret-test-secret"], secure: false }),
@@ -194,6 +198,33 @@ describe("Live", () => {
     expect(JSON.stringify(player.received)).not.toMatch(/secret|Fixture PC Two/);
   });
 
+  it("shows everyone the fight as they may see it: players get no HP, initiative or DM notes", async () => {
+    const player = await connect(DISCORD_IDS.playerOne, "player one");
+    const dm = await connect(DISCORD_IDS.dm);
+    const none = player.next((message: { type: string }) => message.type === "fight");
+    player.send({ type: "watch", map: FIGHT_ROOM });
+    dm.send({ type: "watch", map: FIGHT_ROOM });
+    expect(await none).toEqual({ type: "fight", map: FIGHT_ROOM, fight: null });
+    await briefly();
+
+    const fight = inCombat(
+      [
+        player_("Aria", { controller: { id: "player one", name: "Player One" }, initiative: 18 }),
+        monster("Goblin 1", { initiative: 9, note: "Secret plan" }),
+      ],
+      "Aria",
+    );
+    const playerHears = player.next((message: { type: string }) => message.type === "fight");
+    const dmHears = dm.next((message: { type: string }) => message.type === "fight");
+    await services.fight.save(fight, 0);
+    await live.fightChanged();
+
+    const forPlayer = JSON.stringify(await playerHears);
+    expect(forPlayer).toContain('"theirTurn":true');
+    expect(forPlayer).not.toMatch(/Secret plan|"hp"|"initiative"|"revision"/);
+    expect(JSON.stringify(await dmHears)).toContain("Secret plan");
+  });
+
   describe("dragging", () => {
     /** The shared map with its left half revealed. */
     beforeEach(async () => {
@@ -275,6 +306,55 @@ describe("Live", () => {
       player.send({ type: "drag", map: shared.id, token: "one", at: [0.3, 0.3] });
       await own;
       expect(dm.received.filter(moving("two"))).toEqual([]);
+    });
+
+    it("in a fight on the map, passes on a player's drag only on their turn", async () => {
+      await placeOn(shared.id, aCharacterToken({ id: "one", map: shared.id, at: LIT }));
+      const fighting = [
+        player_("Fixture PC One", { entityId: "Party/Fixture PC One" }),
+        monster("Goblin 1"),
+      ];
+      await services.fight.save(inCombat(fighting, "Goblin 1"), 0, shared.id);
+      await live.fightChanged();
+      const player = await connect(DISCORD_IDS.playerOne, "player one");
+      const dm = await connect(DISCORD_IDS.dm);
+      await watching(player, dm);
+
+      player.send({ type: "drag", map: shared.id, token: "one", at: [0.2, 0.2] });
+      await briefly();
+      expect(dm.received.filter(moving("one"))).toEqual([]);
+
+      await services.fight.save(inCombat(fighting, "Fixture PC One"), 1);
+      await live.fightChanged();
+      const own = dm.next(moving("one"));
+      player.send({ type: "drag", map: shared.id, token: "one", at: [0.3, 0.3] });
+      await own;
+    });
+
+    it("never shows players the DM dragging a hidden monster", async () => {
+      await services.fight.save(
+        inCombat([monster("Ambusher", { hidden: true }), monster("Goblin 1")], "Goblin 1"),
+        0,
+        shared.id,
+      );
+      const token = (id: string, combatant: string): Token => ({
+        kind: "combatant",
+        id,
+        map: shared.id,
+        at: LIT,
+        combatant,
+      });
+      await placeOn(shared.id, token("ambusher", "Ambusher"));
+      await placeOn(shared.id, token("goblin", "Goblin 1"));
+      const player = await connect(DISCORD_IDS.playerOne, "player one");
+      const dm = await connect(DISCORD_IDS.dm);
+      await watching(player, dm);
+
+      dm.send({ type: "drag", map: shared.id, token: "ambusher", at: [0.3, 0.3] });
+      const goblin = player.next(moving("goblin"));
+      dm.send({ type: "drag", map: shared.id, token: "goblin", at: [0.3, 0.3] });
+      await goblin;
+      expect(player.received.filter(moving("ambusher"))).toEqual([]);
     });
 
     it("keeps a token for whoever picked it up, and lets the DM take it", async () => {

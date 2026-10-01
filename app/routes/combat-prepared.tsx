@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { data, Form, Link, redirect } from "react-router";
 import { DataFileError } from "~/.server/data/json-store";
-import { summarise } from "~/combat/prepared";
-import { encounterSchema } from "~/combat/schema";
+import { preparedStartUrl, summarise } from "~/combat/prepared";
+import { encounterSchema, preparedPlacementSchema } from "~/combat/schema";
 import { CombatNav, DmOnlyNotice } from "~/components/combat/CombatNav";
 import { buttonClass, panelClass, primaryButtonClass } from "~/components/styles";
 import { servicesContext, viewerContext } from "~/context";
@@ -15,12 +15,19 @@ export function meta(_: Route.MetaArgs) {
 export async function loader({ context }: Route.LoaderArgs) {
   if (context.get(viewerContext).role !== "dm") return { dmOnly: true as const };
   try {
-    const encounters = await context.get(servicesContext).preparedEncounters.list();
+    const services = context.get(servicesContext);
+    const [encounters, maps] = await Promise.all([
+      services.preparedEncounters.list(),
+      services.maps.list(),
+    ]);
+    const mapIds = new Set(maps.map((map) => map.id));
     return {
       dmOnly: false as const,
-      encounters: encounters.map(({ encounter, ...prepared }) => ({
+      encounters: encounters.map(({ encounter, placement, ...prepared }) => ({
         ...prepared,
         summary: summarise(encounter),
+        startUrl: preparedStartUrl({ id: prepared.id, placement }, mapIds),
+        mapName: maps.find((map) => map.id === placement?.map)?.name,
       })),
     };
   } catch (error) {
@@ -31,19 +38,29 @@ export async function loader({ context }: Route.LoaderArgs) {
 
 /**
  * Forms post `intent` = create | duplicate | delete. The tracker's "Save as prepared" posts JSON
- * `{ intent: "create", name, encounter }` and gets the new encounter back instead of a redirect.
+ * `{ intent: "create", name, encounter, placement? }` (placement: from a map) and gets the new
+ * encounter back instead of a redirect.
  */
 export async function action({ request, context }: Route.ActionArgs) {
   if (context.get(viewerContext).role !== "dm") throw data("Not found", { status: 404 });
   const prepared = context.get(servicesContext).preparedEncounters;
 
   if (request.headers.get("Content-Type")?.includes("application/json")) {
-    const body = (await request.json()) as { name?: unknown; encounter?: unknown };
+    const body = (await request.json()) as {
+      name?: unknown;
+      encounter?: unknown;
+      placement?: unknown;
+    };
     const encounter = encounterSchema.safeParse(body.encounter);
-    if (!encounter.success || typeof body.name !== "string") {
+    const placement = preparedPlacementSchema.optional().safeParse(body.placement);
+    if (!encounter.success || !placement.success || typeof body.name !== "string") {
       return data({ error: "That encounter couldn't be saved." }, { status: 400 });
     }
-    const created = await prepared.create({ name: body.name, encounter: encounter.data });
+    const created = await prepared.create({
+      name: body.name,
+      encounter: encounter.data,
+      ...(placement.data && { placement: placement.data }),
+    });
     return { created: { id: created.id, name: created.name } };
   }
 
@@ -139,6 +156,9 @@ function PreparedCard({ prepared }: { prepared: Card }) {
         {monsters || <span className="text-stone-500">No monsters yet</span>}
         {companions && <span className="text-stone-500"> · {companions}</span>}
       </p>
+      {prepared.mapName && (
+        <p className="text-sm text-stone-600 dark:text-stone-400">Set up on {prepared.mapName}</p>
+      )}
       {prepared.notes && (
         <p className="line-clamp-2 text-sm whitespace-pre-line text-stone-600 dark:text-stone-400">
           {prepared.notes}
@@ -146,7 +166,7 @@ function PreparedCard({ prepared }: { prepared: Card }) {
       )}
       <div className="mt-1 flex flex-wrap items-center gap-2">
         <Link
-          to={`/combat?start=${encodeURIComponent(prepared.id)}`}
+          to={prepared.startUrl}
           className={primaryButtonClass}
           aria-label={`Start ${prepared.name}`}
         >

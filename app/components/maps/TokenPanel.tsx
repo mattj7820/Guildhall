@@ -17,6 +17,21 @@ import type { MapId, Size } from "~/maps/types";
 import { TokenDistances } from "./TokenDistances";
 import { mapUrl } from "~/maps/urls";
 
+/** Says what the next click on the map places, and lets the DM change their mind. */
+export function PlacingHint({ placing, onCancel }: { placing: Placing; onCancel: () => void }) {
+  return (
+    <p
+      role="status"
+      className="rounded bg-sky-50 px-2 py-1 text-sm text-sky-900 dark:bg-sky-950 dark:text-sky-100"
+    >
+      Click the map to place {placing.name}.{" "}
+      <button type="button" className="underline" onClick={onCancel}>
+        Cancel
+      </button>
+    </p>
+  );
+}
+
 /** What the DM's next click on the map will place. */
 export type Placing =
   | { kind: "character"; note: string; name: string }
@@ -71,17 +86,7 @@ export function TokenPanel({
           {error}
         </p>
       )}
-      {placing && (
-        <p
-          role="status"
-          className="rounded bg-sky-50 px-2 py-1 text-sm text-sky-900 dark:bg-sky-950 dark:text-sky-100"
-        >
-          Click the map to place {placing.name}.{" "}
-          <button type="button" className="underline" onClick={() => onPlace(undefined)}>
-            Cancel
-          </button>
-        </p>
-      )}
+      {placing && <PlacingHint placing={placing} onCancel={() => onPlace(undefined)} />}
       <ul aria-label="Party" className="flex flex-col gap-1 text-sm">
         {party.map((member) => {
           const here = tokens.find((token) => token.note === member.note);

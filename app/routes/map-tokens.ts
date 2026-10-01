@@ -5,6 +5,7 @@ import { loadTokens, partyControllers } from "~/.server/maps/tokens";
 import { canView } from "~/campaign/visibility";
 import { accountContext, servicesContext, viewerContext } from "~/context";
 import type { TokenAction } from "~/maps/tokens/actions";
+import { fightAllowsMove } from "~/combat/fight";
 import { mayApply } from "~/maps/tokens/permissions";
 import { tokenActionsSchema } from "~/maps/tokens/schema";
 import type { Token } from "~/maps/tokens/types";
@@ -42,18 +43,24 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const controllersOf = partyControllers(services.vault.current);
   let heldBy: string | undefined;
   const mapIds = new Set(maps.map((each) => each.id));
+  const fight = await services.fight.get();
   const allowed = (action: TokenAction, tokens: readonly Token[]): boolean => {
     if (!mayApply(viewer, map.id, action, tokens, controllersOf)) return false;
     if (action.type === "place") {
       // Placed on this map; a party member only if they're one.
       const { token } = action;
       return (
-        token.map === map.id && (token.kind === "marker" || controllersOf(token.note) !== "unknown")
+        token.map === map.id &&
+        (token.kind !== "character" || controllersOf(token.note) !== "unknown")
       );
     }
     // Everything else acts on a token on this map, and a move elsewhere needs a map to go to.
     const token = tokens.find((each) => each.id === action.id);
     if (token?.map !== map.id) return false;
+    // In a fight here, players move on their own turn.
+    if (token.kind === "character" && !fightAllowsMove(fight, map.id, token.note, viewer)) {
+      return false;
+    }
     // Someone else is dragging it just now: theirs until they let go (the DM can always take it).
     const holder = services.live.heldByOther(map.id, token.id, discordId, viewer.role === "dm");
     if (holder) {

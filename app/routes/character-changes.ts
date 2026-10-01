@@ -53,5 +53,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   );
   if (!applied) throw data("Not found", { status: 404 });
   if ("problem" in applied) return Response.json({ error: applied.problem }, { status: 409 });
+  // Hit points show in the fight, so those watching it hear of the change.
+  await services.live.fightChanged();
   return Response.json(applied);
 }

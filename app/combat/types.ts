@@ -3,6 +3,7 @@
  * the vault) and the browser (which runs encounters).
  */
 import type { EntityId, Player } from "~/campaign/types";
+import type { MapId, Point } from "~/maps/types";
 
 /** Points at one statblock in the vault: the note's stable ID plus the statblock's name. */
 export interface StatblockRef {
@@ -24,6 +25,8 @@ export interface CreatureOption {
   noteUrl: string;
   armorClass?: number;
   hitPoints?: number;
+  /** Squares across on a battle map, from its size. */
+  squares?: 1 | 2 | 3 | 4;
   /** Rollable, e.g. "2d6 + 2". */
   hitDice?: string;
   initiativeBonus: number;
@@ -31,14 +34,29 @@ export interface CreatureOption {
   html: string;
 }
 
-/** A player character from a `type: pc` note. */
+/** A party member from the vault: a `type: pc` note, or the party's `type: companion`. */
 export interface PartyMember {
+  kind: "pc" | "companion";
   entityId: EntityId;
   name: string;
   noteUrl: string;
-  /** From the note's `player` frontmatter; undefined until the DM writes it. */
+  /**
+   * Who controls them, from the note's `player` frontmatter: undefined for a PC until the DM writes
+   * it; the whole party for a companion that names no one.
+   */
   player?: Player;
+  /** A companion's statblock, shown when it's their turn. */
+  statblock?: StatblockRef;
 }
+
+/**
+ * The controller of a companion the whole party shares: every player may see its details. Its ID
+ * is empty, which no player's can be (a blank name isn't a player).
+ */
+export const WHOLE_PARTY: Player = { id: "", name: "the party" };
+
+/** Whether a controller is the whole party (compared by ID, since it may have come as JSON). */
+export const isWholeParty = (player: Player | undefined) => player?.id === WHOLE_PARTY.id;
 
 /** What the vault offers the combat tracker. */
 export interface CombatCatalogue {
@@ -93,6 +111,8 @@ export interface MonsterCombatant extends CombatantBase {
   initiativeBonus: number;
   armorClass?: number;
   hp: HitPoints;
+  /** Hidden from players (an ambusher): not in their turn order, nor on their map. */
+  hidden?: boolean;
 }
 
 /** A PC or companion a player runs: the players track their own stats. */
@@ -140,4 +160,12 @@ export interface PreparedEncounter {
   updatedAt: string;
   lastRunAt?: string;
   encounter: Encounter;
+  /** Set up on a map: it starts there, with its monsters where the DM put them. */
+  placement?: PreparedPlacement;
+}
+
+/** A prepared fight's map, and where its monsters stand on it (by combatant, in fractions). */
+export interface PreparedPlacement {
+  map: MapId;
+  at: Record<CombatantId, Point>;
 }

@@ -10,6 +10,7 @@ import type { Token } from "~/maps/tokens/types";
 import type { Area, CampaignMap, Point } from "~/maps/types";
 import { FIXTURE_VAULT } from "../../../tests/support/fixture-vault";
 import { Characters } from "../characters/characters";
+import { CurrentFight } from "../combat/current-fight";
 import { Vault } from "../vault/vault";
 import { CampaignMaps } from "./campaign-maps";
 import { MapFogs } from "./map-fogs";
@@ -53,7 +54,7 @@ const area = (fields: Partial<Area> & Pick<Area, "id">): Area => ({
 });
 
 let folder: string;
-let services: Pick<Services, "vault" | "characters" | "tokens" | "fogs" | "maps">;
+let services: Pick<Services, "vault" | "characters" | "tokens" | "fogs" | "maps" | "fight">;
 let world: CampaignMap;
 let town: CampaignMap;
 let keep: CampaignMap;
@@ -66,6 +67,7 @@ beforeEach(async () => {
     tokens: MapTokens.inFolder(folder),
     fogs: MapFogs.inFolder(folder),
     maps: CampaignMaps.inFolder(folder),
+    fight: CurrentFight.inFolder(folder),
   };
   const { maps, fogs } = services;
   [world, town, keep] = await Promise.all(

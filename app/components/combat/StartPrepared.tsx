@@ -13,15 +13,31 @@ export function StartPrepared({
   party,
   replacesFight,
   onStart,
+  cancelTo = "/combat",
 }: {
   prepared: PreparedEncounter;
   party: PartyMember[];
   /** Whether a fight is already in the tracker; starting replaces it (undo brings it back). */
   replacesFight: boolean;
   onStart: (chosen: PartyChoice[]) => void;
+  /** Where Cancel goes: the page it's on, without starting anything. */
+  cancelTo?: string;
 }) {
   const playable = party.filter((member): member is PartyChoice => Boolean(member.player));
-  const [chosen, setChosen] = useState(() => new Set(playable.map((member) => member.entityId)));
+  // A companion already in the prepared fight (added with its statblock) isn't added twice.
+  const alreadyIn = new Set(
+    prepared.encounter.combatants.flatMap((c) =>
+      c.kind === "player" && c.statblock ? [c.statblock.entityId] : [],
+    ),
+  );
+  const [chosen, setChosen] = useState(
+    () =>
+      new Set(
+        playable
+          .filter((member) => member.kind === "pc" || !alreadyIn.has(member.entityId))
+          .map((member) => member.entityId),
+      ),
+  );
   const { monsters, companions } = summarise(prepared.encounter);
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -84,7 +100,7 @@ export function StartPrepared({
           <button type="submit" className={primaryButtonClass}>
             Add to tracker
           </button>
-          <Link to="/combat" replace className={buttonClass}>
+          <Link to={cancelTo} replace className={buttonClass}>
             Cancel
           </Link>
         </div>

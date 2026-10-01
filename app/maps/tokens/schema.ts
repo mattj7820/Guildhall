@@ -37,6 +37,14 @@ export const tokenSchema: z.ZodType<Token> = z.discriminatedUnion("kind", [
     colour,
     visibility,
   }),
+  z.object({
+    kind: z.literal("combatant"),
+    id,
+    map: id,
+    at: point,
+    size: size.optional(),
+    combatant: id,
+  }),
 ]);
 
 export const tokensSchema = z

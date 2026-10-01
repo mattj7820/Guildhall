@@ -34,6 +34,7 @@ export const encounterSchema: z.ZodType<Encounter> = z.object({
           max: z.number().int().positive(),
           temp: z.number().int().nonnegative(),
         }),
+        hidden: z.boolean().optional(),
       }),
       z.object({
         ...base,
@@ -56,6 +57,13 @@ export const unstartedEncounterSchema = encounterSchema.refine(
   { message: "A prepared encounter can't have started." },
 );
 
+const fraction = z.number().min(0).max(1);
+
+export const preparedPlacementSchema = z.object({
+  map: z.string().min(1),
+  at: z.record(z.string().min(1), z.tuple([fraction, fraction])),
+});
+
 export const preparedEncounterSchema: z.ZodType<PreparedEncounter> = z.object({
   id: z.string().min(1),
   name: z.string().trim().min(1).max(PREPARED_NAME_MAX),
@@ -64,6 +72,7 @@ export const preparedEncounterSchema: z.ZodType<PreparedEncounter> = z.object({
   updatedAt: z.iso.datetime(),
   lastRunAt: z.iso.datetime().optional(),
   encounter: unstartedEncounterSchema,
+  placement: preparedPlacementSchema.optional(),
 });
 
 /** What the prepared-encounter editor sends when it saves. */

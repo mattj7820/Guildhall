@@ -2,7 +2,12 @@ import { useId, useState, type FormEvent } from "react";
 import { playerFromName, type Player } from "~/campaign/types";
 import { addMonsters, type EncounterAction } from "~/combat/encounter";
 import { newId } from "~/shared/ids";
-import type { CombatCatalogue, CreatureOption, Encounter } from "~/combat/types";
+import {
+  isWholeParty,
+  type CombatCatalogue,
+  type CreatureOption,
+  type Encounter,
+} from "~/combat/types";
 import type { Rng } from "~/dice/rng";
 import {
   buttonClass,
@@ -215,15 +220,18 @@ function AddParty({
                     name: member.name,
                     controller: member.player,
                     entityId: member.entityId,
+                    statblock: member.statblock,
                   })
                 }
               >
                 Add {member.name}
               </button>
               <span className="text-stone-500">
-                {member.player
-                  ? member.player.name
-                  : "needs player: in its frontmatter to say who controls it"}
+                {isWholeParty(member.player)
+                  ? "the whole party's"
+                  : member.player
+                    ? member.player.name
+                    : "needs player: in its frontmatter to say who controls it"}
               </span>
             </li>
           ))}
@@ -311,7 +319,7 @@ function AddPlayerCombatant({
 function knownPlayers(catalogue: CombatCatalogue): Player[] {
   const players = new Map<string, Player>();
   for (const member of catalogue.party) {
-    if (member.player && !players.has(member.player.id)) {
+    if (member.player && !isWholeParty(member.player) && !players.has(member.player.id)) {
       players.set(member.player.id, member.player);
     }
   }
