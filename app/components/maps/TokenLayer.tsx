@@ -52,8 +52,10 @@ interface Props {
   size: Size;
   canvas: CanvasTools;
   selectedId?: string;
-  /** The DM chooses a token to change it. */
-  onSelect?: (token: TokenView) => void;
+  /** Also selected: several monsters picked at once in a fight. */
+  alsoSelected?: readonly string[];
+  /** The DM chooses a token to change it; with Shift (`additive`), adding to a pick. */
+  onSelect?: (token: TokenView, how: { additive: boolean }) => void;
   /** Moving the tokens this viewer may move. */
   mover?: TokenMover;
   /** Players: say which tokens are theirs to move (the DM may move all of them). */
@@ -65,7 +67,12 @@ interface Props {
   snap?: boolean;
   /** In a fight: the token whose turn it is, ringed. */
   activeId?: string;
+  /** A stunt playing on a token just now, by token. */
+  stunts?: Readonly<Record<string, TokenStunt>>;
 }
+
+/** What the DM can make a token do, for a moment. */
+export type TokenStunt = { kind: "glow" | "hit" | "fall"; key: number };
 
 /**
  * Tokens drawn over the map and its fog: the same size on screen at every zoom, or on a battle map
@@ -77,6 +84,7 @@ export function TokenLayer({
   size,
   canvas,
   selectedId,
+  alsoSelected,
   onSelect,
   mover,
   sayMovable,
@@ -84,6 +92,7 @@ export function TokenLayer({
   grid,
   snap,
   activeId,
+  stunts,
 }: Props) {
   const squares = useMemo(() => grid && gridInPixels(grid, size), [grid, size]);
   return (
@@ -99,8 +108,9 @@ export function TokenLayer({
           token={token}
           size={size}
           canvas={canvas}
-          selected={token.id === selectedId}
+          selected={token.id === selectedId || !!alsoSelected?.includes(token.id)}
           active={token.id === activeId}
+          stunt={stunts?.[token.id]}
           onSelect={onSelect}
           mover={token.movable && (!token.movingBy || takeHeld) ? mover : undefined}
           sayMovable={sayMovable}
@@ -118,6 +128,7 @@ function TokenMark({
   canvas,
   selected,
   active,
+  stunt,
   onSelect,
   mover,
   sayMovable,
@@ -129,7 +140,8 @@ function TokenMark({
   canvas: CanvasTools;
   selected: boolean;
   active: boolean;
-  onSelect?: (token: TokenView) => void;
+  stunt?: TokenStunt;
+  onSelect?: (token: TokenView, how: { additive: boolean }) => void;
   mover?: TokenMover;
   sayMovable?: boolean;
   squares?: PixelGrid;
@@ -164,7 +176,7 @@ function TokenMark({
   function onKeyDown(event: KeyboardEvent) {
     if ((event.key === "Enter" || event.key === " ") && onSelect) {
       event.preventDefault();
-      return onSelect(token);
+      return onSelect(token, { additive: event.shiftKey });
     }
     if (!mover) return;
     if (event.key === "Escape" && keys.current) {
@@ -237,12 +249,12 @@ function TokenMark({
         current.at = at;
         mover.drag(token.id, at);
       }}
-      onPointerUp={() => {
+      onPointerUp={(event) => {
         const current = press.current;
         press.current = null;
         if (!current) return;
         if (current.at && mover) mover.drop(token.id, current.at, current.from);
-        else onSelect?.(token);
+        else onSelect?.(token, { additive: event.shiftKey });
       }}
       onPointerCancel={() => {
         if (press.current?.at) mover?.cancel(token.id);
@@ -258,19 +270,21 @@ function TokenMark({
           className="pointer-events-none animate-pulse fill-none stroke-amber-400"
         />
       )}
-      <circle
-        r={r + 3 / scale}
-        strokeWidth={2 / scale}
-        strokeDasharray={token.hidden ? `${4 / scale} ${3 / scale}` : undefined}
-        className={`${
-          selected
-            ? "fill-sky-500"
-            : token.movable && token.kind === "character"
-              ? "fill-amber-500"
-              : "fill-white"
-        } stroke-stone-900 group-focus-visible:fill-sky-400`}
-      />
-      <TokenFace token={token} r={r} />
+      <g key={stunt?.key} className={stunt ? `token-stunt-${stunt.kind}` : undefined}>
+        <circle
+          r={r + 3 / scale}
+          strokeWidth={2 / scale}
+          strokeDasharray={token.hidden ? `${4 / scale} ${3 / scale}` : undefined}
+          className={`${
+            selected
+              ? "fill-sky-500"
+              : token.movable && token.kind === "character"
+                ? "fill-amber-500"
+                : "fill-white"
+          } stroke-stone-900 group-focus-visible:fill-sky-400`}
+        />
+        <TokenFace token={token} r={r} />
+      </g>
       {token.hp && <HitPointsBar hp={token.hp} r={r} scale={scale} />}
       <text
         y={r + 14 / scale}

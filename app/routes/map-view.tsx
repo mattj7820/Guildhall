@@ -49,6 +49,7 @@ export async function loader({ params, request, context }: Route.LoaderArgs) {
     inside,
     party: await partyPlacements(services, maps),
     images: services.vault.current.mapImages(),
+    sounds: services.vault.current.soundsIn("Sounds"),
     fight: fight?.forDm ? fight : null,
     catalogue: combatCatalogue(services.vault.current, viewer),
     starting: await startingPrepared(services, request),
@@ -86,6 +87,7 @@ export default function MapPage({ loaderData }: Route.ComponentProps) {
       inside={loaderData.inside}
       party={loaderData.party}
       images={loaderData.images}
+      sounds={loaderData.sounds}
       fight={loaderData.fight}
       catalogue={loaderData.catalogue}
       starting={loaderData.starting}
