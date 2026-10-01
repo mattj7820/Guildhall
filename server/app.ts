@@ -4,6 +4,7 @@ import type { Duplex } from "node:stream";
 import { createRequestHandler } from "@react-router/express";
 import express from "express";
 import { RouterContextProvider } from "react-router";
+import { CurrentFight } from "~/.server/combat/current-fight";
 import { PreparedEncounters } from "~/.server/combat/prepared-encounters";
 import { loadConfig } from "~/.server/config";
 import { discordAuth } from "~/.server/auth/discord";
@@ -42,6 +43,7 @@ async function createServices(): Promise<Services> {
   const services: Omit<Services, "live"> = {
     config,
     vault,
+    fight: CurrentFight.inFolder(config.dataPath),
     preparedEncounters: PreparedEncounters.inFolder(config.dataPath),
     maps: CampaignMaps.inFolder(config.dataPath),
     fogs: MapFogs.inFolder(config.dataPath),

@@ -16,16 +16,18 @@ export function meta(_: Route.MetaArgs) {
 export async function loader({ request, context }: Route.LoaderArgs) {
   const viewer = context.get(viewerContext);
   if (viewer.role !== "dm") return { dmOnly: true as const };
-  const { vault, preparedEncounters } = context.get(servicesContext);
+  const { vault, preparedEncounters, fight } = context.get(servicesContext);
+  const current = await fight.get();
   const startId = new URL(request.url).searchParams.get("start");
   return {
     dmOnly: false as const,
     catalogue: combatCatalogue(vault.current, viewer),
+    fight: current ? { encounter: current.encounter, revision: current.revision } : null,
     starting: startId ? ((await preparedEncounters.get(startId)) ?? null) : undefined,
   };
 }
 
-/** Adds the encounter saved in this browser, which the server never sees. */
+/** Adds a fight this browser kept from before fights were kept on the server, to bring over. */
 export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
   const storage = browserStorage();
   return {
@@ -49,6 +51,7 @@ export default function Combat({ loaderData }: Route.ComponentProps) {
   return (
     <CombatTracker
       catalogue={loaderData.catalogue}
+      fight={loaderData.fight}
       saved={loaderData.saved}
       starting={loaderData.starting}
     />

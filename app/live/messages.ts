@@ -3,11 +3,15 @@
  * server sends `ServerMessage`s, each one built on the server for the viewer who gets it.
  */
 import { z } from "zod";
+import type { FightView } from "~/combat/fight";
 import type { MapTokensView, TokenId } from "~/maps/tokens/types";
 import type { MapId, Point } from "~/maps/types";
 
 /** Where browsers open their live connection. */
 export const LIVE_PATH = "/live";
+
+/** The room for the fight the table is in (rooms are otherwise maps, by ID). */
+export const FIGHT_ROOM = "fight";
 
 const mapId = z.string().min(1).max(100);
 const tokenId = z.string().min(1).max(100);
@@ -42,7 +46,9 @@ export type ServerMessage =
   /** Someone is dragging a token this viewer can see, there. */
   | { type: "moving"; map: MapId; token: TokenId; at: Point; by: string }
   /** The token this viewer picked up is someone else's to move just now. */
-  | { type: "held"; map: MapId; token: TokenId; by: string };
+  | { type: "held"; map: MapId; token: TokenId; by: string }
+  /** The fight as this viewer may see it, or none, whenever that changes. */
+  | { type: "fight"; map: typeof FIGHT_ROOM; fight: FightView | null };
 
 /**
  * Messages that say how something is now, rather than that something happened. Only the latest
@@ -56,6 +62,8 @@ export function stateKey(message: ServerMessage): string | undefined {
       return `map:${message.map}`;
     case "tokens":
       return `tokens:${message.map}`;
+    case "fight":
+      return "fight";
     default:
       return undefined;
   }

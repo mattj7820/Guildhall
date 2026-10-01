@@ -9,7 +9,7 @@ import {
   openNote,
   scriptDice,
   uniqueName,
-} from "./support/app";
+} from "../support/app";
 
 /**
  * Clicking rolls in the tracker's statblock panel. "Fixture Minion" has Fixture Jab (+4 to hit,

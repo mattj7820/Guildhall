@@ -40,6 +40,15 @@ export function browserStorage(): Storage | undefined {
   }
 }
 
+/** Forgets the encounter kept here, once it's been brought over to the server (or declined). */
+export function clearEncounter(storage: Pick<Storage, "removeItem">): void {
+  try {
+    storage.removeItem(ENCOUNTER_STORAGE_KEY);
+  } catch {
+    // Nothing more to do: it'll be offered again next time.
+  }
+}
+
 /** Returns false if the browser refused (storage full or disabled), so the page can say so. */
 export function saveEncounter(storage: Pick<Storage, "setItem">, encounter: Encounter): boolean {
   try {

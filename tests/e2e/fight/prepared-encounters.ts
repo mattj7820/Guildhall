@@ -13,7 +13,7 @@ import {
   switchToPlayerView,
   turnOrder,
   uniqueName,
-} from "./support/app";
+} from "../support/app";
 
 /**
  * Prepared encounters: set up before a session, kept in the server's data folder, started at the

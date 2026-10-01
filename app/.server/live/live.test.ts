@@ -4,6 +4,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Services } from "~/context";
+import { inCombat, monster, player as player_ } from "~/combat/test-builders";
+import { FIGHT_ROOM } from "~/live/messages";
 import { aCharacterToken, aMarker } from "~/maps/tokens/test-builders";
 import type { Token } from "~/maps/tokens/types";
 import type { CampaignMap, Point } from "~/maps/types";
@@ -12,6 +14,7 @@ import { createSessions } from "../auth/sessions";
 import { loadConfig } from "../config";
 import { CampaignMaps } from "../maps/campaign-maps";
 import { Characters } from "../characters/characters";
+import { CurrentFight } from "../combat/current-fight";
 import { MapFogs } from "../maps/map-fogs";
 import { MapTokens } from "../maps/map-tokens";
 import { Members } from "../members/members";
@@ -58,6 +61,7 @@ beforeEach(async () => {
     maps: CampaignMaps.inFolder(folder),
     fogs: MapFogs.inFolder(folder),
     tokens: MapTokens.inFolder(folder),
+    fight: CurrentFight.inFolder(folder),
     characters: Characters.inFolder(folder),
     members: Members.inFolder(folder),
     sessions: createSessions({ secrets: ["test-secret-test-secret-test-secret"], secure: false }),
@@ -192,6 +196,33 @@ describe("Live", () => {
       tokens: [{ name: "Fixture PC One", inTheDark: true, movable: true }],
     });
     expect(JSON.stringify(player.received)).not.toMatch(/secret|Fixture PC Two/);
+  });
+
+  it("shows everyone the fight as they may see it: players get no HP, initiative or DM notes", async () => {
+    const player = await connect(DISCORD_IDS.playerOne, "player one");
+    const dm = await connect(DISCORD_IDS.dm);
+    const none = player.next((message: { type: string }) => message.type === "fight");
+    player.send({ type: "watch", map: FIGHT_ROOM });
+    dm.send({ type: "watch", map: FIGHT_ROOM });
+    expect(await none).toEqual({ type: "fight", map: FIGHT_ROOM, fight: null });
+    await briefly();
+
+    const fight = inCombat(
+      [
+        player_("Aria", { controller: { id: "player one", name: "Player One" }, initiative: 18 }),
+        monster("Goblin 1", { initiative: 9, note: "Secret plan" }),
+      ],
+      "Aria",
+    );
+    const playerHears = player.next((message: { type: string }) => message.type === "fight");
+    const dmHears = dm.next((message: { type: string }) => message.type === "fight");
+    await services.fight.save(fight, 0);
+    await live.fightChanged();
+
+    const forPlayer = JSON.stringify(await playerHears);
+    expect(forPlayer).toContain('"theirTurn":true');
+    expect(forPlayer).not.toMatch(/Secret plan|"hp"|"initiative"|"revision"/);
+    expect(JSON.stringify(await dmHears)).toContain("Secret plan");
   });
 
   describe("dragging", () => {

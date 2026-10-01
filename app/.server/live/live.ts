@@ -3,7 +3,7 @@ import type { Duplex } from "node:stream";
 import { canView } from "~/campaign/visibility";
 import type { Character } from "~/characters/types";
 import type { Services } from "~/context";
-import type { ClientMessage } from "~/live/messages";
+import { FIGHT_ROOM, type ClientMessage } from "~/live/messages";
 import type { FogMask } from "~/maps/fog/types";
 import { canMoveToken } from "~/maps/tokens/permissions";
 import type { Token, TokenId } from "~/maps/tokens/types";
@@ -13,7 +13,7 @@ import { ancestors } from "~/maps/tree";
 import { partyControllers, partyFor } from "../maps/tokens";
 import { Holds } from "./holds";
 import { LiveHub, type BuildMessage, type Connection } from "./hub";
-import { mapState, tokensState } from "./map-rooms";
+import { fightState, mapState, tokensState } from "./map-rooms";
 import { LiveSockets } from "./sockets";
 
 type Deps = Omit<Services, "live">;
@@ -43,6 +43,7 @@ export class Live {
     this.hub = new LiveHub({
       members: services.members,
       join: async (map, viewer) => {
+        if (map === FIGHT_ROOM) return [await fightState(services, viewer)];
         const state = await mapState(services, map, viewer);
         if (state.type === "gone") return [state];
         const tokens = await tokensState(services, map, viewer);
@@ -71,6 +72,11 @@ export class Live {
     for (const each of around) {
       await this.publishOnMap(each, (viewer) => tokensState(this.services, each, viewer));
     }
+  }
+
+  /** The fight changed (or started, or ended): everyone watching it hears it as they may see it. */
+  fightChanged(): Promise<void> {
+    return this.hub.publish(FIGHT_ROOM, (viewer) => fightState(this.services, viewer));
   }
 
   /** The vault changed, which any map's notes or image may depend on. */

@@ -1,15 +1,18 @@
 import { expect, test, type Page } from "@playwright/test";
+import { SIGNED_IN } from "../support/sign-in";
 import {
   addMonsters,
   combatant,
   face,
+  fightSaved,
+  ORIGIN,
   openCombat,
   scriptDice,
   setInitiative,
   switchToPlayerView,
   turnOrder,
   turnStatus,
-} from "./support/app";
+} from "../support/app";
 
 /**
  * The combat tracker over the fixture vault. "Fixture Minion" has DEX 14 (+2 initiative) and 2d6
@@ -125,6 +128,7 @@ test.describe("Combat tracker", () => {
     await next.click();
     await expect(turnStatus(page)).toContainText("Round 2 · Fixture Minion 2's turn");
 
+    await fightSaved(page);
     await page.reload();
     await expect(turnStatus(page)).toContainText("Round 2 · Fixture Minion 2's turn");
     await expect(combatant(page, "Fixture Minion 1")).toContainText("HP 0/7");
@@ -180,6 +184,86 @@ test.describe("Combat tracker", () => {
       page.getByRole("region", { name: "Statblock: Fixture Companion", exact: true }),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Add Fixture Companion" })).toHaveCount(0);
+  });
+
+  test("keeps the fight on the server: another tab sees each change as it's made", async ({
+    page,
+    browser,
+  }) => {
+    await buildEncounter(page);
+    const other = await (
+      await browser.newContext({ baseURL: ORIGIN, storageState: SIGNED_IN.dm })
+    ).newPage();
+    await openCombat(other);
+    await expect(combatant(other, "Fixture Minion 2")).toBeVisible();
+
+    await page.getByRole("button", { name: "Start combat" }).click();
+    await expect(turnStatus(other)).toContainText("Round 1 · Fixture PC One's turn");
+    await other.getByRole("button", { name: "Next turn" }).click();
+    await expect(turnStatus(page)).toContainText("Fixture Minion 1's turn");
+    await other.context().close();
+  });
+
+  test("lets a player end their own turn, and no one else's", async ({ page, browser }) => {
+    await buildEncounter(page);
+    await page.getByRole("button", { name: "Start combat" }).click();
+    await fightSaved(page);
+    const player = await browser.newContext({ baseURL: ORIGIN, storageState: SIGNED_IN.playerOne });
+    const endTurn = () =>
+      player.request.post("/combat/fight", {
+        headers: { Origin: ORIGIN },
+        data: { intent: "endTurn" },
+      });
+
+    // Fixture PC One (Player One) goes first: theirs to end.
+    expect((await endTurn()).status()).toBe(200);
+    await expect(turnStatus(page)).toContainText("Fixture Minion 1's turn");
+    // The minion's turn isn't.
+    expect((await endTurn()).status()).toBe(409);
+    await expect(turnStatus(page)).toContainText("Fixture Minion 1's turn");
+    // Nor can a player save the fight.
+    const save = await player.request.post("/combat/fight", {
+      headers: { Origin: ORIGIN },
+      data: { intent: "end" },
+    });
+    expect(save.status()).toBe(404);
+    await player.close();
+  });
+
+  test("brings over a fight this browser kept from before, once", async ({ page }) => {
+    await page.addInitScript(() => {
+      if (sessionStorage.getItem("seeded")) return;
+      sessionStorage.setItem("seeded", "yes");
+      localStorage.setItem(
+        "guildhall:encounter",
+        JSON.stringify({
+          schemaVersion: 1,
+          id: "old",
+          phase: "setup",
+          round: 0,
+          activeId: null,
+          combatants: [
+            {
+              kind: "player",
+              id: "kept",
+              name: "Kept from before",
+              initiative: null,
+              tiebreaks: [],
+              conditions: [],
+              note: "",
+              controller: { id: "player one", name: "Player One" },
+            },
+          ],
+        }),
+      );
+    });
+    await openCombat(page);
+    await page.getByRole("button", { name: "Bring it over" }).click();
+    await expect(combatant(page, "Kept from before")).toBeVisible();
+    await fightSaved(page);
+    await page.reload();
+    await expect(combatant(page, "Kept from before")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Bring it over" })).toHaveCount(0);
   });
 
   test("rolls dice expressions with advantage", async ({ page }) => {
