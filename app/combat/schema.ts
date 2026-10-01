@@ -34,6 +34,7 @@ export const encounterSchema: z.ZodType<Encounter> = z.object({
           max: z.number().int().positive(),
           temp: z.number().int().nonnegative(),
         }),
+        hidden: z.boolean().optional(),
       }),
       z.object({
         ...base,

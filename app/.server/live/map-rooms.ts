@@ -7,7 +7,10 @@ import { mapVersion } from "../maps/load";
 import { fightView } from "../combat/fight-view";
 import { loadMapTokens } from "../maps/tokens";
 
-type Deps = Pick<Services, "config" | "vault" | "maps" | "fogs" | "tokens" | "characters">;
+type Deps = Pick<
+  Services,
+  "config" | "vault" | "maps" | "fogs" | "tokens" | "characters" | "fight"
+>;
 
 /**
  * A map's state as one viewer may know it: its version, or `gone` if it's missing or hidden

@@ -45,7 +45,9 @@ export type EncounterAction =
   /** Back to full health with a new maximum, e.g. after rerolling a prepared monster's HP. */
   | { type: "resetHp"; id: CombatantId; maxHp: number }
   | { type: "toggleCondition"; id: CombatantId; condition: Condition }
-  | { type: "setNote"; id: CombatantId; note: string };
+  | { type: "setNote"; id: CombatantId; note: string }
+  /** Hides a monster from players (an ambusher), or reveals it. */
+  | { type: "setHidden"; id: CombatantId; hidden: boolean };
 
 type MonsterSource = Pick<CreatureOption, "ref" | "name" | "armorClass" | "initiativeBonus">;
 
@@ -206,6 +208,18 @@ export function encounterReducer(state: Encounter, action: EncounterAction): Enc
       return {
         ...state,
         combatants: update(state.combatants, action.id, (c) => ({ ...c, note: action.note })),
+      };
+
+    case "setHidden":
+      return {
+        ...state,
+        combatants: update(state.combatants, action.id, (c) => {
+          if (c.kind !== "monster") return c;
+          const changed = { ...c };
+          if (action.hidden) changed.hidden = true;
+          else delete changed.hidden;
+          return changed;
+        }),
       };
   }
 }

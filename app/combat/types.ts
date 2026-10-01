@@ -24,6 +24,8 @@ export interface CreatureOption {
   noteUrl: string;
   armorClass?: number;
   hitPoints?: number;
+  /** Squares across on a battle map, from its size. */
+  squares?: 1 | 2 | 3 | 4;
   /** Rollable, e.g. "2d6 + 2". */
   hitDice?: string;
   initiativeBonus: number;
@@ -108,6 +110,8 @@ export interface MonsterCombatant extends CombatantBase {
   initiativeBonus: number;
   armorClass?: number;
   hp: HitPoints;
+  /** Hidden from players (an ambusher): not in their turn order, nor on their map. */
+  hidden?: boolean;
 }
 
 /** A PC or companion a player runs: the players track their own stats. */

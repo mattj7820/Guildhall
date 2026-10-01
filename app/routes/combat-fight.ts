@@ -10,7 +10,8 @@ import type { Route } from "./+types/combat-fight";
  * POST:
  * - `{ intent: "save", encounter, after, map? }` (the DM): saves the tracker's encounter, if the
  *   stored fight is still the revision it last had; otherwise 409 with the newer fight;
- * - `{ intent: "end" }` (the DM): the fight is over;
+ * - `{ intent: "end", monsters? }` (the DM): the fight is over, and its monsters' tokens are
+ *   cleared, or left (`monsters: "leave"`) as markers;
  * - `{ intent: "endTurn" }` (a player): ends their own turn, if it is theirs.
  * Everyone watching hears the change at once, each as they may see it.
  */
@@ -31,7 +32,8 @@ const bodySchema = z.discriminatedUnion("intent", [
     after: z.number().int().nonnegative(),
     map: z.string().min(1).max(100).optional(),
   }),
-  z.object({ intent: z.literal("end") }),
+  /** The monsters' tokens are cleared, or left where they fell as markers. */
+  z.object({ intent: z.literal("end"), monsters: z.enum(["clear", "leave"]).default("clear") }),
   z.object({ intent: z.literal("endTurn") }),
 ]);
 
@@ -57,8 +59,13 @@ export async function action({ request, context }: Route.ActionArgs) {
   // Everything else is the DM's.
   if (viewer.role !== "dm") throw data("Not found", { status: 404 });
   if (body.data.intent === "end") {
+    const ended = await services.fight.get();
+    const maps = ended
+      ? await services.tokens.endFight(ended.encounter, body.data.monsters === "leave")
+      : [];
     await services.fight.end();
     await services.live.fightChanged();
+    await Promise.all(maps.map((map) => services.live.mapChanged(map)));
     return Response.json({ fight: null });
   }
   const { encounter, after, map } = body.data;

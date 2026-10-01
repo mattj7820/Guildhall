@@ -75,8 +75,15 @@ export class Live {
   }
 
   /** The fight changed (or started, or ended): everyone watching it hears it as they may see it. */
-  fightChanged(): Promise<void> {
-    return this.hub.publish(FIGHT_ROOM, (viewer) => fightState(this.services, viewer));
+  async fightChanged(): Promise<void> {
+    await this.hub.publish(FIGHT_ROOM, (viewer) => fightState(this.services, viewer));
+    // Monsters' tokens take their names, hit points and hiding from the fight, wherever they are.
+    await Promise.all(
+      this.hub
+        .watchedMaps()
+        .filter((map) => map !== FIGHT_ROOM)
+        .map((map) => this.publishOnMap(map, (viewer) => tokensState(this.services, map, viewer))),
+    );
   }
 
   /** The vault changed, which any map's notes or image may depend on. */

@@ -43,6 +43,22 @@ export interface StatblockNumbers {
   hitDice?: string;
   /** The DEX modifier, which is also the initiative bonus. 0 without ability scores. */
   dexterityModifier: number;
+  /** Squares across on a battle map, from its size: up to Medium 1, Large 2, Huge 3, Gargantuan 4. */
+  squares?: 1 | 2 | 3 | 4;
+}
+
+const SQUARES_BY_SIZE: Record<string, 1 | 2 | 3 | 4> = {
+  tiny: 1,
+  small: 1,
+  medium: 1,
+  large: 2,
+  huge: 3,
+  gargantuan: 4,
+};
+
+function squaresFor(size: unknown): Pick<StatblockNumbers, "squares"> {
+  const squares = SQUARES_BY_SIZE[text(size)?.toLowerCase() ?? ""];
+  return squares ? { squares } : {};
 }
 
 export interface AbilityScore {
@@ -138,6 +154,7 @@ export function parseStatblock(source: string): StatblockResult {
         hitPoints: leadingNumber(data.hp),
         hitDice: diceExpression(data.hit_dice),
         dexterityModifier: scores ? abilityModifier(scores[1].score) : 0,
+        ...squaresFor(data.size),
       },
     },
   };

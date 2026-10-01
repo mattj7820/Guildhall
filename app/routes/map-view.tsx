@@ -1,4 +1,5 @@
 import { data, isRouteErrorResponse, Link } from "react-router";
+import { combatCatalogue } from "~/.server/combat/catalogue";
 import { fightView } from "~/.server/combat/fight-view";
 import { loadMapView, mapVersion } from "~/.server/maps/load";
 import { loadMapTokens, partyPlacements } from "~/.server/maps/tokens";
@@ -37,6 +38,9 @@ export async function loader({ params, context }: Route.LoaderArgs) {
       fight: fight && !fight.forDm ? fight : null,
     };
   }
+  // The fight wherever it is: running it from here brings it to this map.
+  const current = await services.fight.get();
+  const fight = current && (await fightView(services, current, viewer));
   return {
     forDm: true as const,
     map: view,
@@ -44,6 +48,8 @@ export async function loader({ params, context }: Route.LoaderArgs) {
     inside,
     party: await partyPlacements(services, maps),
     images: services.vault.current.mapImages(),
+    fight: fight?.forDm ? fight : null,
+    catalogue: combatCatalogue(services.vault.current, viewer),
   };
 }
 
@@ -68,6 +74,8 @@ export default function MapPage({ loaderData }: Route.ComponentProps) {
       inside={loaderData.inside}
       party={loaderData.party}
       images={loaderData.images}
+      fight={loaderData.fight}
+      catalogue={loaderData.catalogue}
     />
   );
 }

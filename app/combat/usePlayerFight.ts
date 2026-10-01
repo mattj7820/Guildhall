@@ -1,11 +1,8 @@
 import { useState } from "react";
 import { FIGHT_ROOM } from "~/live/messages";
 import { useLiveMap } from "~/live/useLive";
-import type { FightView } from "./fight";
+import type { PlayerFightView } from "./fight";
 import { FIGHT_URL } from "./useSharedFight";
-
-/** A player's view of the fight. */
-export type PlayerFightView = Extract<FightView, { forDm: false }>;
 
 /**
  * The fight as this player may see it, kept up to date as it changes, and a way to end their own

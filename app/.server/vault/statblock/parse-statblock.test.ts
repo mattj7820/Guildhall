@@ -81,7 +81,13 @@ describe("parseStatblock", () => {
       bonusActions: [],
       reactions: [],
       legendaryActions: [],
-      numbers: { armorClass: 17, hitPoints: 17, hitDice: "5d6 − 1", dexterityModifier: 2 },
+      numbers: {
+        armorClass: 17,
+        hitPoints: 17,
+        hitDice: "5d6 − 1",
+        dexterityModifier: 2,
+        squares: 1,
+      },
     });
   });
 
@@ -101,6 +107,17 @@ describe("parseStatblock", () => {
       ["lots", undefined],
     ])("normalises hit dice %j to a rollable expression", (dice, expected) => {
       expect(parsed(yaml("name: X", `hit_dice: ${dice}`)).numbers.hitDice).toBe(expected);
+    });
+
+    it.each([
+      ["Tiny", 1],
+      ["Medium", 1],
+      ["Large", 2],
+      ["huge", 3],
+      ["Gargantuan", 4],
+      ["Titanic", undefined],
+    ])("takes %s as %s square(s) across", (size, squares) => {
+      expect(parsed(yaml("name: X", `size: ${size}`)).numbers.squares).toBe(squares);
     });
 
     it("rounds a negative DEX modifier down", () => {

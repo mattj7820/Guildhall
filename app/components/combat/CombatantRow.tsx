@@ -64,6 +64,9 @@ export function CombatantRow({
             {name}
             {down && <Badge tone="down">Down</Badge>}
             {isBloodied(combatant) && <Badge tone="bloodied">Bloodied</Badge>}
+            {combatant.kind === "monster" && combatant.hidden && (
+              <Badge tone="hidden">Hidden</Badge>
+            )}
           </p>
           <p className="text-xs text-stone-500">
             {combatant.kind === "monster"
@@ -88,6 +91,18 @@ export function CombatantRow({
             onClick={onShowStatblock}
           >
             📜
+          </button>
+        )}
+        {live && combatant.kind === "monster" && (
+          <button
+            type="button"
+            className={iconButtonClass}
+            aria-pressed={!!combatant.hidden}
+            aria-label={`Hide ${name} from players`}
+            title="Hidden from players (an ambusher): not in their turn order, nor on their map"
+            onClick={() => dispatch({ type: "setHidden", id, hidden: !combatant.hidden })}
+          >
+            {combatant.hidden ? "🙈" : "👁"}
           </button>
         )}
         {live && (
@@ -214,11 +229,14 @@ function PrepHp({
   );
 }
 
-function Badge({ tone, children }: { tone: "down" | "bloodied"; children: string }) {
-  const colours =
-    tone === "down"
-      ? "bg-stone-700 text-white"
-      : "bg-rose-100 text-rose-900 dark:bg-rose-950 dark:text-rose-200";
+const BADGE_COLOURS = {
+  down: "bg-stone-700 text-white",
+  bloodied: "bg-rose-100 text-rose-900 dark:bg-rose-950 dark:text-rose-200",
+  hidden: "bg-violet-100 text-violet-900 dark:bg-violet-950 dark:text-violet-200",
+};
+
+function Badge({ tone, children }: { tone: keyof typeof BADGE_COLOURS; children: string }) {
+  const colours = BADGE_COLOURS[tone];
   return (
     <span className={`ml-2 rounded px-1.5 py-0.5 text-xs font-semibold uppercase ${colours}`}>
       {children}

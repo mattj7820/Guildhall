@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DM_VIEWER, PLAYER_VIEWER, type Viewer } from "~/campaign/types";
 import type { FogMask } from "../fog/types";
+import { encounter, monster, player } from "~/combat/test-builders";
 import { aCharacterToken, aMarker } from "./test-builders";
 import type { Token } from "./types";
 import { tokensForViewer, type PartyMember } from "./visibility";
@@ -107,6 +108,50 @@ describe("tokensForViewer", () => {
         { id: "Party/One", movable: false },
         { id: "Party/Dog", movable: true },
       ]);
+    });
+  });
+
+  describe("monsters in the fight", () => {
+    const fight = encounter([
+      monster("Goblin 1", { hp: { current: 4, max: 7, temp: 0 } }),
+      monster("Goblin 2", { hp: { current: 0, max: 7, temp: 0 } }),
+      monster("Ambusher", { hidden: true }),
+      player("One", { entityId: "Party/One" }),
+    ]);
+    const token = (combatant: string, at = LIT): Token => ({
+      kind: "combatant",
+      id: `t-${combatant}`,
+      map: "world",
+      at,
+      combatant,
+    });
+    const seen = (viewer: Viewer, ...tokens: Token[]) =>
+      tokensForViewer({ tokens, viewer, fog, party: (note) => party[note], fight });
+
+    it("names a monster's token from the fight, and says when it's down", () => {
+      const [goblin, down] = seen(playerOne, token("Goblin 1"), token("Goblin 2"));
+      expect(goblin).toMatchObject({ name: "Goblin 1", combatant: "Goblin 1", movable: false });
+      expect(goblin).not.toHaveProperty("down");
+      expect(down).toMatchObject({ name: "Goblin 2", down: true });
+    });
+
+    it("gives the DM its hit points, and nobody else", () => {
+      expect(seen(DM_VIEWER, token("Goblin 1"))[0].hp).toEqual({ current: 4, max: 7 });
+      expect(seen(playerOne, token("Goblin 1"))[0]).not.toHaveProperty("hp");
+    });
+
+    it("leaves out, for players, a hidden monster and one under the fog", () => {
+      expect(seen(playerOne, token("Ambusher"), token("Goblin 1", DARK))).toEqual([]);
+      expect(seen(DM_VIEWER, token("Ambusher"))[0].hidden).toBe("secret");
+    });
+
+    it("leaves out, for players, a token whose monster isn't in the fight", () => {
+      expect(seen(playerOne, token("Gone"))).toEqual([]);
+      expect(seen(DM_VIEWER, token("Gone"))[0]).toMatchObject({ name: "Not in the fight" });
+    });
+
+    it("links a party member's token to their place in the fight", () => {
+      expect(seen(playerOne, pc("Party/One"))[0].combatant).toBe("One");
     });
   });
 

@@ -33,6 +33,7 @@ export function combatCatalogue(vault: Vault, viewer: Viewer): CombatCatalogue {
       armorClass: statblock.numbers.armorClass,
       hitPoints: statblock.numbers.hitPoints,
       hitDice: statblock.numbers.hitDice,
+      ...(statblock.numbers.squares && { squares: statblock.numbers.squares }),
       initiativeBonus: statblock.numbers.dexterityModifier,
       html: toHtml(renderStatblock(statblock, { rollable: true })),
     });

@@ -48,7 +48,8 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       // Placed on this map; a party member only if they're one.
       const { token } = action;
       return (
-        token.map === map.id && (token.kind === "marker" || controllersOf(token.note) !== "unknown")
+        token.map === map.id &&
+        (token.kind !== "character" || controllersOf(token.note) !== "unknown")
       );
     }
     // Everything else acts on a token on this map, and a move elsewhere needs a map to go to.

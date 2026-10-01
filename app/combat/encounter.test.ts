@@ -332,6 +332,17 @@ describe("hit points, conditions and notes", () => {
   });
 });
 
+describe("hiding monsters", () => {
+  it("hides a monster from players and reveals it again, leaving others alone", () => {
+    const start = encounter([monster("Ambusher"), player("Aria")]);
+    const hidden = encounterReducer(start, { type: "setHidden", id: "Ambusher", hidden: true });
+    expect(hidden.combatants[0]).toMatchObject({ hidden: true });
+    const shown = encounterReducer(hidden, { type: "setHidden", id: "Ambusher", hidden: false });
+    expect(shown.combatants[0]).not.toHaveProperty("hidden");
+    expect(encounterReducer(start, { type: "setHidden", id: "Aria", hidden: true })).toEqual(start);
+  });
+});
+
 describe("encounterReducer", () => {
   it("never mutates the previous state", () => {
     const state = encounter([monster("Goblin", { initiative: 3 }), player("Aria")]);

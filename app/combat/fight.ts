@@ -32,6 +32,12 @@ export type FightView = (
   hp?: Record<CombatantId, HitPoints>;
 };
 
+/** The DM's view: the whole fight. */
+export type DmFightView = Extract<FightView, { forDm: true }>;
+
+/** A player's view of the fight. */
+export type PlayerFightView = Extract<FightView, { forDm: false }>;
+
 export function fightForViewer(fight: Fight, viewer: Viewer): FightView {
   if (viewer.role === "dm") {
     return {

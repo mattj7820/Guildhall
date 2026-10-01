@@ -15,7 +15,8 @@ export function TurnBar({
   dispatch: (action: EncounterAction) => void;
   canUndo: boolean;
   onUndo: () => void;
-  onNew: () => void;
+  /** Absent on the map page, where the fight ends with End fight instead. */
+  onNew?: () => void;
 }) {
   const active = encounter.combatants.find((c) => c.id === encounter.activeId);
   const blockers = startBlockers(encounter);
@@ -79,15 +80,17 @@ export function TurnBar({
       <button type="button" className={buttonClass} disabled={!canUndo} onClick={onUndo}>
         Undo
       </button>
-      <button
-        type="button"
-        className={buttonClass}
-        disabled={encounter.combatants.length === 0 && encounter.phase === "setup"}
-        onClick={onNew}
-        title="Clears the tracker. Undo brings this encounter back."
-      >
-        New encounter
-      </button>
+      {onNew && (
+        <button
+          type="button"
+          className={buttonClass}
+          disabled={encounter.combatants.length === 0 && encounter.phase === "setup"}
+          onClick={onNew}
+          title="Clears the tracker. Undo brings this encounter back."
+        >
+          New encounter
+        </button>
+      )}
     </section>
   );
 }

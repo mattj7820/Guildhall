@@ -63,6 +63,8 @@ interface Props {
   /** On a battle map, tokens fill their squares, and snap to them if `snap`. */
   grid?: MapGrid;
   snap?: boolean;
+  /** In a fight: the token whose turn it is, ringed. */
+  activeId?: string;
 }
 
 /**
@@ -81,6 +83,7 @@ export function TokenLayer({
   takeHeld,
   grid,
   snap,
+  activeId,
 }: Props) {
   const squares = useMemo(() => grid && gridInPixels(grid, size), [grid, size]);
   return (
@@ -97,6 +100,7 @@ export function TokenLayer({
           size={size}
           canvas={canvas}
           selected={token.id === selectedId}
+          active={token.id === activeId}
           onSelect={onSelect}
           mover={token.movable && (!token.movingBy || takeHeld) ? mover : undefined}
           sayMovable={sayMovable}
@@ -113,6 +117,7 @@ function TokenMark({
   size,
   canvas,
   selected,
+  active,
   onSelect,
   mover,
   sayMovable,
@@ -123,6 +128,7 @@ function TokenMark({
   size: Size;
   canvas: CanvasTools;
   selected: boolean;
+  active: boolean;
   onSelect?: (token: TokenView) => void;
   mover?: TokenMover;
   sayMovable?: boolean;
@@ -245,6 +251,13 @@ function TokenMark({
       // A click on a token is never a click on the map (placing, or an area under it).
       onClick={(event) => event.stopPropagation()}
     >
+      {active && (
+        <circle
+          r={r + 8 / scale}
+          strokeWidth={5 / scale}
+          className="pointer-events-none animate-pulse fill-none stroke-amber-400"
+        />
+      )}
       <circle
         r={r + 3 / scale}
         strokeWidth={2 / scale}
@@ -258,15 +271,49 @@ function TokenMark({
         } stroke-stone-900 group-focus-visible:fill-sky-400`}
       />
       <TokenFace token={token} r={r} />
+      {token.hp && <HitPointsBar hp={token.hp} r={r} scale={scale} />}
       <text
         y={r + 14 / scale}
         textAnchor="middle"
         fontSize={12 / scale}
         strokeWidth={3 / scale}
-        className="pointer-events-none fill-stone-900 stroke-white font-semibold select-none [paint-order:stroke]"
+        className={`pointer-events-none fill-stone-900 stroke-white font-semibold select-none [paint-order:stroke] ${
+          // A battle map is full of tokens: names on hover, and for the ones that matter now.
+          squares && !selected && !active && !token.movingBy
+            ? "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"
+            : ""
+        }`}
       >
         {token.movingBy ? `${token.name} (${token.movingBy})` : token.name}
       </text>
+    </g>
+  );
+}
+
+/** A monster's hit points, for the DM: a bar over its token, red once it's bloodied. */
+function HitPointsBar({
+  hp,
+  r,
+  scale,
+}: {
+  hp: NonNullable<TokenView["hp"]>;
+  r: number;
+  scale: number;
+}) {
+  const width = 1.5 * r;
+  const height = 5 / scale;
+  const left = Math.max(0, hp.current) / Math.max(1, hp.max);
+  return (
+    <g
+      className="pointer-events-none"
+      transform={`translate(${-width / 2} ${-r - 3 / scale - height - 3 / scale})`}
+    >
+      <rect width={width} height={height} className="fill-stone-900/70" />
+      <rect
+        width={width * left}
+        height={height}
+        className={hp.current > hp.max / 2 ? "fill-green-500" : "fill-red-500"}
+      />
     </g>
   );
 }
@@ -321,6 +368,8 @@ export function tokenLabel(token: ShownToken, sayMovable = false): string {
     token.hidden === "secret" && "players can't see this",
     token.hidden === "fog" && "under the fog",
     token.inTheDark && "in the dark",
+    token.down && "down",
+    token.hp && `${token.hp.current} of ${token.hp.max} HP`,
     token.movingBy && `${token.movingBy} is moving it`,
     sayMovable && token.movable && "you can move this",
   ].filter(Boolean);

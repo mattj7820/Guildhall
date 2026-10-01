@@ -14,3 +14,4 @@ test.beforeEach(async ({ request }) => {
 import "./fight/combat-tracker";
 import "./fight/click-to-roll";
 import "./fight/prepared-encounters";
+import "./fight/map-fight";

@@ -35,14 +35,17 @@ export interface EncounterView {
  * without revealing who's in it.
  */
 export function encounterForViewer(encounter: Encounter, viewer: Viewer): EncounterView {
+  const seenBy = (c: Combatant) => !(c.kind === "monster" && c.hidden);
   if (encounter.phase === "setup") return { started: false, round: 0, turnOrder: [], details: {} };
   return {
     started: true,
     round: encounter.round,
-    turnOrder: encounter.combatants.map((c) => ({
+    // A hidden monster isn't there at all, for players.
+    turnOrder: encounter.combatants.filter(seenBy).map((c) => ({
       id: c.id,
       name: c.name,
       kind: c.kind,
+      // A hidden monster's turn looks like a moment between turns.
       isActive: c.id === encounter.activeId,
     })),
     details: Object.fromEntries(

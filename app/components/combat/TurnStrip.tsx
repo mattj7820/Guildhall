@@ -4,7 +4,8 @@ import { initials } from "~/components/maps/TokenLayer";
 
 interface Props {
   round: number;
-  turnOrder: EncounterView["turnOrder"];
+  /** `dim`: for the DM, a monster that's down or hidden from players. */
+  turnOrder: readonly (EncounterView["turnOrder"][number] & { dim?: boolean })[];
   /** Over a map, centred across its top; otherwise in the page. */
   floating?: boolean;
   onSelect?: (id: string) => void;
@@ -50,7 +51,9 @@ export function TurnStrip({ round, turnOrder, floating = false, onSelect, childr
               onClick={() => onSelect?.(entry.id)}
               className={`flex size-9 items-center justify-center rounded-full font-serif text-sm font-bold text-white ${
                 entry.isActive ? "ring-3 ring-amber-500" : ""
-              } ${entry.kind === "monster" ? "bg-red-700" : "bg-stone-700"}`}
+              } ${entry.kind === "monster" ? "bg-red-700" : "bg-stone-700"} ${
+                entry.dim ? "opacity-40" : ""
+              }`}
             >
               {initials(entry.name)}
             </button>

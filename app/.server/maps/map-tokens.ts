@@ -1,7 +1,8 @@
 import path from "node:path";
 import { z } from "zod";
 import { applyTokenAction, mapsTouched, type TokenAction } from "~/maps/tokens/actions";
-import { tokensSchema } from "~/maps/tokens/schema";
+import type { Encounter } from "~/combat/types";
+import { MARKER_NAME_MAX, tokensSchema } from "~/maps/tokens/schema";
 import type { Token } from "~/maps/tokens/types";
 import type { MapId } from "~/maps/types";
 import { JsonFile } from "../data/json-store";
@@ -73,6 +74,36 @@ export class MapTokens {
         changed: [...changed],
       };
       return { next: changed.size > 0 ? { ...data, tokens } : data, result };
+    });
+  }
+
+  /**
+   * When a fight ends, its monsters' tokens are cleared, or left where they fell as markers the
+   * DM can tidy later (seen by players, unless the monster was hidden). Answers with the maps
+   * whose tokens changed.
+   */
+  endFight(encounter: Encounter, leave: boolean): Promise<MapId[]> {
+    return this.file.update((data) => {
+      const changed = new Set<MapId>();
+      const tokens = data.tokens.flatMap((token): Token[] => {
+        if (token.kind !== "combatant") return [token];
+        const monster = encounter.combatants.find((c) => c.id === token.combatant);
+        if (!monster) return [token];
+        changed.add(token.map);
+        if (!leave) return [];
+        const marker: Token = {
+          kind: "marker",
+          id: token.id,
+          map: token.map,
+          at: token.at,
+          ...(token.size && { size: token.size }),
+          name: monster.name.slice(0, MARKER_NAME_MAX),
+          colour: "grey",
+          visibility: monster.kind === "monster" && monster.hidden ? "dm" : "players",
+        };
+        return [marker];
+      });
+      return { next: changed.size > 0 ? { ...data, tokens } : data, result: [...changed] };
     });
   }
 

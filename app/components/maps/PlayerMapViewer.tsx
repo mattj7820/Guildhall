@@ -14,7 +14,8 @@ import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
 import { GridLayer } from "./GridLayer";
 import type { MapGrid } from "~/maps/grid/grid";
-import { usePlayerFight, type PlayerFightView } from "~/combat/usePlayerFight";
+import type { PlayerFightView } from "~/combat/fight";
+import { usePlayerFight } from "~/combat/usePlayerFight";
 import { EndMyTurn } from "~/components/combat/PlayerFight";
 import { TurnStrip } from "~/components/combat/TurnStrip";
 import { InsideBadges } from "./InsideBadges";
@@ -48,6 +49,10 @@ export function PlayerMapViewer({
   const { fight, endTurn, ending } = usePlayerFight(fightFromPage);
   const fightHere = fight?.map === map.id && fight.view.started ? fight : undefined;
   const mapTokens = useMapTokens(map.id, { tokens, inside });
+  const activeCombatant = fightHere?.view.turnOrder.find((entry) => entry.isActive)?.id;
+  const activeToken = activeCombatant
+    ? mapTokens.tokens.find((token) => token.combatant === activeCombatant)
+    : undefined;
   const [focus, setFocus] = useState<{ at: [number, number]; key: number }>();
   const battle = useBattleTools({ map, tokens: mapTokens.tokens, enabled: true });
   const find = (token: TokenView) =>
@@ -130,6 +135,7 @@ export function PlayerMapViewer({
                   grid={map.grid}
                   snap={map.snapToGrid}
                   sayMovable
+                  activeId={activeToken?.id}
                 />
                 {battle.layers(canvas)}
               </>

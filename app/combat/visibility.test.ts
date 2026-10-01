@@ -61,6 +61,17 @@ describe("encounterForViewer", () => {
     });
   });
 
+  it("leaves a hidden monster out entirely, even on its own turn", () => {
+    const ambush = inCombat(
+      [player("Aria", { controller: one }), monster("Ambusher", { hidden: true })],
+      "Ambusher",
+    );
+    const view = encounterForViewer(ambush, playerOne);
+    expect(view.turnOrder.map((entry) => entry.name)).toEqual(["Aria"]);
+    expect(view.turnOrder.some((entry) => entry.isActive)).toBe(false);
+    expect(JSON.stringify(view)).not.toContain("Ambusher");
+  });
+
   it("gives details only for the viewer's own combatants", () => {
     expect(encounterForViewer(fight, playerOne).details).toEqual({
       Aria: { conditions: ["prone"], note: "Aria note" },

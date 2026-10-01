@@ -170,6 +170,7 @@ describe("Vault", () => {
       expect(minion?.note.slug).toBe("Bestiary/Fixture Minion");
       expect(minion?.statblock.numbers).toEqual({
         armorClass: 13,
+        squares: 1,
         hitPoints: 7,
         hitDice: "2d6",
         dexterityModifier: 2,

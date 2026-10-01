@@ -1,4 +1,5 @@
-import { usePlayerFight, type PlayerFightView } from "~/combat/usePlayerFight";
+import type { PlayerFightView } from "~/combat/fight";
+import { usePlayerFight } from "~/combat/usePlayerFight";
 import { panelClass, primaryButtonClass } from "~/components/styles";
 import { TurnStrip } from "./TurnStrip";
 
