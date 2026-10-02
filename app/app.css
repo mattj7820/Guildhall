@@ -305,56 +305,90 @@
   }
 }
 
-/* On a token: a hit shudders with a red pulse, a glow pulses green, a fall tips it over and
-leaves it down. */
-.token-stunt-hit {
-  animation: token-hit 1100ms ease-out;
-}
+/* On a token: a hit twists it back and forth, a glow pulses in time with its light, a fall tips
+it over and leaves it down. */
+.token-stunt-hit,
 .token-stunt-glow {
-  animation: token-glow 3000ms ease-in-out;
-}
-.token-stunt-fall {
   transform-box: fill-box;
   transform-origin: center;
-  animation: token-fall 900ms ease-in forwards;
+}
+.token-stunt-hit {
+  animation: token-hit 1300ms ease-out;
+}
+.token-stunt-glow {
+  animation: token-glow 5000ms ease-in-out;
+}
+.stunt-light {
+  mix-blend-mode: screen;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: stunt-light 5000ms ease-in-out both;
 }
 @keyframes token-hit {
   0%,
   100% {
-    transform: translateX(0);
-    filter: none;
+    transform: rotate(0);
   }
   10% {
-    transform: translateX(-3%);
-    filter: drop-shadow(0 0 10px rgb(220 38 38)) brightness(1.15);
+    transform: rotate(-16deg);
   }
-  20% {
-    transform: translateX(3%);
-  }
-  30% {
-    transform: translateX(-2%);
+  25% {
+    transform: rotate(14deg);
   }
   40% {
-    transform: translateX(1%);
-    filter: drop-shadow(0 0 12px rgb(220 38 38));
+    transform: rotate(-10deg);
   }
-  50% {
-    transform: translateX(0);
+  55% {
+    transform: rotate(7deg);
+  }
+  70% {
+    transform: rotate(-4deg);
+  }
+  85% {
+    transform: rotate(2deg);
   }
 }
+/* Three slow beats: brighter, softer, brighter, softer, brighter, gone. */
 @keyframes token-glow {
   0%,
   100% {
     filter: none;
   }
-  25%,
-  70% {
-    filter: drop-shadow(0 0 14px rgb(74 222 128)) drop-shadow(0 0 4px rgb(187 247 208))
-      brightness(1.35);
+  15%,
+  45%,
+  75% {
+    filter: drop-shadow(0 0 12px rgb(134 239 172)) brightness(1.35);
   }
-  47% {
-    filter: drop-shadow(0 0 6px rgb(74 222 128)) brightness(1.1);
+  30%,
+  60% {
+    filter: drop-shadow(0 0 4px rgb(134 239 172)) brightness(1.1);
   }
+}
+@keyframes stunt-light {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  15%,
+  45%,
+  75% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  30%,
+  60% {
+    transform: scale(0.85);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.05);
+    opacity: 0;
+  }
+}
+.token-stunt-fall {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: token-fall 900ms ease-in forwards;
 }
 @keyframes token-fall {
   to {

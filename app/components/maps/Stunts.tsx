@@ -7,8 +7,8 @@ import type { CanvasTools } from "./MapCanvas";
 import { floatingPanelClass, toolButtonClass } from "./MapToolbar";
 import type { TokenStunt } from "./TokenLayer";
 
-/** Played at a point on the map (a token's, or anywhere). */
-export type PointStuntKind = "impact" | "flash" | "smoke";
+/** Played at a point on the map (a token's, or anywhere); "light" is a glowing token's light. */
+export type PointStuntKind = "impact" | "flash" | "smoke" | "light";
 /** Played by a token itself. */
 export type TokenStuntKind = TokenStunt["kind"];
 export type StuntKind = PointStuntKind | TokenStuntKind;
@@ -43,8 +43,9 @@ export const STUNT_MS: Record<StuntKind, number> = {
   impact: 3200,
   flash: 3000,
   smoke: 5600,
-  hit: 1200,
-  glow: 3200,
+  light: 5000,
+  hit: 1300,
+  glow: 5000,
   fall: 1200,
 };
 const SHAKE_MS = 500;
@@ -93,14 +94,19 @@ export function useStunts() {
     );
   }, []);
 
-  /** Plays the armed stunt: at a point, or on a token if it's one a token plays. */
-  function play(at: Point, radius: number, token?: string): boolean {
+  /**
+   * Plays the armed stunt: at a point, or on a token if it's one a token plays. `sizes` are in
+   * image pixels: a burst's (a few squares) and a glowing token's light (about five).
+   */
+  function play(at: Point, sizes: { burst: number; light: number }, token?: string): boolean {
     if (!armed) return false;
     if (isTokenKind(armed)) {
-      if (token) playOn(armed, token);
-      return !!token;
+      if (!token) return false;
+      playOn(armed, token);
+      if (armed === "glow") playAt("light", at, sizes.light);
+      return true;
     }
-    playAt(armed, at, radius);
+    playAt(armed, at, sizes.burst);
     return true;
   }
 
@@ -213,21 +219,28 @@ export function FlashOverlay({ flashKey }: { flashKey: number }) {
   );
 }
 
-/** The point stunts playing now, drawn over the tokens. */
+/**
+ * The point stunts playing now. `under` is the light round a glowing token, drawn beneath the
+ * tokens so they stay clear in it; everything else is drawn over them.
+ */
 export function StuntLayer({
   stunts,
+  under = false,
 }: {
   stunts: readonly PointStunt[];
   size: Size;
   canvas: CanvasTools;
+  under?: boolean;
 }) {
   return (
     <g className="pointer-events-none" aria-hidden="true">
-      {stunts.map((stunt) => (
-        <g key={stunt.key} transform={`translate(${stunt.at[0]} ${stunt.at[1]})`}>
-          <StuntShape stunt={stunt} />
-        </g>
-      ))}
+      {stunts
+        .filter((stunt) => (stunt.kind === "light") === under)
+        .map((stunt) => (
+          <g key={stunt.key} transform={`translate(${stunt.at[0]} ${stunt.at[1]})`}>
+            <StuntShape stunt={stunt} />
+          </g>
+        ))}
     </g>
   );
 }
@@ -275,6 +288,8 @@ function StuntShape({ stunt }: { stunt: PointStunt }) {
       );
     case "flash":
       return <circle r={r * 2.5} className="stunt-flash" fill="url(#stunt-flash)" />;
+    case "light":
+      return <circle r={r} className="stunt-light" fill="url(#stunt-light)" />;
     case "smoke":
       return (
         <g filter="url(#stunt-soft)">
@@ -303,6 +318,12 @@ export function StuntDefs() {
         <stop offset="0%" stopColor="white" stopOpacity="1" />
         <stop offset="35%" stopColor="#fffbeb" stopOpacity="0.9" />
         <stop offset="100%" stopColor="#fef3c7" stopOpacity="0" />
+      </radialGradient>
+      <radialGradient id="stunt-light">
+        <stop offset="0%" stopColor="#f0fdf4" stopOpacity="0.95" />
+        <stop offset="30%" stopColor="#bbf7d0" stopOpacity="0.7" />
+        <stop offset="70%" stopColor="#4ade80" stopOpacity="0.25" />
+        <stop offset="100%" stopColor="#4ade80" stopOpacity="0" />
       </radialGradient>
       <radialGradient id="stunt-fire-core">
         <stop offset="0%" stopColor="white" stopOpacity="1" />

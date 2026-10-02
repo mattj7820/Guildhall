@@ -113,9 +113,11 @@ export function MapViewer({
   const [stuntMode, setStuntMode] = useState(false);
   const stunts = useStunts();
   const stuntArmed = stuntMode && !!stunts.armed;
-  /** A stunt anywhere on the map: about three squares across. */
-  const pointStuntRadius = (scale: number) =>
-    map.grid ? map.grid.square * map.size.width * 1.5 : 110 / scale;
+  /** Stunts' sizes in image pixels: a burst about three squares across, a token's light five. */
+  const stuntSizes = (scale: number) => {
+    const square = map.grid ? map.grid.square * map.size.width : 70 / scale;
+    return { burst: square * 1.5, light: square * 5 };
+  };
 
   /** Where a token placed here lands: on a square while tokens snap to the grid. */
   const landing = (point: Point): Point => {
@@ -333,10 +335,11 @@ export function MapViewer({
                     onClick={(event) => {
                       event.stopPropagation();
                       const point = canvas.clientToImage(event.clientX, event.clientY);
-                      if (point) stunts.play(point, pointStuntRadius(canvas.scale));
+                      if (point) stunts.play(point, stuntSizes(canvas.scale));
                     }}
                   />
                 )}
+                <StuntLayer under stunts={stunts.points} size={map.size} canvas={canvas} />
                 <TokenLayer
                   tokens={presenting ? tokens.filter((token) => !token.hidden) : tokens}
                   size={map.size}
@@ -348,7 +351,7 @@ export function MapViewer({
                       ? (token) =>
                           stunts.play(
                             toPixels(token.at, map.size),
-                            pointStuntRadius(canvas.scale),
+                            stuntSizes(canvas.scale),
                             token.id,
                           )
                       : presenting
