@@ -129,6 +129,12 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
     ringed, for everyone. Players move only on their own turn, unless the DM switches on free
     movement (the DM moves anything). End fight clears the monsters, or leaves them where they
     fell.
+  - **Quick damage:** click a monster's token (Shift-click for more, or pick everyone a spell area
+    catches) and type the number a player rolled: Damage, Half or Heal, all at once.
+  - **Stunts, for the big moments:** the DM can play an impact, a flash, a cloud of smoke or a
+    screen shake on the map, or make a token wobble, glow or fall, and play sounds from a vault
+    folder, for everyone watching. Nothing plays by itself. Anyone can turn stunts off, mute
+    sounds or set the volume, and reduced-motion settings get gentler versions.
 - **What players see.** Notes are DM-only unless their frontmatter says `visibility: players`.
   Players never get DM-only notes: they're left out of navigation, search and links, and a direct
   URL gives the same 404 as a missing note. Inside a shared note, the DM's parts stay secret: a
