@@ -193,6 +193,10 @@ export class Bag {
     await expect(tile).toBeFocused();
     await this.page.keyboard.press("Space");
     await expect(this.announced(`${name} is at position`)).toBeAttached();
+    // dnd-kit starts listening for the arrow keys in a zero-delay timer after the pick-up, and
+    // Chrome runs input before timers, so a key sent at once can arrive first and be lost. A
+    // zero-delay timer of our own runs after dnd-kit's, so once it has, the keys are heard.
+    await this.page.evaluate(() => new Promise((resolve) => setTimeout(resolve)));
     for (const [key, announcement] of steps) {
       await this.page.keyboard.press(key);
       await expect(this.announced(announcement)).toBeAttached();
