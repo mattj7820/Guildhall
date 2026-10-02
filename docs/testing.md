@@ -37,7 +37,7 @@ its body says which, for example:
 - `Bestiary/Test Creature.md`: a statblock in the plugin format, plus an unreadable one.
 - `Bestiary/Fixture Minion.md`: the combat tracker's test monster, with known DEX, AC and hit dice.
 - `Sounds/Fixture Tone.wav`: the sound board's one sound, a generated tone; `Sounds/Fixture
-  Sounds.md` says so.
+Sounds.md` says so.
 - `Bestiary/Fixture Companion.md`: a player-visible companion statblock, plus one hidden in a DM
   comment that players must never get. `type: companion` makes it the party's shared companion.
 - `Bestiary/Fixture Bare Statblock.md`: a statblock with only a name (no HP, no ability scores).
