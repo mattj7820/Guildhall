@@ -6,6 +6,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Services } from "~/context";
 import { inCombat, monster, player as player_ } from "~/combat/test-builders";
 import { FIGHT_ROOM } from "~/live/messages";
+import type { StuntEvent } from "~/maps/stunts";
 import { aCharacterToken, aMarker } from "~/maps/tokens/test-builders";
 import type { Token } from "~/maps/tokens/types";
 import type { CampaignMap, Point } from "~/maps/types";
@@ -223,6 +224,48 @@ describe("Live", () => {
     expect(forPlayer).toContain('"theirTurn":true');
     expect(forPlayer).not.toMatch(/Secret plan|"hp"|"initiative"|"revision"/);
     expect(JSON.stringify(await dmHears)).toContain("Secret plan");
+  });
+
+  describe("stunts", () => {
+    const isStunt = (message: unknown) => (message as { type: string }).type === "stunt";
+
+    it("plays a stunt for everyone watching a map they may see, and nobody else", async () => {
+      const player = await connect(DISCORD_IDS.playerOne, "player one");
+      const dm = await connect(DISCORD_IDS.dm);
+      player.send({ type: "watch", map: shared.id });
+      player.send({ type: "watch", map: secret.id });
+      dm.send({ type: "watch", map: shared.id });
+      await briefly();
+
+      const impact: StuntEvent = { id: "s1", kind: "impact", at: [0.9, 0.9], size: 0.1 };
+      const playerHears = player.next(isStunt);
+      const dmHears = dm.next(isStunt);
+      await live.stunt(shared.id, impact);
+      expect(await playerHears).toEqual({ type: "stunt", map: shared.id, stunt: impact });
+      expect(await dmHears).toEqual({ type: "stunt", map: shared.id, stunt: impact });
+
+      await live.stunt(secret.id, { id: "s2", kind: "shake" });
+      await briefly();
+      expect(player.received.filter(isStunt)).toHaveLength(1);
+    });
+
+    it("plays a token's stunt only for those who may see the token", async () => {
+      await placeOn(
+        shared.id,
+        aMarker({ id: "secret-marker", map: shared.id, visibility: "dm", at: LIT }),
+      );
+      const player = await connect(DISCORD_IDS.playerOne, "player one");
+      const dm = await connect(DISCORD_IDS.dm);
+      player.send({ type: "watch", map: shared.id });
+      dm.send({ type: "watch", map: shared.id });
+      await briefly();
+
+      const dmHears = dm.next(isStunt);
+      await live.stunt(shared.id, { id: "s3", kind: "glow", token: "secret-marker", light: 0.2 });
+      await dmHears;
+      await briefly();
+      expect(player.received.filter(isStunt)).toEqual([]);
+    });
   });
 
   describe("dragging", () => {

@@ -28,7 +28,14 @@ import { GridLayer } from "./GridLayer";
 import { InsideBadges } from "./InsideBadges";
 import { useBattleTools } from "./useBattleTools";
 import { useMapFight } from "./useMapFight";
-import { FlashOverlay, StuntDefs, StuntLayer, StuntPalette, useStunts } from "./Stunts";
+import {
+  FlashOverlay,
+  StuntDefs,
+  StuntLayer,
+  StuntPalette,
+  useStuntPicker,
+  useStunts,
+} from "./Stunts";
 import { TOKEN_RADIUS, TokenLayer } from "./TokenLayer";
 import { PlacingHint, TokenPanel, type Placing } from "./TokenPanel";
 import { useFogTools } from "./useFogTools";
@@ -111,8 +118,12 @@ export function MapViewer({
     fight.selectToken(token, how?.additive);
   };
   const [stuntMode, setStuntMode] = useState(false);
-  const stunts = useStunts();
-  const stuntArmed = stuntMode && !!stunts.armed;
+  const stunts = useStunts(map, (id) => {
+    const token = tokens.find((each) => each.id === id);
+    return token && toPixels(token.at, map.size);
+  });
+  const picker = useStuntPicker(stunts, map.size);
+  const stuntArmed = stuntMode && !!picker.armed;
   /** Stunts' sizes in image pixels: a burst about three squares across, a token's light five. */
   const stuntSizes = (scale: number) => {
     const square = map.grid ? map.grid.square * map.size.width : 70 / scale;
@@ -201,7 +212,7 @@ export function MapViewer({
             className={stuntMode ? primaryButtonClass : buttonClass}
             onClick={() => {
               setStuntMode(!stuntMode);
-              stunts.setArmed(undefined);
+              picker.setArmed(undefined);
             }}
           >
             Stunts
@@ -259,11 +270,11 @@ export function MapViewer({
           <FlashOverlay flashKey={stunts.flashKey} />
           {stuntMode && (
             <StuntPalette
-              stunts={stunts}
+              stunts={picker}
               sounds={sounds}
               onClose={() => {
                 setStuntMode(false);
-                stunts.setArmed(undefined);
+                picker.setArmed(undefined);
               }}
             />
           )}
@@ -335,7 +346,7 @@ export function MapViewer({
                     onClick={(event) => {
                       event.stopPropagation();
                       const point = canvas.clientToImage(event.clientX, event.clientY);
-                      if (point) stunts.play(point, stuntSizes(canvas.scale));
+                      if (point) picker.play(point, stuntSizes(canvas.scale));
                     }}
                   />
                 )}
@@ -349,7 +360,7 @@ export function MapViewer({
                   onSelect={
                     stuntArmed
                       ? (token) =>
-                          stunts.play(
+                          picker.play(
                             toPixels(token.at, map.size),
                             stuntSizes(canvas.scale),
                             token.id,

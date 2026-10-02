@@ -19,6 +19,7 @@ import { usePlayerFight } from "~/combat/usePlayerFight";
 import { EndMyTurn } from "~/components/combat/PlayerFight";
 import { TurnStrip } from "~/components/combat/TurnStrip";
 import { InsideBadges } from "./InsideBadges";
+import { FlashOverlay, StuntDefs, StuntLayer, useStunts } from "./Stunts";
 import { useBattleTools } from "./useBattleTools";
 import { TokenDistances } from "./TokenDistances";
 import { NotePanel } from "./NotePanel";
@@ -53,6 +54,10 @@ export function PlayerMapViewer({
   const activeToken = activeCombatant
     ? mapTokens.tokens.find((token) => token.combatant === activeCombatant)
     : undefined;
+  const stunts = useStunts(map, (id) => {
+    const token = mapTokens.tokens.find((each) => each.id === id);
+    return token && toPixels(token.at, map.size);
+  });
   const [focus, setFocus] = useState<{ at: [number, number]; key: number }>();
   const battle = useBattleTools({ map, tokens: mapTokens.tokens, enabled: true });
   const find = (token: TokenView) =>
@@ -75,7 +80,8 @@ export function PlayerMapViewer({
         </div>
       </div>
       <div className="flex min-h-0 flex-1 flex-col bg-stone-50 md:flex-row dark:bg-stone-950">
-        <div className="relative flex min-h-[50vh] flex-1">
+        <div className={`relative flex min-h-[50vh] flex-1 ${stunts.shaking ? "stunt-shake" : ""}`}>
+          <FlashOverlay flashKey={stunts.flashKey} />
           {battle.toolbar}
           {fightHere && (
             <TurnStrip floating round={fightHere.view.round} turnOrder={fightHere.view.turnOrder}>
@@ -127,6 +133,8 @@ export function PlayerMapViewer({
                   size={map.size}
                   scale={canvas.scale}
                 />
+                <StuntDefs />
+                <StuntLayer under stunts={stunts.points} size={map.size} canvas={canvas} />
                 <TokenLayer
                   tokens={mapTokens.tokens}
                   size={map.size}
@@ -136,7 +144,9 @@ export function PlayerMapViewer({
                   snap={map.snapToGrid}
                   sayMovable
                   activeId={activeToken?.id}
+                  stunts={stunts.onTokens}
                 />
+                <StuntLayer stunts={stunts.points} size={map.size} canvas={canvas} />
                 {battle.layers(canvas)}
               </>
             )}

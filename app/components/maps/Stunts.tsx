@@ -1,28 +1,36 @@
-// PROTOTYPE (made real before the PR): stunts play on the DM's own screen only, for now.
-import { useCallback, useRef, useState, type CSSProperties } from "react";
-import { soundUrl } from "~/maps/urls";
-import type { Point, Size } from "~/maps/types";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useLiveMap } from "~/live/useLive";
+import { normalise } from "~/maps/geometry";
+import {
+  isTokenStunt,
+  POINT_STUNTS,
+  type PointStuntKind as SentPointKind,
+  type Stunt,
+  type StuntEvent,
+  type TokenStuntKind,
+} from "~/maps/stunts";
+import { mapStuntsUrl, soundUrl } from "~/maps/urls";
+import type { MapId, Point, Size } from "~/maps/types";
+import { newId } from "~/shared/ids";
 import { buttonClass } from "~/components/styles";
 import type { CanvasTools } from "./MapCanvas";
 import { floatingPanelClass, toolButtonClass } from "./MapToolbar";
 import type { TokenStunt } from "./TokenLayer";
 
-/** Played at a point on the map (a token's, or anywhere); "light" is a glowing token's light. */
-export type PointStuntKind = "impact" | "flash" | "smoke" | "light";
-/** Played by a token itself. */
-export type TokenStuntKind = TokenStunt["kind"];
+/** Drawn at a point: the stunts played there, and "light", a glowing token's light. */
+export type PointStuntKind = SentPointKind | "light";
 export type StuntKind = PointStuntKind | TokenStuntKind;
 
 export interface PointStunt {
   kind: PointStuntKind;
   /** Image pixels. */
   at: Point;
-  /** Its size in image pixels: a few squares across. */
+  /** Its radius in image pixels. */
   radius: number;
   key: number;
 }
 
-const POINT_KINDS: { kind: PointStuntKind; label: string }[] = [
+const POINT_KINDS: { kind: SentPointKind; label: string }[] = [
   { kind: "impact", label: "Impact" },
   { kind: "flash", label: "Flash" },
   { kind: "smoke", label: "Smoke" },
@@ -32,8 +40,8 @@ const TOKEN_KINDS: { kind: TokenStuntKind; label: string }[] = [
   { kind: "glow", label: "Glow" },
   { kind: "fall", label: "Fall" },
 ];
-const isTokenKind = (kind: StuntKind): kind is TokenStuntKind =>
-  TOKEN_KINDS.some((each) => each.kind === kind);
+const isPointKind = (kind: StuntKind): kind is SentPointKind =>
+  (POINT_STUNTS as readonly string[]).includes(kind);
 
 /**
  * How long each plays, in milliseconds, before it's tidied away: long enough for the table to
@@ -53,16 +61,25 @@ const SHAKE_MS = 500;
 const FLASH_MS = 1400;
 
 /**
- * The DM's stunts: which one is ready to play, what's playing, and the screen shake. A stunt is
- * armed from the palette and played by the next click on the map or a token.
+ * Stunts on a map: what's playing, the shake and the flash, for everyone watching it. Stunts come
+ * over the live connection; the DM's own are played at once and sent (`send`), with an ID so the
+ * tab doesn't play them twice when they come back. `tokenAt` says where a token is now (image
+ * pixels), for a glow's light.
  */
-export function useStunts() {
-  const [armed, setArmed] = useState<StuntKind>();
+export function useStunts(
+  map: { id: MapId; size: Size },
+  tokenAt: (token: string) => Point | undefined,
+) {
   const [points, setPoints] = useState<PointStunt[]>([]);
   const [onTokens, setOnTokens] = useState<Record<string, TokenStunt>>({});
   const [shake, setShake] = useState(0);
   const [flash, setFlash] = useState(0);
   const counter = useRef(0);
+  const mine = useRef(new Set<string>());
+  const where = useRef(tokenAt);
+  useEffect(() => {
+    where.current = tokenAt;
+  });
 
   const playAt = useCallback((kind: PointStuntKind, at: Point, radius: number) => {
     const key = ++counter.current;
@@ -94,43 +111,99 @@ export function useStunts() {
     );
   }, []);
 
-  /**
-   * Plays the armed stunt: at a point, or on a token if it's one a token plays. `sizes` are in
-   * image pixels: a burst's (a few squares) and a glowing token's light (about five).
-   */
-  function play(at: Point, sizes: { burst: number; light: number }, token?: string): boolean {
-    if (!armed) return false;
-    if (isTokenKind(armed)) {
-      if (!token) return false;
-      playOn(armed, token);
-      if (armed === "glow") playAt("light", at, sizes.light);
-      return true;
-    }
-    playAt(armed, at, sizes.burst);
-    return true;
-  }
+  const show = useCallback(
+    (stunt: Stunt) => {
+      const { width, height } = map.size;
+      if (isTokenStunt(stunt)) {
+        playOn(stunt.kind, stunt.token);
+        const at = where.current(stunt.token);
+        if (stunt.kind === "glow" && stunt.light && at) playAt("light", at, stunt.light * width);
+        return;
+      }
+      switch (stunt.kind) {
+        case "shake":
+          setShake(++counter.current);
+          setTimeout(() => setShake(0), SHAKE_MS);
+          return;
+        case "stand":
+          return setOnTokens({});
+        case "sound":
+          void new Audio(soundUrl(stunt.sound)).play().catch(() => {});
+          return;
+        default:
+          playAt(stunt.kind, [stunt.at[0] * width, stunt.at[1] * height], stunt.size * width);
+      }
+    },
+    [map.size, playAt, playOn],
+  );
 
-  function shakeScreen() {
-    setShake(++counter.current);
-    setTimeout(() => setShake(0), SHAKE_MS);
-  }
+  useLiveMap(map.id, (message) => {
+    if (message.type !== "stunt" || mine.current.delete(message.stunt.id)) return;
+    show(message.stunt);
+  });
+
+  /** The DM plays a stunt: here at once, and for everyone else over the live connection. */
+  const send = useCallback(
+    (stunt: Stunt) => {
+      const event = { ...stunt, id: newId() } as StuntEvent;
+      mine.current.add(event.id);
+      show(stunt);
+      void fetch(mapStuntsUrl(map.id), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ stunt: event }),
+      }).catch(() => {});
+    },
+    [map.id, show],
+  );
 
   return {
-    armed,
-    setArmed,
     points,
     onTokens,
     shaking: shake !== 0,
     /** Changes with each flash, so the overlay plays again. */
     flashKey: flash,
-    play,
-    shakeScreen,
-    /** Stands fallen tokens back up. */
-    reset: () => setOnTokens({}),
+    send,
   };
 }
 
-export type StuntControls = ReturnType<typeof useStunts>;
+export type Stunts = ReturnType<typeof useStunts>;
+
+/**
+ * The DM's choice of stunt, armed from the palette and played by the next click on the map or a
+ * token. `sizes` are in image pixels: a burst's radius (a few squares) and a glow's light (five).
+ */
+export function useStuntPicker(stunts: Stunts, size: Size) {
+  const [armed, setArmed] = useState<StuntKind>();
+  function play(at: Point, sizes: { burst: number; light: number }, token?: string): boolean {
+    if (!armed || armed === "light") return false;
+    if (isPointKind(armed)) {
+      stunts.send({
+        kind: armed,
+        at: normalise(at[0], at[1], size),
+        size: Math.min(1, sizes.burst / size.width),
+      });
+      return true;
+    }
+    if (!token) return false;
+    stunts.send({
+      kind: armed,
+      token,
+      ...(armed === "glow" && { light: Math.min(1, sizes.light / size.width) }),
+    });
+    return true;
+  }
+  return {
+    armed,
+    setArmed,
+    play,
+    shakeScreen: () => stunts.send({ kind: "shake" }),
+    standUp: () => stunts.send({ kind: "stand" }),
+    playSound: (sound: string) => stunts.send({ kind: "sound", sound }),
+  };
+}
+
+export type StuntPicker = ReturnType<typeof useStuntPicker>;
 
 /** The stunts and sounds to pick from, over the map's top-right corner. */
 export function StuntPalette({
@@ -138,7 +211,7 @@ export function StuntPalette({
   sounds,
   onClose,
 }: {
-  stunts: StuntControls;
+  stunts: StuntPicker;
   sounds: string[];
   onClose: () => void;
 }) {
@@ -176,7 +249,7 @@ export function StuntPalette({
       <span className="text-xs font-semibold text-stone-500">On a token</span>
       <div className="flex flex-wrap gap-1">
         {TOKEN_KINDS.map(button)}
-        <button type="button" className={`${buttonClass} text-xs`} onClick={stunts.reset}>
+        <button type="button" className={`${buttonClass} text-xs`} onClick={stunts.standUp}>
           Stand them up
         </button>
       </div>
@@ -192,7 +265,7 @@ export function StuntPalette({
               <button
                 type="button"
                 className="w-full truncate rounded px-1 py-0.5 text-left text-xs hover:bg-stone-100 dark:hover:bg-stone-800"
-                onClick={() => void new Audio(soundUrl(path)).play()}
+                onClick={() => stunts.playSound(path)}
               >
                 ▶ {soundName(path)}
               </button>
@@ -239,7 +312,11 @@ export function StuntLayer({
       {stunts
         .filter((stunt) => (stunt.kind === "light") === under)
         .map((stunt) => (
-          <g key={stunt.key} transform={`translate(${stunt.at[0]} ${stunt.at[1]})`}>
+          <g
+            key={stunt.key}
+            data-stunt={stunt.kind}
+            transform={`translate(${stunt.at[0]} ${stunt.at[1]})`}
+          >
             <StuntShape stunt={stunt} />
           </g>
         ))}

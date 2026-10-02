@@ -42,3 +42,8 @@ export function mapTokensUrl(id: MapId): string {
 export function soundUrl(sound: string): string {
   return `/sounds/${sound.split("/").map(encodeURIComponent).join("/")}`;
 }
+
+/** Where the DM plays a stunt on a map, as JSON. */
+export function mapStuntsUrl(id: MapId): string {
+  return `${mapUrl(id)}/stunts`;
+}
