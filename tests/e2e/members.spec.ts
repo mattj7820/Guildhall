@@ -1,4 +1,4 @@
-import type { App} from "./support/fixtures";
+import type { App } from "./support/fixtures";
 import { expect, test as base } from "./support/fixtures";
 import { uniqueName } from "./support/test-data";
 import { SIGNED_IN } from "./support/sign-in";

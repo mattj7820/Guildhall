@@ -1,11 +1,4 @@
-import { expect, test } from "@playwright/test";
-import {
-  characterCard,
-  openCharacter,
-  ORIGIN,
-  switchToDmView,
-  switchToPlayerView,
-} from "./support/app";
+import { expect, test, type App, type Who } from "./support/fixtures";
 import { SIGNED_IN } from "./support/sign-in";
 
 /**
@@ -14,54 +7,51 @@ import { SIGNED_IN } from "./support/sign-in";
  * server, so a sheet may already have been started by another test.
  */
 
-test("the DM sees the whole party and can open every sheet", async ({ page }) => {
-  await page.goto("/");
-  await page
-    .getByRole("navigation", { name: "Main" })
-    .getByRole("link", { name: "Characters" })
-    .click();
+test("the DM sees the whole party and can open every sheet", async ({ app, characters, page }) => {
+  await app.goto("/");
+  await app.navLink("Characters").click();
   await expect(page.getByRole("heading", { name: "Characters", level: 1 })).toBeVisible();
   for (const name of ["Fixture PC One", "Fixture PC Two", "Fixture Companion"]) {
-    await expect(characterCard(page, name)).toBeVisible();
+    await expect(characters.card(name)).toBeVisible();
   }
 
-  await openCharacter(page, "Fixture PC Two");
-  await expect(page.getByRole("heading", { name: "Fixture PC Two", level: 1 })).toBeVisible();
+  await characters.openSheet("Fixture PC Two");
   await expect(page.getByRole("region", { name: "Ability scores" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Skills" })).toContainText("Sleight of Hand");
 });
 
 test("the DM previewing as a player can open the shared companion, but not the PCs", async ({
-  page,
+  characters,
 }) => {
-  await page.goto("/characters");
-  await switchToPlayerView(page);
-  await expect(
-    characterCard(page, "Fixture PC One").getByRole("link", { name: /^Open/ }),
-  ).toHaveCount(0);
-  await openCharacter(page, "Fixture Companion");
-  await expect(page.getByRole("heading", { name: "Fixture Companion", level: 1 })).toBeVisible();
-  await switchToDmView(page);
+  await characters.open();
+  await characters.previewAsPlayer();
+  await expect(characters.card("Fixture PC One").getByRole("link", { name: /^Open/ })).toHaveCount(
+    0,
+  );
+  await characters.openSheet("Fixture Companion");
+  await characters.backToDmView();
 });
 
 test.describe("as Player One", () => {
   test.use({ storageState: SIGNED_IN.playerOne });
 
-  test("opens their own sheet, with their PC note as its story", async ({ page }) => {
-    await openCharacter(page, "Fixture PC One");
-    await expect(page.getByRole("heading", { name: "Fixture PC One", level: 1 })).toBeVisible();
+  /** Fixture PC Two's sheet, started by the DM if no test has yet; answers with its path. */
+  async function pcTwoSheet(openAs: (who: Who) => Promise<App>) {
+    const dm = await openAs("dm");
+    return (await dm.characters.openSheet("Fixture PC Two")).path;
+  }
+
+  test("opens their own sheet, with their PC note as its story", async ({ characters, page }) => {
+    await characters.openSheet("Fixture PC One");
     await page.getByRole("tab", { name: "Story" }).click();
     await expect(page.getByRole("tabpanel")).toContainText("Fixture: a player character note.");
   });
 
-  test("sees only a summary of someone else's character", async ({ page, browser }) => {
-    // Make sure Fixture PC Two has a sheet, as the DM.
-    const dm = await browser.newContext({ storageState: SIGNED_IN.dm, baseURL: ORIGIN });
-    await openCharacter(await dm.newPage(), "Fixture PC Two");
-    await dm.close();
+  test("sees only a summary of someone else's character", async ({ characters, openAs }) => {
+    await pcTwoSheet(openAs);
 
-    await page.goto("/characters");
-    const card = characterCard(page, "Fixture PC Two");
+    await characters.open();
+    const card = characters.card("Fixture PC Two");
     await expect(card).toBeVisible();
     await expect(card.getByRole("link")).toHaveCount(0);
     await expect(card.getByRole("button")).toHaveCount(0);
@@ -69,42 +59,35 @@ test.describe("as Player One", () => {
   });
 
   test("gets the same 404 for someone else's sheet as for one that doesn't exist", async ({
+    api,
+    app,
+    openAs,
     page,
-    browser,
   }) => {
-    const dm = await browser.newContext({ storageState: SIGNED_IN.dm, baseURL: ORIGIN });
-    const dmPage = await dm.newPage();
-    await openCharacter(dmPage, "Fixture PC Two");
-    const otherSheet = new URL(dmPage.url()).pathname;
-    await dm.close();
+    const otherSheet = await pcTwoSheet(openAs);
 
-    const response = await page.goto(otherSheet);
-    expect(response?.status()).toBe(404);
+    expect((await app.goto(otherSheet))?.status()).toBe(404);
     const theirs = await page.locator("main").innerText();
 
-    const missing = await page.goto("/characters/no-such-character");
-    expect(missing?.status()).toBe(404);
+    expect((await app.goto("/characters/no-such-character"))?.status()).toBe(404);
     expect(await page.locator("main").innerText()).toBe(theirs);
 
-    const portrait = await page.request.get(`${otherSheet}/portrait`);
-    expect(portrait.status()).toBe(404);
+    expect((await api.request.get(`${otherSheet}/portrait`)).status()).toBe(404);
   });
 
-  test("can't start a sheet for someone else's character", async ({ page }) => {
-    await page.goto("/characters");
-    const response = await page.request.post("/characters", {
-      headers: { Origin: ORIGIN },
-      form: { intent: "start", note: "Party/Fixture PC Two" },
-      maxRedirects: 0,
+  test("can't start a sheet for someone else's character", async ({ api }) => {
+    const response = await api.postForm("/characters", {
+      intent: "start",
+      note: "Party/Fixture PC Two",
     });
     expect(response.status()).toBe(404);
   });
 
   test("opens the shared companion, whose hidden statblock never reaches them", async ({
+    characters,
     page,
   }) => {
-    await openCharacter(page, "Fixture Companion");
-    await expect(page.getByRole("heading", { name: "Fixture Companion", level: 1 })).toBeVisible();
+    await characters.openSheet("Fixture Companion");
     await expect(page.getByRole("region", { name: "Statblock: Fixture Companion" })).toBeVisible();
     await expect(page.locator("body")).not.toContainText("Fixture Secret Form");
   });

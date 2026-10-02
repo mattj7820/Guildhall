@@ -11,6 +11,11 @@ export class Characters extends AppPage {
     return this.page.getByRole("article", { name, exact: true });
   }
 
+  /** The bag on the page that's open. */
+  get bag() {
+    return new Bag(this.page);
+  }
+
   /**
    * Opens a character's sheet from the Characters page, starting it first if no test has yet.
    * Tests share one server, and starting a sheet that exists just opens it, so any test may be
