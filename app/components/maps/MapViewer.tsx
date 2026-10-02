@@ -64,7 +64,7 @@ export function MapViewer({
   inside: InsideBadge[];
   party: PartyPlacement[];
   images: string[];
-  /** Audio in the vault's sounds folder, for the stunts' sound board. */
+  /** Audio in the vault's sounds folder, by path inside it, for the stunts' sound board. */
   sounds: string[];
   /** The fight the table is in, wherever it is. */
   fight: DmFightView | null;

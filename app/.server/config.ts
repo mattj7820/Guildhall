@@ -9,6 +9,11 @@ export interface Config {
   dataPath: string;
   roll20CampaignUrl?: string;
   /**
+   * The vault folder (vault-relative, no slashes at either end) whose audio is the DM's sound
+   * board. Every signed-in viewer may fetch audio from it, so it's for the table.
+   */
+  soundsFolder: string;
+  /**
    * The address people use to reach Guildhall, as an origin (`https://guildhall.example.com`).
    * Sign-in redirects and the same-origin check for form posts are built from it.
    */
@@ -58,6 +63,16 @@ const envSchema = z.object({
     z.string({ error: "VAULT_PATH is not set. Point it at your Obsidian vault folder." }),
   ),
   DATA_PATH: z.preprocess(emptyAsUndefined, z.string().default("./data")),
+  SOUNDS_FOLDER: z.preprocess(
+    emptyAsUndefined,
+    z
+      .string()
+      .default("Sounds")
+      .transform((folder) => folder.replace(/\\/g, "/").replace(/^\/+|\/+$/g, ""))
+      .refine((folder) => folder !== "" && !folder.split("/").includes(".."), {
+        error: "SOUNDS_FOLDER must be a folder inside the vault, such as Sounds.",
+      }),
+  ),
   PORT: z.preprocess(emptyAsUndefined, z.coerce.number().int().positive().default(3000)),
   PUBLIC_URL: z.preprocess(
     emptyAsUndefined,
@@ -162,6 +177,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     vaultPath,
     dataPath,
     roll20CampaignUrl: parsed.data.ROLL20_CAMPAIGN_URL,
+    soundsFolder: parsed.data.SOUNDS_FOLDER,
     publicUrl: publicUrl.origin,
     trustProxy: parsed.data.TRUST_PROXY,
     publicUrlIsSet: parsed.data.PUBLIC_URL !== undefined,

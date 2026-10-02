@@ -20,6 +20,7 @@ export default [
   route("maps/:id/version", "routes/map-version.ts"),
   route("maps/:id/tokens", "routes/map-tokens.ts"),
   route("vault-asset/*", "routes/vault-asset.ts"),
+  route("sounds/*", "routes/sound.ts"),
   route("view-mode", "routes/view-mode.ts"),
   route("login", "routes/login.tsx"),
   route("logout", "routes/logout.ts"),

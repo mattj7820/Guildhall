@@ -1,6 +1,6 @@
 // PROTOTYPE (made real before the PR): stunts play on the DM's own screen only, for now.
 import { useCallback, useRef, useState, type CSSProperties } from "react";
-import { assetUrl } from "~/wiki/urls";
+import { soundUrl } from "~/maps/urls";
 import type { Point, Size } from "~/maps/types";
 import { buttonClass } from "~/components/styles";
 import type { CanvasTools } from "./MapCanvas";
@@ -182,7 +182,9 @@ export function StuntPalette({
       </div>
       <span className="text-xs font-semibold text-stone-500">Sounds</span>
       {sounds.length === 0 ? (
-        <p className="text-xs text-stone-500">Put audio files in the vault's Sounds folder.</p>
+        <p className="text-xs text-stone-500">
+          Put audio files in the vault's sounds folder (Sounds, unless set otherwise).
+        </p>
       ) : (
         <ul aria-label="Sounds" className="flex max-h-40 flex-col gap-0.5 overflow-y-auto">
           {sounds.map((path) => (
@@ -190,7 +192,7 @@ export function StuntPalette({
               <button
                 type="button"
                 className="w-full truncate rounded px-1 py-0.5 text-left text-xs hover:bg-stone-100 dark:hover:bg-stone-800"
-                onClick={() => void new Audio(assetUrl(path)).play()}
+                onClick={() => void new Audio(soundUrl(path)).play()}
               >
                 ▶ {soundName(path)}
               </button>
@@ -202,9 +204,9 @@ export function StuntPalette({
   );
 }
 
-/** "Sounds/Doors/Creak.mp3" → "Doors/Creak". */
+/** "Doors/Creak.mp3" → "Doors/Creak". */
 export function soundName(path: string): string {
-  return path.replace(/^[^/]*\//, "").replace(/\.[^.]+$/, "");
+  return path.replace(/\.[^.]+$/, "");
 }
 
 /** The whole map flashing white, over everything, for the flash. */

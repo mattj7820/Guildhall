@@ -49,7 +49,10 @@ export async function loader({ params, request, context }: Route.LoaderArgs) {
     inside,
     party: await partyPlacements(services, maps),
     images: services.vault.current.mapImages(),
-    sounds: services.vault.current.soundsIn("Sounds"),
+    // By their paths inside the sounds folder, as the sounds route takes them.
+    sounds: services.vault.current
+      .soundsIn(services.config.soundsFolder)
+      .map((path) => path.slice(services.config.soundsFolder.length + 1)),
     fight: fight?.forDm ? fight : null,
     catalogue: combatCatalogue(services.vault.current, viewer),
     starting: await startingPrepared(services, request),
