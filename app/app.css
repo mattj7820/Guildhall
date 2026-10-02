@@ -176,3 +176,300 @@
     opacity: 0;
   }
 }
+
+/* Stunts: effects the DM plays for a moment at the table, big and long enough to take in. */
+.stunt-core,
+.stunt-ring,
+.stunt-debris,
+.stunt-scorch,
+.stunt-flash,
+.stunt-smoke {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation-fill-mode: both;
+}
+.stunt-core {
+  animation: stunt-core 1400ms ease-out both;
+}
+.stunt-ring {
+  animation: stunt-ring 1600ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+.stunt-debris {
+  transform-box: view-box;
+  transform-origin: 0 0;
+  animation: stunt-debris 1500ms cubic-bezier(0.1, 0.8, 0.3, 1) both;
+}
+.stunt-scorch {
+  animation: stunt-scorch 3200ms ease-in both;
+}
+.stunt-flash {
+  animation: stunt-flash 3000ms ease-out both;
+}
+.stunt-smoke {
+  animation: stunt-smoke 4800ms ease-out both;
+}
+.stunt-screen-flash {
+  animation: stunt-screen-flash 1400ms ease-out both;
+}
+@keyframes stunt-core {
+  0% {
+    transform: scale(0.1);
+    opacity: 0;
+  }
+  12% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+@keyframes stunt-ring {
+  0% {
+    transform: scale(0.15);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+@keyframes stunt-debris {
+  0% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(var(--to-x), var(--to-y));
+    opacity: 0;
+  }
+}
+@keyframes stunt-scorch {
+  0% {
+    opacity: 0;
+  }
+  15%,
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes stunt-flash {
+  0% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  10% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  40% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(1.15);
+    opacity: 0;
+  }
+}
+@keyframes stunt-smoke {
+  0% {
+    transform: translateY(10%) scale(0.3);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.95;
+  }
+  55% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateY(-45%) scale(1.5);
+    opacity: 0;
+  }
+}
+@keyframes stunt-screen-flash {
+  0% {
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* On a token: a wobble twists it back and forth, a glow pulses in time with its light, a fall tips
+it over and leaves it down. */
+.token-stunt-wobble,
+.token-stunt-glow {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.token-stunt-wobble {
+  animation: token-wobble 1300ms ease-out;
+}
+.token-stunt-glow {
+  animation: token-glow 5000ms ease-in-out;
+}
+.stunt-light {
+  mix-blend-mode: screen;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: stunt-light 5000ms ease-in-out both;
+}
+@keyframes token-wobble {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  10% {
+    transform: rotate(-16deg);
+  }
+  25% {
+    transform: rotate(14deg);
+  }
+  40% {
+    transform: rotate(-10deg);
+  }
+  55% {
+    transform: rotate(7deg);
+  }
+  70% {
+    transform: rotate(-4deg);
+  }
+  85% {
+    transform: rotate(2deg);
+  }
+}
+/* Three slow beats: brighter, softer, brighter, softer, brighter, gone. */
+@keyframes token-glow {
+  0%,
+  100% {
+    filter: none;
+  }
+  15%,
+  45%,
+  75% {
+    filter: drop-shadow(0 0 12px rgb(134 239 172)) brightness(1.35);
+  }
+  30%,
+  60% {
+    filter: drop-shadow(0 0 4px rgb(134 239 172)) brightness(1.1);
+  }
+}
+@keyframes stunt-light {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  15%,
+  45%,
+  75% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  30%,
+  60% {
+    transform: scale(0.85);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.05);
+    opacity: 0;
+  }
+}
+.token-stunt-fall {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: token-fall 900ms ease-in forwards;
+}
+@keyframes token-fall {
+  to {
+    transform: rotate(90deg) scale(0.85);
+    opacity: 0.5;
+    filter: grayscale(1);
+  }
+}
+
+/* The screen shake: the map jolts, briefly. */
+.stunt-shake {
+  animation: stunt-shake 450ms ease-out;
+}
+@keyframes stunt-shake {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  15% {
+    transform: translate(-8px, 4px);
+  }
+  30% {
+    transform: translate(7px, -5px);
+  }
+  50% {
+    transform: translate(-5px, 3px);
+  }
+  70% {
+    transform: translate(3px, -2px);
+  }
+}
+
+/*
+ * For those who've asked their system for less motion: stunts fade in and out where they are,
+ * nothing shakes, wobbles, tips or flies, and the map's flash is soft.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .stunt-shake,
+  .token-stunt-wobble,
+  .stunt-debris {
+    animation: none;
+  }
+  .stunt-debris {
+    display: none;
+  }
+  .stunt-core,
+  .stunt-ring,
+  .stunt-flash,
+  .stunt-smoke,
+  .stunt-light {
+    animation-name: stunt-fade;
+  }
+  .token-stunt-fall {
+    animation: token-fade-down 900ms ease-in forwards;
+  }
+  .stunt-screen-flash {
+    animation-name: stunt-soft-flash;
+  }
+}
+@keyframes stunt-fade {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  20%,
+  70% {
+    opacity: 0.8;
+  }
+}
+@keyframes token-fade-down {
+  to {
+    opacity: 0.5;
+    filter: grayscale(1);
+  }
+}
+@keyframes stunt-soft-flash {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.3;
+  }
+}

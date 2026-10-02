@@ -27,6 +27,7 @@ describe("readVault", () => {
       "Maps/Fixture Keep.png",
       "Maps/Fixture Town.png",
       "Maps/Fixture World.png",
+      "Sounds/Fixture Tone.wav",
     ]);
   });
 
@@ -102,6 +103,7 @@ describe("Vault", () => {
         "Party",
         "Secrets",
         "Sessions",
+        "Sounds",
       ]);
       expect(tree.notes.map((note) => note.title)).toEqual(["Home", "README"]);
     });
@@ -238,6 +240,15 @@ describe("Vault", () => {
       expect(vault.noteById("lore-villain-plan", DM_VIEWER)?.title).toBe("Villain Plan");
       expect(vault.noteById("lore-villain-plan", PLAYER_VIEWER)).toBeUndefined();
       expect(vault.noteById("no-such-note", DM_VIEWER)).toBeUndefined();
+    });
+  });
+
+  describe("sounds", () => {
+    it("lists the audio in a folder, and nothing outside it", () => {
+      expect(vault.soundsIn("Sounds")).toEqual(["Sounds/Fixture Tone.wav"]);
+      expect(vault.soundsIn("Sounds/")).toEqual(["Sounds/Fixture Tone.wav"]);
+      expect(vault.soundsIn("Sound")).toEqual([]);
+      expect(vault.soundsIn("Attachments")).not.toContain("Attachments/dm-map.png");
     });
   });
 

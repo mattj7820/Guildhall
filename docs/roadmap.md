@@ -44,6 +44,10 @@ locations, maps, characters, sessions).
   HP bar for the DM, grey when down), the active one ringed for everyone. Players move only on
   their own turn, unless the DM allows free movement. End fight clears the monsters or leaves
   them as markers.
+- **Stunts and quick damage:** the DM's own tools for a fight on a map. Monsters picked on the map
+  take typed damage, halved or healed all at once. Stunts for thematic moments (impact, flash,
+  smoke, a screen shake; a token wobbling, glowing or falling) and sounds from a vault folder play
+  for everyone watching, only when the DM plays them; each viewer can turn them off or down.
 - **Character sheets (first slice):** a sheet per PC note, typed in from paper, with the paper
   sheet's own maths (modifiers, proficiency, passives) and typed overrides; click any bonus to roll
   it; hit points with Heal and Damage. Players edit only their own; others see a summary. Changes
@@ -61,8 +65,9 @@ locations, maps, characters, sessions).
 - **Player view polish:** go through the wiki as a signed-in player, with each player's own
   characters shown as theirs.
 - **Battle maps, next (towards dropping Roll20):**
-  - **Effects (next):** an event channel over the live hub (hits, misses, damage), with a turn banner,
-    floating damage and a hit or miss flash, respecting reduced motion. Attack animations later.
+  - **Stunts, more:** keyboard shortcuts for favourite stunts and sounds; sounds that loop (rain,
+    a tavern) until stopped; a stunt that follows its token as it moves. Only ever the DM's
+    choice, never played automatically (decision 55).
   - Rulers and spell areas shown to everyone; placing a spell area from a token by keyboard.
   - **The fight, more:** conditions shown on tokens; a player's own tokens' turns flagged ("your
     turn") with a sound; moving a whole fight to another map; tidying markers left after a fight

@@ -963,3 +963,61 @@ were put, under their new IDs. The party isn't placed with the encounter: they'r
 story took them, so "Bring the party here" drops everyone in with a click when the fight begins. A
 monster added in the editor since has no place yet and is placed with a click; one removed is
 left out. If the map has been deleted, it starts in the tracker as before.
+
+## 55. The table plays D&D; Guildhall keeps the DM's books
+
+**Date:** 2026-10-02
+
+Battle maps' third slice was first planned as effects that played by themselves (a turn banner,
+hit and miss flashes, damage floating off tokens) and as attacks resolved by the app against a
+target's AC, with damage applied to PCs' sheets. The DM turned that down: it's a tabletop game,
+and Guildhall is there to make the DM quick, not to play it for anyone. So:
+
+- Guildhall automates only the DM's own bookkeeping, for monsters. Players roll their own dice,
+  anywhere, and track their characters however they like, sheet or paper: nothing reads a PC's
+  sheet to decide a roll, and nothing changes one but the person typing into it.
+- A monster's attack is just its roll; the DM asks the player their AC, as at the table.
+- Typed damage and healing on monsters always stays, alongside anything quicker: players' rolls
+  arrive as numbers, and the DM needs room to improvise.
+- Effects are the DM's to play for a moment that deserves one, like a sound effect at the table.
+  Nothing plays automatically.
+
+## 56. Damage for monsters picked on the map
+
+**Date:** 2026-10-02
+
+A spell catches several monsters, so the DM picks them on the map (Shift-click, or everyone a
+spell area catches) and types the number once: Damage, Half (rounded down, for those who saved or
+resist) or Heal. Each is an ordinary tracker action, so undo and the shared fight work as before.
+Who saved is the DM's call: picking separately for Damage and Half is quick enough, and keeps
+judgement at the table.
+
+## 57. Stunts: the DM's effects, for everyone watching
+
+**Date:** 2026-10-02
+
+Stunts were tried in a prototype on the DM's screen first. The DM kept the screen shake, wanted
+bursts much bigger (a few squares) and long enough to take in (three to five seconds), dropped
+fire and floating numbers, and reworked the token stunts into a wobble (twisting back and forth)
+and a glow (a light about five squares round the token, pulsing three times); a fall leaves the
+token down until the DM stands them up.
+
+A stunt is sent like everything live: the DM's tab plays it at once and posts it (DM only); the
+hub sends it to each viewer who may see the map, built for them. Positions and sizes are fractions
+of the map, like outlines. Players see a stunt wherever the DM put it, under the fog too, since it
+shows nothing of the map beneath, but a token's stunt only if they can see the token, so it never
+gives away a hidden monster. Nothing is kept: someone who opens the map later just sees the map.
+
+Each viewer can turn stunts off, mute sounds or set the volume, kept in their browser; with
+reduced motion asked for, stunts fade in and out instead of moving, and the map's flash is soft.
+
+## 58. Sounds from a vault folder
+
+**Date:** 2026-10-02
+
+The DM's sound board is the audio in one vault folder (`SOUNDS_FOLDER`, default `Sounds`), so the
+DM chooses and owns the sounds and Guildhall only reads them. Players' browsers must fetch a sound
+to play it, so a route serves audio from that folder, and nothing else, to anyone signed in. Rather
+than tickets for each sound played, the folder is simply for the table: the DM is told so in
+`.env.example`. A stunt naming a sound outside the folder is refused. Browsers hold sound back
+until a page has been clicked, so a held-back sound offers a "Turn sound on" button.

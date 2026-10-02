@@ -11,7 +11,8 @@ import type { Token, TokenId } from "~/maps/tokens/types";
 import { tokensForViewer } from "~/maps/tokens/visibility";
 import type { CampaignMap, MapId, Point } from "~/maps/types";
 import { ancestors } from "~/maps/tree";
-import { partyControllers, partyFor } from "../maps/tokens";
+import { isTokenStunt, stuntSeenBy, type StuntEvent } from "~/maps/stunts";
+import { loadTokens, partyControllers, partyFor } from "../maps/tokens";
 import { Holds } from "./holds";
 import { LiveHub, type BuildMessage, type Connection } from "./hub";
 import { fightState, mapState, tokensState } from "./map-rooms";
@@ -184,6 +185,23 @@ export class Live {
     const context = { map, tokens, fog: fog.mask, characters, fight, readAt: Date.now() };
     this.dragContexts.set(mapId, context);
     return context;
+  }
+
+  /**
+   * The DM played a stunt on a map: everyone watching who may see the map hears it at once, and
+   * a token's stunt only those who may see the token.
+   */
+  async stunt(mapId: MapId, stunt: StuntEvent): Promise<void> {
+    const map = await this.services.maps.get(mapId);
+    if (!map) return;
+    await this.publishOnMap(mapId, async (viewer) => {
+      const tokens =
+        isTokenStunt(stunt) && viewer.role !== "dm"
+          ? await loadTokens(this.services, map, viewer)
+          : [];
+      const seen = stuntSeenBy(stunt, viewer, (id) => tokens.some((token) => token.id === id));
+      return seen ? { type: "stunt", map: mapId, stunt } : undefined;
+    });
   }
 
   /**

@@ -37,3 +37,13 @@ export function mapVersionUrl(id: MapId): string {
 export function mapTokensUrl(id: MapId): string {
   return `${mapUrl(id)}/tokens`;
 }
+
+/** A sound from the DM's sound board, by its path inside the sounds folder. */
+export function soundUrl(sound: string): string {
+  return `/sounds/${sound.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+/** Where the DM plays a stunt on a map, as JSON. */
+export function mapStuntsUrl(id: MapId): string {
+  return `${mapUrl(id)}/stunts`;
+}

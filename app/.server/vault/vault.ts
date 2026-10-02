@@ -170,6 +170,14 @@ export class Vault {
     return this.assetsVisibleToPlayers().has(vaultPath) ? vaultPath : undefined;
   }
 
+  /** The audio files in a folder and its subfolders, by path, sorted. For the DM's sound board. */
+  soundsIn(folder: string): string[] {
+    const prefix = folder.replace(/\/+$/, "") + "/";
+    return [...this.assets]
+      .filter((path) => path.startsWith(prefix) && mediaKind(path) === "audio")
+      .sort((a, b) => a.localeCompare(b));
+  }
+
   /** Every image that can be made into a map, by path. For the DM's map picker. */
   mapImages(): string[] {
     return [...this.assets].filter(isMapImage);

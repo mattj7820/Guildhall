@@ -4,6 +4,7 @@
  */
 import { z } from "zod";
 import type { FightView } from "~/combat/fight";
+import type { StuntEvent } from "~/maps/stunts";
 import type { MapTokensView, TokenId } from "~/maps/tokens/types";
 import type { MapId, Point } from "~/maps/types";
 
@@ -48,7 +49,9 @@ export type ServerMessage =
   /** The token this viewer picked up is someone else's to move just now. */
   | { type: "held"; map: MapId; token: TokenId; by: string }
   /** The fight as this viewer may see it, or none, whenever that changes. */
-  | { type: "fight"; map: typeof FIGHT_ROOM; fight: FightView | null };
+  | { type: "fight"; map: typeof FIGHT_ROOM; fight: FightView | null }
+  /** The DM played a stunt or a sound on the map: play it now (it isn't kept). */
+  | { type: "stunt"; map: MapId; stunt: StuntEvent };
 
 /**
  * Messages that say how something is now, rather than that something happened. Only the latest

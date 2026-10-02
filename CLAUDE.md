@@ -9,13 +9,15 @@ campaign model (NPCs, locations, maps, characters, sessions). See `docs/roadmap.
 
 Built so far: hub home page, read-only Obsidian wiki with a DM preview of the players' view, a
 combat tracker (one fight for the table, kept in the data folder and pushed live; players follow it
-and end their own turn; run beside a map, with monsters' tokens; prepared encounters, which can
-start on a map), DM-only interactive maps (vault images with outlined areas leading to deeper maps
-and notes; kept in the data folder), fog of war and tokens on maps (the party's and the DM's
-markers, moved live over websockets; kept in the data folder), character sheets with a game-style
-bag (players edit their own, the DM gives items; kept in the data folder), and sign-in with Discord,
-where the DM lets players in and says who they play. It's built to be hosted: a Docker image, with
-the vault copied read-only from Google Drive (see `docs/deployment.md`).
+and end their own turn; run beside a map, with monsters' tokens and quick damage for picked
+monsters; prepared encounters, which can start on a map), the DM's stunts and sounds on maps (played
+live for everyone, only when the DM plays them), DM-only interactive maps (vault images with
+outlined areas leading to deeper maps and notes; kept in the data folder), fog of war and tokens on
+maps (the party's and the DM's markers, moved live over websockets; kept in the data folder),
+character sheets with a game-style bag (players edit their own, the DM gives items; kept in the data
+folder), and sign-in with Discord, where the DM lets players in and says who they play. It's built
+to be hosted: a Docker image, with the vault copied read-only from Google Drive (see
+`docs/deployment.md`).
 
 ## Hard constraints
 
@@ -128,6 +130,9 @@ First e2e run needs `npx playwright install chromium`.
   (`tokensForViewer`: fog, markers, a player's own "in the dark", monsters from the fight, and who
   may move on their turn), `moves.ts` (the browser's copy: its own drag and unanswered moves over
   the server's, and others' drags) and the `useMapTokens` hook.
+- `app/maps/stunts.ts`: stunts (isomorphic): `Stunt`/`StuntEvent` (points and sizes as fractions of
+  the map), `stuntEventSchema`, `stuntSeenBy` (anywhere, fog or not; a token's only if the viewer
+  sees the token). `stunt-settings.ts`: each viewer's show/sound/volume, in their browser.
 - `app/maps/grid/`: battle grids (isomorphic, pure): `grid.ts` (`MapGrid` in image fractions,
   `toPixels`, `suggestSquare`, `startingGrid`, `snapToGrid` by token size, `gridPath`),
   `distance.ts` (true lengths at 5 ft a square, `formatFeet`), `shapes.ts` (spell areas:
@@ -171,7 +176,9 @@ First e2e run needs `npx playwright install chromium`.
   - `vault.ts`: immutable snapshot (also `statblocks()`, `party()`, `noteById()`, `mapImages()`,
     `findImage()`, which finds a moved image by its unique file name, and `firstImage()`, a note's
     first image as a viewer sees it). `live-vault.ts` rebuilds it on file changes.
-    `serve-image.ts` streams a vault image the caller has already allowed (maps, portraits).
+    `serve-image.ts` streams a vault image the caller has already allowed (maps, portraits);
+    `stream-file.ts` streams any allowed vault file with byte ranges (attachments, sounds).
+    `soundsIn(folder)` lists the sound board.
 - `app/.server/combat/catalogue.ts`: vault statblocks (with their size in squares), PCs and
   companions as browser-safe shapes, with statblocks pre-rendered. `prepared-encounters.ts`: the
   prepared-encounter repository. `current-fight.ts`: `CurrentFight`, the fight over `fight.json`
@@ -191,7 +198,8 @@ First e2e run needs `npx playwright install chromium`.
   `identify`, and a strict Origin check), `hub.ts` (`LiveHub`: connections, rooms per map,
   `publish` building each viewer's copy, not repeating a state, limits, pings, rechecking members),
   `map-rooms.ts` (a map's state and tokens for one viewer), `holds.ts` (who's moving which token),
-  `live.ts` (`Live`, in the services: `mapChanged`, `memberChanged`, `fightChanged`, drags).
+  `live.ts` (`Live`, in the services: `mapChanged`, `memberChanged`, `fightChanged`, `stunt`,
+  drags).
 - `app/.server/data/json-store.ts`: `JsonFile`, a validated, queued, atomically written JSON file.
   `file-cache.ts`: `FileCache`, disposable generated files in `DATA_PATH/cache`, one folder per key
   and version, made one set at a time.
@@ -208,7 +216,9 @@ First e2e run needs `npx playwright install chromium`.
   setVisibility and delete actions; `?area=` preselects an area), `map-fog` (JSON: the DM's fog
   changes), `map-tile` (resource route: one tile of a map's image as players may see it),
   `map-version` (JSON: what an open player map polls while its live connection is down: the version
-  and its tokens), `map-tokens` (JSON: POST token actions), `map-image` (resource route: a map's
+  and its tokens), `map-tokens` (JSON: POST token actions),
+  `map-stunts` (JSON: the DM plays a stunt or sound), `sound` (resource route: audio from the
+  sounds folder only, for anyone signed in), `map-image` (resource route: a map's
   image by map ID), `vault-asset` (resource route), `view-mode` (the DM's preview toggle), `login`
   (sign-in page; dev sign-in action), `logout` (POST), `auth-discord` (starts Discord sign-in) and
   `auth-discord-callback`, `waiting` (for newcomers), `members` (DM-only: approve, assign, remove),
@@ -239,8 +249,12 @@ First e2e run needs `npx playwright install chromium`.
   shortcuts), `MeasureLayer`, `SpellAreaLayer` and `SpellAreaOptions`. `MapSwitch` is a setting
   changed from the map's page (sharing, snapping). For the fight: `useMapFight` (Combat on the map
   page: the tracker panel, what's drawn over the map, placing monsters, starting a prepared fight
-  there) and `EndFight`. `app/components/LiveStatus.tsx` says whether a page is live. Shared control
-  classes are in `app/components/styles.ts`.
+  there) and `EndFight`. `Stunts.tsx`: `useStunts` (what's playing, from the live connection or the
+  DM's own clicks), `useStuntPicker` and `StuntPalette` (the DM's), `StuntLayer`, `FlashOverlay`,
+  `StuntSettingsMenu` (each viewer's). `TokenLayer` plays a token's stunt.
+  `app/components/combat/MonsterDamage.tsx`: damage, half or heal for monsters picked on the map.
+  `app/components/LiveStatus.tsx` says whether a page is live. Shared control classes are in
+  `app/components/styles.ts`.
 
 ## Conventions
 
@@ -278,6 +292,10 @@ First e2e run needs `npx playwright install chromium`.
   from the fight each time it's sent; monsters leaving the fight take their tokens with them, on
   the server. Who may move in a fight is `fightAllowsMove`, everywhere a move is decided. Tell
   `Live` when it changes (`fightChanged`, also after a sheet change, for party HP).
+- Stunts: only ever played by the DM, never automatically (decision 55); sent through
+  `Live.stunt`, built per viewer with `stuntSeenBy`; nothing kept. Sounds only from
+  `config.soundsFolder`, through the `sound` route. Don't make Guildhall read PCs' sheets to
+  resolve rolls or change them: players' characters are theirs.
 - Live messages: the only way to send is `LiveHub.publish(map, viewer => message)` (or `reply`
   for one connection, built for its viewer); never send one message to a room. Anything on a map
   goes through `Live.publishOnMap`, which checks the viewer may see the map. State messages (a

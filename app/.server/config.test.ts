@@ -20,6 +20,22 @@ describe("loadConfig", () => {
     expect(loadConfig({ VAULT_PATH: FIXTURE_VAULT }).dataPath).toBe(path.resolve("data"));
   });
 
+  it("takes the sound board's folder, Sounds by default, tidied of slashes", () => {
+    expect(loadConfig({ VAULT_PATH: FIXTURE_VAULT }).soundsFolder).toBe("Sounds");
+    const folder = (value: string) =>
+      loadConfig({ VAULT_PATH: FIXTURE_VAULT, SOUNDS_FOLDER: value }).soundsFolder;
+    expect(folder("/Audio/Table/")).toBe("Audio/Table");
+    expect(folder("Audio\\Table")).toBe("Audio/Table");
+  });
+
+  it("refuses a sound board folder outside the vault", () => {
+    for (const value of ["../Elsewhere", "/", "Sounds/../.."]) {
+      expect(() => loadConfig({ VAULT_PATH: FIXTURE_VAULT, SOUNDS_FOLDER: value })).toThrow(
+        ConfigError,
+      );
+    }
+  });
+
   it("reads a data folder that doesn't exist yet", () => {
     const dataPath = path.resolve("test-results", "not-created-yet");
     expect(loadConfig({ VAULT_PATH: FIXTURE_VAULT, DATA_PATH: dataPath }).dataPath).toBe(dataPath);

@@ -25,9 +25,14 @@ export function useBattleTools({
   map: MapView;
   tokens: readonly TokenView[];
   enabled: boolean;
-}): { toolbar: ReactNode; layers: (canvas: CanvasTools) => ReactNode } {
+}): {
+  toolbar: ReactNode;
+  layers: (canvas: CanvasTools) => ReactNode;
+  /** The tokens a spell area catches. */
+  caught: string[];
+} {
   const tools = useMapTools(!!map.grid && enabled);
-  if (!map.grid || !enabled) return { toolbar: null, layers: () => null };
+  if (!map.grid || !enabled) return { toolbar: null, layers: () => null, caught: [] };
 
   const squares = gridInPixels(map.grid, map.size);
   const { ruler, area, spell } = tools;
@@ -55,6 +60,7 @@ export function useBattleTools({
     : undefined;
 
   return {
+    caught,
     toolbar: (
       <MapToolbar tool={tools.tool} onTool={tools.choose} result={areaLabel ?? rulerLabel}>
         {tools.tool === "area" && (

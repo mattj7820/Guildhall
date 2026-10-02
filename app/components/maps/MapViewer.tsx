@@ -28,6 +28,16 @@ import { GridLayer } from "./GridLayer";
 import { InsideBadges } from "./InsideBadges";
 import { useBattleTools } from "./useBattleTools";
 import { useMapFight } from "./useMapFight";
+import { useStuntSettings } from "~/maps/stunt-settings";
+import {
+  FlashOverlay,
+  StuntDefs,
+  StuntLayer,
+  StuntPalette,
+  StuntSettingsMenu,
+  useStuntPicker,
+  useStunts,
+} from "./Stunts";
 import { TOKEN_RADIUS, TokenLayer } from "./TokenLayer";
 import { PlacingHint, TokenPanel, type Placing } from "./TokenPanel";
 import { useFogTools } from "./useFogTools";
@@ -53,6 +63,7 @@ export function MapViewer({
   inside: insideFromPage,
   party,
   images,
+  sounds,
   fight: fightFromPage,
   catalogue,
   starting,
@@ -62,6 +73,8 @@ export function MapViewer({
   inside: InsideBadge[];
   party: PartyPlacement[];
   images: string[];
+  /** Audio in the vault's sounds folder, by path inside it, for the stunts' sound board. */
+  sounds: string[];
   /** The fight the table is in, wherever it is. */
   fight: DmFightView | null;
   catalogue: CombatCatalogue;
@@ -102,9 +115,26 @@ export function MapViewer({
     tokens: tokens,
     enabled: !fogMode && !presenting && !placing && !placingMonsters,
   });
-  const selectToken = (token: TokenView) => {
+  const selectToken = (token: TokenView, how?: { additive: boolean }) => {
     setSelectedTokenId(token.id);
-    fight.selectToken(token);
+    fight.selectToken(token, how?.additive);
+  };
+  const [stuntMode, setStuntMode] = useState(false);
+  const { settings: stuntSettings, change: changeStunts } = useStuntSettings();
+  const stunts = useStunts(
+    map,
+    (id) => {
+      const token = tokens.find((each) => each.id === id);
+      return token && toPixels(token.at, map.size);
+    },
+    stuntSettings,
+  );
+  const picker = useStuntPicker(stunts, map.size);
+  const stuntArmed = stuntMode && !!picker.armed;
+  /** Stunts' sizes in image pixels: a burst about three squares across, a token's light five. */
+  const stuntSizes = (scale: number) => {
+    const square = map.grid ? map.grid.square * map.size.width : 70 / scale;
+    return { burst: square * 1.5, light: square * 5 };
   };
 
   /** Where a token placed here lands: on a square while tokens snap to the grid. */
@@ -158,6 +188,7 @@ export function MapViewer({
         <MapBreadcrumbs crumbs={map.breadcrumbs} />
         <h1 className="sr-only">{map.name}</h1>
         <div className="ml-auto flex flex-wrap items-center gap-2">
+          <StuntSettingsMenu stunts={stunts} settings={stuntSettings} onChange={changeStunts} />
           <MapSwitch
             mapId={map.id}
             label="Share with players"
@@ -182,6 +213,17 @@ export function MapViewer({
             }}
           >
             Combat
+          </button>
+          <button
+            type="button"
+            aria-pressed={stuntMode}
+            className={stuntMode ? primaryButtonClass : buttonClass}
+            onClick={() => {
+              setStuntMode(!stuntMode);
+              picker.setArmed(undefined);
+            }}
+          >
+            Stunts
           </button>
           <button
             type="button"
@@ -232,7 +274,18 @@ export function MapViewer({
         ref={stage}
         className="flex min-h-0 flex-1 flex-col bg-stone-50 md:flex-row dark:bg-stone-950"
       >
-        <div className="relative flex min-h-[50vh] flex-1">
+        <div className={`relative flex min-h-[50vh] flex-1 ${stunts.shaking ? "stunt-shake" : ""}`}>
+          <FlashOverlay flashKey={stunts.flashKey} />
+          {stuntMode && (
+            <StuntPalette
+              stunts={picker}
+              sounds={sounds}
+              onClose={() => {
+                setStuntMode(false);
+                picker.setArmed(undefined);
+              }}
+            />
+          )}
           {battle.toolbar}
           {combat && !presenting && fight.overMap}
           <MapCanvas
@@ -292,20 +345,49 @@ export function MapViewer({
                   size={map.size}
                   scale={canvas.scale}
                 />
+                {stuntArmed && (
+                  <rect
+                    {...map.size}
+                    fill="transparent"
+                    className="cursor-crosshair"
+                    aria-label="Play the stunt"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      const point = canvas.clientToImage(event.clientX, event.clientY);
+                      if (point) picker.play(point, stuntSizes(canvas.scale));
+                    }}
+                  />
+                )}
+                <StuntLayer under stunts={stunts.points} size={map.size} canvas={canvas} />
                 <TokenLayer
                   tokens={presenting ? tokens.filter((token) => !token.hidden) : tokens}
                   size={map.size}
                   canvas={canvas}
                   selectedId={presenting ? undefined : selectedTokenId}
-                  onSelect={presenting ? undefined : selectToken}
+                  alsoSelected={combat ? fight.pickedTokenIds : undefined}
+                  onSelect={
+                    stuntArmed
+                      ? (token) =>
+                          picker.play(
+                            toPixels(token.at, map.size),
+                            stuntSizes(canvas.scale),
+                            token.id,
+                          )
+                      : presenting
+                        ? undefined
+                        : selectToken
+                  }
                   activeId={fight.activeTokenId}
+                  stunts={stunts.onTokens}
                   mover={presenting ? undefined : mapTokens}
                   grid={map.grid}
                   snap={map.snapToGrid}
                   takeHeld
                 />
                 {battle.layers(canvas)}
-                {placingMonsters && !placing && (
+                <StuntDefs />
+                <StuntLayer stunts={stunts.points} size={map.size} canvas={canvas} />
+                {placingMonsters && !placing && !stuntArmed && (
                   <rect
                     {...map.size}
                     fill="transparent"
@@ -356,6 +438,15 @@ export function MapViewer({
           >
             {combat ? (
               <>
+                {battle.caught.length > 0 && (
+                  <button
+                    type="button"
+                    className={`${buttonClass} self-start`}
+                    onClick={() => fight.pickTokens(battle.caught)}
+                  >
+                    Pick the monsters in the area
+                  </button>
+                )}
                 {placing && (
                   <PlacingHint placing={placing} onCancel={() => setPlacing(undefined)} />
                 )}

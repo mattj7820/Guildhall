@@ -127,6 +127,31 @@ test.describe("A fight on a map", () => {
     await expect(page.getByRole("checkbox", { name: /Free movement/ })).toBeChecked();
   });
 
+  test("damages or heals the monsters picked on the map, all at once", async ({ page }) => {
+    const { name } = await arena(page);
+    await twoMinionsPlaced(page, name);
+    // Minion 1 has 7 HP, Minion 2 has 12.
+    await token(page, "Fixture Minion 1").click();
+    await token(page, "Fixture Minion 2").click({ modifiers: ["Shift"] });
+    const panel = page.getByRole("form", { name: "Damage the picked monsters" });
+    await expect(panel).toContainText("Fixture Minion 1, Fixture Minion 2");
+
+    // A fireball's 5, halved for both: they saved.
+    await panel.getByLabel("Amount").fill("5");
+    await panel.getByRole("button", { name: "Half" }).click();
+    await expect(combatant(page, "Fixture Minion 1")).toContainText("HP 5/7");
+    await expect(combatant(page, "Fixture Minion 2")).toContainText("HP 10/12");
+
+    // A click without Shift picks just the one.
+    await token(page, "Fixture Minion 2").click();
+    await expect(panel).not.toContainText("Fixture Minion 1");
+    await panel.getByLabel("Amount").fill("4");
+    await panel.getByRole("button", { name: "Heal" }).click();
+    await expect(combatant(page, "Fixture Minion 2")).toContainText("HP 12/12");
+    await page.getByRole("button", { name: "Undo" }).click();
+    await expect(combatant(page, "Fixture Minion 2")).toContainText("HP 10/12");
+  });
+
   test("takes a monster's token off the map when it leaves the fight", async ({ page }) => {
     const { name } = await arena(page);
     await twoMinionsPlaced(page, name);
