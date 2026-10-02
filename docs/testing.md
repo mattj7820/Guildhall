@@ -77,12 +77,59 @@ The app must never modify the vault. Four independent checks:
 
 - Test names describe behaviour ("hides DM-only notes from the sidebar"), not implementation.
 - E2E tests use accessible locators (`getByRole`, `getByText`, labelled landmarks) rather than
-  test IDs or CSS selectors, so they also check that the UI is accessible. Shared helpers live in
-  `tests/e2e/support/app.ts`.
+  test IDs or CSS selectors, so they also check that the UI is accessible. A `data-*` hook is
+  only for what has no accessible handle, such as decoration hidden from screen readers
+  (`data-stunt`) or the page's hydration marker. Locators and steps live in page objects (see
+  below), not in specs.
 - Each Playwright test starts in a fresh browser context, signed in as the DM (see below).
 - Table-driven cases (`it.each`) for input/output rules such as link parsing and invalid config.
 - Combat unit tests build combatants with the helpers in `app/combat/test-builders.ts`, so each
   test states only the fields it depends on.
+
+## End-to-end tests: page objects and waiting
+
+Specs import `test` and `expect` from `tests/e2e/support/fixtures.ts`, never from
+`@playwright/test`. Its fixtures:
+
+- **Page objects** for the test's own tab: `wiki`, `characters`, `combat`, `prepared`, `maps`,
+  `members` and `signIn`, all bundled as `app`. They live in `tests/e2e/pages/`, one file per
+  area, and open deeper ones: `characters.openSheet()` gives a `CharacterSheet`, `openBag()` a
+  `Bag`, `maps.view(map)` a `MapView` and `maps.edit(map)` a `MapEditor`.
+- **`openAs(who)`**: someone else's browser (`"dm"`, `"playerOne"` or `"signedOut"`), with the
+  same page objects, closed when the test ends.
+- **`api`**: requests as the test's browser, with Guildhall's own Origin. It sets things up when
+  the UI isn't what's under test (`api.createMap({ shared, fog, grid })`, areas, markers, ending
+  the fight), and checks what the server refuses. Only `maps.spec.ts` makes a map through the
+  form.
+
+A spec that needs the same starting point in every test adds a local fixture with `test.extend`
+(the newcomer in `members.spec.ts`, the shared map in `map-tokens.spec.ts`).
+
+**How tests wait**, so they don't depend on timing:
+
+- **Hydration.** The root layout marks `<html data-hydrated>` once React has hydrated. Every
+  `goto()` and `reload()` in the page objects waits for it, since a click before then lands on a
+  server-rendered button with no handler and is lost. Specs never call `page.goto` themselves.
+- **Never a fixed wait.** No `waitForTimeout`; wait for what the step changes. A page object's
+  action ends when its result shows (a dialog closed, a combatant listed, a keyboard drag's step
+  announced), and the next step starts from there.
+- **Saving.** `saved()` on the sheet, bag, editor and prepared encounter waits for "All changes
+  saved"; `tracker.saved()` for the fight; `fogSaved()` for fog. Wait for it before reloading or
+  checking from another browser.
+- **Live.** A second browser waits for `live()` (the page's connection is open) before someone
+  else changes what it shows.
+- **Moving things.** A drag waits for the element's own transitions to finish (`settled()`)
+  before reading where it is on screen, since mouse moves don't wait like clicks do. Positions
+  read from labels are polled (`expect.poll`), never read once.
+- **The fight** is ended in an automatic fixture (`tests/e2e/fight/fight-test.ts`), which is set
+  up before every other fixture. A `beforeEach` hook would run after them, ending the fight under
+  a page already open.
+
+**Hunting flakes.** CI keeps the Playwright report (with traces) for every run that isn't
+cancelled, so a test that passed on retry still has its first attempt's trace. To repeat a spec
+on CI rather than a laptop, run the Stress workflow:
+`gh workflow run stress.yml --ref <branch> -f specs=tests/e2e/inventory.spec.ts -f repeat=30`.
+Repeating a spec against one server also shows tests that only pass on a fresh one.
 
 ## Signing in
 
@@ -94,8 +141,8 @@ The app must never modify the vault. Four independent checks:
   the DM and once as Player One, and saves the cookies. Every test then starts signed in as the
   DM; a spec can choose `SIGNED_IN.playerOne` or `SIGNED_OUT` from `tests/e2e/support/sign-in.ts`
   instead. Each test still gets its own browser context, so tests can run in parallel.
-- **Two people at once.** Tests of letting someone in open a second browser context for the
-  newcomer (`browser.newContext`), while the DM uses the test's own page.
+- **Two people at once.** A test opens another person's browser with `openAs`, while the test's
+  own page stays the DM's (or whoever the spec chose).
 - **Discord.** The e2e server has a made-up Discord application. Tests check that sign-in sends
   people to Discord with the right request, and that bad answers coming back are refused. They
   never reach Discord. The adapter's exchange with Discord is unit-tested against a stand-in, and
@@ -185,8 +232,8 @@ Dice decide initiative, tie-breaks and monster HP, so tests must control them.
 
 - **One shared party.** Every spec uses the same fixture characters on the same server, so tests
   never assert on a whole bag: they add uniquely named items (`uniqueName()`) and look only at
-  those. Starting a sheet that exists just opens it (`openCharacter()` in
-  `tests/e2e/support/app.ts`), so any test may be first.
+  those. Starting a sheet that exists just opens it (`characters.openSheet()`), so
+  any test may be first.
 - **Editing is serial.** `character-sheet.spec.ts` is the only spec that changes Fixture PC One's
   sheet fields, and runs its tests in order. Others only add items, and because changes are
   merged as actions, that never disturbs it.
@@ -230,7 +277,11 @@ used in tests.
 - **checks** (Ubuntu): lint, typecheck, unit tests
 - **unit-windows**: unit tests on Windows, since vault paths are normalised across OSes
 - **docker** (Ubuntu): builds the image and checks it (see Layers)
-- **e2e** (Ubuntu): Playwright (Chromium); the HTML report is uploaded when it fails
+- **e2e** (Ubuntu): Playwright (Chromium); the HTML report, with traces of failed attempts, is
+  uploaded unless the run was cancelled
+
+`.github/workflows/stress.yml` runs only by hand: chosen specs repeated many times, with no
+retries (see "Hunting flakes" above).
 
 ## Next steps
 
