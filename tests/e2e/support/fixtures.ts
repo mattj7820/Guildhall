@@ -26,7 +26,7 @@ export class App extends AppPage {
 
 export type Who = keyof typeof SIGNED_IN | "signedOut";
 
-interface Fixtures {
+export interface Fixtures {
   /** The test's own tab. */
   app: App;
   /** Requests as the test's own browser (the DM's, by default). */
