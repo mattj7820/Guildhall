@@ -19,7 +19,8 @@ import { usePlayerFight } from "~/combat/usePlayerFight";
 import { EndMyTurn } from "~/components/combat/PlayerFight";
 import { TurnStrip } from "~/components/combat/TurnStrip";
 import { InsideBadges } from "./InsideBadges";
-import { FlashOverlay, StuntDefs, StuntLayer, useStunts } from "./Stunts";
+import { useStuntSettings } from "~/maps/stunt-settings";
+import { FlashOverlay, StuntDefs, StuntLayer, StuntSettingsMenu, useStunts } from "./Stunts";
 import { useBattleTools } from "./useBattleTools";
 import { TokenDistances } from "./TokenDistances";
 import { NotePanel } from "./NotePanel";
@@ -54,10 +55,15 @@ export function PlayerMapViewer({
   const activeToken = activeCombatant
     ? mapTokens.tokens.find((token) => token.combatant === activeCombatant)
     : undefined;
-  const stunts = useStunts(map, (id) => {
-    const token = mapTokens.tokens.find((each) => each.id === id);
-    return token && toPixels(token.at, map.size);
-  });
+  const { settings: stuntSettings, change: changeStunts } = useStuntSettings();
+  const stunts = useStunts(
+    map,
+    (id) => {
+      const token = mapTokens.tokens.find((each) => each.id === id);
+      return token && toPixels(token.at, map.size);
+    },
+    stuntSettings,
+  );
   const [focus, setFocus] = useState<{ at: [number, number]; key: number }>();
   const battle = useBattleTools({ map, tokens: mapTokens.tokens, enabled: true });
   const find = (token: TokenView) =>
@@ -76,6 +82,7 @@ export function PlayerMapViewer({
         <MapBreadcrumbs crumbs={map.breadcrumbs} />
         <h1 className="sr-only">{map.name}</h1>
         <div className="ml-auto flex items-center gap-3">
+          <StuntSettingsMenu stunts={stunts} settings={stuntSettings} onChange={changeStunts} />
           <LiveStatus status={status} />
         </div>
       </div>

@@ -9,6 +9,7 @@ import {
   type StuntEvent,
   type TokenStuntKind,
 } from "~/maps/stunts";
+import type { StuntSettings } from "~/maps/stunt-settings";
 import { mapStuntsUrl, soundUrl } from "~/maps/urls";
 import type { MapId, Point, Size } from "~/maps/types";
 import { newId } from "~/shared/ids";
@@ -69,7 +70,14 @@ const FLASH_MS = 1400;
 export function useStunts(
   map: { id: MapId; size: Size },
   tokenAt: (token: string) => Point | undefined,
+  settings: StuntSettings,
 ) {
+  // A sound the browser wouldn't play before this page was clicked: offered with a button.
+  const [blocked, setBlocked] = useState<string>();
+  const prefs = useRef(settings);
+  useEffect(() => {
+    prefs.current = settings;
+  });
   const [points, setPoints] = useState<PointStunt[]>([]);
   const [onTokens, setOnTokens] = useState<Record<string, TokenStunt>>({});
   const [shake, setShake] = useState(0);
@@ -114,25 +122,32 @@ export function useStunts(
   const show = useCallback(
     (stunt: Stunt) => {
       const { width, height } = map.size;
+      const { effects, sound, volume } = prefs.current;
+      if (stunt.kind === "sound") {
+        if (!sound) return;
+        const audio = new Audio(soundUrl(stunt.sound));
+        audio.volume = volume;
+        audio.play().catch((error: unknown) => {
+          if (error instanceof DOMException && error.name === "NotAllowedError") {
+            setBlocked(stunt.sound);
+          }
+        });
+        return;
+      }
+      // Fallen tokens stand up for everyone, so nobody's left with one down.
+      if (stunt.kind === "stand") return setOnTokens({});
+      if (!effects) return;
       if (isTokenStunt(stunt)) {
         playOn(stunt.kind, stunt.token);
         const at = where.current(stunt.token);
         if (stunt.kind === "glow" && stunt.light && at) playAt("light", at, stunt.light * width);
         return;
       }
-      switch (stunt.kind) {
-        case "shake":
-          setShake(++counter.current);
-          setTimeout(() => setShake(0), SHAKE_MS);
-          return;
-        case "stand":
-          return setOnTokens({});
-        case "sound":
-          void new Audio(soundUrl(stunt.sound)).play().catch(() => {});
-          return;
-        default:
-          playAt(stunt.kind, [stunt.at[0] * width, stunt.at[1] * height], stunt.size * width);
+      if ("at" in stunt) {
+        return playAt(stunt.kind, [stunt.at[0] * width, stunt.at[1] * height], stunt.size * width);
       }
+      setShake(++counter.current);
+      setTimeout(() => setShake(0), SHAKE_MS);
     },
     [map.size, playAt, playOn],
   );
@@ -164,10 +179,84 @@ export function useStunts(
     /** Changes with each flash, so the overlay plays again. */
     flashKey: flash,
     send,
+    /** A sound the browser held back until the page is clicked. */
+    blockedSound: blocked,
+    /** Plays the held-back sound: from a click, which the browser allows. */
+    allowSound: () => {
+      if (!blocked) return;
+      const audio = new Audio(soundUrl(blocked));
+      audio.volume = prefs.current.volume;
+      void audio.play().catch(() => {});
+      setBlocked(undefined);
+    },
   };
 }
 
 export type Stunts = ReturnType<typeof useStunts>;
+
+/**
+ * This viewer's own say over the DM's stunts, beside the map: show them or not, play sounds or
+ * not, and how loud. A "Turn sound on" button appears when the browser held a sound back.
+ */
+export function StuntSettingsMenu({
+  stunts,
+  settings,
+  onChange,
+}: {
+  stunts: Stunts;
+  settings: StuntSettings;
+  onChange: (next: Partial<StuntSettings>) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      {stunts.blockedSound && settings.sound && (
+        <button type="button" className={buttonClass} onClick={stunts.allowSound}>
+          Turn sound on
+        </button>
+      )}
+      <details className="relative">
+        <summary className="cursor-pointer list-none rounded-md px-2 py-1 text-sm text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800">
+          Effects{settings.effects ? "" : " off"}
+          {settings.sound ? "" : " · muted"}
+        </summary>
+        <div
+          role="group"
+          aria-label="Effects and sound"
+          className={`${floatingPanelClass} absolute right-0 z-30 mt-1 flex w-56 flex-col gap-2 p-3 text-sm`}
+        >
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={settings.effects}
+              onChange={(event) => onChange({ effects: event.target.checked })}
+            />
+            Show the DM's stunts
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={settings.sound}
+              onChange={(event) => onChange({ sound: event.target.checked })}
+            />
+            Play sounds
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-stone-500">
+            Volume
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={settings.volume}
+              disabled={!settings.sound}
+              onChange={(event) => onChange({ volume: Number(event.target.value) })}
+            />
+          </label>
+        </div>
+      </details>
+    </div>
+  );
+}
 
 /**
  * The DM's choice of stunt, armed from the palette and played by the next click on the map or a

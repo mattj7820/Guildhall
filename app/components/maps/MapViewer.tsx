@@ -28,11 +28,13 @@ import { GridLayer } from "./GridLayer";
 import { InsideBadges } from "./InsideBadges";
 import { useBattleTools } from "./useBattleTools";
 import { useMapFight } from "./useMapFight";
+import { useStuntSettings } from "~/maps/stunt-settings";
 import {
   FlashOverlay,
   StuntDefs,
   StuntLayer,
   StuntPalette,
+  StuntSettingsMenu,
   useStuntPicker,
   useStunts,
 } from "./Stunts";
@@ -118,10 +120,15 @@ export function MapViewer({
     fight.selectToken(token, how?.additive);
   };
   const [stuntMode, setStuntMode] = useState(false);
-  const stunts = useStunts(map, (id) => {
-    const token = tokens.find((each) => each.id === id);
-    return token && toPixels(token.at, map.size);
-  });
+  const { settings: stuntSettings, change: changeStunts } = useStuntSettings();
+  const stunts = useStunts(
+    map,
+    (id) => {
+      const token = tokens.find((each) => each.id === id);
+      return token && toPixels(token.at, map.size);
+    },
+    stuntSettings,
+  );
   const picker = useStuntPicker(stunts, map.size);
   const stuntArmed = stuntMode && !!picker.armed;
   /** Stunts' sizes in image pixels: a burst about three squares across, a token's light five. */
@@ -181,6 +188,7 @@ export function MapViewer({
         <MapBreadcrumbs crumbs={map.breadcrumbs} />
         <h1 className="sr-only">{map.name}</h1>
         <div className="ml-auto flex flex-wrap items-center gap-2">
+          <StuntSettingsMenu stunts={stunts} settings={stuntSettings} onChange={changeStunts} />
           <MapSwitch
             mapId={map.id}
             label="Share with players"

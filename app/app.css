@@ -420,3 +420,56 @@ it over and leaves it down. */
     transform: translate(3px, -2px);
   }
 }
+
+/*
+ * For those who've asked their system for less motion: stunts fade in and out where they are,
+ * nothing shakes, wobbles, tips or flies, and the map's flash is soft.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .stunt-shake,
+  .token-stunt-wobble,
+  .stunt-debris {
+    animation: none;
+  }
+  .stunt-debris {
+    display: none;
+  }
+  .stunt-core,
+  .stunt-ring,
+  .stunt-flash,
+  .stunt-smoke,
+  .stunt-light {
+    animation-name: stunt-fade;
+  }
+  .token-stunt-fall {
+    animation: token-fade-down 900ms ease-in forwards;
+  }
+  .stunt-screen-flash {
+    animation-name: stunt-soft-flash;
+  }
+}
+@keyframes stunt-fade {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  20%,
+  70% {
+    opacity: 0.8;
+  }
+}
+@keyframes token-fade-down {
+  to {
+    opacity: 0.5;
+    filter: grayscale(1);
+  }
+}
+@keyframes stunt-soft-flash {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.3;
+  }
+}

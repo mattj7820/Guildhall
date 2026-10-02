@@ -43,6 +43,44 @@ test("the DM's stunt plays for a player watching the map, even under the fog", a
   await context.close();
 });
 
+test("a player who turns stunts off doesn't see them, and it's remembered", async ({
+  page,
+  browser,
+}) => {
+  const { url, name } = await sharedMap(page);
+  // Two browsers as Player One: settings belong to the browser, so one turns stunts off and the
+  // other, left as it is, shows when the stunt has arrived.
+  const open = async () => {
+    const context = await browser.newContext({
+      baseURL: ORIGIN,
+      storageState: SIGNED_IN.playerOne,
+    });
+    const tab = await context.newPage();
+    await tab.goto(url);
+    return { context, tab };
+  };
+  const quiet = await open();
+  const witness = await open();
+  await quiet.tab.getByText("Effects", { exact: true }).click();
+  await quiet.tab.getByLabel("Show the DM's stunts").uncheck();
+  await quiet.tab.reload();
+  await expect(quiet.tab.getByText("Effects off", { exact: true })).toBeVisible();
+  for (const { tab } of [quiet, witness]) {
+    await expect(tab.getByRole("status").filter({ hasText: "Live" })).toBeVisible();
+  }
+
+  await page.getByRole("button", { name: "Stunts", exact: true }).click();
+  await page
+    .getByRole("toolbar", { name: "Stunts" })
+    .getByRole("button", { name: "Smoke" })
+    .click();
+  await mapCanvas(page, name).click();
+  await expect(stunt(witness.tab, "smoke")).toHaveCount(1);
+  await expect(stunt(quiet.tab, "smoke")).toHaveCount(0);
+  await quiet.context.close();
+  await witness.context.close();
+});
+
 test("only the DM plays stunts, and only sounds from the sounds folder", async ({
   page,
   browser,
