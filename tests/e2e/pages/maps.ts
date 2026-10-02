@@ -38,6 +38,11 @@ export class Maps extends AppPage {
     return editor;
   }
 
+  /** The map open now (its page or editor), such as one reached by clicking through. */
+  current(name: string, image: FixtureImage) {
+    return mapFromUrl(this.page, name, image);
+  }
+
   /** Opens a map's page. */
   async view(map: MapRef) {
     const view = new MapView(this.page, map);
