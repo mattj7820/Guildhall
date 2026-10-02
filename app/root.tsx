@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   Form,
   isRouteErrorResponse,
@@ -33,6 +34,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const user = data?.user;
   const role = user && data.role;
   const previewing = user?.isDm && role === "player";
+
+  // Says the page now answers clicks: tests wait for it rather than for time to pass. Parents'
+  // effects run after their children's, so the whole page has hydrated by now.
+  useEffect(() => {
+    document.documentElement.dataset.hydrated = "";
+  }, []);
 
   return (
     <html lang="en">

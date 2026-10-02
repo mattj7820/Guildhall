@@ -1,5 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-import { uniqueName } from "./support/app";
+import { expect, test } from "./support/fixtures";
+import { ORIGIN, uniqueName } from "./support/test-data";
 import { SIGNED_IN, SIGNED_OUT } from "./support/sign-in";
 
 /**
@@ -7,59 +7,56 @@ import { SIGNED_IN, SIGNED_OUT } from "./support/sign-in";
  * which the e2e server turns on. "Player One" plays "Fixture PC One" in the fixture vault.
  */
 
-const main = (page: Page) => page.getByRole("navigation", { name: "Main" });
-
 test.describe("Signed out", () => {
   test.use({ storageState: SIGNED_OUT });
 
-  test("sends you to sign in, then back to the page you wanted", async ({ page }) => {
-    await page.goto("/wiki/Home");
+  test("sends you to sign in, then back to the page you wanted", async ({ app, page, signIn }) => {
+    await app.goto("/wiki/Home");
     await expect(page).toHaveURL("/login?redirectTo=%2Fwiki%2FHome");
-    await expect(main(page)).toHaveCount(0);
+    await expect(app.mainNav).toHaveCount(0);
 
-    await page.getByRole("button", { name: "Sign in as the DM" }).click();
+    await signIn.as("the DM");
     await expect(page).toHaveURL("/wiki/Home");
     await expect(page.getByText("Dev DM")).toBeVisible();
   });
 
-  test("gets nothing from the vault, and no redirect for files", async ({ page }) => {
-    const image = await page.request.get("/vault-asset/Attachments/mira-portrait.png", {
+  test("gets nothing from the vault, and no redirect for files", async ({ api }) => {
+    const image = await api.request.get("/vault-asset/Attachments/mira-portrait.png", {
       maxRedirects: 0,
     });
     expect(image.status()).toBe(401);
-    expect((await page.request.get("/healthz")).status()).toBe(200);
+    expect((await api.request.get("/healthz")).status()).toBe(200);
   });
 
-  test("signs out, and is signed out for good in that browser", async ({ page }) => {
-    await page.goto("/login");
-    await page.getByRole("button", { name: "Sign in as the DM" }).click();
-    await page.getByRole("button", { name: "Sign out" }).click();
-    await expect(page).toHaveURL("/login");
-    await page.goto("/combat");
+  test("signs out, and is signed out for good in that browser", async ({ app, page, signIn }) => {
+    await signIn.open();
+    await signIn.as("the DM");
+    await signIn.signOut();
+    await app.goto("/combat");
     await expect(page).toHaveURL("/login?redirectTo=%2Fcombat");
   });
 
-  test("puts someone new on the waiting list, and keeps them there", async ({ page }) => {
+  test("puts someone new on the waiting list, and keeps them there", async ({
+    api,
+    app,
+    page,
+    signIn,
+  }) => {
     const name = uniqueName("Newcomer");
-    await page.goto("/login");
-    await page.getByLabel("Someone new").fill(name);
-    await page.getByRole("button", { name: "Sign in as someone new" }).click();
-
-    await expect(page).toHaveURL("/waiting");
-    await expect(page.getByRole("heading", { name: "Waiting for the DM" })).toBeVisible();
+    await signIn.asNewcomer(name);
     await expect(page.getByText(`Hi ${name}.`)).toBeVisible();
-    await page.goto("/wiki/Home");
+
+    await app.goto("/wiki/Home");
     await expect(page).toHaveURL("/waiting");
-    expect((await page.request.get("/vault-asset/Attachments/mira-portrait.png")).status()).toBe(
-      401,
-    );
+    const portrait = await api.request.get("/vault-asset/Attachments/mira-portrait.png");
+    expect(portrait.status()).toBe(401);
   });
 
-  test("refuses forms posted from another site", async ({ page }) => {
+  test("refuses forms posted from another site", async ({ api }) => {
     const fromElsewhere = { headers: { Origin: "https://evil.example.net" }, maxRedirects: 0 };
 
     // Pages are checked by React Router itself…
-    const signIn = await page.request.post("/login", {
+    const signIn = await api.request.post("/login", {
       ...fromElsewhere,
       form: { intent: "dev", who: "dm" },
     });
@@ -67,7 +64,7 @@ test.describe("Signed out", () => {
     expect(signIn.headers()["set-cookie"]).toBeUndefined();
 
     // …and resource routes, which it doesn't check, by Guildhall.
-    const signOut = await page.request.post("/logout", fromElsewhere);
+    const signOut = await api.request.post("/logout", fromElsewhere);
     expect(signOut.status()).toBe(403);
   });
 });
@@ -75,36 +72,33 @@ test.describe("Signed out", () => {
 test.describe("A player", () => {
   test.use({ storageState: SIGNED_IN.playerOne });
 
-  test("sees the players' view, with no DM tools or preview switch", async ({ page }) => {
-    await page.goto("/");
+  test("sees the players' view, with no DM tools or preview switch", async ({ app, page }) => {
+    await app.goto("/");
     await expect(page.getByText("Player One")).toBeVisible();
-    await expect(main(page).getByRole("link", { name: "Wiki" })).toBeVisible();
+    await expect(app.navLink("Wiki")).toBeVisible();
     // Combat is the players' view of the fight, not the DM's tracker.
-    await expect(main(page).getByRole("link", { name: "Combat" })).toBeVisible();
+    await expect(app.navLink("Combat")).toBeVisible();
     await expect(page.getByRole("button", { name: "Preview as player" })).toHaveCount(0);
   });
 
-  test("can't open DM-only notes or tools", async ({ page }) => {
-    expect((await page.goto("/wiki/Secrets/Villain%20Plan"))?.status()).toBe(404);
-    await page.goto("/combat");
-    await expect(page.getByRole("heading", { name: "Combat", level: 1 })).toBeVisible();
+  test("can't open DM-only notes or tools", async ({ app, combat, page }) => {
+    expect((await app.goto("/wiki/Secrets/Villain%20Plan"))?.status()).toBe(404);
+    await combat.openAsPlayer();
     await expect(page.getByRole("form", { name: "Add monsters" })).toHaveCount(0);
-    await page.goto("/combat/prepared");
+    await app.goto("/combat/prepared");
     await expect(page.getByText("Prepared encounters are the DM's.")).toBeVisible();
     // Players see shared maps, but can't make them.
-    await page.goto("/maps");
+    await app.goto("/maps");
     await expect(page.getByRole("heading", { name: "Maps", level: 1 })).toBeVisible();
     await expect(page.getByRole("button", { name: "New map" })).toHaveCount(0);
   });
 
-  test("can't become the DM by setting the preview switch", async ({ page }) => {
-    await page.goto("/");
-    await page.request.post("/view-mode", {
-      headers: { Origin: "http://localhost:4173" },
+  test("can't become the DM by setting the preview switch", async ({ api, combat, page }) => {
+    await api.request.post("/view-mode", {
+      headers: { Origin: ORIGIN },
       form: { role: "dm", redirectTo: "/" },
     });
-    await page.goto("/combat");
-    await expect(page.getByRole("heading", { name: "Combat", level: 1 })).toBeVisible();
+    await combat.openAsPlayer();
     await expect(page.getByRole("form", { name: "Add monsters" })).toHaveCount(0);
   });
 });

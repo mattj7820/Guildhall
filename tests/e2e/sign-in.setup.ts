@@ -1,4 +1,4 @@
-import { expect, test as setup } from "@playwright/test";
+import { expect, test as setup } from "./support/fixtures";
 import { SIGNED_IN } from "./support/sign-in";
 
 /**
@@ -6,16 +6,14 @@ import { SIGNED_IN } from "./support/sign-in";
  * signed in: as the DM (the default in playwright.config.ts) or as a player.
  */
 
-setup("sign in as the DM", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByRole("button", { name: "Sign in as the DM" }).click();
-  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
-  await page.context().storageState({ path: SIGNED_IN.dm });
-});
-
-setup("sign in as Player One", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByRole("button", { name: "Sign in as Player One" }).click();
-  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
-  await page.context().storageState({ path: SIGNED_IN.playerOne });
-});
+for (const [who, file] of [
+  ["the DM", SIGNED_IN.dm],
+  ["Player One", SIGNED_IN.playerOne],
+] as const) {
+  setup(`sign in as ${who}`, async ({ page, signIn }) => {
+    await signIn.open();
+    await signIn.as(who);
+    await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+    await page.context().storageState({ path: file });
+  });
+}
