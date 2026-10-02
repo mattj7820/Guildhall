@@ -72,7 +72,7 @@ interface Props {
 }
 
 /** What the DM can make a token do, for a moment. */
-export type TokenStunt = { kind: "glow" | "hit" | "fall"; key: number };
+export type TokenStunt = { kind: "glow" | "wobble" | "fall"; key: number };
 
 /**
  * Tokens drawn over the map and its fog: the same size on screen at every zoom, or on a battle map

@@ -28,7 +28,7 @@ const POINT_KINDS: { kind: PointStuntKind; label: string }[] = [
   { kind: "smoke", label: "Smoke" },
 ];
 const TOKEN_KINDS: { kind: TokenStuntKind; label: string }[] = [
-  { kind: "hit", label: "Hit" },
+  { kind: "wobble", label: "Wobble" },
   { kind: "glow", label: "Glow" },
   { kind: "fall", label: "Fall" },
 ];
@@ -44,7 +44,7 @@ export const STUNT_MS: Record<StuntKind, number> = {
   flash: 3000,
   smoke: 5600,
   light: 5000,
-  hit: 1300,
+  wobble: 1300,
   glow: 5000,
   fall: 1200,
 };

@@ -305,15 +305,15 @@
   }
 }
 
-/* On a token: a hit twists it back and forth, a glow pulses in time with its light, a fall tips
+/* On a token: a wobble twists it back and forth, a glow pulses in time with its light, a fall tips
 it over and leaves it down. */
-.token-stunt-hit,
+.token-stunt-wobble,
 .token-stunt-glow {
   transform-box: fill-box;
   transform-origin: center;
 }
-.token-stunt-hit {
-  animation: token-hit 1300ms ease-out;
+.token-stunt-wobble {
+  animation: token-wobble 1300ms ease-out;
 }
 .token-stunt-glow {
   animation: token-glow 5000ms ease-in-out;
@@ -324,7 +324,7 @@ it over and leaves it down. */
   transform-origin: center;
   animation: stunt-light 5000ms ease-in-out both;
 }
-@keyframes token-hit {
+@keyframes token-wobble {
   0%,
   100% {
     transform: rotate(0);
