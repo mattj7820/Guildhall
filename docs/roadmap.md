@@ -85,6 +85,17 @@ locations, maps, characters, sessions).
 - **Wiki, next steps:** backlinks, note transclusion (`![[Note]]`), Obsidian callouts,
   browsing by entity type, and perhaps Obsidian plugins later.
 - **Character sheets, next steps:**
+  - **Tracking what gets used up (first, from the first session):** the Notes tab does too much
+    today; a level-1 monk with Magic Initiate already needs attacks, spells and a once-a-day spell
+    there as free text. Without needing rules, as typed from paper:
+    - **Spells:** spells known by level with their details (range, save or attack, damage), the
+      spellcasting ability, save DC and attack bonus, and click-to-roll like the rest of the sheet.
+    - **Spell slots:** total and used per level, ticked off as they're cast.
+    - **Limited uses:** anything with a count and a reset (ki points, a feat's once per long rest,
+      Second Wind, Channel Divinity), ticked off and shown at a glance.
+    - **Hit dice and rests:** hit dice spent and left; Short Rest and Long Rest buttons that reset
+      what each one resets, undoable like any change.
+    - **Attacks:** a list of name, bonus and damage, each rollable, instead of lines in Notes.
   - **Rules on top:** proficiency bonus from level; species and class features; attacks worked
     out from equipped weapons; AC from armour; spells and slots; short and long rests. They'd add
     to `deriveSheet` and could flag a typed number they disagree with. The SRD (5.1 and 5.2, CC BY
