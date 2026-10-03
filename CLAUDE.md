@@ -22,7 +22,8 @@ to be hosted: a Docker image, with the vault copied read-only from Google Drive 
 ## Hard constraints
 
 - **Never write to, move or delete anything in the vault.** Read-only access only. An ESLint rule
-  bans fs write APIs (and namespace `fs` imports) in `app/` and `server/`; don't work around it.
+  allows only fs's reading APIs in `app/`, `server/` and `server.js` (no writes, no default or
+  namespace `fs` imports); don't work around it.
   The two exceptions are `app/.server/data/json-store.ts` and `app/.server/data/file-cache.ts`
   (generated files such as map tiles), which write only inside `DATA_PATH` (config refuses a data
   folder that overlaps the vault). New persistent data goes through the JSON store. sharp may only
