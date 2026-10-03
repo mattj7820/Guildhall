@@ -1042,3 +1042,30 @@ page is ready.
 Setting up through endpoints (maps, sharing, fog, areas, markers) replaced the UI where the UI
 isn't what's tested, which made the suite quicker and gave it fewer steps to go wrong. CI now keeps
 the report for flaky runs, and a manual Stress workflow repeats a spec on CI to prove a fix.
+
+## 60. Paying down debt: refusals said, failures retried, routes checked, big components split
+
+**Date:** 2026-10-03
+
+A pass over the app code, after the e2e work in decision 59, fixed what a review found rather
+than adding anything new:
+
+- **Saving says what happened.** The fight tracker showed "saved" when the server refused a save
+  (400, 403, 404); it now says the change wasn't kept. The fog tools let the DM's changes go on a
+  5xx as if refused; they're now sent again, like when Guildhall can't be reached, and a real
+  refusal also clears the undo steps made from them.
+- **Every JSON body is checked.** Three DM routes cast their JSON, so bad input was a 500.
+  `readJson(request, schema)` is now the one way to read a JSON body, and the copies of the same
+  try/catch in six routes went. `requireDm` and `notFound` replace the 404 written out in 22
+  routes, so "not yours" and "not there" stay the same answer by construction.
+- **Lint checks what it claimed to.** The read-only rule listed banned write APIs, so a default
+  or namespace import of `fs` got past it; it now allows only the reading APIs. React's hooks
+  rules ran only on `.tsx`; on the `.ts` hooks they found two real problems, now fixed.
+- **Windows file locks** retry for reads as well as renames (local runs only; production is Linux).
+- **The three largest components were split** by what they do (the bag's drag state, the map
+  page's token placing and bar, the sheet's sections), without changing behaviour; the e2e suite
+  is the check.
+
+A race once suspected when a prepared fight starts on its map turned out to be the e2e run, not
+the app: repeated copies of `fight.spec.ts` ran at once against the table's one fight. The stress
+workflow takes `workers=1` for it.

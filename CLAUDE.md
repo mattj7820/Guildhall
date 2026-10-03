@@ -203,7 +203,11 @@ First e2e run needs `npx playwright install chromium`.
   drags).
 - `app/.server/data/json-store.ts`: `JsonFile`, a validated, queued, atomically written JSON file.
   `file-cache.ts`: `FileCache`, disposable generated files in `DATA_PATH/cache`, one folder per key
-  and version, made one set at a time.
+  and version, made one set at a time. `when-free.ts`: retries a read or rename while Windows holds
+  the file.
+- `app/.server/read-json.ts`: `readJson(request, schema)`, a JSON body checked with zod (a body
+  that isn't JSON fails the check: a 400, never a 500). `app/.server/not-found.ts`: `notFound()`
+  and `requireDm(viewer)`, the one 404 for missing and not-yours alike.
 - `app/wiki/`: URL helpers and types shared with the browser.
 - `app/routes/`: `home`, `wiki` (layout + sidebar), `wiki-home` (landing page + `?q=` search),
   `wiki-note` (`/wiki/*`), `combat` (the DM's tracker, or a player's view of the fight; a hydrating
@@ -231,13 +235,16 @@ First e2e run needs `npx playwright install chromium`.
   encounter editor (`PreparedEditor`). `TurnStrip` (the turn order as round faces, over a map or
   in a page), `PlayerFight` (a player's Combat page, and `EndMyTurn`), `FightStatus` (saving,
   offline, replaced). `CombatantRow` and `AddCombatants` have a `"prep"` mode.
-- `app/components/characters/`: `CharacterSheet` (with edit mode, click-to-roll and the docked
-  bag), `CompanionSheet`, `PartyCard`, `SheetBag` (a bag saved through the editor), `EditorBar`,
+- `app/components/characters/`: `CharacterSheet` (the layout, edit mode, click-to-roll and the
+  docked bag; its parts are `SheetHeader`, `SheetSections` and `SheetTabs`), `CompanionSheet`, `PartyCard`, `SheetBag` (a bag saved through the editor), `EditorBar`,
   `HitPointsPanel`, `Fields`, `SheetParts`, `Portrait`. `app/components/inventory/`: `Bag`,
-  `InventoryBoard` (the drag-and-drop grid, equipped slots, give targets), `ItemTile`,
+  `InventoryBoard` (the drag-and-drop grid; the drag's state and rules are `useInventoryDrag`, its
+  other drop targets `DropZones`, with `SortableTile`, `keyboard.ts` and `drag-ids.ts`), `ItemTile`,
   `ItemTooltip`, `ItemDetails`, `QuickAdd`, `Purse`, `UndoToast`.
 - `app/components/maps/`: `MapCanvas` (the SVG canvas; `focus` centres it), `MapViewer` and
-  `MapEditor` (the two pages), `AreaShape`, `VertexHandles`, `DraftOutline`, `AreaForm`,
+  `MapEditor` (the two pages; the viewer's bar is `MapViewerBar`, placing tokens
+  `useTokenPlacing`, its smaller parts `MapViewerParts`, and `ClickCatcher` takes the next click on
+  the map), `AreaShape`, `VertexHandles`, `DraftOutline`, `AreaForm`,
   `MapSettings`, `ImageHealth`, `ImagePicker`, `NotePicker`, `NotePanel`, `MapBreadcrumbs`, and for
   fog of war `FogLayer` (the fog drawn from the cell opacities), `FogPainter` (brush, rectangle and
   area tools), `FogToolbar`, `FogAreaList` (what players see of each area) and `useFogTools` (tool
@@ -314,10 +321,11 @@ First e2e run needs `npx playwright install chromium`.
 - Hidden content must be indistinguishable from missing content in player view (same 404, links
   become plain text, excluded from search and the tree).
 - Signing in: who someone is comes from `accountContext` (DM, member or waiting), what they may
-  see from `viewerContext`. DM-only pages check `viewer.role` (the DM previewing as a player sees
-  the players' view); pages about the DM's own account, such as Members, check the account.
+  see from `viewerContext`. DM-only pages and actions call `requireDm(viewer)` (the DM previewing
+  as a player sees the players' view), and anything missing or not the viewer's is `notFound()`; pages about the DM's own account, such as Members, check the account.
   Every form post must come from `PUBLIC_URL` (the Origin check); state-changing requests are
-  POSTs, sign-out included. New public (signed-out) pages must be added to `access.ts`.
+  POSTs, sign-out included. New public (signed-out) pages must be added to `access.ts`. JSON
+  bodies are read with `readJson` and a zod schema, never cast.
 - Unit tests sit next to the code (`*.test.ts`); e2e specs in `tests/e2e/` import `test` from
   `tests/e2e/support/fixtures.ts` and work through page objects (`tests/e2e/pages/`, accessible
   locators), `openAs` for other people's browsers and `api` for setting up through endpoints.
