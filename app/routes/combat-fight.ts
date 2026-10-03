@@ -1,5 +1,5 @@
-import { data } from "react-router";
 import { z } from "zod";
+import { requireDm } from "~/.server/not-found";
 import { fightView } from "~/.server/combat/fight-view";
 import { readJson } from "~/.server/read-json";
 import { encounterSchema } from "~/combat/schema";
@@ -54,7 +54,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   // Everything else is the DM's.
-  if (viewer.role !== "dm") throw data("Not found", { status: 404 });
+  requireDm(viewer);
   if (body.data.intent === "setFreeMovement") {
     const changed = await services.fight.setFreeMovement(body.data.on);
     if (!changed) return Response.json({ error: "There's no fight." }, { status: 404 });

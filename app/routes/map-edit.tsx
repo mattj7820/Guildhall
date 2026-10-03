@@ -1,5 +1,6 @@
 import { data, redirect, type ShouldRevalidateFunctionArgs } from "react-router";
 import { z } from "zod";
+import { notFound, requireDm } from "~/.server/not-found";
 import { loadMapView, mapSource } from "~/.server/maps/load";
 import { readJson } from "~/.server/read-json";
 import { MapEditor } from "~/components/maps/MapEditor";
@@ -17,12 +18,12 @@ export function meta({ loaderData }: Route.MetaArgs) {
 export async function loader({ request, params, context }: Route.LoaderArgs) {
   const viewer = context.get(viewerContext);
   // Editing is the DM's: for anyone else it's the same 404 as a map that doesn't exist.
-  if (viewer.role !== "dm") throw data("Map not found", { status: 404 });
+  requireDm(viewer, "Map not found");
   const services = context.get(servicesContext);
   const maps = await services.maps.list();
   const map = maps.find((candidate) => candidate.id === params.id);
   const view = map && (await loadMapView(services, map, maps, viewer));
-  if (!map || !view) throw data("Map not found", { status: 404 });
+  if (!map || !view) notFound("Map not found");
 
   const current = services.vault.current;
   return {
@@ -59,7 +60,7 @@ export async function action(args: Route.ActionArgs) {
 }
 
 async function changeMap({ request, params, context }: Route.ActionArgs) {
-  if (context.get(viewerContext).role !== "dm") throw data("Not found", { status: 404 });
+  requireDm(context.get(viewerContext));
   const services = context.get(servicesContext);
   const { maps, fogs, vault } = services;
   const inVault = (path: string) => vault.current.mapImages().includes(path);

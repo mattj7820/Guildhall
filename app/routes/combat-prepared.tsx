@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { data, Form, Link, redirect } from "react-router";
 import { z } from "zod";
+import { requireDm } from "~/.server/not-found";
 import { DataFileError } from "~/.server/data/json-store";
 import { readJson } from "~/.server/read-json";
 import { preparedStartUrl, summarise } from "~/combat/prepared";
@@ -44,7 +45,7 @@ export async function loader({ context }: Route.LoaderArgs) {
  * encounter back instead of a redirect.
  */
 export async function action({ request, context }: Route.ActionArgs) {
-  if (context.get(viewerContext).role !== "dm") throw data("Not found", { status: 404 });
+  requireDm(context.get(viewerContext));
   const prepared = context.get(servicesContext).preparedEncounters;
 
   if (request.headers.get("Content-Type")?.includes("application/json")) {

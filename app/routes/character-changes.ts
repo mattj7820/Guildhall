@@ -1,5 +1,5 @@
-import { data } from "react-router";
 import { z } from "zod";
+import { notFound } from "~/.server/not-found";
 import { openableCharacter } from "~/.server/characters/openable";
 import { readJson } from "~/.server/read-json";
 import { actionBatchSchema } from "~/characters/actions";
@@ -46,7 +46,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     body.data.actions,
     body.data.baseRevision,
   );
-  if (!applied) throw data("Not found", { status: 404 });
+  if (!applied) notFound();
   if ("problem" in applied) return Response.json({ error: applied.problem }, { status: 409 });
   // Hit points show in the fight, so those watching it hear of the change.
   await services.live.fightChanged();

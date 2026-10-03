@@ -1,4 +1,5 @@
-import { data, redirect } from "react-router";
+import { redirect } from "react-router";
+import { notFound } from "~/.server/not-found";
 import { newAttempt } from "~/.server/auth/discord-sign-in";
 import { safeRedirect } from "~/.server/safe-redirect";
 import { servicesContext } from "~/context";
@@ -10,7 +11,7 @@ import type { Route } from "./+types/auth-discord";
  */
 export async function action({ request, context }: Route.ActionArgs) {
   const { discord, signInAttempts } = context.get(servicesContext);
-  if (!discord) throw data("Not found", { status: 404 });
+  if (!discord) notFound();
   const form = await request.formData();
   const attempt = newAttempt(safeRedirect(form.get("redirectTo")));
   return redirect(discord.authorizationUrl(attempt.state), {

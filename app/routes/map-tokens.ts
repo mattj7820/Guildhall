@@ -1,5 +1,5 @@
-import { data } from "react-router";
 import { z } from "zod";
+import { notFound } from "~/.server/not-found";
 import { DataFileError } from "~/.server/data/json-store";
 import { loadTokens, partyControllers } from "~/.server/maps/tokens";
 import { readJson } from "~/.server/read-json";
@@ -26,7 +26,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const services = context.get(servicesContext);
   const maps = await services.maps.list();
   const map = maps.find((candidate) => candidate.id === params.id);
-  if (!map || !canView(viewer, map.visibility)) throw data("Not found", { status: 404 });
+  if (!map || !canView(viewer, map.visibility)) notFound();
 
   const body = await readJson(request, bodySchema);
   if (!body.success) {

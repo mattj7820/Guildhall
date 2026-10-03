@@ -1,5 +1,5 @@
-import { data } from "react-router";
 import { z } from "zod";
+import { notFound, requireDm } from "~/.server/not-found";
 import { readJson } from "~/.server/read-json";
 import { servicesContext, viewerContext } from "~/context";
 import { encodeCells } from "~/maps/fog/mask";
@@ -16,10 +16,10 @@ const bodySchema = z.object({ changes: fogChangesSchema });
  * pages.
  */
 export async function action({ request, params, context }: Route.ActionArgs) {
-  if (context.get(viewerContext).role !== "dm") throw data("Not found", { status: 404 });
+  requireDm(context.get(viewerContext));
   const { maps, fogs, live } = context.get(servicesContext);
   const map = await maps.get(params.id);
-  if (!map) throw data("Not found", { status: 404 });
+  if (!map) notFound();
 
   const body = await readJson(request, bodySchema);
   if (!body.success) {

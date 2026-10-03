@@ -1,5 +1,5 @@
-import { data } from "react-router";
 import { z } from "zod";
+import { notFound } from "~/.server/not-found";
 import { controllersOf } from "~/.server/characters/controllers";
 import { nameOf } from "~/.server/characters/load";
 import { noteLookup, openableCharacter } from "~/.server/characters/openable";
@@ -42,7 +42,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     to: to.id,
     givenBy: nameOf(from, findNote(from.note)),
   });
-  if (!gift) throw data("Not found", { status: 404 });
+  if (!gift) notFound();
   if ("problem" in gift) return Response.json({ error: gift.problem }, { status: 409 });
   return Response.json({ character: gift.from });
 }
