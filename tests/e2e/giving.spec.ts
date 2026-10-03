@@ -1,11 +1,13 @@
 import { expect, test, type App, type Who } from "./support/fixtures";
 import { SIGNED_IN } from "./support/sign-in";
 import { uniqueName } from "./support/test-data";
+import { tidyBags } from "./support/tidy";
 
 /**
  * The DM giving items to a player. Tests start as the DM; Player One gets a second browser. Items
  * have unique names, since other specs use Fixture PC One's bag too.
  */
+test.afterEach(tidyBags);
 
 test("the DM gives an item, and the player finds it new in their bag", async ({
   characters,
@@ -128,9 +130,11 @@ test.describe("between characters", () => {
     openAs,
     page,
   }) => {
+    // From the companion's bag, which holds only uniquely named items (tidied away after each
+    // test), so the tile is near the portraits however many tests have run.
     const pcTwo = await setUpParty(openAs);
     const letter = uniqueName("Letter");
-    const bag = await characters.openBag("Fixture PC One");
+    const bag = await characters.openCompanionBag("Fixture Companion");
     await bag.quickAdd(letter);
     await bag.saved();
 

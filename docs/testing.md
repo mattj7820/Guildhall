@@ -239,8 +239,14 @@ Dice decide initiative, tie-breaks and monster HP, so tests must control them.
 - **Editing is serial.** `character-sheet.spec.ts` is the only spec that changes Fixture PC One's
   sheet fields, and runs its tests in order. Others only add items, and because changes are
   merged as actions, that never disturbs it.
-- **Dragging uses the companion's bag,** which no other test changes: a drag needs tiles that hold
-  still between finding them on screen and pressing the mouse.
+- **Bags are tidied.** After each test, the bag specs take out the items it added, by the unique
+  names it made (`tidyBags` in `tests/e2e/support/tidy.ts`, as the DM), from every party bag.
+  Otherwise shared bags only grow, and a run repeated against one server ends with tiles far down
+  the page.
+- **Mouse drags use the companion's bag,** which only ever holds uniquely named items, so it stays
+  small: a drag needs tiles that hold still, near what they're dragged to. Vault items keep their
+  names (`Fixture Rope`), so they can't be told apart to tidy, and go only in Fixture PC One's
+  bag.
 - **Two people at once:** the DM and Player One each get a browser context. A conflict is made on
   purpose: one saves while the other's page still shows the old value.
 - **What players never get:** item notes' DM parts are checked in the page, its data request and

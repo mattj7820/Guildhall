@@ -7,7 +7,17 @@ export const ORIGIN = "http://localhost:4173";
  * A name no other test uses, since tests share the server's data folder. Random rather than from
  * the test's ID, which repeats and retries share.
  */
-export const uniqueName = (base: string) => `${base} ${randomUUID().slice(0, 8)}`;
+export function uniqueName(base: string) {
+  const name = `${base} ${randomUUID().slice(0, 8)}`;
+  namesMade.add(name);
+  return name;
+}
+
+/**
+ * The unique names made since the last tidy-up (see `tidyBags`). Each worker runs its tests one
+ * at a time, so these are the current test's.
+ */
+export const namesMade = new Set<string>();
 
 /** A point on an image, as fractions of its width and height. */
 export type Point = [number, number];

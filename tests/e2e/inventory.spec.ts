@@ -1,6 +1,7 @@
 import { expect, test } from "./support/fixtures";
 import { SIGNED_IN } from "./support/sign-in";
 import { uniqueName } from "./support/test-data";
+import { tidyBags } from "./support/tidy";
 
 /**
  * The bag, as Player One on Fixture PC One (and the shared companion's, for dragging). Other specs
@@ -8,6 +9,7 @@ import { uniqueName } from "./support/test-data";
  * asserts on the whole bag.
  */
 test.use({ storageState: SIGNED_IN.playerOne });
+test.afterEach(tidyBags);
 
 test("adds a custom item and a vault item in a few keystrokes, and keeps them", async ({
   characters,
