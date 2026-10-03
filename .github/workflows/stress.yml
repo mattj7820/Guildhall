@@ -14,6 +14,9 @@ on:
       grep:
         description: Only tests whose title matches (optional)
         default: ""
+      workers:
+        description: Workers; 1 for fight.spec, whose copies would share the table's one fight
+        default: ""
 
 permissions:
   contents: read
@@ -35,10 +38,11 @@ jobs:
           SPECS: ${{ inputs.specs }}
           REPEAT: ${{ inputs.repeat }}
           GREP: ${{ inputs.grep }}
+          WORKERS: ${{ inputs.workers }}
         run: |
           # Word-split SPECS on purpose: several files may be given.
           # shellcheck disable=SC2086
-          npx playwright test $SPECS --repeat-each "$REPEAT" --retries 0 ${GREP:+--grep "$GREP"}
+          npx playwright test $SPECS --repeat-each "$REPEAT" --retries 0 ${GREP:+--grep "$GREP"} ${WORKERS:+--workers "$WORKERS"}
       - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:

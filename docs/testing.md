@@ -129,7 +129,9 @@ A spec that needs the same starting point in every test adds a local fixture wit
 cancelled, so a test that passed on retry still has its first attempt's trace. To repeat a spec
 on CI rather than a laptop, run the Stress workflow:
 `gh workflow run stress.yml --ref <branch> -f specs=tests/e2e/inventory.spec.ts -f repeat=30`.
-Repeating a spec against one server also shows tests that only pass on a fresh one.
+Repeating a spec against one server also shows tests that only pass on a fresh one. Repeat
+`fight.spec.ts` with `-f workers=1`: with more workers, its repeated copies run at once against
+the table's one fight and trip over each other.
 
 ## Signing in
 
