@@ -1,34 +1,28 @@
-import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+import { useState } from "react";
 import type { DmFightView } from "~/combat/fight";
 import type { CombatCatalogue, PreparedEncounter } from "~/combat/types";
 import { buttonClass, primaryButtonClass } from "~/components/styles";
 import { areaRevealed } from "~/maps/fog/coverage";
 import type { FogMask } from "~/maps/fog/types";
-import type { AreaView, MapView, Size } from "~/maps/types";
-import { mapEditUrl, mapUrl } from "~/maps/urls";
-import { normalise, offset, toPixels } from "~/maps/geometry";
-import { snapToGrid, toPixels as gridInPixels } from "~/maps/grid/grid";
-import type { TokenAction } from "~/maps/tokens/actions";
-import type { InsideBadge, PartyPlacement, Token, TokenView } from "~/maps/tokens/types";
+import { normalise, toPixels } from "~/maps/geometry";
+import { useStuntSettings } from "~/maps/stunt-settings";
+import type { InsideBadge, PartyPlacement, TokenView } from "~/maps/tokens/types";
 import { useMapTokens } from "~/maps/tokens/useMapTokens";
-import type { Point } from "~/maps/types";
-import { newId } from "~/shared/ids";
+import type { AreaView, MapView, Size } from "~/maps/types";
 import { AreaShape } from "./AreaShape";
+import { ClickCatcher } from "./ClickCatcher";
 import { FogAreaList } from "./FogAreaList";
 import { FogLayer } from "./FogLayer";
 import { FogPainter } from "./FogPainter";
 import { FogToolbar } from "./FogToolbar";
+import { GridLayer } from "./GridLayer";
 import { ImageHealth } from "./ImageHealth";
+import { InsideBadges } from "./InsideBadges";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
+import { MapViewerBar } from "./MapViewerBar";
+import { AreaList, Legend, SelectedArea, usePresenting } from "./MapViewerParts";
 import { NotePanel } from "./NotePanel";
-import { MapSwitch } from "./MapSwitch";
-import { GridLayer } from "./GridLayer";
-import { InsideBadges } from "./InsideBadges";
-import { useBattleTools } from "./useBattleTools";
-import { useMapFight } from "./useMapFight";
-import { useStuntSettings } from "~/maps/stunt-settings";
 import {
   FlashOverlay,
   StuntDefs,
@@ -38,9 +32,12 @@ import {
   useStuntPicker,
   useStunts,
 } from "./Stunts";
-import { TOKEN_RADIUS, TokenLayer } from "./TokenLayer";
-import { PlacingHint, TokenPanel, type Placing } from "./TokenPanel";
+import { TokenLayer } from "./TokenLayer";
+import { PlacingHint, TokenPanel } from "./TokenPanel";
+import { useBattleTools } from "./useBattleTools";
 import { useFogTools } from "./useFogTools";
+import { useMapFight } from "./useMapFight";
+import { useTokenPlacing } from "./useTokenPlacing";
 
 /** How dark the fog is for the DM, who sees the map through it. */
 const DM_FOG_OPACITY = 0.6;
@@ -94,8 +91,13 @@ export function MapViewer({
   const [focus, setFocus] = useState<{ at: [number, number]; key: number }>();
   const find = (token: TokenView) =>
     setFocus({ at: toPixels(token.at, map.size), key: (focus?.key ?? 0) + 1 });
-  const [placing, setPlacing] = useState<Placing>();
   const [selectedTokenId, setSelectedTokenId] = useState<string>();
+  const { placing, setPlacing, place } = useTokenPlacing({
+    map,
+    party,
+    send,
+    onPlaced: setSelectedTokenId,
+  });
   const selectedToken = tokens.find((token) => token.id === selectedTokenId);
   const fight = useMapFight({
     map,
@@ -137,109 +139,30 @@ export function MapViewer({
     return { burst: square * 1.5, light: square * 5 };
   };
 
-  /** Where a token placed here lands: on a square while tokens snap to the grid. */
-  const landing = (point: Point): Point => {
-    if (!map.grid || !map.snapToGrid) return point;
-    const [x, y] = snapToGrid(gridInPixels(map.grid, map.size), toPixels(point, map.size));
-    return normalise(x, y, map.size);
-  };
-
-  function place(clicked: Point, scale: number) {
-    const at = landing(clicked);
-    if (placing?.kind === "party") {
-      // Side by side around the click: in neighbouring squares on a battle map, else far enough
-      // apart on screen for their names.
-      const step = map.grid ? map.grid.square : (TOKEN_RADIUS * 4.5) / scale / map.size.width;
-      const first = at[0] - step * Math.floor((party.length - 1) / 2);
-      const placed = party.map((member, index): TokenAction => ({
-        type: "place",
-        token: {
-          kind: "character",
-          id: newId(),
-          map: map.id,
-          at: landing(offset([first, at[1]], step * index, 0)),
-          note: member.note,
-        },
-      }));
-      void send(placed);
-      setPlacing(undefined);
-      return;
-    }
-    const token: Token =
-      placing?.kind === "character"
-        ? { kind: "character", id: newId(), map: map.id, at, note: placing.note }
-        : {
-            kind: "marker",
-            id: newId(),
-            map: map.id,
-            at,
-            name: placing?.name ?? "",
-            colour: placing?.kind === "marker" ? placing.colour : "red",
-            visibility: placing?.kind === "marker" && placing.shown ? "players" : "dm",
-          };
-    void send([{ type: "place", token }]);
-    setPlacing(undefined);
-    setSelectedTokenId(token.id);
-  }
-
   return (
     <main className="flex h-[calc(100dvh-3.5rem)] flex-col">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-stone-200 px-4 py-2 dark:border-stone-800">
         <MapBreadcrumbs crumbs={map.breadcrumbs} />
         <h1 className="sr-only">{map.name}</h1>
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <StuntSettingsMenu stunts={stunts} settings={stuntSettings} onChange={changeStunts} />
-          <MapSwitch
-            mapId={map.id}
-            label="Share with players"
-            on={shared}
-            change={(on) => ({ intent: "setVisibility", visibility: on ? "players" : "dm" })}
-          />
-          {map.grid && (
-            <MapSwitch
-              mapId={map.id}
-              label="Snap to grid"
-              on={!!map.snapToGrid}
-              change={(snap) => ({ intent: "setSnapping", snap })}
-            />
-          )}
-          <button
-            type="button"
-            aria-pressed={combat}
-            className={combat ? primaryButtonClass : buttonClass}
-            onClick={() => {
-              fight.setOpen(!combat);
-              setFogMode(false);
-            }}
-          >
-            Combat
-          </button>
-          <button
-            type="button"
-            aria-pressed={stuntMode}
-            className={stuntMode ? primaryButtonClass : buttonClass}
-            onClick={() => {
-              setStuntMode(!stuntMode);
-              picker.setArmed(undefined);
-            }}
-          >
-            Stunts
-          </button>
-          <button
-            type="button"
-            aria-pressed={fogMode}
-            className={fogMode ? primaryButtonClass : buttonClass}
-            onClick={() => setFogMode(!fogMode)}
-          >
-            Fog
-          </button>
-          <button type="button" className={buttonClass} onClick={togglePresenting}>
-            Present
-          </button>
-          <Link to={mapEditUrl(map.id)} className={buttonClass}>
-            Edit map
-          </Link>
-        </div>
+        <MapViewerBar
+          map={map}
+          stunts={
+            <StuntSettingsMenu stunts={stunts} settings={stuntSettings} onChange={changeStunts} />
+          }
+          combat={combat}
+          stuntMode={stuntMode}
+          fogMode={fogMode}
+          onCombat={() => {
+            fight.setOpen(!combat);
+            setFogMode(false);
+          }}
+          onStunts={() => {
+            setStuntMode(!stuntMode);
+            picker.setArmed(undefined);
+          }}
+          onFog={() => setFogMode(!fogMode)}
+          onPresent={togglePresenting}
+        />
       </div>
       <ImageHealth map={map} images={images} actual={actualSize} />
       {map.image.inSharedNote && (
@@ -346,16 +269,11 @@ export function MapViewer({
                   scale={canvas.scale}
                 />
                 {stuntArmed && (
-                  <rect
-                    {...map.size}
-                    fill="transparent"
-                    className="cursor-crosshair"
-                    aria-label="Play the stunt"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      const point = canvas.clientToImage(event.clientX, event.clientY);
-                      if (point) picker.play(point, stuntSizes(canvas.scale));
-                    }}
+                  <ClickCatcher
+                    size={map.size}
+                    canvas={canvas}
+                    label="Play the stunt"
+                    onPoint={(point, scale) => picker.play(point, stuntSizes(scale))}
                   />
                 )}
                 <StuntLayer under stunts={stunts.points} size={map.size} canvas={canvas} />
@@ -388,30 +306,20 @@ export function MapViewer({
                 <StuntDefs />
                 <StuntLayer stunts={stunts.points} size={map.size} canvas={canvas} />
                 {placingMonsters && !placing && !stuntArmed && (
-                  <rect
-                    {...map.size}
-                    fill="transparent"
-                    className="cursor-crosshair"
-                    aria-label="Place the monsters"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      const point = canvas.clientToImage(event.clientX, event.clientY);
-                      if (point) {
-                        fight.placeMonsters(normalise(point[0], point[1], map.size), canvas.scale);
-                      }
-                    }}
+                  <ClickCatcher
+                    size={map.size}
+                    canvas={canvas}
+                    label="Place the monsters"
+                    onPoint={([x, y], scale) =>
+                      fight.placeMonsters(normalise(x, y, map.size), scale)
+                    }
                   />
                 )}
                 {placing && !presenting && (
-                  <rect
-                    {...map.size}
-                    fill="transparent"
-                    className="cursor-crosshair"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      const point = canvas.clientToImage(event.clientX, event.clientY);
-                      if (point) place(normalise(point[0], point[1], map.size), canvas.scale);
-                    }}
+                  <ClickCatcher
+                    size={map.size}
+                    canvas={canvas}
+                    onPoint={([x, y], scale) => place(normalise(x, y, map.size), scale)}
                   />
                 )}
               </>
@@ -497,125 +405,5 @@ export function MapViewer({
         )}
       </div>
     </main>
-  );
-}
-
-/** Fullscreen for the map and its canvas only, with the browser's own Esc to leave. */
-function usePresenting() {
-  const stage = useRef<HTMLDivElement>(null);
-  const [presenting, setPresenting] = useState(false);
-  useEffect(() => {
-    const element = stage.current;
-    const onChange = () => setPresenting(!!element && document.fullscreenElement === element);
-    document.addEventListener("fullscreenchange", onChange);
-    return () => document.removeEventListener("fullscreenchange", onChange);
-  }, []);
-  const togglePresenting = () => {
-    if (document.fullscreenElement) void document.exitFullscreen();
-    else void stage.current?.requestFullscreen();
-  };
-  return { stage, presenting, togglePresenting };
-}
-
-/** A panel for an area without a map (or whose map the viewer can't see): no dead ends. */
-function SelectedArea({
-  area,
-  mapId,
-  onClose,
-}: {
-  area: AreaView;
-  mapId: string;
-  onClose: () => void;
-}) {
-  return (
-    <section aria-label={area.name} className="flex flex-col gap-3">
-      <div className="flex items-baseline gap-2">
-        <h2 className="mr-auto font-serif text-xl font-bold">{area.name}</h2>
-        <button type="button" onClick={onClose} className="text-sm text-stone-500 hover:underline">
-          Close
-        </button>
-      </div>
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="text-stone-600 dark:text-stone-400">Not mapped yet.</span>
-        <Link to={mapEditUrl(mapId, area.id)} className={buttonClass}>
-          Attach a map
-        </Link>
-      </div>
-      {area.broken.includes("map") && (
-        <p className="text-sm text-rose-700 dark:text-rose-400">
-          The map this area led to has been deleted.
-        </p>
-      )}
-      {area.broken.includes("note") && (
-        <p className="text-sm text-rose-700 dark:text-rose-400">
-          The wiki note this area linked to is no longer in the vault.
-        </p>
-      )}
-      {area.note && <NotePanel note={area.note} headingLevel={3} />}
-    </section>
-  );
-}
-
-function AreaList({ areas, onSelect }: { areas: AreaView[]; onSelect: (area: AreaView) => void }) {
-  if (areas.length === 0) return null;
-  const sorted = [...areas].sort((a, b) => a.name.localeCompare(b.name));
-  return (
-    <section aria-labelledby="map-areas-heading">
-      <h2
-        id="map-areas-heading"
-        className="mb-1 text-xs font-semibold tracking-wide text-stone-500 uppercase"
-      >
-        Areas
-      </h2>
-      <ul aria-label="Areas" className="flex flex-col text-sm">
-        {sorted.map((area) => (
-          <li key={area.id}>
-            {area.map ? (
-              <Link
-                to={mapUrl(area.map.id)}
-                className="block rounded px-1 py-0.5 hover:bg-stone-100 dark:hover:bg-stone-800"
-              >
-                ▸ {area.name}
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onSelect(area)}
-                className="block w-full rounded px-1 py-0.5 text-left text-stone-600 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
-              >
-                ◌ {area.name} <span className="text-xs">(not mapped yet)</span>
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-/** What the two outline styles mean. */
-function Legend() {
-  const swatch = (dashed: boolean, className: string) => (
-    <svg width="22" height="12" aria-hidden="true">
-      <rect
-        x="1"
-        y="1"
-        width="20"
-        height="10"
-        strokeWidth="2"
-        strokeDasharray={dashed ? "4 3" : undefined}
-        className={className}
-      />
-    </svg>
-  );
-  return (
-    <div className="pointer-events-none absolute bottom-3 left-3 flex flex-col gap-1 rounded-md bg-white/90 px-2 py-1.5 text-xs shadow dark:bg-stone-900/90">
-      <span className="flex items-center gap-2">
-        {swatch(false, "fill-amber-400/30 stroke-amber-700")} Leads to a map
-      </span>
-      <span className="flex items-center gap-2">
-        {swatch(true, "fill-stone-300/30 stroke-stone-700")} Not mapped yet
-      </span>
-    </div>
   );
 }
