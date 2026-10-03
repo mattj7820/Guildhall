@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { data, Form, Link, redirect, useActionData, useNavigation } from "react-router";
+import { requireDm } from "~/.server/not-found";
 import { DataFileError } from "~/.server/data/json-store";
 import { whereabouts } from "~/.server/maps/tokens";
 import { ImagePicker } from "~/components/maps/ImagePicker";
@@ -85,7 +86,7 @@ async function playersMaps({ maps }: Services, viewer: Viewer) {
 /** Creates a map from the form (image, its measured size, name, note) and opens the editor. */
 export async function action({ request, context }: Route.ActionArgs) {
   const viewer = context.get(viewerContext);
-  if (viewer.role !== "dm") throw data("Not found", { status: 404 });
+  requireDm(viewer);
   const { maps, vault } = context.get(servicesContext);
   const form = await request.formData();
 

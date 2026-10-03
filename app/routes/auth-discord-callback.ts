@@ -1,7 +1,8 @@
-import { data, redirect } from "react-router";
+import { redirect } from "react-router";
 import { checkCallback } from "~/.server/auth/discord-sign-in";
 import { DiscordError } from "~/.server/auth/discord";
 import { dmDiscordIds } from "~/.server/auth/identify";
+import { notFound } from "~/.server/not-found";
 import { servicesContext } from "~/context";
 import type { Route } from "./+types/auth-discord-callback";
 
@@ -13,7 +14,7 @@ import type { Route } from "./+types/auth-discord-callback";
 export async function loader({ request, context }: Route.LoaderArgs) {
   const services = context.get(servicesContext);
   const { discord, signInAttempts, members, sessions } = services;
-  if (!discord) throw data("Not found", { status: 404 });
+  if (!discord) notFound();
 
   // The attempt is used once, whatever happens next.
   const forget = await signInAttempts.serialize("", { maxAge: 0 });

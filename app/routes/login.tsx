@@ -1,4 +1,5 @@
 import { data, Form, redirect, useActionData, useSearchParams } from "react-router";
+import { notFound } from "~/.server/not-found";
 import { DEV_DM, devProfile, isLoopback } from "~/.server/auth/dev-login";
 import { partyPlayers } from "~/.server/members/players";
 import { safeRedirect } from "~/.server/safe-redirect";
@@ -37,7 +38,7 @@ const PROBLEMS: Record<string, string> = {
 export async function action({ request, context }: Route.ActionArgs) {
   const services = context.get(servicesContext);
   if (!services.config.devLogin || !isLoopback(context.get(clientAddressContext))) {
-    throw data("Not found", { status: 404 });
+    notFound();
   }
   const form = await request.formData();
   const who = String(form.get("who") ?? "");

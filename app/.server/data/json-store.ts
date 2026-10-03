@@ -4,6 +4,7 @@
  */
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { whenFree } from "./when-free";
 import type { z } from "zod";
 
 export class DataFileError extends Error {
@@ -28,7 +29,7 @@ export class JsonFile<T> {
   async read(): Promise<T> {
     let raw: string;
     try {
-      raw = await readFile(this.filePath, "utf8");
+      raw = await whenFree(() => readFile(this.filePath, "utf8"));
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") return this.empty();
       throw error;
@@ -63,25 +64,12 @@ export class JsonFile<T> {
     await mkdir(path.dirname(this.filePath), { recursive: true });
     const temporary = `${this.filePath}.${process.pid}.tmp`;
     await writeFile(temporary, JSON.stringify(data, null, 2) + "\n", "utf8");
-    await renameWithRetry(temporary, this.filePath);
+    await whenFree(() => rename(temporary, this.filePath));
   }
 
   private unreadable(reason: string): DataFileError {
     return new DataFileError(
       `Couldn't read ${this.filePath}: ${reason}. It hasn't been changed; fix or move it aside.`,
     );
-  }
-}
-
-/** On Windows a rename can briefly fail while another process (antivirus, backup) holds the file. */
-async function renameWithRetry(from: string, to: string, attempts = 5): Promise<void> {
-  for (let attempt = 1; ; attempt++) {
-    try {
-      return await rename(from, to);
-    } catch (error) {
-      const code = (error as NodeJS.ErrnoException).code;
-      if (attempt >= attempts || (code !== "EPERM" && code !== "EBUSY")) throw error;
-      await new Promise((resolve) => setTimeout(resolve, 20 * attempt));
-    }
   }
 }

@@ -20,7 +20,9 @@ export type SaveStatus =
   /** The server couldn't be reached; it will try again. */
   | "offline"
   /** The fight had changed elsewhere; the newer one is showing now. */
-  | "replaced";
+  | "replaced"
+  /** The server wouldn't take it (not the DM's to change, or not readable); not tried again. */
+  | "refused";
 
 export interface SaveAnswer {
   status: number;
@@ -47,10 +49,15 @@ export class FightSaver {
     private revision: number,
     private readonly send: SendSave,
     /** Told when the newer fight from the server should replace the tracker's. */
-    private readonly onReplaced: (fight: DmFight | null) => void,
+    private onReplaced: (fight: DmFight | null) => void,
     private readonly onStatus: (status: SaveStatus) => void,
     private readonly map?: MapId,
   ) {}
+
+  /** Who to tell of a newer fight: the tracker that takes it up is made after the saver. */
+  setOnReplaced(listener: (fight: DmFight | null) => void): void {
+    this.onReplaced = listener;
+  }
 
   /** The tracker changed: save it, after anything already on its way. */
   save(encounter: Encounter): void {
@@ -109,6 +116,12 @@ export class FightSaver {
       this.revision = answer.fight?.revision ?? 0;
       this.setStatus("replaced");
       this.onReplaced(answer.fight ?? null);
+      return;
+    }
+    if (answer.status < 200 || answer.status >= 300) {
+      // Sending the same again would get the same answer, so it waits for the next change.
+      this.setStatus("refused");
+      if (this.pending) return this.flush();
       return;
     }
     if (answer.fight) this.revision = answer.fight.revision;

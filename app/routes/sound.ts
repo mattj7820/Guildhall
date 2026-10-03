@@ -1,4 +1,4 @@
-import { data } from "react-router";
+import { notFound } from "~/.server/not-found";
 import { streamVaultFile } from "~/.server/vault/stream-file";
 import { servicesContext } from "~/context";
 import type { Route } from "./+types/sound";
@@ -12,7 +12,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   const { config, vault } = context.get(servicesContext);
   const vaultPath = `${config.soundsFolder}/${params["*"] ?? ""}`;
   if (!vault.current.soundsIn(config.soundsFolder).includes(vaultPath)) {
-    throw data("Not found", { status: 404 });
+    notFound();
   }
   return streamVaultFile(request, config.vaultPath, vaultPath);
 }

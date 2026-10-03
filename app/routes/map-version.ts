@@ -1,6 +1,6 @@
-import { data } from "react-router";
 import { mapVersion } from "~/.server/maps/load";
 import { loadMapTokens } from "~/.server/maps/tokens";
+import { notFound } from "~/.server/not-found";
 import { canView } from "~/campaign/visibility";
 import { servicesContext, viewerContext } from "~/context";
 import type { Route } from "./+types/map-version";
@@ -16,7 +16,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   const viewer = context.get(viewerContext);
   const map = await services.maps.get(params.id);
   if (!map || !canView(viewer, map.visibility)) {
-    throw data("Not found", { status: 404 });
+    notFound();
   }
   return Response.json(
     { version: await mapVersion(services, map), ...(await loadMapTokens(services, map, viewer)) },

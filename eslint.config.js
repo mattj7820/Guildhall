@@ -3,40 +3,24 @@ import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
-// fs APIs that could modify the filesystem. The vault is strictly read-only, so
-// any server code that touches it may not use these.
-const FS_WRITE_APIS = [
-  "writeFile",
-  "writeFileSync",
-  "appendFile",
-  "appendFileSync",
-  "createWriteStream",
-  "rename",
-  "renameSync",
-  "unlink",
-  "unlinkSync",
-  "rm",
-  "rmSync",
-  "rmdir",
-  "rmdirSync",
-  "mkdir",
-  "mkdirSync",
-  "copyFile",
-  "copyFileSync",
-  "cp",
-  "cpSync",
-  "truncate",
-  "truncateSync",
-  "chmod",
-  "chmodSync",
-  "utimes",
-  "utimesSync",
-  "symlink",
-  "symlinkSync",
-  "link",
-  "linkSync",
-  "open",
-  "openSync",
+// The fs APIs app and server code may import: reading only. Anything else from fs (a write, or a
+// default or namespace import, through which anything could be reached) is refused.
+const FS_READ_APIS = [
+  "access",
+  "accessSync",
+  "constants",
+  "createReadStream",
+  "existsSync",
+  "lstat",
+  "lstatSync",
+  "readdir",
+  "readdirSync",
+  "readFile",
+  "readFileSync",
+  "realpath",
+  "realpathSync",
+  "stat",
+  "statSync",
 ];
 
 export default tseslint.config(
@@ -51,23 +35,24 @@ export default tseslint.config(
     },
   },
   {
-    files: ["app/**/*.tsx"],
+    files: ["app/**/*.{ts,tsx}"],
     plugins: { "react-hooks": reactHooks },
     rules: reactHooks.configs.recommended.rules,
   },
   {
     rules: {
-      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", ignoreRestSiblings: true },
+      ],
       "@typescript-eslint/consistent-type-imports": "error",
     },
   },
   {
-    // Read-only guarantee: app and server code may not write to disk. Named imports of write
-    // APIs are banned, and so are namespace imports of fs (which would bypass that check).
-    // The two exceptions are the JSON store and the file cache (generated files such as map
-    // tiles), which write only inside DATA_PATH; config refuses to start if that folder overlaps
-    // the vault.
-    files: ["app/**/*.{ts,tsx}", "server/**/*.ts"],
+    // Read-only guarantee: app and server code may only import fs's reading APIs. The two
+    // exceptions are the JSON store and the file cache (generated files such as map tiles), which
+    // write only inside DATA_PATH; config refuses to start if that folder overlaps the vault.
+    files: ["app/**/*.{ts,tsx}", "server/**/*.ts", "server.js"],
     ignores: ["**/*.test.ts", "app/.server/data/json-store.ts", "app/.server/data/file-cache.ts"],
     rules: {
       "no-restricted-imports": [
@@ -75,20 +60,10 @@ export default tseslint.config(
         {
           paths: ["fs", "node:fs", "fs/promises", "node:fs/promises"].map((name) => ({
             name,
-            importNames: FS_WRITE_APIS,
-            message: "The vault is read-only. Server code must not write to the filesystem.",
+            allowImportNames: FS_READ_APIS,
+            message: "The vault is read-only. Server code may only read from the filesystem.",
           })),
         },
-      ],
-      "no-restricted-properties": [
-        "error",
-        ...FS_WRITE_APIS.flatMap((property) =>
-          ["fs", "fsp", "fsPromises"].map((object) => ({
-            object,
-            property,
-            message: "The vault is read-only. Server code must not write to the filesystem.",
-          })),
-        ),
       ],
     },
   },

@@ -1,5 +1,6 @@
-import { data, isRouteErrorResponse, Link } from "react-router";
+import { isRouteErrorResponse, Link } from "react-router";
 import { DataFileError } from "~/.server/data/json-store";
+import { notFound } from "~/.server/not-found";
 import type { CampaignMaps } from "~/.server/maps/campaign-maps";
 import { TypeBadge } from "~/components/TypeBadge";
 import { servicesContext, viewerContext } from "~/context";
@@ -17,7 +18,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   const note = vault.current.getNote(params["*"] ?? "", viewer);
 
   // Hidden notes get the same 404 as missing ones, so the player view doesn't reveal they exist.
-  if (!note) throw data("Note not found", { status: 404 });
+  if (!note) notFound("Note not found");
 
   return {
     id: note.id,

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { data, Form } from "react-router";
+import { notFound } from "~/.server/not-found";
 import { dmDiscordIds } from "~/.server/auth/identify";
 import { DataFileError } from "~/.server/data/json-store";
 import { partyPlayers } from "~/.server/members/players";
@@ -15,7 +16,7 @@ export function meta(_: Route.MetaArgs) {
 
 export async function loader({ context }: Route.LoaderArgs) {
   const account = context.get(accountContext);
-  if (account.kind !== "member" || !account.isDm) throw data("Not found", { status: 404 });
+  if (account.kind !== "member" || !account.isDm) notFound();
   const services = context.get(servicesContext);
   const players = partyPlayers(services.vault.current);
   const page = { you: account.member.discordId, dms: [...dmDiscordIds(services)], players };
@@ -30,7 +31,7 @@ export async function loader({ context }: Route.LoaderArgs) {
 /** Forms post `intent` = approve | assign | remove, with the member's `discordId`. */
 export async function action({ request, context }: Route.ActionArgs) {
   const account = context.get(accountContext);
-  if (account.kind !== "member" || !account.isDm) throw data("Not found", { status: 404 });
+  if (account.kind !== "member" || !account.isDm) notFound();
   const { members, vault, live } = context.get(servicesContext);
   const form = await request.formData();
   const discordId = String(form.get("discordId") ?? "");

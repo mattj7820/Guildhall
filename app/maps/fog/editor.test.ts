@@ -164,7 +164,19 @@ describe("FogEditor", () => {
     expect(editor.getSnapshot().status).toEqual({ kind: "saved" });
   });
 
-  it("lets go of changes the server refuses, and shows what it kept", async () => {
+  it("tries again when the server fails, rather than losing the changes", async () => {
+    const { server, editor } = setUp();
+    server.failWith.push(503);
+    editor.change(reveal(LEFT));
+    await vi.advanceTimersByTimeAsync(150);
+    expect(editor.getSnapshot().status).toMatchObject({ kind: "error", retrying: true });
+
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(server.stored).toEqual(["##..", "##.."]);
+    expect(editor.getSnapshot().status).toEqual({ kind: "saved" });
+  });
+
+  it("lets go of changes the server refuses, and the undo steps made from them", async () => {
     const { server, editor, shown } = setUp();
     server.failWith.push(400);
     editor.change(reveal(LEFT));
@@ -175,6 +187,7 @@ describe("FogEditor", () => {
       retrying: false,
     });
     expect(shown()).toEqual(EMPTY);
+    expect(editor.getSnapshot().canUndo).toBe(false);
   });
 
   it("saves at once when asked, e.g. on leaving the page", async () => {

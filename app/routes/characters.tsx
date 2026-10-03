@@ -3,6 +3,7 @@ import { data, Form, redirect } from "react-router";
 import { controllersFor } from "~/.server/characters/controllers";
 import { partyCards } from "~/.server/characters/load";
 import { DataFileError } from "~/.server/data/json-store";
+import { notFound, requireDm } from "~/.server/not-found";
 import { DM_VIEWER } from "~/campaign/types";
 import { canEdit } from "~/characters/permissions";
 import { characterUrl } from "~/characters/urls";
@@ -58,7 +59,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   switch (form.get("intent")) {
     case "start": {
       if (!note || !kind || !canEdit(viewer, controllersFor(kind, note))) {
-        throw data("Not found", { status: 404 });
+        notFound();
       }
       const existing = await characters.forNote(note.id);
       if (existing) return redirect(characterUrl(existing.id));
@@ -77,15 +78,15 @@ export async function action({ request, context }: Route.ActionArgs) {
       return redirect(characterUrl(created.character.id));
     }
     case "relink": {
-      if (viewer.role !== "dm") throw data("Not found", { status: 404 });
+      requireDm(viewer);
       if (!note || !kind) return data({ error: "Choose a PC or companion note." }, 400);
       const result = await characters.relink(String(form.get("id") ?? ""), note.id);
-      if (!result) throw data("Not found", { status: 404 });
+      if (!result) notFound();
       if ("problem" in result) return data({ error: result.problem }, 409);
       return { ok: true };
     }
     case "delete": {
-      if (viewer.role !== "dm") throw data("Not found", { status: 404 });
+      requireDm(viewer);
       await characters.delete(String(form.get("id") ?? ""));
       return { ok: true };
     }

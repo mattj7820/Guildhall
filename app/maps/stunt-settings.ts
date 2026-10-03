@@ -3,7 +3,7 @@
  * loud. Kept in the browser (it's this person on this device), and never needed: without storage,
  * everything is on at the usual volume. Isomorphic.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
 export interface StuntSettings {
   effects: boolean;
@@ -33,26 +33,49 @@ export function readStuntSettings(saved: string | null): StuntSettings {
   }
 }
 
-/** This viewer's stunt settings, read once the page is in the browser, and saved as they change. */
+/**
+ * This viewer's stunt settings: the defaults on the server and while hydrating, then what this
+ * browser saved (also when another tab changes them). Saved as they change; if storage is
+ * blocked, kept for this page only.
+ */
 export function useStuntSettings() {
-  const [settings, setSettings] = useState(DEFAULT_STUNT_SETTINGS);
-  useEffect(() => {
-    try {
-      setSettings(readStuntSettings(localStorage.getItem(KEY)));
-    } catch {
-      // Storage blocked: the defaults stand.
-    }
-  }, []);
+  const settings = useSyncExternalStore(subscribe, current, () => DEFAULT_STUNT_SETTINGS);
   const change = useCallback((next: Partial<StuntSettings>) => {
-    setSettings((current) => {
-      const updated = { ...current, ...next };
-      try {
-        localStorage.setItem(KEY, JSON.stringify(updated));
-      } catch {
-        // Kept for this page only.
-      }
-      return updated;
-    });
+    const updated = { ...current(), ...next };
+    try {
+      localStorage.setItem(KEY, JSON.stringify(updated));
+      pageOnly = undefined;
+    } catch {
+      pageOnly = updated;
+    }
+    for (const listener of listeners) listener();
   }, []);
   return { settings, change };
+}
+
+const listeners = new Set<() => void>();
+/** Settings that couldn't be saved, because storage is blocked. */
+let pageOnly: StuntSettings | undefined;
+/** The last settings read, by what was stored, so an unchanged store gives the same object. */
+let last: { saved: string | null; settings: StuntSettings } | undefined;
+
+function current(): StuntSettings {
+  if (pageOnly) return pageOnly;
+  let saved: string | null = null;
+  try {
+    saved = localStorage.getItem(KEY);
+  } catch {
+    // Storage blocked: the defaults stand.
+  }
+  if (!last || last.saved !== saved) last = { saved, settings: readStuntSettings(saved) };
+  return last.settings;
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  window.addEventListener("storage", listener);
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener("storage", listener);
+  };
 }

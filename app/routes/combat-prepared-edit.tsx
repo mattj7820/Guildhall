@@ -1,5 +1,8 @@
 import { data, redirect, type ShouldRevalidateFunctionArgs } from "react-router";
+import { z } from "zod";
+import { notFound, requireDm } from "~/.server/not-found";
 import { combatCatalogue } from "~/.server/combat/catalogue";
+import { readJson } from "~/.server/read-json";
 import { preparedStartUrl } from "~/combat/prepared";
 import { preparedChangesSchema } from "~/combat/schema";
 import { DmOnlyNotice } from "~/components/combat/CombatNav";
@@ -17,7 +20,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   if (viewer.role !== "dm") return { dmOnly: true as const };
   const { preparedEncounters, vault, maps } = context.get(servicesContext);
   const prepared = await preparedEncounters.get(params.id);
-  if (!prepared) throw data("Prepared encounter not found", { status: 404 });
+  if (!prepared) notFound("Prepared encounter not found");
   const mapIds = new Set((await maps.list()).map((map) => map.id));
   return {
     dmOnly: false as const,
@@ -32,7 +35,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
  * `{ intent: "markRun" }` when the tracker starts it; a form with `intent=delete` deletes it.
  */
 export async function action({ request, params, context }: Route.ActionArgs) {
-  if (context.get(viewerContext).role !== "dm") throw data("Not found", { status: 404 });
+  requireDm(context.get(viewerContext));
   const prepared = context.get(servicesContext).preparedEncounters;
 
   if (!request.headers.get("Content-Type")?.includes("application/json")) {
@@ -42,17 +45,22 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     return redirect("/combat/prepared");
   }
 
-  const body = (await request.json()) as { intent?: unknown };
-  if (body.intent === "markRun") {
-    return (await prepared.markRun(params.id)) ? { ok: true } : gone();
-  }
-  const changes = preparedChangesSchema.safeParse(body);
-  if (body.intent !== "save" || !changes.success) {
+  const body = await readJson(request, editSchema);
+  if (!body.success) {
     return data({ error: "These changes couldn't be saved." }, { status: 400 });
   }
-  const saved = await prepared.update(params.id, changes.data);
+  if (body.data.intent === "markRun") {
+    return (await prepared.markRun(params.id)) ? { ok: true } : gone();
+  }
+  const { intent, ...changes } = body.data;
+  const saved = await prepared.update(params.id, changes);
   return saved ? { savedAt: saved.updatedAt } : gone();
 }
+
+const editSchema = z.union([
+  z.object({ intent: z.literal("markRun") }),
+  z.object({ intent: z.literal("save") }).and(preparedChangesSchema),
+]);
 
 function gone() {
   return data(

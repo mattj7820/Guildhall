@@ -1,4 +1,4 @@
-import { data } from "react-router";
+import { notFound } from "~/.server/not-found";
 import { controllersOf } from "~/.server/characters/controllers";
 import { portraitPath } from "~/.server/characters/load";
 import { noteLookup } from "~/.server/characters/openable";
@@ -18,10 +18,10 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   const character = await characters.get(params.id);
   const findNote = noteLookup({ vault });
   if (!character || characterAccess(viewer, controllersOf(character, findNote)) === "none") {
-    throw data("Not found", { status: 404 });
+    notFound();
   }
   const image = portraitPath(vault.current, character, viewer);
   const response = image && (await serveVaultImage(request, config.vaultPath, image));
-  if (!response) throw data("Not found", { status: 404 });
+  if (!response) notFound();
   return response;
 }

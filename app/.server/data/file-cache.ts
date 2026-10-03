@@ -6,6 +6,7 @@
  */
 import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { whenFree } from "./when-free";
 
 /** Keys, versions and file names are plain words, so nothing can reach outside the cache. */
 const SAFE_NAME = /^[a-z0-9][a-z0-9._-]{0,99}$/i;
@@ -75,7 +76,7 @@ export class FileCache {
       if (!SAFE_NAME.test(name)) throw new Error(`Not a safe cache file name: ${name}`);
       await writeFile(path.join(temporary, name), contents);
     }
-    await renameWithRetry(temporary, this.folder(key, version));
+    await whenFree(() => rename(temporary, this.folder(key, version)));
     // Older versions are no longer needed.
     for (const entry of await readdir(keyFolder)) {
       if (entry !== version && !entry.startsWith(".making-")) {
@@ -91,18 +92,5 @@ async function exists(folder: string): Promise<boolean> {
     return true;
   } catch {
     return false;
-  }
-}
-
-/** On Windows a rename can briefly fail while another process (antivirus, backup) holds it. */
-async function renameWithRetry(from: string, to: string, attempts = 5): Promise<void> {
-  for (let attempt = 1; ; attempt++) {
-    try {
-      return await rename(from, to);
-    } catch (error) {
-      const code = (error as NodeJS.ErrnoException).code;
-      if (attempt >= attempts || (code !== "EPERM" && code !== "EBUSY")) throw error;
-      await new Promise((resolve) => setTimeout(resolve, 20 * attempt));
-    }
   }
 }

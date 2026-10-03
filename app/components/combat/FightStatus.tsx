@@ -9,6 +9,14 @@ export function FightStatus({ status }: { status: SaveStatus }) {
       </p>
     );
   }
+  if (status === "refused") {
+    return (
+      <p role="alert" className="mb-4 rounded-md bg-rose-100 px-3 py-2 text-sm text-rose-900">
+        Guildhall wouldn't save the last change, so the table doesn't see it. Reload to see the
+        fight as it's saved.
+      </p>
+    );
+  }
   if (status === "replaced") {
     return (
       <p role="status" className="mb-4 rounded-md bg-amber-100 px-3 py-2 text-sm text-amber-900">

@@ -1,6 +1,7 @@
-import { data } from "react-router";
 import { z } from "zod";
+import { notFound } from "~/.server/not-found";
 import { openableCharacter } from "~/.server/characters/openable";
+import { readJson } from "~/.server/read-json";
 import { actionBatchSchema } from "~/characters/actions";
 import { servicesContext, viewerContext } from "~/context";
 import type { Route } from "./+types/character-changes";
@@ -26,13 +27,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const services = context.get(servicesContext);
   await openableCharacter(services, params.id, context.get(viewerContext));
 
-  let json: unknown;
-  try {
-    json = await request.json();
-  } catch {
-    throw data("Send JSON.", { status: 400 });
-  }
-  const body = bodySchema.safeParse(json);
+  const body = await readJson(request, bodySchema);
   // A portrait must be an image the sender could load anyway, or it would be a way to see others.
   const viewer = context.get(viewerContext);
   const hidden = body.data?.actions.some(
@@ -51,7 +46,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     body.data.actions,
     body.data.baseRevision,
   );
-  if (!applied) throw data("Not found", { status: 404 });
+  if (!applied) notFound();
   if ("problem" in applied) return Response.json({ error: applied.problem }, { status: 409 });
   // Hit points show in the fight, so those watching it hear of the change.
   await services.live.fightChanged();

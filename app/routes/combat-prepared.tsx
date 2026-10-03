@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { data, Form, Link, redirect } from "react-router";
+import { z } from "zod";
+import { requireDm } from "~/.server/not-found";
 import { DataFileError } from "~/.server/data/json-store";
+import { readJson } from "~/.server/read-json";
 import { preparedStartUrl, summarise } from "~/combat/prepared";
-import { encounterSchema, preparedPlacementSchema } from "~/combat/schema";
+import { encounterSchema, PREPARED_NAME_MAX, preparedPlacementSchema } from "~/combat/schema";
 import { CombatNav, DmOnlyNotice } from "~/components/combat/CombatNav";
 import { buttonClass, panelClass, primaryButtonClass } from "~/components/styles";
 import { servicesContext, viewerContext } from "~/context";
@@ -42,25 +45,16 @@ export async function loader({ context }: Route.LoaderArgs) {
  * encounter back instead of a redirect.
  */
 export async function action({ request, context }: Route.ActionArgs) {
-  if (context.get(viewerContext).role !== "dm") throw data("Not found", { status: 404 });
+  requireDm(context.get(viewerContext));
   const prepared = context.get(servicesContext).preparedEncounters;
 
   if (request.headers.get("Content-Type")?.includes("application/json")) {
-    const body = (await request.json()) as {
-      name?: unknown;
-      encounter?: unknown;
-      placement?: unknown;
-    };
-    const encounter = encounterSchema.safeParse(body.encounter);
-    const placement = preparedPlacementSchema.optional().safeParse(body.placement);
-    if (!encounter.success || !placement.success || typeof body.name !== "string") {
+    const body = await readJson(request, savedFromTrackerSchema);
+    if (!body.success) {
       return data({ error: "That encounter couldn't be saved." }, { status: 400 });
     }
-    const created = await prepared.create({
-      name: body.name,
-      encounter: encounter.data,
-      ...(placement.data && { placement: placement.data }),
-    });
+    const { name, encounter, placement } = body.data;
+    const created = await prepared.create({ name, encounter, ...(placement && { placement }) });
     return { created: { id: created.id, name: created.name } };
   }
 
@@ -79,6 +73,13 @@ export async function action({ request, context }: Route.ActionArgs) {
       throw data("Unknown action", { status: 400 });
   }
 }
+
+/** "Save as prepared" from the tracker. */
+const savedFromTrackerSchema = z.object({
+  name: z.string().max(PREPARED_NAME_MAX),
+  encounter: encounterSchema,
+  placement: preparedPlacementSchema.optional(),
+});
 
 export default function PreparedList({ loaderData }: Route.ComponentProps) {
   if (loaderData.dmOnly) return <DmOnlyNotice />;

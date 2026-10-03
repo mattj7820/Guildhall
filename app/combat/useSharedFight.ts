@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLiveMap } from "~/live/useLive";
 import { FIGHT_ROOM } from "~/live/messages";
 import type { MapId } from "~/maps/types";
@@ -34,16 +34,8 @@ export function useSharedFight(fight: (DmFight & Partial<DmFightView>) | null, m
   const [status, setStatus] = useState<SaveStatus>("saved");
   const [hp, setHp] = useState(fight?.hp ?? {});
   const [freeMovement, setFreeMovement] = useState(!!fight?.freeMovement);
-  const adopt = useRef<(encounter: Encounter) => void>(() => {});
   const [saver] = useState(
-    () =>
-      new FightSaver(
-        fight?.revision ?? 0,
-        sendSave,
-        (newer) => adopt.current(newer?.encounter ?? createEncounter()),
-        setStatus,
-        map,
-      ),
+    () => new FightSaver(fight?.revision ?? 0, sendSave, () => {}, setStatus, map),
   );
   const save = useCallback(
     (encounter: Encounter) => {
@@ -57,8 +49,8 @@ export function useSharedFight(fight: (DmFight & Partial<DmFightView>) | null, m
   const { replace } = tracker;
 
   useEffect(() => {
-    adopt.current = (encounter) => replace(encounter, false);
-  }, [replace]);
+    saver.setOnReplaced((newer) => replace(newer?.encounter ?? createEncounter(), false));
+  }, [saver, replace]);
   useEffect(() => () => saver.stop(), [saver]);
 
   useLiveMap(FIGHT_ROOM, (message) => {
@@ -68,7 +60,7 @@ export function useSharedFight(fight: (DmFight & Partial<DmFightView>) | null, m
     // Sheets and settings change whatever the tracker is doing.
     setHp(pushed?.hp ?? {});
     setFreeMovement(!!pushed?.freeMovement);
-    if (saver.pushed(pushed)) adopt.current(pushed?.encounter ?? createEncounter());
+    if (saver.pushed(pushed)) replace(pushed?.encounter ?? createEncounter(), false);
   });
 
   /** Lets players move whenever they like, or only on their turn. */

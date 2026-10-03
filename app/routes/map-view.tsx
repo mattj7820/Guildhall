@@ -1,8 +1,9 @@
-import { data, isRouteErrorResponse, Link } from "react-router";
+import { isRouteErrorResponse, Link } from "react-router";
 import { combatCatalogue } from "~/.server/combat/catalogue";
 import { fightView } from "~/.server/combat/fight-view";
 import { loadMapView, mapVersion } from "~/.server/maps/load";
 import { loadMapTokens, partyPlacements } from "~/.server/maps/tokens";
+import { notFound } from "~/.server/not-found";
 import { MapViewer } from "~/components/maps/MapViewer";
 import { PlayerMapViewer } from "~/components/maps/PlayerMapViewer";
 import type { PreparedEncounter } from "~/combat/types";
@@ -21,7 +22,7 @@ export async function loader({ params, request, context }: Route.LoaderArgs) {
   const map = maps.find((candidate) => candidate.id === params.id);
   // A map the viewer can't see gets the same 404 as one that doesn't exist.
   const view = map && (await loadMapView(services, map, maps, viewer));
-  if (!map || !view) throw data("Map not found", { status: 404 });
+  if (!map || !view) notFound("Map not found");
   const { tokens, inside } = await loadMapTokens(services, map, viewer);
   // Only the DM gets the vault's image list (for a moved image) and the party to place; players
   // get just the map and the tokens they may see.
