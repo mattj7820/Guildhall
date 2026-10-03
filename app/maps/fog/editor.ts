@@ -140,7 +140,7 @@ export class FogEditor {
     this.status = { kind: "saving" };
     this.update(this.snapshot.mask);
 
-    let response: Response;
+    let response: Response | undefined;
     try {
       response = await this.fetcher(this.url, {
         method: "POST",
@@ -148,7 +148,28 @@ export class FogEditor {
         body: JSON.stringify({ changes: this.sending }),
       });
     } catch {
-      // Offline for a moment: send the same changes again, before anything made since.
+      response = undefined;
+    }
+
+    if (response && !response.ok && response.status < 500) {
+      // Refused: let those changes go, and show what the server has kept. Undo steps were made
+      // against what was showing, so they go too.
+      this.sending = [];
+      this.undoStack = [];
+      this.redoStack = [];
+      this.status = {
+        kind: "error",
+        message: (await errorOf(response)) ?? "Those fog changes couldn't be saved.",
+        retrying: false,
+      };
+      this.update(this.withUnsaved());
+      return;
+    }
+
+    const fog = response?.ok ? await fogOf(response) : undefined;
+    if (!fog) {
+      // Offline for a moment, or the server failed: send the same changes again, before
+      // anything made since.
       this.queued = [...this.sending, ...this.queued];
       this.sending = [];
       this.status = {
@@ -161,19 +182,6 @@ export class FogEditor {
       return;
     }
 
-    if (!response.ok) {
-      // Refused: let those changes go, and show what the server has kept.
-      this.sending = [];
-      this.status = {
-        kind: "error",
-        message: (await errorOf(response)) ?? "Those fog changes couldn't be saved.",
-        retrying: false,
-      };
-      this.update(this.withUnsaved());
-      return;
-    }
-
-    const { fog } = (await response.json()) as { fog: FogView };
     // The server's copy includes this batch and anything changed elsewhere since.
     this.confirmed = fogMask(fog);
     this.sending = [];
@@ -203,6 +211,17 @@ export class FogEditor {
       canRedo: this.redoStack.length > 0,
       unsaved: this.sending.length > 0 || this.queued.length > 0,
     };
+  }
+}
+
+/** The fog in a successful answer; undefined if the answer can't be read. */
+async function fogOf(response: Response): Promise<FogView | undefined> {
+  try {
+    const body = (await response.json()) as { fog?: FogView };
+    fogMask(body.fog!);
+    return body.fog;
+  } catch {
+    return undefined;
   }
 }
 
