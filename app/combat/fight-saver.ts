@@ -20,7 +20,9 @@ export type SaveStatus =
   /** The server couldn't be reached; it will try again. */
   | "offline"
   /** The fight had changed elsewhere; the newer one is showing now. */
-  | "replaced";
+  | "replaced"
+  /** The server wouldn't take it (not the DM's to change, or not readable); not tried again. */
+  | "refused";
 
 export interface SaveAnswer {
   status: number;
@@ -109,6 +111,12 @@ export class FightSaver {
       this.revision = answer.fight?.revision ?? 0;
       this.setStatus("replaced");
       this.onReplaced(answer.fight ?? null);
+      return;
+    }
+    if (answer.status < 200 || answer.status >= 300) {
+      // Sending the same again would get the same answer, so it waits for the next change.
+      this.setStatus("refused");
+      if (this.pending) return this.flush();
       return;
     }
     if (answer.fight) this.revision = answer.fight.revision;

@@ -138,6 +138,46 @@ describe("FightSaver", () => {
     expect(saver.pushed(null)).toBe(false);
   });
 
+  it("says when the server refuses a save, rather than that it's saved", async () => {
+    for (const status of [400, 403, 404]) {
+      const refusing = new FightSaver(
+        0,
+        async () => ({ status }),
+        () => {},
+        (each) => statuses.push(each),
+      );
+      statuses = [];
+      refusing.save(withMonsters("A"));
+      await settle();
+      expect(statuses, `answered ${status}`).toEqual(["saving", "refused"]);
+      refusing.stop();
+    }
+  });
+
+  it("tries again with the next change after a refusal", async () => {
+    let answer = 400;
+    const sent: string[][] = [];
+    const flaky = new FightSaver(
+      0,
+      async (body) => {
+        sent.push(body.encounter.combatants.map((c) => c.name));
+        return answer === 200
+          ? { status: 200, fight: { encounter: body.encounter, revision: 1 } }
+          : { status: answer };
+      },
+      () => {},
+      (each) => statuses.push(each),
+    );
+    flaky.save(withMonsters("A"));
+    await settle();
+    answer = 200;
+    flaky.save(withMonsters("A", "B"));
+    await settle();
+    expect(sent).toEqual([["A"], ["A", "B"]]);
+    expect(statuses.at(-1)).toBe("saved");
+    flaky.stop();
+  });
+
   it("keeps trying while the server can't be reached, then saves the latest", async () => {
     server.down = true;
     saver.save(withMonsters("A"));
