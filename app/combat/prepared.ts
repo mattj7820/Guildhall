@@ -114,7 +114,6 @@ export function summarise(encounter: Encounter): { monsters: string; companions:
 }
 
 function unrolled(combatant: Combatant): Combatant {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- dropping joinedRound
   const { joinedRound, ...rest } = combatant;
   return { ...rest, initiative: null, tiebreaks: [] };
 }

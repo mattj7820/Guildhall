@@ -1,5 +1,6 @@
 import { data } from "react-router";
 import { z } from "zod";
+import { readJson } from "~/.server/read-json";
 import { servicesContext, viewerContext } from "~/context";
 import { encodeCells } from "~/maps/fog/mask";
 import { fogChangesSchema } from "~/maps/fog/schema";
@@ -20,13 +21,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const map = await maps.get(params.id);
   if (!map) throw data("Not found", { status: 404 });
 
-  let json: unknown;
-  try {
-    json = await request.json();
-  } catch {
-    throw data("Send JSON.", { status: 400 });
-  }
-  const body = bodySchema.safeParse(json);
+  const body = await readJson(request, bodySchema);
   if (!body.success) {
     return Response.json({ error: "These fog changes couldn't be read." }, { status: 400 });
   }

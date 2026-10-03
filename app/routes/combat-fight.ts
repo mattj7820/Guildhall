@@ -1,6 +1,7 @@
 import { data } from "react-router";
 import { z } from "zod";
 import { fightView } from "~/.server/combat/fight-view";
+import { readJson } from "~/.server/read-json";
 import { encounterSchema } from "~/combat/schema";
 import { servicesContext, viewerContext } from "~/context";
 import type { Route } from "./+types/combat-fight";
@@ -42,13 +43,7 @@ const bodySchema = z.discriminatedUnion("intent", [
 export async function action({ request, context }: Route.ActionArgs) {
   const viewer = context.get(viewerContext);
   const services = context.get(servicesContext);
-  let json: unknown;
-  try {
-    json = await request.json();
-  } catch {
-    throw data("Send JSON.", { status: 400 });
-  }
-  const body = bodySchema.safeParse(json);
+  const body = await readJson(request, bodySchema);
   if (!body.success) return Response.json({ error: "That couldn't be read." }, { status: 400 });
 
   if (body.data.intent === "endTurn") {

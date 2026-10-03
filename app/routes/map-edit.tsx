@@ -1,9 +1,10 @@
 import { data, redirect, type ShouldRevalidateFunctionArgs } from "react-router";
 import { z } from "zod";
 import { loadMapView, mapSource } from "~/.server/maps/load";
+import { readJson } from "~/.server/read-json";
 import { MapEditor } from "~/components/maps/MapEditor";
 import { servicesContext, viewerContext, type Services } from "~/context";
-import { mapChangesSchema, mapImageSchema } from "~/maps/schema";
+import { MAP_NAME_MAX, mapChangesSchema, mapImageSchema } from "~/maps/schema";
 import type { CampaignMap } from "~/maps/types";
 import { mapUrl } from "~/maps/urls";
 import type { Route } from "./+types/map-edit";
@@ -72,59 +73,54 @@ async function changeMap({ request, params, context }: Route.ActionArgs) {
     return redirect("/maps");
   }
 
-  const body = (await request.json()) as {
-    intent?: unknown;
-    name?: unknown;
-    image?: unknown;
-    note?: unknown;
-    visibility?: unknown;
-    snap?: unknown;
-  };
+  const parsed = await readJson(request, editSchema);
+  if (!parsed.success) return data({ error: "These changes couldn't be saved." }, 400);
+  const body = parsed.data;
   switch (body.intent) {
     case "save": {
-      const changes = mapChangesSchema.safeParse(body);
-      if (!changes.success) return data({ error: "These changes couldn't be saved." }, 400);
-      const result = await maps.update(params.id, changes.data);
+      const { intent, ...changes } = body;
+      const result = await maps.update(params.id, changes);
       if (!result) return gone();
       if ("problem" in result) return data({ error: result.problem }, 400);
       return { savedAt: result.map.updatedAt };
     }
     case "createChild": {
-      const image = mapImageSchema.safeParse(body.image);
-      if (!image.success || !inVault(image.data.path)) {
-        return data({ error: "Choose an image from the vault." }, 400);
-      }
-      const name = typeof body.name === "string" ? body.name : undefined;
+      if (!inVault(body.image.path)) return data({ error: "Choose an image from the vault." }, 400);
       // The new map illustrates the same place as the area, so it starts with the area's note.
-      const note = typeof body.note === "string" && body.note ? body.note : undefined;
-      const created = await maps.create({ name, image: image.data, note });
+      const created = await maps.create({
+        name: body.name,
+        image: body.image,
+        note: body.note || undefined,
+      });
       return { created: { id: created.id, name: created.name } };
     }
     case "setImage": {
-      const image = mapImageSchema.safeParse(body.image);
-      if (!image.success || !inVault(image.data.path)) {
-        return data({ error: "That image isn't in the vault." }, 400);
-      }
-      return (await maps.setImage(params.id, image.data)) ? { imageSet: true } : gone();
+      if (!inVault(body.image.path)) return data({ error: "That image isn't in the vault." }, 400);
+      return (await maps.setImage(params.id, body.image)) ? { imageSet: true } : gone();
     }
-    case "setSnapping": {
-      const snap = z.boolean().safeParse(body.snap);
-      if (!snap.success) return data({ error: "Snap to the grid, or don't." }, 400);
-      return (await maps.setSnapping(params.id, snap.data)) ? { snap: snap.data } : gone();
-    }
+    case "setSnapping":
+      return (await maps.setSnapping(params.id, body.snap)) ? { snap: body.snap } : gone();
     case "setVisibility": {
-      const visibility = z.enum(["dm", "players"]).safeParse(body.visibility);
-      if (!visibility.success)
-        return data({ error: "Share with players, or keep it DM-only." }, 400);
-      const changed = await maps.setVisibility(params.id, visibility.data);
+      const changed = await maps.setVisibility(params.id, body.visibility);
       if (!changed) return gone();
       if (changed.visibility === "players") void prepareTiles(services, changed);
       return { shared: changed.visibility === "players" };
     }
-    default:
-      throw data("Unknown action", { status: 400 });
   }
 }
+
+const editSchema = z.union([
+  z.object({ intent: z.literal("save") }).and(mapChangesSchema),
+  z.object({
+    intent: z.literal("createChild"),
+    name: z.string().max(MAP_NAME_MAX).optional(),
+    image: mapImageSchema,
+    note: z.string().optional(),
+  }),
+  z.object({ intent: z.literal("setImage"), image: mapImageSchema }),
+  z.object({ intent: z.literal("setSnapping"), snap: z.boolean() }),
+  z.object({ intent: z.literal("setVisibility"), visibility: z.enum(["dm", "players"]) }),
+]);
 
 /** Cuts the image's tiles in the background, so no player waits for them. */
 async function prepareTiles(services: Services, map: CampaignMap) {

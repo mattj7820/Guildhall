@@ -2,6 +2,7 @@ import { data } from "react-router";
 import { z } from "zod";
 import { DataFileError } from "~/.server/data/json-store";
 import { loadTokens, partyControllers } from "~/.server/maps/tokens";
+import { readJson } from "~/.server/read-json";
 import { canView } from "~/campaign/visibility";
 import { accountContext, servicesContext, viewerContext } from "~/context";
 import type { TokenAction } from "~/maps/tokens/actions";
@@ -27,13 +28,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const map = maps.find((candidate) => candidate.id === params.id);
   if (!map || !canView(viewer, map.visibility)) throw data("Not found", { status: 404 });
 
-  let json: unknown;
-  try {
-    json = await request.json();
-  } catch {
-    throw data("Send JSON.", { status: 400 });
-  }
-  const body = bodySchema.safeParse(json);
+  const body = await readJson(request, bodySchema);
   if (!body.success) {
     return Response.json({ error: "These token changes couldn't be read." }, { status: 400 });
   }

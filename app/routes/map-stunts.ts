@@ -1,5 +1,6 @@
 import { data } from "react-router";
 import { z } from "zod";
+import { readJson } from "~/.server/read-json";
 import { servicesContext, viewerContext } from "~/context";
 import { stuntEventSchema } from "~/maps/stunts";
 import type { Route } from "./+types/map-stunts";
@@ -17,7 +18,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const map = await services.maps.get(params.id);
   if (viewer.role !== "dm" || !map) throw data("Not found", { status: 404 });
 
-  const body = bodySchema.safeParse(await request.json().catch(() => undefined));
+  const body = await readJson(request, bodySchema);
   if (!body.success)
     return Response.json({ error: "That stunt couldn't be read." }, { status: 400 });
   const { stunt } = body.data;

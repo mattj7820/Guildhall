@@ -3,6 +3,7 @@ import { z } from "zod";
 import { controllersOf } from "~/.server/characters/controllers";
 import { nameOf } from "~/.server/characters/load";
 import { noteLookup, openableCharacter } from "~/.server/characters/openable";
+import { readJson } from "~/.server/read-json";
 import { QUANTITY_MAX } from "~/characters/inventory";
 import { characterAccess } from "~/characters/permissions";
 import { servicesContext, viewerContext } from "~/context";
@@ -24,13 +25,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const viewer = context.get(viewerContext);
   const from = await openableCharacter(services, params.id, viewer);
 
-  let json: unknown;
-  try {
-    json = await request.json();
-  } catch {
-    throw data("Send JSON.", { status: 400 });
-  }
-  const body = bodySchema.safeParse(json);
+  const body = await readJson(request, bodySchema);
   if (!body.success) {
     return Response.json({ error: "That gift couldn't be read." }, { status: 400 });
   }

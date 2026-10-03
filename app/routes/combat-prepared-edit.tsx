@@ -1,5 +1,7 @@
 import { data, redirect, type ShouldRevalidateFunctionArgs } from "react-router";
+import { z } from "zod";
 import { combatCatalogue } from "~/.server/combat/catalogue";
+import { readJson } from "~/.server/read-json";
 import { preparedStartUrl } from "~/combat/prepared";
 import { preparedChangesSchema } from "~/combat/schema";
 import { DmOnlyNotice } from "~/components/combat/CombatNav";
@@ -42,17 +44,22 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     return redirect("/combat/prepared");
   }
 
-  const body = (await request.json()) as { intent?: unknown };
-  if (body.intent === "markRun") {
-    return (await prepared.markRun(params.id)) ? { ok: true } : gone();
-  }
-  const changes = preparedChangesSchema.safeParse(body);
-  if (body.intent !== "save" || !changes.success) {
+  const body = await readJson(request, editSchema);
+  if (!body.success) {
     return data({ error: "These changes couldn't be saved." }, { status: 400 });
   }
-  const saved = await prepared.update(params.id, changes.data);
+  if (body.data.intent === "markRun") {
+    return (await prepared.markRun(params.id)) ? { ok: true } : gone();
+  }
+  const { intent, ...changes } = body.data;
+  const saved = await prepared.update(params.id, changes);
   return saved ? { savedAt: saved.updatedAt } : gone();
 }
+
+const editSchema = z.union([
+  z.object({ intent: z.literal("markRun") }),
+  z.object({ intent: z.literal("save") }).and(preparedChangesSchema),
+]);
 
 function gone() {
   return data(
