@@ -1,8 +1,8 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./support/fixtures";
 
 test.describe("Hub home page", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto("/");
+  test.beforeEach(async ({ app }) => {
+    await app.goto("/");
   });
 
   test("loads with the app title", async ({ page }) => {
@@ -19,9 +19,9 @@ test.describe("Hub home page", () => {
     await expect(roll20).toHaveAttribute("target", "_blank");
   });
 
-  test("opens the wiki module", async ({ page }) => {
+  test("opens the wiki module", async ({ page, wiki }) => {
     await page.getByRole("link", { name: /Campaign wiki/ }).click();
     await expect(page).toHaveURL("/wiki");
-    await expect(page.getByRole("heading", { level: 1, name: "Campaign wiki" })).toBeVisible();
+    await expect(wiki.heading("Campaign wiki")).toBeVisible();
   });
 });

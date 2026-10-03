@@ -1,9 +1,8 @@
-import { expect, test } from "@playwright/test";
-import { noteBody, openNote } from "./support/app";
+import { expect, test } from "./support/fixtures";
 
 test.describe("Statblocks", () => {
-  test("render in the book's layout", async ({ page }) => {
-    await openNote(page, "Bestiary/Test Creature");
+  test("render in the book's layout", async ({ page, wiki }) => {
+    await wiki.openNote("Bestiary/Test Creature");
     const statblock = page.getByRole("region", { name: "Statblock: Test Creature" });
 
     await expect(statblock.getByRole("heading", { name: "Test Creature" })).toBeVisible();
@@ -14,9 +13,9 @@ test.describe("Statblocks", () => {
     await expect(statblock.getByRole("heading", { name: "Reactions" })).toBeVisible();
   });
 
-  test("an unreadable statblock explains why and keeps the original text", async ({ page }) => {
-    await openNote(page, "Bestiary/Test Creature");
-    await expect(noteBody(page)).toContainText("Couldn't show this statblock.");
-    await expect(noteBody(page).locator("code.language-statblock")).toContainText("ac: 12");
+  test("an unreadable statblock explains why and keeps the original text", async ({ wiki }) => {
+    await wiki.openNote("Bestiary/Test Creature");
+    await expect(wiki.noteBody).toContainText("Couldn't show this statblock.");
+    await expect(wiki.noteBody.locator("code.language-statblock")).toContainText("ac: 12");
   });
 });

@@ -317,10 +317,12 @@ First e2e run needs `npx playwright install chromium`.
   the players' view); pages about the DM's own account, such as Members, check the account.
   Every form post must come from `PUBLIC_URL` (the Origin check); state-changing requests are
   POSTs, sign-out included. New public (signed-out) pages must be added to `access.ts`.
-- Unit tests sit next to the code (`*.test.ts`); e2e specs in `tests/e2e/` use accessible
-  locators (`getByRole`) and the helpers in `tests/e2e/support/app.ts`. E2E tests start signed in
-  as the DM; use `SIGNED_IN.playerOne` or `SIGNED_OUT` (`tests/e2e/support/sign-in.ts`) for
-  others. New behaviour gets a
+- Unit tests sit next to the code (`*.test.ts`); e2e specs in `tests/e2e/` import `test` from
+  `tests/e2e/support/fixtures.ts` and work through page objects (`tests/e2e/pages/`, accessible
+  locators), `openAs` for other people's browsers and `api` for setting up through endpoints.
+  Page objects' `goto`/`reload` wait for `<html data-hydrated>`; never `waitForTimeout`, always
+  wait for a visible result. E2E tests start signed in as the DM; use `SIGNED_IN.playerOne` or
+  `SIGNED_OUT` (`tests/e2e/support/sign-in.ts`) for others. New behaviour gets a
   fixture note whose body states what it tests. Character specs share one party: add uniquely
   named items and never assert on a whole bag. Only `map-tokens.spec.ts` places party members (in
   order, since each is in one place). See `docs/testing.md`.

@@ -1021,3 +1021,24 @@ to play it, so a route serves audio from that folder, and nothing else, to anyon
 than tickets for each sound played, the folder is simply for the table: the DM is told so in
 `.env.example`. A stunt naming a sound outside the folder is refused. Browsers hold sound back
 until a page has been clicked, so a held-back sound offers a "Turn sound on" button.
+
+## 59. End-to-end tests through page objects, waiting for hydration
+
+**Date:** 2026-10-03
+
+The e2e specs had grown their own copies of the same helpers (a second browser as Player One in
+three specs, the bag's helpers in two, making a shared map through the UI in five), and the few
+flaky tests came from steps that didn't wait for the right thing. Specs now work through page
+objects in `tests/e2e/pages/`, given to them as Playwright fixtures along with `openAs` (another
+person's browser, closed at the end) and `api` (endpoints, for setting up). Page objects keep
+accessible locators, so the e2e suite still checks the UI is accessible; a `data-*` hook is
+added only where there's no accessible handle.
+
+The app marks `<html data-hydrated>` once React has hydrated, and page objects wait for it after
+every navigation: until then a click can land on a server-rendered button with no handler. It's
+one attribute set in an effect, invisible to people, and cheaper than every test guessing when a
+page is ready.
+
+Setting up through endpoints (maps, sharing, fog, areas, markers) replaced the UI where the UI
+isn't what's tested, which made the suite quicker and gave it fewer steps to go wrong. CI now keeps
+the report for flaky runs, and a manual Stress workflow repeats a spec on CI to prove a fix.

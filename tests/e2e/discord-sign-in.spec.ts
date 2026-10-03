@@ -1,5 +1,6 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./support/fixtures";
 import { SIGNED_OUT } from "./support/sign-in";
+import { ORIGIN } from "./support/test-data";
 
 /**
  * "Sign in with Discord", as far as it can be tested without Discord: the e2e server has a
@@ -9,11 +10,9 @@ import { SIGNED_OUT } from "./support/sign-in";
 
 test.use({ storageState: SIGNED_OUT });
 
-const ORIGIN = "http://localhost:4173";
-
 test.describe("Discord sign-in", () => {
-  test("offers it on the sign-in page", async ({ page }) => {
-    await page.goto("/login");
+  test("offers it on the sign-in page", async ({ page, signIn }) => {
+    await signIn.open();
     await expect(page.getByRole("button", { name: "Sign in with Discord" })).toBeVisible();
   });
 
@@ -34,16 +33,16 @@ test.describe("Discord sign-in", () => {
     expect(response.headers()["set-cookie"]).toMatch(/guildhall-sign-in=.*Path=\/auth/);
   });
 
-  test("turns away an answer to an attempt this browser didn't start", async ({ page }) => {
-    await page.goto("/auth/discord/callback?code=stolen&state=not-yours");
+  test("turns away an answer to an attempt this browser didn't start", async ({ app, page }) => {
+    await app.goto("/auth/discord/callback?code=stolen&state=not-yours");
     await expect(page).toHaveURL("/login?problem=expired");
     await expect(page.getByRole("alert")).toContainText("started in another tab or browser");
-    await page.goto("/wiki/Home");
+    await app.goto("/wiki/Home");
     await expect(page).toHaveURL(/\/login/);
   });
 
-  test("explains when someone cancels at Discord", async ({ page }) => {
-    await page.goto("/auth/discord/callback?error=access_denied&state=anything");
+  test("explains when someone cancels at Discord", async ({ app, page }) => {
+    await app.goto("/auth/discord/callback?error=access_denied&state=anything");
     await expect(page.getByRole("alert")).toContainText("Sign-in was cancelled at Discord.");
   });
 });

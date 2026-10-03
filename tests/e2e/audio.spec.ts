@@ -1,12 +1,11 @@
-import { expect, test } from "@playwright/test";
-import { noteBody, openNote } from "./support/app";
+import { expect, test } from "./support/fixtures";
 
 test.describe("Audio embeds", () => {
   const url = "/vault-asset/Attachments/voice-sample.wav";
 
-  test("play inline instead of downloading", async ({ page }) => {
-    await openNote(page, "NPCs/Mira Stonehand");
-    const player = noteBody(page).locator('audio[aria-label="voice-sample.wav"]');
+  test("play inline instead of downloading", async ({ wiki }) => {
+    await wiki.openNote("NPCs/Mira Stonehand");
+    const player = wiki.noteBody.locator('audio[aria-label="voice-sample.wav"]');
 
     await expect(player).toBeVisible();
     await expect(player).toHaveAttribute("controls");
