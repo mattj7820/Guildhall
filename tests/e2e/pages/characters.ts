@@ -182,6 +182,9 @@ export class Bag {
   /** Drags one tile onto another (or onto any element, such as a portrait) with the mouse. */
   async drag(from: Locator, to: Locator) {
     await dragBetween(this.page, await middleOf(from), await middleOf(to));
+    // For 50ms after a drag, dnd-kit stops every click on the page (so the drop isn't also a
+    // click), and a click sent at once would be lost. A timer of our own set now runs after it.
+    await this.page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 50)));
   }
 
   /**
