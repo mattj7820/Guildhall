@@ -14,7 +14,8 @@ import { useRollLog } from "~/dice/useRollLog";
 import { protoDispatch } from "./CompactSheet";
 import { protoActions, useProtoSheet } from "./model";
 import {
-  AttackList,
+  ActionsList,
+  FeatureList,
   LatestRoll,
   PipStyleContext,
   PipStyleSwitch,
@@ -23,12 +24,13 @@ import {
   type PipStyle,
 } from "./parts";
 
-type Tab = "actions" | "spells" | "notes" | "equipped" | "story";
+type Tab = "actions" | "spells" | "features" | "notes" | "equipped" | "story";
 
 const TABS: [Tab, string][] = [
   ["actions", "Actions"],
   ["spells", "Spells"],
-  ["notes", "Features & notes"],
+  ["features", "Features"],
+  ["notes", "Notes"],
   ["equipped", "Equipped"],
   ["story", "Story"],
 ];
@@ -123,7 +125,8 @@ export function SheetPrototype({ mapLink }: { mapLink?: string }) {
               ))}
             </div>
             <div role="tabpanel" className="pt-3">
-              {tab === "actions" && <AttackList sheet={sheet} rolls={rolls} />}
+              {tab === "actions" && <ActionsList sheet={sheet} rolls={rolls} />}
+              {tab === "features" && <FeatureList sheet={sheet} rolls={rolls} />}
               {tab === "spells" && (
                 <>
                   {notice && (
@@ -132,7 +135,7 @@ export function SheetPrototype({ mapLink }: { mapLink?: string }) {
                   <SpellList sheet={sheet} rolls={rolls} onNotice={setNotice} />
                 </>
               )}
-              {tab !== "actions" && tab !== "spells" && (
+              {tab !== "actions" && tab !== "spells" && tab !== "features" && (
                 <p className="text-sm text-stone-400">As today.</p>
               )}
             </div>

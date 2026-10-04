@@ -22,6 +22,44 @@ export interface LimitedUse extends Counter {
   reset: Reset;
 }
 
+export const ACTIVATIONS = ["action", "bonus", "reaction", "other", "passive"] as const;
+export type Activation = (typeof ACTIVATIONS)[number];
+export const ACTIVATION_LABELS: Record<Activation, string> = {
+  action: "Action",
+  bonus: "Bonus action",
+  reaction: "Reaction",
+  other: "Other",
+  passive: "Passive",
+};
+
+export const SOURCES = ["class", "species", "feat", "item", "other"] as const;
+export type Source = (typeof SOURCES)[number];
+export const SOURCE_LABELS: Record<Source, string> = {
+  class: "Class",
+  species: "Species",
+  feat: "Feat",
+  item: "Item",
+  other: "Other",
+};
+
+/**
+ * Something the character can do or has: a class feature, species trait, feat or an item's
+ * power. How it's used puts it with the actions; its uses, if any, are a limited use.
+ */
+export interface Feature {
+  id: string;
+  name: string;
+  source: Source;
+  /** Which item, for an item's power ("Wand of Sparks"). */
+  sourceName?: string;
+  activation: Activation;
+  /** A line, in the player's own words. */
+  note?: string;
+  roll?: string;
+  /** Its limited use, by ID. */
+  use?: string;
+}
+
 export interface Attack {
   id: string;
   name: string;
@@ -68,6 +106,7 @@ export interface ProtoSheet {
   slots: Counter[];
   hitDice: Counter & { die: number };
   uses: LimitedUse[];
+  features: Feature[];
   attacks: Attack[];
   spells: Spell[];
   concentrating: string;
@@ -98,10 +137,98 @@ const initial: ProtoSheet = {
   hitDice: { die: 8, max: 2, used: 1 },
   uses: [
     { id: "focus", name: "Focus points", max: 2, used: 1, reset: "short" },
-    { id: "free-mend", name: "Mend Wounds (free)", max: 1, used: 0, reset: "long" },
+    { id: "free-mend", name: "Free Mend Wounds", max: 1, used: 0, reset: "long" },
     { id: "luck", name: "Lucky break", max: 3, used: 0, reset: "long" },
-    { id: "wand", name: "Wand charges", max: 7, used: 2, reset: "manual" },
+    { id: "wand", name: "Wand of Sparks", max: 7, used: 2, reset: "long" },
     { id: "pool", name: "Healing pool", max: 15, used: 4, reset: "long" },
+  ],
+  features: [
+    {
+      id: "focus",
+      name: "Focus points",
+      source: "class",
+      activation: "other",
+      note: "Prototype: spent on the bonus actions below.",
+      use: "focus",
+    },
+    {
+      id: "flurry",
+      name: "Flurry",
+      source: "class",
+      activation: "bonus",
+      note: "Prototype: 1 focus point, two unarmed strikes.",
+    },
+    {
+      id: "steady",
+      name: "Steady step",
+      source: "class",
+      activation: "bonus",
+      note: "Prototype: 1 focus point, move away safely.",
+    },
+    {
+      id: "deflect",
+      name: "Turn aside",
+      source: "class",
+      activation: "reaction",
+      note: "Prototype: lessen a hit's damage.",
+      roll: "1d10+5",
+    },
+    {
+      id: "magic-initiate",
+      name: "Magic Initiate",
+      source: "feat",
+      activation: "other",
+      note: "Prototype: Mend Wounds once without a slot.",
+      use: "free-mend",
+    },
+    {
+      id: "luck",
+      name: "Lucky break",
+      source: "feat",
+      activation: "other",
+      note: "Prototype: reroll a d20, three times a day.",
+      use: "luck",
+    },
+    {
+      id: "wand",
+      name: "Sparks",
+      source: "item",
+      sourceName: "Wand of Sparks",
+      activation: "action",
+      note: "Prototype: a charge for a burst of sparks.",
+      roll: "2d6",
+      use: "wand",
+    },
+    {
+      id: "pool",
+      name: "Healing touch",
+      source: "species",
+      activation: "action",
+      note: "Prototype: heal from a pool of points.",
+      use: "pool",
+    },
+    {
+      id: "dark",
+      name: "Dim sight",
+      source: "species",
+      activation: "passive",
+      note: "Prototype: see in dim light, 60 ft.",
+    },
+    {
+      id: "unarmoured",
+      name: "Unarmoured guard",
+      source: "class",
+      activation: "passive",
+      note: "Prototype: AC from DEX and WIS.",
+    },
+    {
+      id: "cloak",
+      name: "Shadowed",
+      source: "item",
+      sourceName: "Grey cloak",
+      activation: "passive",
+      note: "Prototype: easier to hide in shadow.",
+    },
   ],
   attacks: [
     {

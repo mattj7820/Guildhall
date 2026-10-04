@@ -235,9 +235,8 @@ export function MapPanelPrototype({ map, tokens }: { map: MapView; tokens: Token
           {layout === "aside" && !collapsed && (
             <aside
               aria-label="Side panel"
-              className={`flex w-full flex-col border-stone-200 md:border-l dark:border-stone-800 ${
-                tab === "map" ? "md:w-80" : "md:w-[26rem]"
-              }`}
+              // One width whichever tab is open, so the map doesn't jump when switching.
+              className="flex w-full flex-col border-stone-200 md:w-[26rem] md:border-l dark:border-stone-800"
             >
               <Tabs
                 tabs={[

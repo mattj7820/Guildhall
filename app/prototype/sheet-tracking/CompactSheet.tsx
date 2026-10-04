@@ -8,9 +8,9 @@ import type { RollLogControls } from "~/dice/useRollLog";
 import { HitPointsPanel } from "~/components/characters/HitPointsPanel";
 import { Portrait } from "~/components/characters/Portrait";
 import { Bag } from "~/components/inventory/Bag";
-import { buttonClass, labelClass } from "~/components/styles";
+import { buttonClass } from "~/components/styles";
 import { protoActions, type ProtoSheet } from "./model";
-import { AttackList, ChecksList, LatestRoll, SpellList, Trackers } from "./parts";
+import { ActionsList, ChecksList, FeatureList, LatestRoll, SpellList, Trackers } from "./parts";
 
 export const FULL_SHEET_PROTOTYPE = "/characters/tracking-prototype";
 
@@ -33,6 +33,7 @@ export function CompactSheet({
   canUndo: boolean;
 }) {
   const [notice, setNotice] = useState<string>();
+  const [part, setPart] = useState<"actions" | "spells" | "features">("actions");
   const { id: mapId } = useParams();
   return (
     <div className="flex flex-col gap-3">
@@ -72,18 +73,41 @@ export function CompactSheet({
         </span>
       </p>
       <Trackers sheet={sheet} compact />
-      <section aria-labelledby="compact-attacks">
-        <h3 id="compact-attacks" className={labelClass}>
-          Attacks
-        </h3>
-        <AttackList sheet={sheet} rolls={rolls} compact />
-      </section>
-      <section aria-labelledby="compact-spells">
-        <h3 id="compact-spells" className={`${labelClass} mb-1`}>
-          Spells
-        </h3>
-        <SpellList sheet={sheet} rolls={rolls} compact onNotice={setNotice} />
-      </section>
+      <div
+        role="tablist"
+        aria-label="What to show"
+        className="flex gap-4 border-b border-stone-200 text-sm dark:border-stone-700"
+      >
+        {(
+          [
+            ["actions", "Actions"],
+            ["spells", "Spells"],
+            ["features", "Features"],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={part === key}
+            onClick={() => setPart(key)}
+            className={
+              part === key
+                ? "-mb-px border-b-2 border-amber-600 pb-1.5 font-semibold"
+                : "pb-1.5 text-stone-500 hover:text-stone-900 dark:hover:text-stone-100"
+            }
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div role="tabpanel">
+        {part === "actions" && <ActionsList sheet={sheet} rolls={rolls} compact />}
+        {part === "spells" && (
+          <SpellList sheet={sheet} rolls={rolls} compact onNotice={setNotice} />
+        )}
+        {part === "features" && <FeatureList sheet={sheet} rolls={rolls} compact />}
+      </div>
       <ChecksList sheet={sheet} rolls={rolls} />
       {notice && <p className="text-sm text-sky-800 dark:text-sky-300">{notice}</p>}
       <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center gap-2 border-t border-stone-200 bg-stone-50 px-4 py-2 dark:border-stone-800 dark:bg-stone-950">

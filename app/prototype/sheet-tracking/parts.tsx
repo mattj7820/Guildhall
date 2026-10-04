@@ -8,7 +8,14 @@ import { defaultRng } from "~/dice/rng";
 import type { RollLogControls } from "~/dice/useRollLog";
 import { buttonClass, inputClass, labelClass, primaryButtonClass } from "~/components/styles";
 import {
+  ACTIVATION_LABELS,
+  ACTIVATIONS,
   hitDieHealing,
+  SOURCE_LABELS,
+  SOURCES,
+  type Activation,
+  type Feature,
+  type Source,
   longRestSummary,
   ORDINALS,
   protoActions,
@@ -157,13 +164,14 @@ export function Trackers({ sheet, compact = false }: { sheet: ProtoSheet; compac
             ))}
           </div>
         )}
-        {sheet.uses.map((use) => (
-          <span key={use.id} className="inline-flex items-center gap-1.5">
-            <span className={compact ? "text-xs" : "text-sm"}>{use.name}</span>
-            <Pips label={use.name} counter={use} refTo={{ use: use.id }} size={size} />
-            <ResetBadge reset={use.reset} />
-          </span>
-        ))}
+        {!compact &&
+          sheet.uses.map((use) => (
+            <span key={use.id} className="inline-flex items-center gap-1.5">
+              <span className={compact ? "text-xs" : "text-sm"}>{use.name}</span>
+              <Pips label={use.name} counter={use} refTo={{ use: use.id }} size={size} />
+              <ResetBadge reset={use.reset} />
+            </span>
+          ))}
       </div>
       <div
         className={`flex flex-wrap items-center gap-x-6 gap-y-2 ${compact ? "" : "mt-3 border-t border-stone-100 pt-3 dark:border-stone-800"}`}
@@ -468,9 +476,34 @@ export function SpellList({
   compact?: boolean;
   onNotice: (text: string) => void;
 }) {
-  const levels = [...new Set(sheet.spells.map((spell) => spell.level))].sort((a, b) => a - b);
+  const [filter, setFilter] = useState<SpellFilter>("all");
+  const allLevels = [...new Set(sheet.spells.map((spell) => spell.level))].sort((a, b) => a - b);
+  const shown = sheet.spells.filter((spell) =>
+    filter === "all"
+      ? true
+      : filter === "concentration"
+        ? spell.concentration
+        : filter === "ritual"
+          ? spell.ritual
+          : spell.level === filter,
+  );
+  const levels = allLevels.filter((level) => shown.some((spell) => spell.level === level));
   return (
     <div className="flex flex-col gap-3">
+      <FilterChips
+        label="Show spells"
+        value={filter}
+        onChange={setFilter}
+        options={[
+          ["all", "All"],
+          ...allLevels.map((level): [SpellFilter, string] => [
+            level,
+            level === 0 ? "Cantrips" : ORDINALS[level],
+          ]),
+          ["concentration", "Concentration"],
+          ["ritual", "Ritual"],
+        ]}
+      />
       <p className="text-sm">
         Spellcasting <strong>{sheet.spellAbility}</strong> · Save DC{" "}
         <strong>{sheet.spellDc}</strong> · Spell attack{" "}
@@ -504,7 +537,7 @@ export function SpellList({
               )}
             </h3>
             <ul>
-              {sheet.spells
+              {shown
                 .filter((spell) => spell.level === level)
                 .map((spell) => (
                   <SpellRow
@@ -785,5 +818,231 @@ export function PipStyleSwitch({
         </label>
       ))}
     </fieldset>
+  );
+}
+
+/* Filters, features and the Actions tab. */
+
+type SpellFilter = "all" | number | "concentration" | "ritual";
+
+/** A row of chips choosing what a list shows, one at a time. */
+export function FilterChips<T extends string | number>({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: T;
+  onChange: (value: T) => void;
+  options: [T, string][];
+}) {
+  return (
+    <div role="group" aria-label={label} className="flex flex-wrap gap-1">
+      {options.map(([key, text]) => (
+        <button
+          key={String(key)}
+          type="button"
+          aria-pressed={value === key}
+          onClick={() => onChange(key)}
+          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+            value === key
+              ? "bg-amber-700 text-white dark:bg-amber-600"
+              : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+          }`}
+        >
+          {text}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** A feature: its name (click for its note), its uses as pips, and its roll. */
+function FeatureRow({
+  feature,
+  sheet,
+  rolls,
+  compact,
+  showActivation = false,
+}: {
+  feature: Feature;
+  sheet: ProtoSheet;
+  rolls: RollLogControls;
+  compact: boolean;
+  showActivation?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const use = feature.use ? sheet.uses.find((each) => each.id === feature.use) : undefined;
+  return (
+    <li
+      className={`border-b border-stone-100 last:border-0 dark:border-stone-800 ${compact ? "py-1" : "py-1.5"}`}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}
+          className="mr-auto min-w-0 text-left"
+        >
+          <span className="font-medium">{feature.name}</span>
+          <span className="ml-2 text-[11px] text-stone-500">
+            {feature.sourceName ?? SOURCE_LABELS[feature.source]}
+          </span>
+          {showActivation && (
+            <span className="ml-2 text-[11px] text-stone-400">
+              {ACTIVATION_LABELS[feature.activation]}
+            </span>
+          )}
+        </button>
+        {use && (
+          <span className="inline-flex items-center gap-1.5">
+            <Pips label={use.name} counter={use} refTo={{ use: use.id }} size="sm" />
+            <ResetBadge reset={use.reset} />
+          </span>
+        )}
+        {feature.roll && (
+          <RollChip
+            label={`${feature.name}, ${feature.roll}`}
+            onRoll={() =>
+              rolls.roll({ expression: feature.roll!, kind: "custom", label: feature.name })
+            }
+          >
+            {feature.roll}
+          </RollChip>
+        )}
+      </div>
+      {open && feature.note && (
+        <p className="mt-0.5 pl-2 text-sm text-stone-600 dark:text-stone-300">{feature.note}</p>
+      )}
+    </li>
+  );
+}
+
+type Activated = Exclude<Activation, "passive">;
+type ActionFilter = "all" | "attack" | Activated | "limited";
+
+const ACTION_GROUPS = ACTIVATIONS.filter(
+  (activation): activation is Activated => activation !== "passive",
+);
+
+/**
+ * Everything the character can do: attacks first, then features by how they're used. A
+ * feature with limited uses shows its pips where it's used.
+ */
+export function ActionsList({
+  sheet,
+  rolls,
+  compact = false,
+}: {
+  sheet: ProtoSheet;
+  rolls: RollLogControls;
+  compact?: boolean;
+}) {
+  const [filter, setFilter] = useState<ActionFilter>("all");
+  const groups = ACTION_GROUPS.map((activation) => ({
+    activation,
+    features: sheet.features.filter(
+      (feature) =>
+        feature.activation === activation &&
+        (filter === "all" || filter === activation || (filter === "limited" && !!feature.use)),
+    ),
+  })).filter((group) => group.features.length > 0);
+  const showAttacks = filter === "all" || filter === "attack" || filter === "action";
+
+  return (
+    <div className="flex flex-col gap-3">
+      <FilterChips
+        label="Show actions"
+        value={filter}
+        onChange={setFilter}
+        options={[
+          ["all", "All"],
+          ["attack", "Attack"],
+          ["action", "Action"],
+          ["bonus", compact ? "Bonus" : "Bonus action"],
+          ["reaction", "Reaction"],
+          ["other", "Other"],
+          ["limited", compact ? "Limited" : "Limited use"],
+        ]}
+      />
+      {showAttacks && (
+        <section aria-label="Attacks">
+          <h3 className={labelClass}>Attacks</h3>
+          <AttackList sheet={sheet} rolls={rolls} compact={compact} />
+        </section>
+      )}
+      {filter !== "attack" &&
+        groups.map(({ activation, features }) => (
+          <section key={activation} aria-label={ACTIVATION_LABELS[activation]}>
+            <h3 className={labelClass}>
+              {activation === "other" ? "Other" : `${ACTIVATION_LABELS[activation]}s`}
+            </h3>
+            <ul>
+              {features.map((feature) => (
+                <FeatureRow
+                  key={feature.id}
+                  feature={feature}
+                  sheet={sheet}
+                  rolls={rolls}
+                  compact={compact}
+                />
+              ))}
+            </ul>
+          </section>
+        ))}
+    </div>
+  );
+}
+
+/** Every feature, trait and item power, passive ones included, by where it comes from. */
+export function FeatureList({
+  sheet,
+  rolls,
+  compact = false,
+}: {
+  sheet: ProtoSheet;
+  rolls: RollLogControls;
+  compact?: boolean;
+}) {
+  const [filter, setFilter] = useState<"all" | Source>("all");
+  const present = SOURCES.filter((source) => sheet.features.some((f) => f.source === source));
+  const groups = present
+    .map((source) => ({
+      source,
+      features: sheet.features.filter(
+        (feature) => feature.source === source && (filter === "all" || filter === source),
+      ),
+    }))
+    .filter((group) => group.features.length > 0);
+  return (
+    <div className="flex flex-col gap-3">
+      <FilterChips
+        label="Show features"
+        value={filter}
+        onChange={setFilter}
+        options={[
+          ["all", "All"],
+          ...present.map((source): ["all" | Source, string] => [source, SOURCE_LABELS[source]]),
+        ]}
+      />
+      {groups.map(({ source, features }) => (
+        <section key={source} aria-label={SOURCE_LABELS[source]}>
+          <h3 className={labelClass}>{source === "item" ? "From items" : SOURCE_LABELS[source]}</h3>
+          <ul>
+            {features.map((feature) => (
+              <FeatureRow
+                key={feature.id}
+                feature={feature}
+                sheet={sheet}
+                rolls={rolls}
+                compact={compact}
+                showActivation
+              />
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
   );
 }
