@@ -5,11 +5,13 @@ import { NOTES_MAX } from "~/characters/schema";
 import type { PlayerCharacter } from "~/characters/types";
 import type { CharacterPage } from "~/characters/view";
 import { ItemIconSvg } from "../inventory/ItemTile";
+import { ActionsTab } from "./Actions";
+import { FeaturesTab } from "./Features";
 import { TextAreaField } from "./Fields";
 import { sheetPanelClass, TextBlock } from "./SheetParts";
 import type { Parts } from "./SheetSections";
 
-export type Tab = "equipped" | "notes" | "story";
+export type Tab = "actions" | "features" | "notes" | "equipped" | "story";
 
 export function SheetTabs({
   page,
@@ -22,11 +24,13 @@ export function SheetTabs({
   parts: Parts;
   text: (field: TextFieldName) => (value: string) => void;
 }) {
-  const [tab, setTab] = useState<Tab>("equipped");
+  const [tab, setTab] = useState<Tab>("actions");
   const id = useId();
   const tabs: { key: Tab; label: string }[] = [
+    { key: "actions", label: "Actions" },
+    { key: "features", label: "Features" },
+    { key: "notes", label: "Notes" },
     { key: "equipped", label: "Equipped" },
-    { key: "notes", label: "Features & notes" },
     { key: "story", label: "Story" },
   ];
   const equipped = character.inventory.items.filter((item) => item.equipped);
@@ -73,6 +77,8 @@ export function SheetTabs({
         tabIndex={0}
         className="pt-3"
       >
+        {tab === "actions" && <ActionsTab parts={parts} />}
+        {tab === "features" && <FeaturesTab parts={parts} />}
         {tab === "equipped" &&
           (equipped.length > 0 ? (
             <ul className="space-y-1.5">
@@ -95,11 +101,11 @@ export function SheetTabs({
         {tab === "notes" &&
           (parts.editing ? (
             <TextAreaField
-              label="Features & notes"
+              label="Notes"
               value={character.sheet.notes}
               maxLength={NOTES_MAX}
               rows={8}
-              placeholder="Features, traits, spells, anything else from the paper sheet"
+              placeholder="Anything else from the paper sheet"
               onCommit={text("notes")}
             />
           ) : (

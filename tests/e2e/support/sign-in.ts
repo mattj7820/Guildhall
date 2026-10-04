@@ -5,6 +5,8 @@
 export const SIGNED_IN = {
   dm: "test-results/.auth/dm.json",
   playerOne: "test-results/.auth/player-one.json",
+  /** Plays Fixture PC Two, whose sheet only `sheet-tracking.spec.ts` changes. */
+  playerTwo: "test-results/.auth/player-two.json",
 };
 
 /** For `test.use({ storageState })`: a browser that has never signed in. */

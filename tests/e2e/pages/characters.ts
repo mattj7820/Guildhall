@@ -1,6 +1,16 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 import { AppPage, dragBetween, middleOf } from "./app-page";
 
+/** Types into a sheet's field and presses Enter, which saves it. */
+async function commit(field: Locator, value: string) {
+  await field.fill(value);
+  await field.press("Enter");
+}
+
+function escaped(text: string) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 /** The Characters page: the party's cards. */
 export class Characters extends AppPage {
   open() {
@@ -93,6 +103,75 @@ export class CharacterSheet extends AppPage {
 
   async undo() {
     await this.page.getByRole("button", { name: "Undo" }).click();
+  }
+
+  /** One of the sheet's tabs: Actions, Spells, Features, Notes… */
+  async openTab(name: string) {
+    const tab = this.page.getByRole("tab", { name, exact: true });
+    await tab.click();
+    await expect(tab).toHaveAttribute("aria-selected", "true");
+  }
+
+  /** Slots, uses, hit dice and concentration, at a glance under the hit points. */
+  get trackers() {
+    return this.page.getByRole("region", { name: "Trackers" });
+  }
+
+  /** A row of pips by what it counts ("1st-level slot", a feature's name), which says what's left. */
+  counter(label: string, within: Locator | Page = this.page) {
+    return within.getByRole("group", {
+      name: new RegExp(`^${escaped(label)}: \\d+ of \\d+ left$`),
+    });
+  }
+
+  /** How many of something are left, read from its pips. */
+  async left(label: string, within: Locator | Page = this.page): Promise<number> {
+    const name = (await this.counter(label, within).first().getAttribute("aria-label")) ?? "";
+    return Number(/: (\d+) of/.exec(name)?.[1]);
+  }
+
+  /** Uses one: a click on a lit pip. */
+  async useOne(label: string, within: Locator = this.trackers) {
+    await within
+      .getByRole("button", { name: `Use one ${label}` })
+      .first()
+      .click();
+  }
+
+  /** While editing, adds an attack from the Actions tab and fills it in. */
+  async addAttack({ name, bonus, damage }: { name: string; bonus: number; damage: string }) {
+    await this.page.getByRole("button", { name: "Add attack" }).click();
+    await commit(
+      this.page.getByRole("listitem", { name: "New attack" }).last().getByLabel("Name"),
+      name,
+    );
+    const row = this.page.getByRole("listitem", { name, exact: true });
+    await commit(row.getByLabel("To hit"), String(bonus));
+    await commit(row.getByLabel("Damage"), damage);
+  }
+
+  /** While editing, adds a feature from the open tab and fills it in. */
+  async addFeature({
+    name,
+    usedAs,
+    uses,
+  }: {
+    name: string;
+    usedAs: string;
+    uses?: { max: number; comesBackOn: "Short rest" | "Long rest" | "By hand" };
+  }) {
+    await this.page.getByRole("button", { name: "Add feature" }).click();
+    await commit(
+      this.page.getByRole("listitem", { name: "New feature" }).last().getByLabel("Name"),
+      name,
+    );
+    const row = () => this.page.getByRole("listitem", { name, exact: true });
+    await row().getByLabel("Used as").selectOption({ label: usedAs });
+    if (uses) {
+      await row().getByLabel("Limited uses").check();
+      await commit(row().getByLabel(`${name}: how many uses`), String(uses.max));
+      await row().getByLabel(`${name}: comes back on`).selectOption({ label: uses.comesBackOn });
+    }
   }
 
   async openBag() {

@@ -28,6 +28,7 @@ import {
   TextPanel,
 } from "./SheetSections";
 import { SheetTabs } from "./SheetTabs";
+import { Trackers } from "./Trackers";
 import { StatBox } from "./SheetParts";
 
 /**
@@ -57,6 +58,7 @@ export function CharacterSheet({ page }: { page: CharacterPage }) {
         kind: "check",
         label: `${name} · ${label}`,
       }),
+    rollDice: (request) => rolls.roll({ ...request, label: `${name} · ${request.label}` }),
   };
   const text = (field: TextFieldName) => (value: string) =>
     editor.dispatch({ type: "text", field, value, from: sheet[field] });
@@ -205,19 +207,15 @@ export function CharacterSheet({ page }: { page: CharacterPage }) {
             />
           </div>
 
-          <div className="mt-3 grid gap-3 @3xl:grid-cols-2 @6xl:grid-cols-3">
+          <Trackers parts={parts} />
+
+          {/* The tabs (actions, spells, features…) get the widest column. */}
+          <div className="mt-3 grid gap-3 @3xl:grid-cols-2 @6xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)]">
             <div className="space-y-3">
               <SavingThrows parts={parts} />
               <PassiveSenses parts={parts} text={text} />
               <TextPanel parts={parts} title="Proficiencies" field="proficiencies" text={text} />
               <TextPanel parts={parts} title="Languages" field="languages" text={text} />
-            </div>
-            <SkillList parts={parts} />
-            <div className="space-y-3 @3xl:col-span-2 @6xl:col-span-1">
-              <DiceRoller
-                rolls={rolls}
-                hint="Or click any bonus on the sheet. Advantage and disadvantage last one d20 roll."
-              />
               <TextPanel parts={parts} title="Defences" field="defences" text={text} />
               <TextPanel
                 parts={parts}
@@ -226,6 +224,16 @@ export function CharacterSheet({ page }: { page: CharacterPage }) {
                 text={text}
                 empty="None"
               />
+            </div>
+            <div className="space-y-3">
+              <SkillList parts={parts} />
+              <DiceRoller
+                rolls={rolls}
+                hint="Or click any bonus on the sheet. Advantage and disadvantage last one d20 roll."
+              />
+            </div>
+            {/* Narrower, they come first: they're what's used most in play. */}
+            <div className="order-first @3xl:col-span-2 @6xl:order-none @6xl:col-span-1">
               <SheetTabs page={page} character={character} parts={parts} text={text} />
             </div>
           </div>

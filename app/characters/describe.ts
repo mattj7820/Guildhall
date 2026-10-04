@@ -2,9 +2,37 @@
 import { ABILITY_NAMES, SKILL_NAMES } from "./abilities";
 import type { CharacterAction } from "./actions";
 import type { CounterRef } from "./tracking";
-import type { DerivedKey } from "./types";
+import type { Activation, DerivedKey, FeatureSource, Reset } from "./types";
 
-const ORDINALS = ["", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th"];
+/** "1st" to "9th", by spell level (0 has no ordinal: it's a cantrip). */
+export const ORDINALS = ["", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th"];
+
+/** "Cantrips", "1st level"… */
+export function levelName(level: number): string {
+  return level === 0 ? "Cantrips" : `${ORDINALS[level]} level`;
+}
+
+export const ACTIVATION_NAMES: Record<Activation, string> = {
+  action: "Action",
+  bonus: "Bonus action",
+  reaction: "Reaction",
+  other: "Other",
+  passive: "Passive",
+};
+
+export const SOURCE_NAMES: Record<FeatureSource, string> = {
+  class: "Class",
+  species: "Species",
+  feat: "Feat",
+  item: "Item",
+  other: "Other",
+};
+
+export const RESET_NAMES: Record<Reset, string> = {
+  short: "Short rest",
+  long: "Long rest",
+  manual: "By hand",
+};
 
 /** "2nd-level spell slots", "d8 hit dice", "A feature's uses". */
 export function counterLabel(counter: CounterRef): string {

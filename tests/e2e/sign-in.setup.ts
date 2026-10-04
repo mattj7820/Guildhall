@@ -9,6 +9,7 @@ import { SIGNED_IN } from "./support/sign-in";
 for (const [who, file] of [
   ["the DM", SIGNED_IN.dm],
   ["Player One", SIGNED_IN.playerOne],
+  ["Player Two", SIGNED_IN.playerTwo],
 ] as const) {
   setup(`sign in as ${who}`, async ({ page, signIn }) => {
     await signIn.open();
