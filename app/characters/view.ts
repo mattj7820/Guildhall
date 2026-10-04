@@ -38,6 +38,13 @@ export interface CharacterCard {
   speed?: string;
 }
 
+/** A character someone may open beside the map: just enough to choose it. */
+export interface CharacterChoice {
+  id: CharacterId;
+  name: string;
+  kind: Character["kind"];
+}
+
 /** A sheet whose vault note has gone, which only the DM can see and link again. */
 export interface OrphanCard {
   id: CharacterId;

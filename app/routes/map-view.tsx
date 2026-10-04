@@ -1,4 +1,5 @@
 import { isRouteErrorResponse, Link } from "react-router";
+import { partyCards } from "~/.server/characters/load";
 import { combatCatalogue } from "~/.server/combat/catalogue";
 import { fightView } from "~/.server/combat/fight-view";
 import { loadMapView, mapVersion } from "~/.server/maps/load";
@@ -6,6 +7,8 @@ import { loadMapTokens, partyPlacements } from "~/.server/maps/tokens";
 import { notFound } from "~/.server/not-found";
 import { MapViewer } from "~/components/maps/MapViewer";
 import { PlayerMapViewer } from "~/components/maps/PlayerMapViewer";
+import type { Viewer } from "~/campaign/types";
+import type { CharacterChoice } from "~/characters/view";
 import type { PreparedEncounter } from "~/combat/types";
 import { servicesContext, viewerContext, type Services } from "~/context";
 import type { Route } from "./+types/map-view";
@@ -38,6 +41,7 @@ export async function loader({ params, request, context }: Route.LoaderArgs) {
       inside,
       version,
       fight: fight && !fight.forDm ? fight : null,
+      characters: await openableCharacters(services, viewer),
     };
   }
   // The fight wherever it is: running it from here brings it to this map.
@@ -60,6 +64,20 @@ export async function loader({ params, request, context }: Route.LoaderArgs) {
   };
 }
 
+/**
+ * The characters this player may open beside the map (their own and the companion the party
+ * shares), by name only: the sheet itself is loaded when it's opened.
+ */
+async function openableCharacters(
+  services: Pick<Services, "vault" | "characters">,
+  viewer: Viewer,
+): Promise<CharacterChoice[]> {
+  const { cards } = partyCards(services.vault.current, await services.characters.list(), viewer);
+  return cards.flatMap(({ id, name, kind, canOpen }) =>
+    id && canOpen ? [{ id, name, kind }] : [],
+  );
+}
+
 /** A prepared fight to start here (`?start=<id>`); null if it no longer exists. */
 async function startingPrepared(
   services: Pick<Services, "preparedEncounters">,
@@ -80,6 +98,7 @@ export default function MapPage({ loaderData }: Route.ComponentProps) {
         inside={loaderData.inside}
         version={loaderData.version}
         fight={loaderData.fight}
+        characters={loaderData.characters}
       />
     );
   }

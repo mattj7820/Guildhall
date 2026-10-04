@@ -43,8 +43,8 @@ export function Trackers({
     >
       {empty ? (
         <p className="text-sm text-stone-500">
-          Nothing to track yet. Edit the sheet to set spell slots and hit dice, or give a feature
-          uses.
+          Nothing to track yet. {compact ? "On the full sheet, edit" : "Edit"} the sheet to set
+          spell slots and hit dice, or give a feature uses.
         </p>
       ) : (
         <div

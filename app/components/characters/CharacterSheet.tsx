@@ -2,14 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { signed } from "~/characters/abilities";
 import type { TextField as TextFieldName } from "~/characters/actions";
-import { deriveSheet } from "~/characters/derive";
 import { SHORT_TEXT_MAX } from "~/characters/schema";
 import type { PlayerCharacter } from "~/characters/types";
 import { CHARACTERS_URL, portraitUrl } from "~/characters/urls";
 import { useCharacterEditor } from "~/characters/useCharacterEditor";
 import type { CharacterPage } from "~/characters/view";
-import { defaultRng } from "~/dice/rng";
-import { useRollLog, type RollLogControls } from "~/dice/useRollLog";
+import type { RollLogControls } from "~/dice/useRollLog";
 import { DiceRoller } from "../combat/DiceRoller";
 import { buttonClass, panelClass, primaryButtonClass } from "../styles";
 import { EditorBar } from "./EditorBar";
@@ -21,16 +19,16 @@ import { HeaderFields, subtitle } from "./SheetHeader";
 import {
   AbilityScores,
   DerivedNumber,
-  type Parts,
   PassiveSenses,
   SavingThrows,
   SkillList,
   TextPanel,
 } from "./SheetSections";
+import { StatBox } from "./SheetParts";
 import { RestButtons } from "./Rests";
 import { SheetTabs } from "./SheetTabs";
 import { Trackers } from "./Trackers";
-import { StatBox } from "./SheetParts";
+import { useSheetParts } from "./useSheetParts";
 
 /**
  * A player character's sheet, laid out like the paper one: abilities across the top, then saves
@@ -41,26 +39,13 @@ export function CharacterSheet({ page }: { page: CharacterPage }) {
   const editor = useCharacterEditor(page.character);
   const character = editor.character as PlayerCharacter;
   const sheet = character.sheet;
-  const derived = deriveSheet(sheet);
-  const rolls = useRollLog(defaultRng);
   const [editing, setEditing] = useState(false);
   const { open: bagOpen, toggle: toggleBag, button: bagButton } = useBagToggle();
 
   const name = sheet.name.trim() || page.name;
   const portraitPath = sheet.portrait ?? page.notePortrait;
-  const parts: Parts = {
-    sheet,
-    derived,
-    editing,
-    dispatch: editor.dispatch,
-    roll: (label, bonus) =>
-      rolls.roll({
-        expression: bonus === 0 ? "1d20" : `1d20${signed(bonus)}`,
-        kind: "check",
-        label: `${name} · ${label}`,
-      }),
-    rollDice: (request) => rolls.roll({ ...request, label: `${name} · ${request.label}` }),
-  };
+  const { parts, rolls } = useSheetParts(editor, sheet, name, editing);
+  const derived = parts.derived;
   const text = (field: TextFieldName) => (value: string) =>
     editor.dispatch({ type: "text", field, value, from: sheet[field] });
 

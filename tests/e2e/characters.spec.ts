@@ -73,6 +73,9 @@ test.describe("as Player One", () => {
     expect(await page.locator("main").innerText()).toBe(theirs);
 
     expect((await api.request.get(`${otherSheet}/portrait`)).status()).toBe(404);
+    // The sheet's data for opening it beside the map, too.
+    expect((await api.request.get(`${otherSheet}/sheet`)).status()).toBe(404);
+    expect((await api.request.get("/characters/no-such-character/sheet")).status()).toBe(404);
   });
 
   test("can't start a sheet for someone else's character", async ({ api }) => {

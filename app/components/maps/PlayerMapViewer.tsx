@@ -23,6 +23,8 @@ import { useStuntSettings } from "~/maps/stunt-settings";
 import { FlashOverlay, StuntDefs, StuntLayer, StuntSettingsMenu, useStunts } from "./Stunts";
 import { useBattleTools } from "./useBattleTools";
 import { TokenDistances } from "./TokenDistances";
+import type { CharacterChoice } from "~/characters/view";
+import { MapSidePanel } from "./MapSidePanel";
 import { NotePanel } from "./NotePanel";
 import { TokenLayer } from "./TokenLayer";
 
@@ -40,6 +42,7 @@ export function PlayerMapViewer({
   inside,
   version,
   fight: fightFromPage,
+  characters,
 }: {
   map: MapView;
   tokens: TokenView[];
@@ -47,6 +50,8 @@ export function PlayerMapViewer({
   version: string;
   /** The fight the table is in, as this player may see it. */
   fight: PlayerFightView | null;
+  /** Characters this player may open beside the map. */
+  characters: CharacterChoice[];
 }) {
   const { fight, endTurn, ending } = usePlayerFight(fightFromPage);
   const fightHere = fight?.map === map.id && fight.view.started ? fight : undefined;
@@ -164,18 +169,20 @@ export function PlayerMapViewer({
             </p>
           )}
         </div>
-        <aside
-          aria-label="Map details"
-          className="flex w-full flex-col gap-4 overflow-y-auto border-stone-200 p-4 md:w-80 md:border-l dark:border-stone-800"
-        >
-          {selected ? (
-            <SelectedArea area={selected} onClose={() => setSelectedId(undefined)} />
-          ) : (
-            map.note && hasContent(map.note) && <NotePanel note={map.note} />
-          )}
-          <PartyHere tokens={mapTokens.tokens} onFind={find} grid={map.grid} size={map.size} />
-          <AreaList areas={map.areas} onSelect={(area) => setSelectedId(area.id)} />
-        </aside>
+        <MapSidePanel
+          characters={characters}
+          mapDetails={
+            <>
+              {selected ? (
+                <SelectedArea area={selected} onClose={() => setSelectedId(undefined)} />
+              ) : (
+                map.note && hasContent(map.note) && <NotePanel note={map.note} />
+              )}
+              <PartyHere tokens={mapTokens.tokens} onFind={find} grid={map.grid} size={map.size} />
+              <AreaList areas={map.areas} onSelect={(area) => setSelectedId(area.id)} />
+            </>
+          }
+        />
       </div>
     </main>
   );
