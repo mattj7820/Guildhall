@@ -161,3 +161,35 @@ export function allCounters(sheet: Sheet): { ref: CounterRef; counter: Counter }
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
+
+/**
+ * What a rest did, in words, from the sheet before and after it: "Long rest: +15 HP, 2 hit dice
+ * back, 3 slots back, Focus points back, Fixture Ward ended."
+ */
+export function restSummary(rest: "short" | "long", before: Sheet, after: Sheet): string {
+  const used = (sheet: Sheet, counters: (sheet: Sheet) => Counter[]) =>
+    counters(sheet).reduce((sum, counter) => sum + counter.used, 0);
+  const hitDice = (sheet: Sheet) => HIT_DICE.map((die) => sheet.hitDice[die]);
+  const parts: string[] = [];
+
+  const healed = after.hp.current - before.hp.current;
+  if (healed > 0) parts.push(`+${healed} HP`);
+  const dice = used(after, hitDice) - used(before, hitDice);
+  if (dice > 0) parts.push(`spent ${plural(dice, "hit die", "hit dice")}`);
+  if (dice < 0) parts.push(`${plural(-dice, "hit die", "hit dice")} back`);
+  const slots =
+    used(before, (sheet) => sheet.spellSlots) - used(after, (sheet) => sheet.spellSlots);
+  if (slots > 0) parts.push(`${plural(slots, "slot", "slots")} back`);
+  for (const feature of before.features) {
+    const now = after.features.find((each) => each.id === feature.id)?.uses;
+    if (feature.uses && now && now.used < feature.uses.used) parts.push(`${feature.name} back`);
+  }
+  if (before.concentrating && !after.concentrating) parts.push(`${before.concentrating} ended`);
+
+  const name = rest === "short" ? "Short rest" : "Long rest";
+  return parts.length > 0 ? `${name}: ${parts.join(", ")}.` : `${name}: nothing to get back.`;
+}
+
+function plural(count: number, one: string, many: string): string {
+  return `${count} ${count === 1 ? one : many}`;
+}

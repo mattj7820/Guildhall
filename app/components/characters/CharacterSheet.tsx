@@ -27,6 +27,7 @@ import {
   SkillList,
   TextPanel,
 } from "./SheetSections";
+import { RestButtons } from "./Rests";
 import { SheetTabs } from "./SheetTabs";
 import { Trackers } from "./Trackers";
 import { StatBox } from "./SheetParts";
@@ -207,7 +208,9 @@ export function CharacterSheet({ page }: { page: CharacterPage }) {
             />
           </div>
 
-          <Trackers parts={parts} />
+          <Trackers parts={parts}>
+            <RestButtons parts={parts} undo={editor.undo} />
+          </Trackers>
 
           {/* The tabs (actions, spells, features…) get the widest column. */}
           <div className="mt-3 grid gap-3 @3xl:grid-cols-2 @6xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)]">

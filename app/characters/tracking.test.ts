@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { aFeature, aSheet, withSlots } from "./test-builders";
-import { count, counterOf, hitDieHealing, limit, longRest, shortRest } from "./tracking";
+import {
+  count,
+  counterOf,
+  hitDieHealing,
+  limit,
+  longRest,
+  restSummary,
+  shortRest,
+} from "./tracking";
 
 describe("count", () => {
   it("uses more, and gives back with a negative count", () => {
@@ -135,5 +143,35 @@ describe("longRest", () => {
 
   it("ends concentration", () => {
     expect(longRest(tired).sheet.concentrating).toBe("");
+  });
+});
+
+describe("restSummary", () => {
+  const before = aSheet({
+    hp: { current: 5, max: 20, temp: 0 },
+    hitDice: { ...aSheet().hitDice, d8: { max: 3, used: 2 } },
+    spellSlots: withSlots({ 1: { max: 2, used: 2 }, 2: { max: 1, used: 1 } }),
+    features: [aFeature({ name: "Fixture focus", uses: { max: 2, used: 1, reset: "short" } })],
+    concentrating: "Fixture Ward",
+  });
+
+  it("says what a long rest gave back", () => {
+    expect(restSummary("long", before, longRest(before).sheet)).toBe(
+      "Long rest: +15 HP, 2 hit dice back, 3 slots back, Fixture focus back, Fixture Ward ended.",
+    );
+  });
+
+  it("says what a short rest spent and gave back", () => {
+    const after = shortRest(before, [{ die: "d8", face: 4 }]).sheet;
+    expect(restSummary("short", before, after)).toBe(
+      "Short rest: +4 HP, spent 1 hit die, Fixture focus back.",
+    );
+  });
+
+  it("says when there was nothing to get back", () => {
+    const rested = aSheet({ hp: { current: 9, max: 9, temp: 0 } });
+    expect(restSummary("long", rested, longRest(rested).sheet)).toBe(
+      "Long rest: nothing to get back.",
+    );
   });
 });
