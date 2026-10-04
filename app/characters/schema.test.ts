@@ -95,3 +95,106 @@ describe("characterSchema", () => {
     expect(characterSchema.safeParse({ ...base, kind: "familiar" }).success).toBe(false);
   });
 });
+
+describe("sheets saved before spells, uses and rests", () => {
+  /** A whole sheet as the first sheet slice stored it, before any of the tracking fields. */
+  const savedBefore = {
+    name: "Kit",
+    species: "Halfling",
+    className: "Rogue",
+    level: 3,
+    background: "Sailor",
+    abilities: { str: 8, dex: 17, con: 12, int: 13, wis: 10, cha: 14 },
+    proficiencyBonus: 2,
+    saves: {
+      str: "none",
+      dex: "proficient",
+      con: "none",
+      int: "proficient",
+      wis: "none",
+      cha: "none",
+    },
+    skills: { stealth: "expertise" },
+    overrides: { initiative: 5 },
+    armourClass: 14,
+    speed: "25 ft.",
+    hp: { current: 17, max: 21, temp: 3 },
+    heroicInspiration: true,
+    senses: "",
+    languages: "Common",
+    proficiencies: "",
+    defences: "",
+    conditions: "",
+    notes: "Fixture: notes from before the tracking fields",
+  };
+
+  it("loads unchanged, with nothing to track yet", () => {
+    const sheet = sheetSchema.parse(savedBefore);
+    expect(sheet).toMatchObject(savedBefore);
+    expect(sheet).toMatchObject({ spells: [], features: [], attacks: [], concentrating: "" });
+    expect(sheet.spellAbility).toBeUndefined();
+    expect(sheet.spellSlots).toHaveLength(9);
+    expect(sheet.spellSlots.every((slot) => slot.max === 0 && slot.used === 0)).toBe(true);
+    expect(sheet.hitDice).toEqual({
+      d6: { max: 0, used: 0 },
+      d8: { max: 0, used: 0 },
+      d10: { max: 0, used: 0 },
+      d12: { max: 0, used: 0 },
+    });
+  });
+
+  it("reads back exactly what it writes, so saving never changes a sheet", () => {
+    const sheet = sheetSchema.parse(savedBefore);
+    expect(sheetSchema.parse(JSON.parse(JSON.stringify(sheet)))).toEqual(sheet);
+  });
+});
+
+describe("what gets used up, as stored", () => {
+  it("brings anything used above its maximum back down rather than refusing the sheet", () => {
+    const sheet = sheetSchema.parse({
+      spellSlots: [{ max: 2, used: 5 }],
+      hitDice: { d8: { max: 3, used: 4 } },
+      features: [
+        {
+          id: "f1",
+          name: "Fixture feature",
+          source: "class",
+          activation: "bonus",
+          uses: { max: 1, used: 3, reset: "long" },
+        },
+      ],
+    });
+    expect(sheet.spellSlots[0]).toEqual({ max: 2, used: 2 });
+    expect(sheet.hitDice.d8).toEqual({ max: 3, used: 3 });
+    expect(sheet.features[0].uses).toEqual({ max: 1, used: 1, reset: "long" });
+  });
+
+  it("reads a feature's unknown source or activation as other, rather than refusing the sheet", () => {
+    const [feature] = sheetSchema.parse({
+      features: [{ id: "f1", name: "Fixture feature", source: "boon", activation: "free" }],
+    }).features;
+    expect(feature).toMatchObject({ source: "other", activation: "other" });
+  });
+
+  it("fills in a spell's details when only its name and level were kept", () => {
+    const [spell] = sheetSchema.parse({
+      spells: [{ id: "s1", name: "Fixture Spark", level: 0 }],
+    }).spells;
+    expect(spell).toMatchObject({
+      castingTime: "",
+      range: "",
+      concentration: false,
+      ritual: false,
+      attack: false,
+    });
+  });
+
+  it.each([
+    ["a spell of level 10", { spells: [{ id: "s1", name: "x", level: 10 }] }],
+    ["a feature with no name", { features: [{ id: "f1", name: " " }] }],
+    ["more than nine levels of slots", { spellSlots: Array.from({ length: 10 }, () => ({})) }],
+    ["an attack bonus of 100", { attacks: [{ id: "a1", name: "x", bonus: 100 }] }],
+  ])("refuses %s", (_, sheet) => {
+    expect(sheetSchema.safeParse(sheet).success).toBe(false);
+  });
+});

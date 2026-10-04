@@ -5,7 +5,18 @@
  */
 import { applyAction, type CharacterAction } from "./actions";
 import { applyInventoryChange, type InventoryChange } from "./inventory-changes";
-import { COINS, type Character, type HitPoints, type Inventory } from "./types";
+import type { FeatureEdits } from "./actions";
+import { inverseListChange, type Edits, type ListChange } from "./lists";
+import { allCounters } from "./tracking";
+import {
+  COINS,
+  type Character,
+  type Feature,
+  type HitPoints,
+  type Inventory,
+  type PlayerCharacter,
+  type Sheet,
+} from "./types";
 
 /**
  * Actions that undo `action`, worked out from the character just before it was applied. Empty if
@@ -44,7 +55,96 @@ export function inverseOf(before: Character, action: CharacterAction): Character
       return [{ ...action, value: sheet.heroicInspiration, from: action.value }];
     case "portrait":
       return [{ ...action, value: sheet.portrait, from: action.value }];
+    case "spellAbility":
+      return [{ ...action, value: sheet.spellAbility, from: action.value }];
+    case "count":
+    case "limit":
+    case "rest":
+      return revertSheet(sheet, (after as PlayerCharacter).sheet);
+    case "spells":
+      return inverseListChange(sheet.spells, action.change).map((change) => ({
+        type: "spells",
+        change,
+      }));
+    case "attacks":
+      return inverseListChange(sheet.attacks, action.change).map((change) => ({
+        type: "attacks",
+        change,
+      }));
+    case "features":
+      return revertFeatures(sheet, (after as PlayerCharacter).sheet, action.change);
   }
+}
+
+/**
+ * Puts back what a tick, a new maximum or a rest changed: each maximum, then each count as a
+ * difference (so a tick made elsewhere since stays), then hit points and concentration.
+ */
+function revertSheet(before: Sheet, after: Sheet): CharacterAction[] {
+  const actions: CharacterAction[] = [];
+  const now = new Map(allCounters(after).map(({ ref, counter }) => [JSON.stringify(ref), counter]));
+  const counts: CharacterAction[] = [];
+  for (const { ref, counter } of allCounters(before)) {
+    const changed = now.get(JSON.stringify(ref));
+    if (!changed) continue;
+    if (changed.max !== counter.max && !("feature" in ref)) {
+      actions.push({ type: "limit", counter: ref, value: counter.max, from: changed.max });
+    }
+    if (changed.used !== counter.used) {
+      counts.push({ type: "count", counter: ref, by: counter.used - changed.used });
+    }
+  }
+  actions.push(...counts, ...revertHp(before.hp, after.hp));
+  if (before.concentrating !== after.concentrating) {
+    actions.push({
+      type: "text",
+      field: "concentrating",
+      value: before.concentrating,
+      from: after.concentrating,
+    });
+  }
+  return actions;
+}
+
+/**
+ * Undoes a change to the features. An edit puts back only the fields it changed, and a feature's
+ * uses by their maximum and reset, with any uses its new maximum took away given back by count.
+ */
+function revertFeatures(
+  before: Sheet,
+  after: Sheet,
+  change: ListChange<Feature, FeatureEdits>,
+): CharacterAction[] {
+  if (change.type !== "edit") {
+    return inverseListChange(before.features, change as ListChange<Feature>).map((inverse) => ({
+      type: "features",
+      change: inverse as ListChange<Feature, FeatureEdits>,
+    }));
+  }
+  const old = before.features.find((feature) => feature.id === change.id);
+  const now = after.features.find((feature) => feature.id === change.id);
+  if (!old || !now) return [];
+  const { uses, ...rest } = change.changes;
+  const [plain] = inverseListChange(before.features, {
+    type: "edit",
+    id: change.id,
+    changes: rest as Edits<Feature>,
+  });
+  const changes: FeatureEdits =
+    plain?.type === "edit" ? { ...(plain.changes as FeatureEdits) } : {};
+  if (uses !== undefined && JSON.stringify(old.uses) !== JSON.stringify(now.uses)) {
+    changes.uses = old.uses ? { max: old.uses.max, reset: old.uses.reset } : null;
+  }
+  const actions: CharacterAction[] =
+    Object.keys(changes).length > 0
+      ? [{ type: "features", change: { type: "edit", id: change.id, changes } }]
+      : [];
+  // Taking uses away (or lowering their maximum) loses how many were used: count puts it back.
+  const lost = (old.uses?.used ?? 0) - (now.uses?.used ?? 0);
+  if (old.uses && lost > 0) {
+    actions.push({ type: "count", counter: { feature: change.id }, by: lost });
+  }
+  return actions;
 }
 
 /** The maximum first, so putting back a higher current value isn't capped by a lower one. */
