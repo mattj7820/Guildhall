@@ -20,8 +20,6 @@ export default [
   route("maps/:id/version", "routes/map-version.ts"),
   route("maps/:id/tokens", "routes/map-tokens.ts"),
   route("maps/:id/stunts", "routes/map-stunts.ts"),
-  // PROTOTYPE (removed before the PR).
-  route("maps/:id/sheet-prototype", "routes/map-sheet-prototype.tsx"),
   route("vault-asset/*", "routes/vault-asset.ts"),
   route("sounds/*", "routes/sound.ts"),
   route("view-mode", "routes/view-mode.ts"),
@@ -32,8 +30,6 @@ export default [
   route("waiting", "routes/waiting.tsx"),
   route("members", "routes/members.tsx"),
   route("characters", "routes/characters.tsx"),
-  // PROTOTYPE (removed before the PR). Before `characters/:id`, which would otherwise take it.
-  route("characters/tracking-prototype", "routes/sheet-tracking-prototype.tsx"),
   route("characters/:id", "routes/character.tsx"),
   route("characters/:id/portrait", "routes/character-portrait.ts"),
   route("characters/:id/changes", "routes/character-changes.ts"),

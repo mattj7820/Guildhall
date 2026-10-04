@@ -14,9 +14,10 @@ monsters; prepared encounters, which can start on a map), the DM's stunts and so
 live for everyone, only when the DM plays them), DM-only interactive maps (vault images with
 outlined areas leading to deeper maps and notes; kept in the data folder), fog of war and tokens on
 maps (the party's and the DM's markers, moved live over websockets; kept in the data folder),
-character sheets with a game-style bag (players edit their own, the DM gives items; kept in the data
-folder), and sign-in with Discord, where the DM lets players in and says who they play. It's built
-to be hosted: a Docker image, with the vault copied read-only from Google Drive (see
+character sheets with a game-style bag (players edit their own, the DM gives items; spells, slots,
+features' uses, hit dice and rests tracked on them; a player's sheet and bag beside the map; kept in
+the data folder), and sign-in with Discord, where the DM lets players in and says who they play.
+It's built to be hosted: a Docker image, with the vault copied read-only from Google Drive (see
 `docs/deployment.md`).
 
 ## Hard constraints
@@ -145,9 +146,13 @@ First e2e run needs `npx playwright install chromium`.
 - `app/characters/`: character sheets and bags (isomorphic): `types.ts` (`Character` is a
   `PlayerCharacter` with a `Sheet`, or a shared `Companion`; `InventoryItem`, `Purse`),
   `abilities.ts` (abilities, skills, `abilityModifier`, `signed`), `derive.ts` (`deriveSheet`: the
-  paper sheet's maths, typed overrides win), `schema.ts` (zod, with defaults; `blankSheet`),
-  `permissions.ts` (`characterAccess`: edit, summary or none; `canGive`), `inventory.ts` (move,
-  stack, split, equip), `inventory-changes.ts` (`InventoryChange`, `giveItem`), `actions.ts`
+  paper sheet's maths, typed overrides win, spell DC and attack too; `spellNumbers`), `schema.ts`
+  (zod, with defaults; `blankSheet`), `tracking.ts` (what gets used up: counters by `CounterRef`,
+  `shortRest`, `longRest`, `restSummary`), `lists.ts` (`ListChange` for spells, attacks and
+  features, with edits by field and `inverseListChange`), `spells.ts` (`castOptions`,
+  `castActions`, `numbersFor`), `permissions.ts` (`characterAccess`: edit, summary or none;
+  `canGive`), `inventory.ts` (move, stack, split, equip), `inventory-changes.ts`
+  (`InventoryChange`, `giveItem`), `actions.ts`
   (`CharacterAction`, `applyAction`, request schemas), `undo.ts` (`inverseOf`, the undo stack),
   `sync.ts` (unsaved actions over the server's copy), `editor.ts` (`CharacterEditor`: an open
   sheet's saving, polling, undo and gifts) with its `useCharacterEditor` hook, `quick-add.ts`
@@ -156,7 +161,7 @@ First e2e run needs `npx playwright install chromium`.
 - `app/.server/characters/`: `characters.ts` (the repository over `characters.json`: apply
   actions, give, relink), `controllers.ts` (who plays a character, read from its note),
   `openable.ts` (the character if the viewer may open it, else 404), `load.ts` (`partyCards`,
-  `characterPage`, `itemCatalogue`, `portraitPath`).
+  `characterPage`, `itemCatalogue`, `spellCatalogue`, `portraitPath`).
 - `app/.server/vault/`:
   - `read-vault.ts`: the only reader of vault files. Skips dotfolders.
   - `parse-note.ts`: frontmatter → `Note`. Visibility fails closed to `dm`.
@@ -229,18 +234,25 @@ First e2e run needs `npx playwright install chromium`.
   `auth-discord-callback`, `waiting` (for newcomers), `members` (DM-only: approve, assign, remove),
   `characters` (the party; start, relink and delete actions), `character` (`/characters/:id`, a
   sheet or companion), `character-changes` (JSON: GET the stored character, POST a batch of
-  actions), `character-give` (JSON: a gift to another bag), `character-portrait` (resource route),
-  `credits` (icon credits).
+  actions), `character-sheet-data` (JSON: a sheet's page data, for opening it beside the map),
+  `character-give` (JSON: a gift to another bag), `character-portrait` (resource route), `credits`
+  (icon credits).
 - `app/components/combat/`: the tracker's UI (`CombatTracker` lays it out), and the prepared
   encounter editor (`PreparedEditor`). `TurnStrip` (the turn order as round faces, over a map or
   in a page), `PlayerFight` (a player's Combat page, and `EndMyTurn`), `FightStatus` (saving,
   offline, replaced). `CombatantRow` and `AddCombatants` have a `"prep"` mode.
 - `app/components/characters/`: `CharacterSheet` (the layout, edit mode, click-to-roll and the
-  docked bag; its parts are `SheetHeader`, `SheetSections` and `SheetTabs`), `CompanionSheet`, `PartyCard`, `SheetBag` (a bag saved through the editor), `EditorBar`,
-  `HitPointsPanel`, `Fields`, `SheetParts`, `Portrait`. `app/components/inventory/`: `Bag`,
-  `InventoryBoard` (the drag-and-drop grid; the drag's state and rules are `useInventoryDrag`, its
-  other drop targets `DropZones`, with `SortableTile`, `keyboard.ts` and `drag-ids.ts`), `ItemTile`,
-  `ItemTooltip`, `ItemDetails`, `QuickAdd`, `Purse`, `UndoToast`.
+  docked bag; its parts are `SheetHeader`, `SheetSections` and `SheetTabs`, built by
+  `useSheetParts`), `CompanionSheet`, `PartyCard`, `SheetBag` (a bag saved through the editor),
+  `EditorBar`, `HitPointsPanel`, `Fields`, `SheetParts`, `Portrait`. What gets used up: `Trackers`
+  (slots, uses, hit dice and concentration at a glance; their maximums while editing), `Pips`,
+  `Rests` (Short and Long rest), and the tabs `ActionsTab` (attacks, then features by how they're
+  used), `SpellsTab` (by level, Cast) and `FeaturesTab`, with `FilterChips` and `SheetLists`.
+  `CharacterPanel` is a character beside the map: a compact sheet, the companion, or the bag.
+  `app/components/inventory/`: `Bag`, `InventoryBoard` (the drag-and-drop grid; the drag's state
+  and rules are `useInventoryDrag`, its other drop targets `DropZones`, with `SortableTile`,
+  `keyboard.ts` and `drag-ids.ts`), `ItemTile`, `ItemTooltip`, `ItemDetails`, `QuickAdd`, `Purse`,
+  `UndoToast`.
 - `app/components/maps/`: `MapCanvas` (the SVG canvas; `focus` centres it), `MapViewer` and
   `MapEditor` (the two pages; the viewer's bar is `MapViewerBar`, placing tokens
   `useTokenPlacing`, its smaller parts `MapViewerParts`, and `ClickCatcher` takes the next click on
@@ -249,7 +261,8 @@ First e2e run needs `npx playwright install chromium`.
   fog of war `FogLayer` (the fog drawn from the cell opacities), `FogPainter` (brush, rectangle and
   area tools), `FogToolbar`, `FogAreaList` (what players see of each area) and `useFogTools` (tool
   state and keys). `PlayerMapViewer` is a map as players see it: tiles over black, and outlines
-  drawn only over what's revealed. For tokens: `TokenLayer` (drawn over the fog, dragged, moved by
+  drawn only over what's revealed; its side panel is `MapSidePanel` (Map, Sheet and Bag tabs, the
+  sheet fetched when it's opened). For tokens: `TokenLayer` (drawn over the fog, dragged, moved by
   keys; filling and snapping to squares on a battle map), `TokenPanel` (the DM's party and markers),
   `InsideBadges`, `TokenDistances`. For battle maps: `GridLayer`, `GridSettings` (the editor's
   section), and `useBattleTools` (the toolbar over the map and what its tools draw, for the DM and
@@ -316,7 +329,11 @@ First e2e run needs `npx playwright install chromium`.
   carry `from` (what the sender saw). New IDs are made by the sender and carried in the action.
   Who plays a character comes from its note's `player:` every time, never stored. Anyone who
   can't open a character gets the same 404 as for a missing one; others' characters are only
-  ever a summary. Gifts change both bags in one `Characters.give`.
+  ever a summary. Gifts change both bags in one `Characters.give`. Ticking something off is a
+  relative `count` (so two tabs' ticks add up); a feature's uses are edited by their maximum and
+  reset, never how many are used. A rest is one action. Casting only ticks off what's spent;
+  rolling is its own click. New stored fields get defaults and stored data is never refused
+  (clamp or `catch` instead): sheets are live data.
 - Anything players read from a note's body must come from `forPlayers`, never `note.body`.
 - Hidden content must be indistinguishable from missing content in player view (same 404, links
   become plain text, excluded from search and the tree).
@@ -330,9 +347,11 @@ First e2e run needs `npx playwright install chromium`.
   `tests/e2e/support/fixtures.ts` and work through page objects (`tests/e2e/pages/`, accessible
   locators), `openAs` for other people's browsers and `api` for setting up through endpoints.
   Page objects' `goto`/`reload` wait for `<html data-hydrated>`; never `waitForTimeout`, always
-  wait for a visible result. E2E tests start signed in as the DM; use `SIGNED_IN.playerOne` or
-  `SIGNED_OUT` (`tests/e2e/support/sign-in.ts`) for others. New behaviour gets a
+  wait for a visible result. E2E tests start signed in as the DM; use `SIGNED_IN.playerOne`,
+  `playerTwo` or `SIGNED_OUT` (`tests/e2e/support/sign-in.ts`) for others. New behaviour gets a
   fixture note whose body states what it tests. Character specs share one party: add uniquely
   named items and never assert on a whole bag. Only `map-tokens.spec.ts` places party members (in
-  order, since each is in one place). See `docs/testing.md`.
+  order, since each is in one place). Rests give back everything on a sheet, so only
+  `sheet-tracking.spec.ts` changes Fixture PC Two's sheet (as Player Two), and the specs on PC One
+  never rest. See `docs/testing.md`.
 - Prettier formats everything (print width 100). Keep comments short and about _why_.

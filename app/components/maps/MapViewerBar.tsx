@@ -64,10 +64,6 @@ export function MapViewerBar({
       <button type="button" className={buttonClass} onClick={onPresent}>
         Present
       </button>
-      {/* PROTOTYPE (removed before the PR) */}
-      <Link to={`/maps/${map.id}/sheet-prototype`} className={buttonClass}>
-        Sheet panel (prototype)
-      </Link>
       <Link to={mapEditUrl(map.id)} className={buttonClass}>
         Edit map
       </Link>

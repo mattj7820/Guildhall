@@ -1069,3 +1069,86 @@ than adding anything new:
 A race once suspected when a prepared fight starts on its map turned out to be the e2e run, not
 the app: repeated copies of `fight.spec.ts` ran at once against the table's one fight. The stress
 workflow takes `workers=1` for it.
+
+## 61. What gets used up: features carry their uses, and ticks are relative
+
+**Date:** 2026-10-04
+
+**Context.** After two sessions, the sheet's Notes tab held attacks, spells and a once-a-day spell
+as free text with nothing to tick off. Sheets are now live data on the hosted app.
+
+**Options considered.**
+
+- **A separate list of limited uses beside features:** simple, but a use and the feature it
+  belongs to are typed twice and drift apart.
+- **Features that carry their uses (chosen):** a feature (class, species, feat, item or other;
+  used as an action, bonus action, reaction, other or passive) may have uses with what gives them
+  back. Ki points or a wand's charges are a feature with uses; a feat's free spell is a spell
+  pointing at a feature's uses.
+- **Rules first (slots from class and level, spells from the SRD):** the table doesn't need them
+  yet, and typed values from paper are what the players trust.
+
+**Decision.** On the sheet: the spellcasting ability, spells, nine levels of slots, hit dice by
+size, features, attacks, and what's being concentrated on. Every change is an action applied to
+what's stored now (decision 30): a tick is relative ("use one more"), so two tabs' ticks add up; a
+maximum is a set action with `from`; spells, attacks and features change by list changes whose
+edits name only the fields they change, and a feature's uses are edited by their maximum and reset,
+never by how many are used, so an edit can't undo someone's tick. Undo sends what each action
+changed, as differences. The spell save DC and attack bonus come from `deriveSheet`, typed numbers
+winning, so rules can later fill in computed values and flag typed ones they disagree with.
+
+Stored data must always load: every new field has a default, a counter used past its maximum is
+clamped and an unknown source reads as "other", rather than the sheet being refused (a file that
+fails its schema is never overwritten, so a too-strict schema would stop the Characters pages
+loading). Rolling a deploy back after spells or uses are saved would drop them on the next save,
+since an older build doesn't know the fields: backups of the data folder cover that.
+
+## 62. Rests: the player's buttons, 2024 rules, one step each
+
+**Date:** 2026-10-04
+
+Resting is a button the player presses, never something Guildhall decides (decision 55), and
+there's no "rest for everyone": the DM says the party rests, and each player presses theirs. A
+**short rest** spends hit dice, each rolled in the dialog or rolled at the table and typed in, and
+each heals its roll plus the CON modifier (at least 1), skipping any spent meanwhile in another
+tab; uses that come back on a short rest do. A **long rest**, as in the 2024 rules: all hit points
+back and temporary ones gone, every hit die and spell slot back, short and long rest uses back, and
+concentration ends; uses kept by hand stay. "At dawn" isn't a reset of its own, since a long rest
+can happen at any time of day: something that recharges at dawn is set to come back on a long
+rest. Each rest is one action, so one Undo puts back everything that rest did and nothing else, and
+a toast says what it gave back.
+
+## 63. Spells on the sheet: typed, cast from the sheet, rolled separately
+
+**Date:** 2026-10-04
+
+Spells are typed in from paper (casting time, range, components, duration, concentration, ritual,
+save or attack, dice, an effect, an area) in the player's own words; no rules text is copied and
+nothing is generated. A spell can link to a vault spell note (`type: spell`), which players read
+without its DM parts, like item notes; the spell keeps its own typed details, so a note kept from
+players shows nothing more. Cast only ticks off what's spent (the lowest slot left at the spell's
+level or above, a higher one, a feature's free use, or nothing for a ritual) and takes over
+concentration, as one undoable step; attack and damage are clicks of their own. An area uses the
+battle map's own shapes, so a later "Show on map" can lay it out with the spell area tool.
+
+## 64. The sheet beside the map: a player's panel, loaded when opened, still polled
+
+**Date:** 2026-10-04
+
+A prototype compared a drawer over the map, a card over it, and tabs in the side panel; the DM
+chose tabs. A player's panel on a map is Map │ Sheet │ Bag at one fixed width (the map jumped when
+the width followed the tab), folding to a strip of icons. C and I open the sheet and bag, as games
+do; V, M and A stay the map's tools. What's open is kept in the browser, so it stays open from map
+to map. The compact sheet keeps what matters mid-session and links to the full sheet; it saves
+through the same editor, so actions, undo and merging are the same.
+
+The map page carries only the names of the characters a player may open. The sheet is fetched
+when it's opened, from `/characters/:id/sheet`, which loads exactly what the sheet page does behind
+the same check, so the map page still never carries a party member's note path, and a sheet that
+can't be opened shows as such in the panel rather than failing the map page. The panel is for
+players; a read-only view of the party for the DM is on the roadmap.
+
+Sheets still poll every 10 seconds, as each one is mostly changed by its owner and the fight
+already hears of hit point changes. Pushing changes live is the next step: a small message with
+only the new revision, sent to those who may edit, after which the browser fetches the character
+through the changes endpoint as now, so what anyone may see is still decided in one place.
