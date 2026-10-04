@@ -8,10 +8,11 @@ import { ItemIconSvg } from "../inventory/ItemTile";
 import { ActionsTab } from "./Actions";
 import { FeaturesTab } from "./Features";
 import { TextAreaField } from "./Fields";
+import { SpellsTab } from "./Spells";
 import { sheetPanelClass, TextBlock } from "./SheetParts";
 import type { Parts } from "./SheetSections";
 
-export type Tab = "actions" | "features" | "notes" | "equipped" | "story";
+export type Tab = "actions" | "spells" | "features" | "notes" | "equipped" | "story";
 
 export function SheetTabs({
   page,
@@ -28,6 +29,7 @@ export function SheetTabs({
   const id = useId();
   const tabs: { key: Tab; label: string }[] = [
     { key: "actions", label: "Actions" },
+    { key: "spells", label: "Spells" },
     { key: "features", label: "Features" },
     { key: "notes", label: "Notes" },
     { key: "equipped", label: "Equipped" },
@@ -78,6 +80,12 @@ export function SheetTabs({
         className="pt-3"
       >
         {tab === "actions" && <ActionsTab parts={parts} />}
+        {tab === "spells" && (
+          <SpellsTab
+            parts={parts}
+            spellNotes={{ catalogue: page.spellCatalogue ?? [], notes: page.spellNotes ?? {} }}
+          />
+        )}
         {tab === "features" && <FeaturesTab parts={parts} />}
         {tab === "equipped" &&
           (equipped.length > 0 ? (

@@ -150,6 +150,40 @@ export class CharacterSheet extends AppPage {
     await commit(row.getByLabel("Damage"), damage);
   }
 
+  /**
+   * While editing, adds a spell from the Spells tab and fills it in. A wiki note is linked first,
+   * since a new spell takes its note's name, and then the spell is given its own.
+   */
+  async addSpell({
+    name,
+    level,
+    note,
+    concentration = false,
+    attack = false,
+    roll,
+  }: {
+    name: string;
+    level: string;
+    note?: string;
+    concentration?: boolean;
+    attack?: boolean;
+    roll?: string;
+  }) {
+    await this.page.getByRole("button", { name: "Add spell" }).click();
+    let row = this.page.getByRole("listitem", { name: "New spell" }).last();
+    if (note) {
+      await row.getByLabel("Wiki note").selectOption({ label: note });
+      row = this.page.getByRole("listitem", { name: note, exact: true }).last();
+    }
+    await commit(row.getByLabel("Name"), name);
+    row = this.page.getByRole("listitem", { name, exact: true });
+    await row.getByLabel("Level").selectOption({ label: level });
+    if (concentration) await row.getByLabel("Concentration").check();
+    if (attack) await row.getByLabel("Spell attack").check();
+    if (roll) await commit(row.getByLabel("Roll"), roll);
+    return row;
+  }
+
   /** While editing, adds a feature from the open tab and fills it in. */
   async addFeature({
     name,
