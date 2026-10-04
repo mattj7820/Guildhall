@@ -45,6 +45,9 @@ Sounds.md` says so.
 - `Items/Fixture Rope.md`: a shared item note. `Items/Fixture Cursed Ring.md`: a shared item note
   with a `## DM` section and a `> [!dm]` callout, each with a marker word players must never get.
   `Items/Fixture Secret Relic.md`: a DM-only item note, for unidentified items.
+- `Spells/Fixture Spark.md`: a shared spell note with a `## DM` section and a `> [!dm]` callout,
+  each with a marker word players must never get. `Spells/Fixture Secret Spell.md`: a DM-only
+  spell note.
 - `Maps/`: placeholder map images (colour fields and a grid, never real maps), explained in
   `Maps/Fixture Maps.md`. `Fixture World.png` is 400×200, deliberately not square;
   `Fixture Town.png` and `Fixture Keep.png` are child maps; `Fixture Duplicate.png` shares its

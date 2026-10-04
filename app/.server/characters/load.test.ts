@@ -4,7 +4,14 @@ import { aCharacter, aCompanion, anItem, aSheet } from "~/characters/test-builde
 import type { Character } from "~/characters/types";
 import { FIXTURE_VAULT } from "../../../tests/support/fixture-vault";
 import { Vault } from "../vault/vault";
-import { characterPage, itemCatalogue, partyCards, portraitChoices, portraitPath } from "./load";
+import {
+  characterPage,
+  itemCatalogue,
+  partyCards,
+  portraitChoices,
+  portraitPath,
+  spellCatalogue,
+} from "./load";
 
 /** Integration tests over the fixture vault: two PCs (Player One, Player Two) and a companion. */
 let vault: Vault;
@@ -112,6 +119,30 @@ describe("characterPage", () => {
     expect(page.statblockHtml).toContain("Fixture Companion");
     expect(page.statblockHtml).not.toContain("Fixture Secret Form");
     expect(page).toMatchObject({ armourClass: 13, speed: "40 ft." });
+  });
+});
+
+describe("spellCatalogue", () => {
+  it("offers players only shared spell notes, without their DM parts", () => {
+    const { spellCatalogue: catalogue, spellNotes } = spellCatalogue(vault, playerOne);
+    expect(catalogue.map((spell) => spell.title)).toEqual(["Fixture Spark"]);
+    const spark = spellNotes["Spells/Fixture Spark"].html;
+    expect(spark).toContain("Players see this paragraph");
+    expect(spark).not.toContain("sparksecretcallout");
+    expect(spark).not.toContain("sparksecretsection");
+  });
+
+  it("offers the DM every spell note, saying which players can't read", () => {
+    const { spellCatalogue: catalogue } = spellCatalogue(vault, DM_VIEWER);
+    expect(catalogue).toEqual([
+      { id: "Spells/Fixture Secret Spell", title: "Fixture Secret Spell", hiddenFromPlayers: true },
+      { id: "Spells/Fixture Spark", title: "Fixture Spark" },
+    ]);
+  });
+
+  it("comes with a PC's sheet, not a companion's", () => {
+    expect(characterPage(vault, pcOne, playerOne).spellCatalogue).toHaveLength(1);
+    expect(characterPage(vault, aCompanion(), playerOne).spellCatalogue).toBeUndefined();
   });
 });
 
