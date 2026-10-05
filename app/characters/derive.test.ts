@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deriveSheet } from "./derive";
+import { deriveSheet, spellNumbers } from "./derive";
 import { aSheet } from "./test-builders";
 
 /** DEX 16 (+3), WIS 12 (+1), INT 8 (-1), proficiency bonus +2. */
@@ -63,5 +63,39 @@ describe("deriveSheet", () => {
 
     const typed = deriveSheet({ ...sheet, overrides: { "passive.perception": 20 } });
     expect(typed.passives.perception).toEqual({ value: 20, computed: 11, overridden: true });
+  });
+});
+
+describe("spellcasting", () => {
+  const wise = aSheet({
+    abilities: { ...aSheet().abilities, wis: 16, int: 12 },
+    proficiencyBonus: 3,
+    spellAbility: "wis",
+  });
+
+  it("works out the save DC as 8 + proficiency + modifier, and the attack as proficiency + modifier", () => {
+    const { spellcasting } = deriveSheet(wise);
+    expect(spellcasting).toMatchObject({
+      ability: "wis",
+      dc: { value: 14, overridden: false },
+      attack: { value: 6, overridden: false },
+    });
+  });
+
+  it("lets a typed number win, keeping what the maths says", () => {
+    const { spellcasting } = deriveSheet({ ...wise, overrides: { "spell.dc": 15 } });
+    expect(spellcasting?.dc).toEqual({ value: 15, computed: 14, overridden: true });
+  });
+
+  it("gives a spell cast with another ability the plain maths, without the typed numbers", () => {
+    const sheet = { ...wise, overrides: { "spell.dc": 15 } as const };
+    expect(spellNumbers(sheet, "int")).toMatchObject({
+      dc: { value: 12, overridden: false },
+      attack: { value: 4, overridden: false },
+    });
+  });
+
+  it("has none for a character without a spellcasting ability", () => {
+    expect(deriveSheet(aSheet()).spellcasting).toBeUndefined();
   });
 });

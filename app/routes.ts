@@ -33,6 +33,7 @@ export default [
   route("characters/:id", "routes/character.tsx"),
   route("characters/:id/portrait", "routes/character-portrait.ts"),
   route("characters/:id/changes", "routes/character-changes.ts"),
+  route("characters/:id/sheet", "routes/character-sheet-data.ts"),
   route("characters/:id/give", "routes/character-give.ts"),
   route("credits", "routes/credits.tsx"),
 ] satisfies RouteConfig;

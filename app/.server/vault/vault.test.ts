@@ -104,6 +104,7 @@ describe("Vault", () => {
         "Secrets",
         "Sessions",
         "Sounds",
+        "Spells",
       ]);
       expect(tree.notes.map((note) => note.title)).toEqual(["Home", "README"]);
     });

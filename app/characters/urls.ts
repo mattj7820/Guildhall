@@ -7,6 +7,9 @@ export const characterUrl = (id: CharacterId) => `/characters/${encodeURICompone
 /** Where an open sheet saves its changes, and polls for others'. */
 export const changesUrl = (id: CharacterId) => `${characterUrl(id)}/changes`;
 
+/** A sheet's page data as JSON, for opening it beside the map. */
+export const sheetDataUrl = (id: CharacterId) => `${characterUrl(id)}/sheet`;
+
 /** Where a sheet sends gifts to another party member's bag. */
 export const giveUrl = (id: CharacterId) => `${characterUrl(id)}/give`;
 

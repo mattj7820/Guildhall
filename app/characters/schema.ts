@@ -16,7 +16,26 @@ import {
 } from "./abilities";
 import { QUANTITY_MAX } from "./inventory";
 import { DESCRIPTION_MAX, NAME_MAX, PURSE_MAX, SOURCE_MAX } from "./inventory-changes";
-import type { Character, DerivedKey, Inventory, InventoryItem, Purse, Sheet } from "./types";
+import { SPELL_SHAPES } from "~/maps/grid/shapes";
+import {
+  ACTIVATIONS,
+  FEATURE_SOURCES,
+  HIT_DICE,
+  RESETS,
+  SPELL_LEVELS,
+  type Attack,
+  type Character,
+  type Counter,
+  type DerivedKey,
+  type Feature,
+  type HitDie,
+  type Inventory,
+  type InventoryItem,
+  type Purse,
+  type Sheet,
+  type Spell,
+  type Uses,
+} from "./types";
 
 export const SHORT_TEXT_MAX = 80;
 export const LONG_TEXT_MAX = 2000;
@@ -40,7 +59,93 @@ export const DERIVED_KEYS: DerivedKey[] = [
   ...SKILLS.map((skill): DerivedKey => `skill.${skill}`),
   "initiative",
   ...PASSIVE_SKILLS.map((skill): DerivedKey => `passive.${skill}`),
+  "spell.dc",
+  "spell.attack",
 ];
+
+/* What gets used up: spells, slots, features' uses, hit dice and attacks. */
+
+export const SPELLS_MAX = 300;
+export const FEATURES_MAX = 200;
+export const ATTACKS_MAX = 50;
+/** A feature's uses: a pool can be large (healing points), a count small. */
+export const USES_MAX = 999;
+export const SLOTS_MAX = 20;
+export const HIT_DICE_MAX = LEVEL_MAX;
+export const DICE_MAX = 40;
+export const AREA_FEET_MAX = 1000;
+/** A typed attack bonus. */
+export const ATTACK_BONUS_LIMIT = OVERRIDE_LIMIT;
+
+const id = z.string().min(1).max(64);
+const name = z.string().trim().min(1).max(SHORT_TEXT_MAX);
+const optionalText = (max: number) => z.string().max(max).optional();
+
+/**
+ * Used is kept within the maximum by clamping, never by refusing: a stored sheet must always
+ * load, whatever an older build wrote.
+ */
+function counterOf(max: number) {
+  return z
+    .object({ max: whole(0, max).default(0), used: whole(0, max).default(0) })
+    .transform((counter) => ({ ...counter, used: Math.min(counter.used, counter.max) }));
+}
+
+export const usesSchema: z.ZodType<Uses> = z
+  .object({ max: whole(1, USES_MAX), used: whole(0, USES_MAX).default(0), reset: z.enum(RESETS) })
+  .transform((uses) => ({ ...uses, used: Math.min(uses.used, uses.max) }));
+
+export const featureSchema: z.ZodType<Feature> = z.object({
+  id,
+  name,
+  source: z.enum(FEATURE_SOURCES).catch("other"),
+  sourceName: optionalText(SHORT_TEXT_MAX),
+  activation: z.enum(ACTIVATIONS).catch("other"),
+  note: optionalText(LONG_TEXT_MAX),
+  roll: optionalText(DICE_MAX),
+  uses: usesSchema.optional(),
+});
+
+export const attackSchema: z.ZodType<Attack> = z.object({
+  id,
+  name,
+  bonus: whole(-ATTACK_BONUS_LIMIT, ATTACK_BONUS_LIMIT),
+  damage: z.string().max(DICE_MAX).default(""),
+  damageType: optionalText(SHORT_TEXT_MAX),
+  notes: optionalText(LONG_TEXT_MAX),
+});
+
+export const spellSchema: z.ZodType<Spell> = z.object({
+  id,
+  name,
+  level: z.union(SPELL_LEVELS.map((level) => z.literal(level))),
+  castingTime: shortText,
+  range: shortText,
+  components: shortText,
+  duration: shortText,
+  concentration: z.boolean().default(false),
+  ritual: z.boolean().default(false),
+  attack: z.boolean().default(false),
+  save: z.enum(ABILITIES).optional(),
+  roll: optionalText(DICE_MAX),
+  effect: optionalText(SHORT_TEXT_MAX),
+  area: z.object({ shape: z.enum(SPELL_SHAPES), feet: whole(1, AREA_FEET_MAX) }).optional(),
+  ability: z.enum(ABILITIES).optional(),
+  freeUse: id.optional(),
+  description: optionalText(LONG_TEXT_MAX),
+  note: entityId.optional(),
+});
+
+const SLOT_LEVELS = SPELL_LEVELS.length - 1;
+
+/** Always nine levels, so a sheet from before slots existed gets empty ones. */
+const spellSlots = z
+  .array(counterOf(SLOTS_MAX))
+  .max(SLOT_LEVELS)
+  .default([])
+  .transform((slots) =>
+    Array.from({ length: SLOT_LEVELS }, (_, index) => slots[index] ?? { max: 0, used: 0 }),
+  );
 
 const proficiency = z.enum(PROFICIENCIES).catch("none");
 
@@ -87,6 +192,13 @@ export const sheetSchema: z.ZodType<Sheet> = z.object({
   defences: longText,
   conditions: longText,
   notes: z.string().max(NOTES_MAX).default(""),
+  spellAbility: z.enum(ABILITIES).optional(),
+  spells: z.array(spellSchema).max(SPELLS_MAX).default([]),
+  spellSlots,
+  hitDice: record<HitDie, Counter>(HIT_DICE, counterOf(HIT_DICE_MAX), { max: 0, used: 0 }),
+  features: z.array(featureSchema).max(FEATURES_MAX).default([]),
+  attacks: z.array(attackSchema).max(ATTACKS_MAX).default([]),
+  concentrating: shortText,
 });
 
 /** A new, empty sheet: every default. */

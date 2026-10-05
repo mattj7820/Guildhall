@@ -1,6 +1,15 @@
 import { emptyPurse } from "./inventory-changes";
 import { blankSheet } from "./schema";
-import type { Companion, InventoryItem, PlayerCharacter, Sheet } from "./types";
+import type {
+  Attack,
+  Companion,
+  Counter,
+  Feature,
+  InventoryItem,
+  PlayerCharacter,
+  Sheet,
+  Spell,
+} from "./types";
 
 let count = 0;
 
@@ -54,4 +63,44 @@ export function aCompanion(fields: Partial<Omit<Companion, "kind">> = {}): Compa
     inventory: { items: [], purse: { ...emptyPurse } },
     ...fields,
   };
+}
+
+/** A feature with no uses unless given some; tests state only the fields they depend on. */
+export function aFeature(fields: Partial<Feature> = {}): Feature {
+  count += 1;
+  return {
+    id: `feature-${count}`,
+    name: "Fixture feature",
+    source: "class",
+    activation: "bonus",
+    ...fields,
+  };
+}
+
+/** A 1st-level spell with nothing to roll, unless told otherwise. */
+export function aSpell(fields: Partial<Spell> = {}): Spell {
+  count += 1;
+  return {
+    id: `spell-${count}`,
+    name: "Fixture Spark",
+    level: 1,
+    castingTime: "1 action",
+    range: "60 ft.",
+    components: "V, S",
+    duration: "Instant",
+    concentration: false,
+    ritual: false,
+    attack: false,
+    ...fields,
+  };
+}
+
+export function anAttack(fields: Partial<Attack> = {}): Attack {
+  count += 1;
+  return { id: `attack-${count}`, name: "Fixture blade", bonus: 5, damage: "1d8+3", ...fields };
+}
+
+/** Nine levels of empty spell slots, with the given levels filled in. */
+export function withSlots(levels: Partial<Record<number, Counter>>): Counter[] {
+  return Array.from({ length: 9 }, (_, index) => levels[index + 1] ?? { max: 0, used: 0 });
 }

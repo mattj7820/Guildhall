@@ -67,6 +67,26 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
     the later one wins and its sender is told what it replaced.
   - Players open and edit only their own characters; everyone else sees a summary (name,
     portrait, species, class, level and equipped items). The PC note is the sheet's story.
+- **What gets used up**, tracked on the sheet as typed from paper (no rules engine):
+  - Spell slots by level, hit dice by size and each feature's uses as lit pips, like a game's
+    charges: one click uses one, a click on a spent one gives it back. What's being concentrated
+    on, with Drop.
+  - Features: class features, species traits, feats and items' powers, each with how it's used
+    (action, bonus action, reaction, other or passive), a one-line note, a roll and uses that come
+    back on a short rest, a long rest or only by hand. A reminder of everything a character can do.
+  - Attacks with to-hit and damage, and spells by level with their casting time, range,
+    components, duration, save or attack and dice, all rolled with a click. The spell save DC and
+    attack bonus are worked out, and can be typed over. A spell can link to the vault's spell note
+    (`type: spell`, DM parts left out) and be cast for free through a feat's once a day.
+  - Cast spends the lowest slot left in one click (or a higher slot, the free use, or as a ritual)
+    and takes over concentration. Rolling stays a click of its own.
+  - Filters, as on D&D Beyond's sheet: actions by attack, action, bonus action, reaction or limited
+    use; spells by level, concentration or ritual; features by where they come from.
+  - Short rest (spend hit dice, rolled there or rolled at the table and typed in) and Long rest
+    (2024 rules: everything back), each one step to undo.
+- **The sheet beside the map**: on a map, a player's side panel has Map, Sheet and Bag tabs, so
+  hit points, slots, uses, rests, attacks and spells are to hand mid-session without leaving the
+  map. It keeps one width, folds away for more map, and opens with C (sheet) and I (bag).
 - **A game-style bag** beside the sheet (press I):
   - Items as tiles with icons and names, in a grid that grows as needed. Drag to move, drop on an
     identical item to stack, hold Shift to take half, drop on the Equipped slots to equip (and
@@ -183,6 +203,7 @@ aliases: [Mira] # standard Obsidian aliases; also searchable
 tags: [brindleford]
 id: npc-mira # optional stable ID that survives renaming the file
 player: Sam # on type: pc notes, who plays the character (their sheet, the combat tracker)
+# type: item and type: spell notes can be linked from bags and spells on sheets
 ---
 ```
 
@@ -236,7 +257,8 @@ app/
     tokens/        Tokens: who may move and see what, moves as actions, drags (isomorphic)
     grid/          Battle grids: squares and snapping, distances, spell areas (isomorphic)
   live/            The browser's live connection, and the messages both ends send
-  characters/      Sheets and bags: the model, changes as actions, undo, saving (isomorphic)
+  characters/      Sheets and bags: the model, spells, uses and rests, changes as actions,
+                   undo, saving (isomorphic)
   members/         Who can sign in: member shapes shared with the browser
   .server/         Server-only code: config, the DM's preview cookie
     auth/          Sessions, who may reach what, Discord sign-in, dev sign-in

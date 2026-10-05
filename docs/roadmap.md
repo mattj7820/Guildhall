@@ -56,6 +56,14 @@ locations, maps, characters, sessions).
   split, equip and remove (and all by keyboard), quick add, items linked to vault item notes (DM
   parts hidden), coins, and giving: the DM to anyone, players to each other and to the party's
   shared companion.
+- **Character sheets, round two: what gets used up.** Spell slots, hit dice and features' uses as
+  lit pips, ticked off in one click; features (class, species, feat, item) by how they're used, as
+  a reminder of what a character can do; attacks and spells (by level, with their details, linked
+  to vault spell notes) rolled with a click and cast from the sheet; concentration; filters as on
+  D&D Beyond's sheet; Short and Long rest (2024 rules), each one step to undo. Typed from paper,
+  with no rules engine.
+- **The sheet beside the map:** a player's side panel on a map has Map, Sheet and Bag tabs, at
+  one width, folding away for more map, with C and I to open them.
 - **Sign-in and hosting:** everyone signs in with Discord; newcomers wait for the DM, who lets
   them in and says which player they are. A Docker image with a Google Drive companion container
   that copies the vault read-only, ready for a Dokploy server (see `docs/deployment.md`).
@@ -76,8 +84,8 @@ locations, maps, characters, sessions).
   the DM's fog tools and token placing in the map's toolbar; icons on markers; a lock for the DM to
   stop players moving mid-scene; undo for the DM's moves; tokens for NPCs linked to their notes;
   touch dragging for tablets and phones.
-- **Live, more:** the same hub for shared dice rolls (with the DM's hidden rolls), character sheet
-  changes pushed rather than polled.
+- **Live, more:** the same hub for shared dice rolls (with the DM's hidden rolls), from the
+  sheet beside the map too; character sheet changes pushed rather than polled (decision 64).
 - **Hosting, next steps:** backups of the data folder (Dokploy volume backups, or a nightly copy to
   a separate Drive folder), a "last synced" indicator and "Sync now" for the vault copy, and
   Discord avatars.
@@ -85,22 +93,21 @@ locations, maps, characters, sessions).
 - **Wiki, next steps:** backlinks, note transclusion (`![[Note]]`), Obsidian callouts,
   browsing by entity type, and perhaps Obsidian plugins later.
 - **Character sheets, next steps:**
-  - **Tracking what gets used up (first, from the first session):** the Notes tab does too much
-    today; a level-1 monk with Magic Initiate already needs attacks, spells and a once-a-day spell
-    there as free text. Without needing rules, as typed from paper:
-    - **Spells:** spells known by level with their details (range, save or attack, damage), the
-      spellcasting ability, save DC and attack bonus, and click-to-roll like the rest of the sheet.
-    - **Spell slots:** total and used per level, ticked off as they're cast.
-    - **Limited uses:** anything with a count and a reset (ki points, a feat's once per long rest,
-      Second Wind, Channel Divinity), ticked off and shown at a glance.
-    - **Hit dice and rests:** hit dice spent and left; Short Rest and Long Rest buttons that reset
-      what each one resets, undoable like any change.
-    - **Attacks:** a list of name, bonus and damage, each rollable, instead of lines in Notes.
+  - **The DM's view of the party beside the map:** each PC's hit points, concentration, and slots
+    and uses left, read-only in a Party tab of the DM's side panel (concentration matters most:
+    a hit means a check).
+  - **Spells and the map:** "Show on map" from a spell, opening the spell area tool with its
+    shape and size (spells already keep them in the map's own shapes).
+  - **Companions' recharges:** a simple toggle for a statblock's recharge ability (the blink dog's
+    teleport), kept with the companion.
+  - Conditions on the sheet, if the table wants them outside fights (the tracker keeps them in a
+    fight); editing beside the map, if the compact view is too little.
   - **Rules on top:** proficiency bonus from level; species and class features; attacks worked
-    out from equipped weapons; AC from armour; spells and slots; short and long rests. They'd add
-    to `deriveSheet` and could flag a typed number they disagree with. The SRD (5.1 and 5.2, CC BY
-    4.0) could supply the rules data and a catalogue of mundane gear for quick add, with its
-    attribution.
+    out from equipped weapons; AC from armour; spell slots from class and level, spells from the
+    SRD, uses that scale with level, and rest rules (decision 61 keeps typed values beside them).
+    They'd add to `deriveSheet` and could flag a typed number they disagree with. The SRD (5.1 and
+    5.2, CC BY 4.0) could supply the rules data and a catalogue of mundane gear for quick add, with
+    its attribution.
   - **Live:** changes pushed to open sheets over websockets instead of polling.
   - **Companions, more:** a fuller companion view (sidekick levels, its own rolls from the
     statblock), beyond today's card, hit points and shared bag.

@@ -11,6 +11,8 @@
  */
 import { z } from "zod";
 import { applyDamage, applyHealing } from "~/combat/hp";
+import { parseDice } from "~/dice/parse";
+import { SPELL_SHAPES } from "~/maps/grid/shapes";
 import {
   ABILITIES,
   PROFICIENCIES,
@@ -29,7 +31,22 @@ import {
   type InventoryChange,
 } from "./inventory-changes";
 import {
+  applies,
+  applyListChange,
+  setFields,
+  type ApplyEdits,
+  type Edits,
+  type ListChange,
+  type Listed,
+} from "./lists";
+import {
+  AREA_FEET_MAX,
+  ATTACK_BONUS_LIMIT,
+  attackSchema,
   DERIVED_KEYS,
+  DICE_MAX,
+  featureSchema,
+  HIT_DICE_MAX,
   HP_MAX,
   inventoryItemSchema,
   LEVEL_MAX,
@@ -39,10 +56,46 @@ import {
   SCORE_MAX,
   SCORE_MIN,
   SHORT_TEXT_MAX,
+  SLOTS_MAX,
+  spellSchema,
+  USES_MAX,
 } from "./schema";
-import { COINS, type Character, type DerivedKey, type HitPoints, type Sheet } from "./types";
+import {
+  count,
+  counterOf,
+  limit,
+  longRest,
+  shortRest,
+  withCounter,
+  type CounterRef,
+  type SpentHitDie,
+} from "./tracking";
+import {
+  ACTIVATIONS,
+  COINS,
+  FEATURE_SOURCES,
+  HIT_DICE,
+  RESETS,
+  SPELL_LEVELS,
+  type Attack,
+  type Character,
+  type DerivedKey,
+  type Feature,
+  type FeatureId,
+  type HitPoints,
+  type Sheet,
+  type Spell,
+  type Uses,
+} from "./types";
 
-export const SHORT_TEXT_FIELDS = ["name", "species", "className", "background", "speed"] as const;
+export const SHORT_TEXT_FIELDS = [
+  "name",
+  "species",
+  "className",
+  "background",
+  "speed",
+  "concentrating",
+] as const;
 export const LONG_TEXT_FIELDS = [
   "senses",
   "languages",
@@ -70,7 +123,42 @@ export type CharacterAction =
   | { type: "hp"; field: HpField; value: number; from?: number }
   | { type: "damage"; amount: number }
   | { type: "heal"; amount: number }
-  | { type: "inventory"; change: InventoryChange };
+  | { type: "inventory"; change: InventoryChange }
+  /** None: the character doesn't cast spells. */
+  | { type: "spellAbility"; value?: Ability; from?: Ability }
+  /** Uses `by` more of something (a slot cast, a use ticked off), or gives some back if negative. */
+  | { type: "count"; counter: CounterRef; by: number }
+  /** How many spell slots of a level, or hit dice of a size, there are. */
+  | { type: "limit"; counter: LimitRef; value: number; from?: number }
+  | { type: "spells"; change: ListChange<Spell> }
+  | { type: "attacks"; change: ListChange<Attack> }
+  | { type: "features"; change: ListChange<Feature, FeatureEdits> }
+  /** Hit dice rolled in the browser (or typed from the table) are carried in the action. */
+  | { type: "rest"; rest: "short"; hitDice: SpentHitDie[] }
+  | { type: "rest"; rest: "long" };
+
+/** The counters whose maximum is set on its own; a feature's uses are set by editing it. */
+export type LimitRef = Exclude<CounterRef, { feature: FeatureId }>;
+
+/**
+ * A feature's uses are edited by their maximum and reset only: how many are used is ticked off
+ * with `count`, so an edit never undoes someone's tick.
+ */
+export type FeatureEdits = Omit<Edits<Feature>, "uses"> & {
+  uses?: Pick<Uses, "max" | "reset"> | null;
+};
+
+export function applyFeatureEdits(feature: Feature, changes: FeatureEdits): Feature {
+  const { uses, ...rest } = changes;
+  const next = setFields(feature, rest as Edits<Feature>);
+  if (uses === undefined) return next;
+  if (uses === null) {
+    const without = { ...next };
+    delete without.uses;
+    return without;
+  }
+  return { ...next, uses: { ...uses, used: Math.min(feature.uses?.used ?? 0, uses.max) } };
+}
 
 /**
  * - `changed`: it made a difference.
@@ -123,6 +211,30 @@ export function applyActions(
 }
 
 type SheetAction = Exclude<CharacterAction, { type: "inventory" | "damage" | "heal" | "hp" }>;
+
+/** A changed sheet, or the same character if it changed nothing. */
+function sheetResult(
+  character: Extract<Character, { kind: "pc" }>,
+  sheet: Sheet,
+  dropped = false,
+): ActionResult {
+  if (dropped) return { character, outcome: "dropped" };
+  return sheet === character.sheet || JSON.stringify(sheet) === JSON.stringify(character.sheet)
+    ? { character, outcome: "unchanged" }
+    : { character: { ...character, sheet }, outcome: "changed" };
+}
+
+function listResult<T extends Listed, E>(
+  character: Extract<Character, { kind: "pc" }>,
+  key: "spells" | "attacks" | "features",
+  change: ListChange<T, E>,
+  applyEdits: ApplyEdits<T, E>,
+): ActionResult {
+  const list = character.sheet[key] as unknown as T[];
+  if (!applies(list, change)) return { character, outcome: "dropped" };
+  const next = applyListChange(list, change, applyEdits);
+  return sheetResult(character, { ...character.sheet, [key]: next });
+}
 
 function applyToSheet(
   character: Extract<Character, { kind: "pc" }>,
@@ -179,6 +291,38 @@ function applyToSheet(
         else next.portrait = action.value;
         return next;
       });
+    case "spellAbility":
+      return change(sheet.spellAbility, action.value, action.from, () => {
+        const next = { ...sheet };
+        if (action.value === undefined) delete next.spellAbility;
+        else next.spellAbility = action.value;
+        return next;
+      });
+    case "count": {
+      const counter = counterOf(sheet, action.counter);
+      if (!counter) return { character, outcome: "dropped" };
+      return sheetResult(
+        character,
+        withCounter(sheet, action.counter, (each) => count(each, action.by)),
+      );
+    }
+    case "limit": {
+      const counter = counterOf(sheet, action.counter);
+      if (!counter) return { character, outcome: "dropped" };
+      return change(counter.max, action.value, action.from, () =>
+        withCounter(sheet, action.counter, (each) => limit(each, action.value)),
+      );
+    }
+    case "spells":
+      return listResult(character, "spells", action.change, setFields);
+    case "attacks":
+      return listResult(character, "attacks", action.change, setFields);
+    case "features":
+      return listResult(character, "features", action.change, applyFeatureEdits);
+    case "rest": {
+      const rested = action.rest === "short" ? shortRest(sheet, action.hitDice) : longRest(sheet);
+      return sheetResult(character, rested.sheet);
+    }
   }
 }
 
@@ -279,6 +423,134 @@ const inventoryChangeSchema: z.ZodType<InventoryChange> = z.discriminatedUnion("
   z.object({ type: z.literal("restore"), item: inventoryItemSchema, index: z.number().int() }),
 ]);
 
+/* What gets used up. */
+
+/** Dice that the roll log can read ("1d8+3"); empty means none. */
+const dice = z
+  .string()
+  .max(DICE_MAX)
+  .refine((value) => value === "" || parseDice(value).ok, { message: "Dice like 1d8+3" });
+const listName = z.string().trim().min(1).max(SHORT_TEXT_MAX);
+const short = text(SHORT_TEXT_MAX);
+const long = text(LONG_TEXT_MAX);
+const slotLevel = z.union(
+  SPELL_LEVELS.filter((level) => level > 0).map((level) => z.literal(level)),
+) as z.ZodType<Exclude<Spell["level"], 0>>;
+const limitRef: z.ZodType<LimitRef> = z.union([
+  z.object({ slot: slotLevel }),
+  z.object({ hitDie: z.enum(HIT_DICE) }),
+]);
+const counterRef: z.ZodType<CounterRef> = z.union([
+  z.object({ slot: slotLevel }),
+  z.object({ hitDie: z.enum(HIT_DICE) }),
+  z.object({ feature: itemId }),
+]);
+const area = z.object({ shape: z.enum(SPELL_SHAPES), feet: whole(1, AREA_FEET_MAX) });
+
+const spellEdits = z.object({
+  name: listName.optional(),
+  level: z.union(SPELL_LEVELS.map((level) => z.literal(level))).optional(),
+  castingTime: short.optional(),
+  range: short.optional(),
+  components: short.optional(),
+  duration: short.optional(),
+  concentration: z.boolean().optional(),
+  ritual: z.boolean().optional(),
+  attack: z.boolean().optional(),
+  save: z.enum(ABILITIES).nullable().optional(),
+  roll: dice.nullable().optional(),
+  effect: short.nullable().optional(),
+  area: area.nullable().optional(),
+  ability: z.enum(ABILITIES).nullable().optional(),
+  freeUse: itemId.nullable().optional(),
+  description: long.nullable().optional(),
+  note: z.string().min(1).max(1024).nullable().optional(),
+}) satisfies z.ZodType<Edits<Spell>>;
+
+const attackEdits = z.object({
+  name: listName.optional(),
+  bonus: whole(-ATTACK_BONUS_LIMIT, ATTACK_BONUS_LIMIT).optional(),
+  damage: dice.optional(),
+  damageType: short.nullable().optional(),
+  notes: long.nullable().optional(),
+}) satisfies z.ZodType<Edits<Attack>>;
+
+const featureEdits = z.object({
+  name: listName.optional(),
+  source: z.enum(FEATURE_SOURCES).optional(),
+  sourceName: short.nullable().optional(),
+  activation: z.enum(ACTIVATIONS).optional(),
+  note: long.nullable().optional(),
+  roll: dice.nullable().optional(),
+  uses: z
+    .object({ max: whole(1, USES_MAX), reset: z.enum(RESETS) })
+    .nullable()
+    .optional(),
+}) satisfies z.ZodType<FeatureEdits>;
+
+function listChangeSchema<T extends Listed, E>(
+  item: z.ZodType<T>,
+  edits: z.ZodType<E>,
+): z.ZodType<ListChange<T, E>> {
+  return z.discriminatedUnion("type", [
+    z.object({ type: z.literal("add"), item, index: z.number().int().optional() }),
+    z.object({ type: z.literal("edit"), id: itemId, changes: edits }),
+    z.object({ type: z.literal("remove"), id: itemId }),
+    z.object({ type: z.literal("move"), id: itemId, index: z.number().int() }),
+    z.object({ type: z.literal("restore"), item, index: z.number().int() }),
+  ]) as unknown as z.ZodType<ListChange<T, E>>;
+}
+
+/** Items arriving whole (added or put back) are checked like stored ones, and their dice read. */
+const withDice = <T extends { roll?: string }>(schema: z.ZodType<T>) =>
+  schema.refine((item) => !item.roll || parseDice(item.roll).ok, { message: "Dice like 1d8+3" });
+
+const sheetTrackingActions = [
+  z.object({
+    type: z.literal("spellAbility"),
+    value: z.enum(ABILITIES).optional(),
+    from: z.enum(ABILITIES).optional(),
+  }),
+  z.object({
+    type: z.literal("count"),
+    counter: counterRef,
+    by: z.number().int().min(-USES_MAX).max(USES_MAX),
+  }),
+  z.object({
+    type: z.literal("limit"),
+    counter: limitRef,
+    value: whole(0, SLOTS_MAX),
+    from: z.number().optional(),
+  }),
+  z.object({
+    type: z.literal("spells"),
+    change: listChangeSchema(withDice(spellSchema), spellEdits),
+  }),
+  z.object({
+    type: z.literal("attacks"),
+    change: listChangeSchema(
+      attackSchema.refine((item) => !item.damage || parseDice(item.damage).ok),
+      attackEdits,
+    ),
+  }),
+  z.object({
+    type: z.literal("features"),
+    change: listChangeSchema(withDice(featureSchema), featureEdits),
+  }),
+  z.object({
+    type: z.literal("rest"),
+    rest: z.literal("short"),
+    hitDice: z
+      .array(
+        z
+          .object({ die: z.enum(HIT_DICE), face: whole(1, 12) })
+          .refine(({ die, face }) => face <= Number(die.slice(1)), { message: "Not on that die" }),
+      )
+      .max(HIT_DICE_MAX * HIT_DICE.length),
+  }),
+  z.object({ type: z.literal("rest"), rest: z.literal("long") }),
+];
+
 export const MAX_ACTIONS_PER_REQUEST = 200;
 
 export const characterActionSchema: z.ZodType<CharacterAction> = z.union([
@@ -359,6 +631,7 @@ export const characterActionSchema: z.ZodType<CharacterAction> = z.union([
   z.object({ type: z.literal("damage"), amount: whole(0, HP_MAX) }),
   z.object({ type: z.literal("heal"), amount: whole(0, HP_MAX) }),
   z.object({ type: z.literal("inventory"), change: inventoryChangeSchema }),
-]);
+  ...sheetTrackingActions,
+]) as z.ZodType<CharacterAction>;
 
 export const actionBatchSchema = z.array(characterActionSchema).min(1).max(MAX_ACTIONS_PER_REQUEST);

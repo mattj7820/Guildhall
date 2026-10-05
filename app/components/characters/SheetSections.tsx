@@ -10,6 +10,7 @@ import {
 } from "~/characters/abilities";
 import type { CharacterAction, TextField as TextFieldName } from "~/characters/actions";
 import { type DerivedSheet, type DerivedValue } from "~/characters/derive";
+import type { RollRequest } from "~/dice/roll-log";
 import { LONG_TEXT_MAX, SCORE_MAX, SCORE_MIN } from "~/characters/schema";
 import type { DerivedKey, Sheet } from "~/characters/types";
 import { NumberField, OverrideField, TextAreaField } from "./Fields";
@@ -31,6 +32,8 @@ export interface Parts {
   editing: boolean;
   dispatch: Dispatch;
   roll: (label: string, bonus: number) => void;
+  /** Any dice (damage, healing, an attack), labelled with what it's for. */
+  rollDice: (request: RollRequest) => void;
 }
 
 export function AbilityScores({ parts }: { parts: Parts }) {

@@ -2,14 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { signed } from "~/characters/abilities";
 import type { TextField as TextFieldName } from "~/characters/actions";
-import { deriveSheet } from "~/characters/derive";
 import { SHORT_TEXT_MAX } from "~/characters/schema";
 import type { PlayerCharacter } from "~/characters/types";
 import { CHARACTERS_URL, portraitUrl } from "~/characters/urls";
 import { useCharacterEditor } from "~/characters/useCharacterEditor";
 import type { CharacterPage } from "~/characters/view";
-import { defaultRng } from "~/dice/rng";
-import { useRollLog, type RollLogControls } from "~/dice/useRollLog";
+import type { RollLogControls } from "~/dice/useRollLog";
 import { DiceRoller } from "../combat/DiceRoller";
 import { buttonClass, panelClass, primaryButtonClass } from "../styles";
 import { EditorBar } from "./EditorBar";
@@ -21,14 +19,16 @@ import { HeaderFields, subtitle } from "./SheetHeader";
 import {
   AbilityScores,
   DerivedNumber,
-  type Parts,
   PassiveSenses,
   SavingThrows,
   SkillList,
   TextPanel,
 } from "./SheetSections";
-import { SheetTabs } from "./SheetTabs";
 import { StatBox } from "./SheetParts";
+import { RestButtons } from "./Rests";
+import { SheetTabs } from "./SheetTabs";
+import { Trackers } from "./Trackers";
+import { useSheetParts } from "./useSheetParts";
 
 /**
  * A player character's sheet, laid out like the paper one: abilities across the top, then saves
@@ -39,25 +39,13 @@ export function CharacterSheet({ page }: { page: CharacterPage }) {
   const editor = useCharacterEditor(page.character);
   const character = editor.character as PlayerCharacter;
   const sheet = character.sheet;
-  const derived = deriveSheet(sheet);
-  const rolls = useRollLog(defaultRng);
   const [editing, setEditing] = useState(false);
   const { open: bagOpen, toggle: toggleBag, button: bagButton } = useBagToggle();
 
   const name = sheet.name.trim() || page.name;
   const portraitPath = sheet.portrait ?? page.notePortrait;
-  const parts: Parts = {
-    sheet,
-    derived,
-    editing,
-    dispatch: editor.dispatch,
-    roll: (label, bonus) =>
-      rolls.roll({
-        expression: bonus === 0 ? "1d20" : `1d20${signed(bonus)}`,
-        kind: "check",
-        label: `${name} · ${label}`,
-      }),
-  };
+  const { parts, rolls } = useSheetParts(editor, sheet, name, editing);
+  const derived = parts.derived;
   const text = (field: TextFieldName) => (value: string) =>
     editor.dispatch({ type: "text", field, value, from: sheet[field] });
 
@@ -205,19 +193,17 @@ export function CharacterSheet({ page }: { page: CharacterPage }) {
             />
           </div>
 
-          <div className="mt-3 grid gap-3 @3xl:grid-cols-2 @6xl:grid-cols-3">
+          <Trackers parts={parts}>
+            <RestButtons parts={parts} undo={editor.undo} />
+          </Trackers>
+
+          {/* The tabs (actions, spells, features…) get the widest column. */}
+          <div className="mt-3 grid gap-3 @3xl:grid-cols-2 @6xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)]">
             <div className="space-y-3">
               <SavingThrows parts={parts} />
               <PassiveSenses parts={parts} text={text} />
               <TextPanel parts={parts} title="Proficiencies" field="proficiencies" text={text} />
               <TextPanel parts={parts} title="Languages" field="languages" text={text} />
-            </div>
-            <SkillList parts={parts} />
-            <div className="space-y-3 @3xl:col-span-2 @6xl:col-span-1">
-              <DiceRoller
-                rolls={rolls}
-                hint="Or click any bonus on the sheet. Advantage and disadvantage last one d20 roll."
-              />
               <TextPanel parts={parts} title="Defences" field="defences" text={text} />
               <TextPanel
                 parts={parts}
@@ -226,6 +212,16 @@ export function CharacterSheet({ page }: { page: CharacterPage }) {
                 text={text}
                 empty="None"
               />
+            </div>
+            <div className="space-y-3">
+              <SkillList parts={parts} />
+              <DiceRoller
+                rolls={rolls}
+                hint="Or click any bonus on the sheet. Advantage and disadvantage last one d20 roll."
+              />
+            </div>
+            {/* Narrower, they come first: they're what's used most in play. */}
+            <div className="order-first @3xl:col-span-2 @6xl:order-none @6xl:col-span-1">
               <SheetTabs page={page} character={character} parts={parts} text={text} />
             </div>
           </div>

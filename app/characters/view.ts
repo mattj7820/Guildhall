@@ -38,6 +38,13 @@ export interface CharacterCard {
   speed?: string;
 }
 
+/** A character someone may open beside the map: just enough to choose it. */
+export interface CharacterChoice {
+  id: CharacterId;
+  name: string;
+  kind: Character["kind"];
+}
+
 /** A sheet whose vault note has gone, which only the DM can see and link again. */
 export interface OrphanCard {
   id: CharacterId;
@@ -45,7 +52,7 @@ export interface OrphanCard {
   note: EntityId;
 }
 
-/** A vault item note someone may add to a bag: its entity ID, title and suggested icon. */
+/** A vault note someone may link from a sheet (an item, a spell): its entity ID and title. */
 export interface CatalogueItem {
   id: EntityId;
   title: string;
@@ -92,6 +99,10 @@ export interface CharacterPage {
   catalogue: CatalogueItem[];
   /** Those notes as this viewer may read them, by entity ID, for items' details. */
   itemNotes: Record<EntityId, LinkedNote>;
+  /** A PC's: vault spell notes this viewer may link a spell to. */
+  spellCatalogue?: CatalogueItem[];
+  /** Those notes as this viewer may read them, by entity ID, for spells' details. */
+  spellNotes?: Record<EntityId, LinkedNote>;
   /** Who this viewer gives items as ("the DM"); none when it's their own bag. */
   givingAs?: string;
   /** Other party members with a bag, whom items can be given to. */

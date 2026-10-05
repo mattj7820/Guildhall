@@ -1,10 +1,16 @@
 import { toHtml } from "hast-util-to-html";
-import { DM_VIEWER, PLAYER_VIEWER, type Viewer } from "~/campaign/types";
+import { DM_VIEWER, PLAYER_VIEWER, type EntityId, type Viewer } from "~/campaign/types";
 import { canView } from "~/campaign/visibility";
 import { characterAccess } from "~/characters/permissions";
 import type { Character } from "~/characters/types";
 import { portraitUrl } from "~/characters/urls";
-import type { CharacterCard, CharacterPage, OrphanCard } from "~/characters/view";
+import type {
+  CatalogueItem,
+  CharacterCard,
+  CharacterPage,
+  LinkedNote,
+  OrphanCard,
+} from "~/characters/view";
 import { noteUrl } from "~/wiki/urls";
 import type { Note } from "../vault/parse-note";
 import { renderStatblock } from "../vault/statblock/rehype-statblocks";
@@ -92,17 +98,19 @@ function card(
 }
 
 /**
- * Vault item notes this viewer may put in a bag, and each as they may read it, for items' details:
- * players get the note without its DM parts; notes kept from them aren't there at all, so an item
- * linked to one shows only its own name and description (an unidentified item).
+ * Vault notes of a type ("item", "spell") this viewer may link from a sheet, and each as they may
+ * read it, for the details: players get a note without its DM parts; notes kept from them aren't
+ * there at all, so something linked to one shows only what was typed on the sheet (an
+ * unidentified item).
  */
-export function itemCatalogue(
+function noteCatalogue(
   vault: Vault,
   viewer: Viewer,
-): Pick<CharacterPage, "catalogue" | "itemNotes"> {
+  type: string,
+): { catalogue: CatalogueItem[]; notes: Record<EntityId, LinkedNote> } {
   const notes = vault
     .notes(viewer)
-    .filter((note) => note.type === "item")
+    .filter((note) => note.type === type)
     .sort((a, b) => byName.compare(a.title, b.title));
   const hidden = (note: Note) =>
     viewer.role === "dm" && !canView(PLAYER_VIEWER, note.visibility)
@@ -110,7 +118,7 @@ export function itemCatalogue(
       : {};
   return {
     catalogue: notes.map((note) => ({ id: note.id, title: note.title, ...hidden(note) })),
-    itemNotes: Object.fromEntries(
+    notes: Object.fromEntries(
       notes.map((note) => [
         note.id,
         {
@@ -122,6 +130,24 @@ export function itemCatalogue(
       ]),
     ),
   };
+}
+
+/** Vault item notes this viewer may put in a bag. */
+export function itemCatalogue(
+  vault: Vault,
+  viewer: Viewer,
+): Pick<CharacterPage, "catalogue" | "itemNotes"> {
+  const { catalogue, notes } = noteCatalogue(vault, viewer, "item");
+  return { catalogue, itemNotes: notes };
+}
+
+/** Vault spell notes this viewer may link a spell to. */
+export function spellCatalogue(
+  vault: Vault,
+  viewer: Viewer,
+): Required<Pick<CharacterPage, "spellCatalogue" | "spellNotes">> {
+  const { catalogue, notes } = noteCatalogue(vault, viewer, "spell");
+  return { spellCatalogue: catalogue, spellNotes: notes };
 }
 
 /**
@@ -147,6 +173,7 @@ export function characterPage(
     ...(fromNote && { notePortrait: fromNote }),
     ...(character.kind === "pc" && { portraitChoices: portraitChoices(vault, viewer) }),
     ...itemCatalogue(vault, viewer),
+    ...(character.kind === "pc" && spellCatalogue(vault, viewer)),
     recipients: partyCards(vault, party, viewer).cards.flatMap(({ id, name, kind }) =>
       id && id !== character.id
         ? [{ id, name, ...(kind === "companion" && { companion: true }) }]

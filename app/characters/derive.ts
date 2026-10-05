@@ -33,6 +33,15 @@ export interface DerivedSheet {
   skills: Record<Skill, DerivedValue>;
   initiative: DerivedValue;
   passives: Record<PassiveSkill, DerivedValue>;
+  /** Only for a character with a spellcasting ability. */
+  spellcasting?: SpellNumbers;
+}
+
+/** The spell save DC and spell attack bonus for one ability. */
+export interface SpellNumbers {
+  ability: Ability;
+  dc: DerivedValue;
+  attack: DerivedValue;
 }
 
 export function deriveSheet(sheet: Sheet): DerivedSheet {
@@ -62,12 +71,35 @@ export function deriveSheet(sheet: Sheet): DerivedSheet {
     withOverride(`passive.${skill}`, 10 + skills[skill].value),
   );
 
+  const spellcasting = sheet.spellAbility && spellNumbers(sheet, sheet.spellAbility);
   return {
     modifiers,
     saves,
     skills,
     initiative: withOverride("initiative", modifiers.dex),
     passives,
+    ...(spellcasting && { spellcasting }),
+  };
+}
+
+/**
+ * Spell save DC (8 + proficiency + modifier) and spell attack bonus (proficiency + modifier) for
+ * an ability. Typed-over numbers are for the sheet's own spellcasting ability; a spell cast with
+ * another (a feat's) gets the plain maths.
+ */
+export function spellNumbers(sheet: Sheet, ability: Ability): SpellNumbers {
+  const modifier = abilityModifier(sheet.abilities[ability]);
+  const own = ability === sheet.spellAbility;
+  const value = (key: "spell.dc" | "spell.attack", computed: number): DerivedValue => {
+    const typed = own ? sheet.overrides[key] : undefined;
+    return typed === undefined
+      ? { value: computed, computed, overridden: false }
+      : { value: typed, computed, overridden: true };
+  };
+  return {
+    ability,
+    dc: value("spell.dc", 8 + sheet.proficiencyBonus + modifier),
+    attack: value("spell.attack", sheet.proficiencyBonus + modifier),
   };
 }
 
