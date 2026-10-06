@@ -143,6 +143,8 @@ export function TokensPrototype({
       mapName: other.name,
     })),
   );
+  /** Off the map but kept, to place again here or on any map. */
+  const [aside, setAside] = useState<ProtoElsewhere[]>([]);
   const [moved, setMoved] = useState<Record<string, Point>>({});
   const [tab, setTab] = useState<Tab>("tokens");
   const [folded, setFolded] = useState(false);
@@ -195,7 +197,10 @@ export function TokensPrototype({
       at: [Math.min(1, Math.max(0, first + step * index)), at[1]],
     }));
     setNpcs((all) => [...all, ...placed]);
-    if (placing.from) setElsewhere((all) => all.filter((each) => each.id !== placing.from));
+    if (placing.from) {
+      setElsewhere((all) => all.filter((each) => each.id !== placing.from));
+      setAside((all) => all.filter((each) => each.id !== placing.from));
+    }
     if (placed.length === 1) setSelectedId(placed[0].id);
     setPlacing(undefined);
   }
@@ -438,6 +443,37 @@ export function TokensPrototype({
                     </ul>
                   </section>
 
+                  {aside.length > 0 && (
+                    <section aria-labelledby="proto-aside" className="flex flex-col gap-1 text-sm">
+                      <h2 id="proto-aside" className={labelClass}>
+                        Set aside ({aside.length})
+                      </h2>
+                      <ul aria-label="Set aside" className="flex flex-col gap-1">
+                        {aside.map((token) => (
+                          <li key={token.id} className="flex items-center gap-2">
+                            <Face token={view(token)} />
+                            <span className="mr-auto truncate">
+                              {token.name}{" "}
+                              <span className="text-xs text-stone-500">
+                                last on {token.mapName}
+                              </span>
+                            </span>
+                            <button
+                              type="button"
+                              className={buttonClass}
+                              onClick={() => {
+                                const { id, mapName: _, at: __, ...rest } = token;
+                                setPlacing({ tokens: [rest], from: id });
+                              }}
+                            >
+                              Place
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+
                   {elsewhere.length > 0 && (
                     <details className="text-sm">
                       <summary className={`${labelClass} cursor-pointer`}>
@@ -478,6 +514,11 @@ export function TokensPrototype({
                       onClose={() => setSelectedId(undefined)}
                       onRemove={() => {
                         setNpcs((all) => all.filter((token) => token.id !== selectedNpc.id));
+                        setSelectedId(undefined);
+                      }}
+                      onSetAside={() => {
+                        setNpcs((all) => all.filter((token) => token.id !== selectedNpc.id));
+                        setAside((all) => [...all, { ...selectedNpc, mapName: map.name }]);
                         setSelectedId(undefined);
                       }}
                       onSend={(target) => {
@@ -815,6 +856,7 @@ function TokenSettings({
   onChange,
   onClose,
   onRemove,
+  onSetAside,
   onSend,
 }: {
   token: ProtoToken;
@@ -824,6 +866,7 @@ function TokenSettings({
   onChange: (change: Partial<ProtoToken>) => void;
   onClose: () => void;
   onRemove: () => void;
+  onSetAside: () => void;
   onSend: (map: { id: string; name: string }) => void;
 }) {
   const [name, setName] = useState(token.name);
@@ -927,6 +970,14 @@ function TokenSettings({
             ))}
           </select>
         )}
+        <button
+          type="button"
+          className={buttonClass}
+          title="Off the map, kept in the Tokens tab to place again"
+          onClick={onSetAside}
+        >
+          Set aside
+        </button>
         <button type="button" className={buttonClass} onClick={onRemove}>
           Remove
         </button>
