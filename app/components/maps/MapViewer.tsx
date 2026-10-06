@@ -33,7 +33,9 @@ import {
   useStunts,
 } from "./Stunts";
 import { TokenLayer } from "./TokenLayer";
-import { PlacingHint, TokenPanel } from "./TokenPanel";
+import { DmSidePanel } from "./DmSidePanel";
+import { PlacingHint } from "./PlacingHint";
+import { TokensTab } from "./TokensTab";
 import { useBattleTools } from "./useBattleTools";
 import { useFogTools } from "./useFogTools";
 import { useMapFight } from "./useMapFight";
@@ -117,8 +119,11 @@ export function MapViewer({
     tokens: tokens,
     enabled: !fogMode && !presenting && !placing && !placingMonsters,
   });
+  // Choosing a token on the map opens its settings, unless the fight's picking monsters.
+  const [showTokens, setShowTokens] = useState(0);
   const selectToken = (token: TokenView, how?: { additive: boolean }) => {
     setSelectedTokenId(token.id);
+    if (!combat) setShowTokens((count) => count + 1);
     fight.selectToken(token, how?.additive);
   };
   const [stuntMode, setStuntMode] = useState(false);
@@ -337,55 +342,61 @@ export function MapViewer({
           )}
         </div>
         {!presenting && (
-          <aside
-            aria-label="Map details"
-            className={`flex w-full flex-col gap-4 overflow-y-auto border-stone-200 p-4 md:border-l dark:border-stone-800 ${
-              // The tracker needs the room.
-              combat ? "md:w-[27rem]" : "md:w-80"
-            }`}
-          >
-            {combat ? (
-              <>
-                {battle.caught.length > 0 && (
-                  <button
-                    type="button"
-                    className={`${buttonClass} self-start`}
-                    onClick={() => fight.pickTokens(battle.caught)}
-                  >
-                    Pick the monsters in the area
-                  </button>
-                )}
-                {placing && (
-                  <PlacingHint placing={placing} onCancel={() => setPlacing(undefined)} />
-                )}
-                {fight.panel}
-              </>
-            ) : fogMode ? (
-              <FogAreaList
-                areas={map.areas}
-                mask={fog.mask}
-                shared={shared}
-                onReveal={fog.revealArea}
-                onHide={fog.hideArea}
-              />
-            ) : selected ? (
-              <SelectedArea
-                area={selected}
-                mapId={map.id}
-                onClose={() => setSelectedId(undefined)}
-              />
-            ) : map.note ? (
-              <NotePanel note={map.note} />
-            ) : (
-              map.noteBroken && (
-                <p className="text-sm text-rose-700 dark:text-rose-400">
-                  This map's wiki note is no longer in the vault. Choose another in the editor's map
-                  settings.
-                </p>
+          <DmSidePanel
+            showTokens={showTokens}
+            fog={
+              fogMode && (
+                <FogAreaList
+                  areas={map.areas}
+                  mask={fog.mask}
+                  shared={shared}
+                  onReveal={fog.revealArea}
+                  onHide={fog.hideArea}
+                />
               )
-            )}
-            {!fogMode && !combat && (
-              <TokenPanel
+            }
+            fight={
+              combat && (
+                <>
+                  {battle.caught.length > 0 && (
+                    <button
+                      type="button"
+                      className={`${buttonClass} self-start`}
+                      onClick={() => fight.pickTokens(battle.caught)}
+                    >
+                      Pick the monsters in the area
+                    </button>
+                  )}
+                  {placing && (
+                    <PlacingHint placing={placing} onCancel={() => setPlacing(undefined)} />
+                  )}
+                  {fight.panel}
+                </>
+              )
+            }
+            map={
+              <>
+                {selected ? (
+                  <SelectedArea
+                    area={selected}
+                    mapId={map.id}
+                    onClose={() => setSelectedId(undefined)}
+                  />
+                ) : map.note ? (
+                  <NotePanel note={map.note} />
+                ) : (
+                  map.noteBroken && (
+                    <p className="text-sm text-rose-700 dark:text-rose-400">
+                      This map's wiki note is no longer in the vault. Choose another in the editor's
+                      map settings.
+                    </p>
+                  )
+                )}
+                <AreaList areas={map.areas} onSelect={(area) => setSelectedId(area.id)} />
+              </>
+            }
+            tokens={
+              <TokensTab
                 mapId={map.id}
                 party={party}
                 tokens={tokens}
@@ -399,9 +410,8 @@ export function MapViewer({
                 size={map.size}
                 send={(actions) => void send(actions)}
               />
-            )}
-            {!combat && <AreaList areas={map.areas} onSelect={(area) => setSelectedId(area.id)} />}
-          </aside>
+            }
+          />
         )}
       </div>
     </main>

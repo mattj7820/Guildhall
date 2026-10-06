@@ -218,7 +218,14 @@ export class MapView extends MapCanvasPage {
     await this.page.mouse.up();
   }
 
-  /* The DM's tokens panel */
+  /* The DM's Tokens tab */
+
+  /** Opens the Tokens tab of the DM's side panel, if it isn't open already. */
+  async openTokens() {
+    const tab = this.page.getByRole("tab", { name: "Tokens" });
+    await tab.click();
+    await expect(tab).toHaveAttribute("aria-selected", "true");
+  }
 
   get party() {
     return this.page.getByRole("list", { name: "Party" });
@@ -226,6 +233,7 @@ export class MapView extends MapCanvasPage {
 
   /** Places a party member (by the name on their card) where the DM clicks. */
   async placeMember(member: string, at: Point) {
+    await this.openTokens();
     await this.party
       .getByRole("button", { name: new RegExp(`^(Place|Bring) ${member} here$`) })
       .click();
@@ -234,6 +242,7 @@ export class MapView extends MapCanvasPage {
   }
 
   async addMarker({ name, shown, at }: { name: string; shown: boolean; at: Point }) {
+    await this.openTokens();
     await this.page.getByRole("button", { name: "Add marker" }).click();
     const form = this.page.getByRole("form", { name: "New marker" });
     await form.getByLabel("Marker name").fill(name);

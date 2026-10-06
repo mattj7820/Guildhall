@@ -118,10 +118,12 @@ test("the DM brings a party member from another map, and takes tokens away", asy
   await (await maps.view(first)).placeMember("Fixture PC One", LIT);
   const second = await sharedMap(api);
   const view = await maps.view(second);
+  await view.openTokens();
   await expect(view.party).toContainText(`Fixture PC One on ${first.name}`);
 
   await view.placeMember("Fixture PC One", LIT_TOO);
   const firstView = await maps.view(first);
+  await firstView.openTokens();
   await expect(firstView.tokenGroup.getByRole("button", { name: /^Fixture PC One/ })).toHaveCount(
     0,
   );
@@ -268,6 +270,7 @@ test("the DM brings everyone into a deeper map, and players find where they are"
   await api.saveMap(outer, { areas: [town] });
 
   const view = await maps.view(inner);
+  await view.openTokens();
   await page.getByRole("button", { name: "Bring everyone here" }).click();
   await view.click([0.15, 0.5]);
   await expect(view.anyToken).toHaveCount(3);

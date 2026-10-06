@@ -6,7 +6,7 @@ import type { PartyPlacement, Token } from "~/maps/tokens/types";
 import type { MapView, Point } from "~/maps/types";
 import { newId } from "~/shared/ids";
 import { TOKEN_RADIUS } from "./TokenLayer";
-import type { Placing } from "./TokenPanel";
+import type { Placing } from "./PlacingHint";
 
 /**
  * The DM placing tokens on the map: what the next click places (a party member, the whole party,
