@@ -33,6 +33,33 @@ describe("MapTokens", () => {
     expect(onDisk).toEqual({ version: 1, tokens: [pc, inn] });
   });
 
+  it("loads a file from before NPC tokens unchanged, and keeps it so through a change", async () => {
+    // Exactly as an earlier build wrote it: party members, markers and a monster's token.
+    const before = {
+      version: 1,
+      tokens: [
+        { kind: "character", id: "pc", map: "world", at: [0.1, 0.1], note: "Party/One" },
+        {
+          kind: "marker",
+          id: "inn",
+          map: "world",
+          at: [0.5, 0.5],
+          size: 2,
+          name: "Inn",
+          colour: "blue",
+          visibility: "players",
+        },
+        { kind: "combatant", id: "orc", map: "keep", at: [0.3, 0.3], combatant: "c1" },
+      ],
+    };
+    await writeFile(path.join(folder, "tokens.json"), JSON.stringify(before), "utf8");
+    const tokens = MapTokens.inFolder(folder);
+    expect(await tokens.list()).toEqual(before.tokens);
+    await tokens.apply("world", [{ type: "move", id: "pc", to: [0.2, 0.2] }], everything);
+    const onDisk = JSON.parse(await readFile(path.join(folder, "tokens.json"), "utf8"));
+    expect(onDisk.tokens.slice(1)).toEqual(before.tokens.slice(1));
+  });
+
   it("answers with the map's tokens, and which maps changed", async () => {
     const tokens = MapTokens.inFolder(folder);
     await tokens.apply("keep", [place(cellar)], everything);
@@ -137,6 +164,14 @@ describe("MapTokens", () => {
     await tokens.apply("world", [place(pc), place(inn), place(cellar)], everything);
     await tokens.deleteMap("world");
     expect(await tokens.list()).toEqual([cellar]);
+  });
+
+  it("keeps a marker set aside from a deleted map, to place elsewhere", async () => {
+    const tokens = MapTokens.inFolder(folder);
+    const innkeeper = aMarker({ id: "innkeeper", map: "world", aside: true });
+    await tokens.apply("world", [place(inn), place(innkeeper)], everything);
+    await tokens.deleteMap("world");
+    expect(await tokens.list()).toEqual([innkeeper]);
   });
 
   it("refuses to read a damaged file, and never overwrites it", async () => {

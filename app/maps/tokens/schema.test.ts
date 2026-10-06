@@ -16,6 +16,36 @@ describe("tokenSchema", () => {
     expect(parsed.kind === "marker" && parsed.visibility).toBe("dm");
   });
 
+  it("loads a marker stored before NPCs exactly as it was", () => {
+    const stored = {
+      kind: "marker",
+      id: "m",
+      map: "world",
+      at: [0.1, 0.2],
+      name: "Inn",
+      colour: "blue",
+      visibility: "players",
+      size: 2,
+    };
+    expect(tokenSchema.parse(stored)).toEqual(stored);
+  });
+
+  it("keeps an NPC's note, picture, icon and being set aside", () => {
+    const npc = aMarker({ note: "NPCs/Mira", picture: "note", icon: "hood", aside: true });
+    expect(tokenSchema.parse(npc)).toEqual(npc);
+  });
+
+  it.each([
+    ["note", { note: "" }],
+    ["picture", { picture: "photo" }],
+    ["icon", { icon: 7 }],
+    ["aside", { aside: "yes" }],
+  ])("drops an unreadable %s rather than refusing the marker", (field, fields) => {
+    const parsed = tokenSchema.parse({ ...aMarker(), ...fields });
+    expect(parsed).toEqual(aMarker());
+    expect((parsed as unknown as Record<string, unknown>)[field]).toBeUndefined();
+  });
+
   it.each([
     ["a point off the image", { ...aMarker(), at: [1.2, 0.5] }],
     ["an unknown colour", { ...aMarker(), colour: "gold" }],
@@ -49,6 +79,8 @@ describe("tokenActionsSchema", () => {
       { type: "place", token: aMarker() },
       { type: "remove", id: "a" },
       { type: "editMarker", id: "a", colour: "blue" },
+      { type: "editMarker", id: "a", note: null, picture: "icon", icon: "hood" },
+      { type: "setAside", id: "a" },
     ];
     expect(tokenActionsSchema.parse(actions)).toEqual(actions);
   });

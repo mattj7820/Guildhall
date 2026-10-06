@@ -34,6 +34,12 @@ locations, maps, characters, sessions).
   an area, the Maps page says where you are, and Find takes you to your token. Tokens under the fog
   never reach players (except their own, "in the dark"). Fog reveals arrive the same way, live,
   over websockets on the same server, with polling when the connection drops.
+- **NPC tokens and the Tokens tab:** NPCs on maps from their vault notes, drawn with the note's
+  picture under a name of the DM's own (a hooded figure stays hooded), and markers with built-in
+  icons. Added and placed in a couple of clicks, several at a time numbered, shown or hidden in
+  one click, set aside off the map to place again later, and sent between maps. All in a Tokens
+  tab of the DM's side panel, beside the map's note and areas and the fight. Players see only
+  what's shown and revealed, and never the note.
 - **Battle maps (first slice):** any map becomes a battle map with a grid of 5 ft squares, set up
   in the editor (scaled to fit, offset to line up with a grid in the image, lines faint or
   hidden). Tokens fill their squares, come in sizes from Medium to Gargantuan, and snap to squares
@@ -81,9 +87,13 @@ locations, maps, characters, sessions).
     turn") with a sound; moving a whole fight to another map; tidying markers left after a fight
     in one click; a fight's party brought in by those chosen to play, not the whole party.
 - **Tokens, next steps:** fog clearing around the party as their tokens move, if the DM wants it;
-  the DM's fog tools and token placing in the map's toolbar; icons on markers; a lock for the DM to
-  stop players moving mid-scene; undo for the DM's moves; tokens for NPCs linked to their notes;
-  touch dragging for tablets and phones.
+  the DM's fog tools and token placing in the map's toolbar; a lock for the DM to stop players
+  moving mid-scene; undo for the DM's moves; touch dragging for tablets and phones.
+  - **NPCs, more:** a link to a shown NPC's wiki note for players, when they may read it and the
+    token goes by the note's own name; a tokens folder in the vault for custom art; monsters from
+    statblocks as tokens outside a fight; dragging a token from the Tokens tab onto the map.
+  - **Handouts:** the DM showing a note or image to the players as a pop-up on the map page, kept
+    for them to re-read, in a Handouts tab beside Tokens.
 - **Live, more:** the same hub for shared dice rolls (with the DM's hidden rolls), from the
   sheet beside the map too; character sheet changes pushed rather than polled (decision 64).
 - **Hosting, next steps:** backups of the data folder (Dokploy volume backups, or a nightly copy to

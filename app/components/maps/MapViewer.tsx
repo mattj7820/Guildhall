@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useRevalidator } from "react-router";
 import type { DmFightView } from "~/combat/fight";
 import type { CombatCatalogue, PreparedEncounter } from "~/combat/types";
 import { buttonClass, primaryButtonClass } from "~/components/styles";
@@ -6,7 +7,8 @@ import { areaRevealed } from "~/maps/fog/coverage";
 import type { FogMask } from "~/maps/fog/types";
 import { normalise, toPixels } from "~/maps/geometry";
 import { useStuntSettings } from "~/maps/stunt-settings";
-import type { InsideBadge, PartyPlacement, TokenView } from "~/maps/tokens/types";
+import type { InsideBadge, PartyPlacement, TokenTools, TokenView } from "~/maps/tokens/types";
+import type { TokenAction } from "~/maps/tokens/actions";
 import { useMapTokens } from "~/maps/tokens/useMapTokens";
 import type { AreaView, MapView, Size } from "~/maps/types";
 import { AreaShape } from "./AreaShape";
@@ -33,7 +35,9 @@ import {
   useStunts,
 } from "./Stunts";
 import { TokenLayer } from "./TokenLayer";
-import { PlacingHint, TokenPanel } from "./TokenPanel";
+import { DmSidePanel } from "./DmSidePanel";
+import { PlacingHint } from "./PlacingHint";
+import { TokensTab } from "./TokensTab";
 import { useBattleTools } from "./useBattleTools";
 import { useFogTools } from "./useFogTools";
 import { useMapFight } from "./useMapFight";
@@ -59,6 +63,7 @@ export function MapViewer({
   tokens: fromPage,
   inside: insideFromPage,
   party,
+  tokenTools,
   images,
   sounds,
   fight: fightFromPage,
@@ -69,6 +74,7 @@ export function MapViewer({
   tokens: TokenView[];
   inside: InsideBadge[];
   party: PartyPlacement[];
+  tokenTools: TokenTools;
   images: string[];
   /** Audio in the vault's sounds folder, by path inside it, for the stunts' sound board. */
   sounds: string[];
@@ -87,7 +93,13 @@ export function MapViewer({
   const shared = !!map.shared;
   const fogOpacity = presenting ? 1 : DM_FOG_OPACITY;
   const mapTokens = useMapTokens(map.id, { tokens: fromPage, inside: insideFromPage });
-  const { tokens, inside, error: tokenError, send } = mapTokens;
+  const { tokens, inside, error: tokenError, send: sendTokens } = mapTokens;
+  const revalidator = useRevalidator();
+  /** Sends token changes; ones that change the party's places or the lists elsewhere reload them. */
+  const send = async (actions: TokenAction[]) => {
+    await sendTokens(actions);
+    if (actions.some(changesElsewhere)) void revalidator.revalidate();
+  };
   const [focus, setFocus] = useState<{ at: [number, number]; key: number }>();
   const find = (token: TokenView) =>
     setFocus({ at: toPixels(token.at, map.size), key: (focus?.key ?? 0) + 1 });
@@ -117,8 +129,11 @@ export function MapViewer({
     tokens: tokens,
     enabled: !fogMode && !presenting && !placing && !placingMonsters,
   });
+  // Choosing a token on the map opens its settings, unless the fight's picking monsters.
+  const [showTokens, setShowTokens] = useState(0);
   const selectToken = (token: TokenView, how?: { additive: boolean }) => {
     setSelectedTokenId(token.id);
+    if (!combat) setShowTokens((count) => count + 1);
     fight.selectToken(token, how?.additive);
   };
   const [stuntMode, setStuntMode] = useState(false);
@@ -337,57 +352,64 @@ export function MapViewer({
           )}
         </div>
         {!presenting && (
-          <aside
-            aria-label="Map details"
-            className={`flex w-full flex-col gap-4 overflow-y-auto border-stone-200 p-4 md:border-l dark:border-stone-800 ${
-              // The tracker needs the room.
-              combat ? "md:w-[27rem]" : "md:w-80"
-            }`}
-          >
-            {combat ? (
-              <>
-                {battle.caught.length > 0 && (
-                  <button
-                    type="button"
-                    className={`${buttonClass} self-start`}
-                    onClick={() => fight.pickTokens(battle.caught)}
-                  >
-                    Pick the monsters in the area
-                  </button>
-                )}
-                {placing && (
-                  <PlacingHint placing={placing} onCancel={() => setPlacing(undefined)} />
-                )}
-                {fight.panel}
-              </>
-            ) : fogMode ? (
-              <FogAreaList
-                areas={map.areas}
-                mask={fog.mask}
-                shared={shared}
-                onReveal={fog.revealArea}
-                onHide={fog.hideArea}
-              />
-            ) : selected ? (
-              <SelectedArea
-                area={selected}
-                mapId={map.id}
-                onClose={() => setSelectedId(undefined)}
-              />
-            ) : map.note ? (
-              <NotePanel note={map.note} />
-            ) : (
-              map.noteBroken && (
-                <p className="text-sm text-rose-700 dark:text-rose-400">
-                  This map's wiki note is no longer in the vault. Choose another in the editor's map
-                  settings.
-                </p>
+          <DmSidePanel
+            showTokens={showTokens}
+            fog={
+              fogMode && (
+                <FogAreaList
+                  areas={map.areas}
+                  mask={fog.mask}
+                  shared={shared}
+                  onReveal={fog.revealArea}
+                  onHide={fog.hideArea}
+                />
               )
-            )}
-            {!fogMode && !combat && (
-              <TokenPanel
+            }
+            fight={
+              combat && (
+                <>
+                  {battle.caught.length > 0 && (
+                    <button
+                      type="button"
+                      className={`${buttonClass} self-start`}
+                      onClick={() => fight.pickTokens(battle.caught)}
+                    >
+                      Pick the monsters in the area
+                    </button>
+                  )}
+                  {placing && (
+                    <PlacingHint placing={placing} onCancel={() => setPlacing(undefined)} />
+                  )}
+                  {fight.panel}
+                </>
+              )
+            }
+            map={
+              <>
+                {selected ? (
+                  <SelectedArea
+                    area={selected}
+                    mapId={map.id}
+                    onClose={() => setSelectedId(undefined)}
+                  />
+                ) : map.note ? (
+                  <NotePanel note={map.note} />
+                ) : (
+                  map.noteBroken && (
+                    <p className="text-sm text-rose-700 dark:text-rose-400">
+                      This map's wiki note is no longer in the vault. Choose another in the editor's
+                      map settings.
+                    </p>
+                  )
+                )}
+                <AreaList areas={map.areas} onSelect={(area) => setSelectedId(area.id)} />
+              </>
+            }
+            tokens={
+              <TokensTab
                 mapId={map.id}
                 party={party}
+                tools={tokenTools}
                 tokens={tokens}
                 selected={selectedToken}
                 placing={placing}
@@ -399,11 +421,20 @@ export function MapViewer({
                 size={map.size}
                 send={(actions) => void send(actions)}
               />
-            )}
-            {!combat && <AreaList areas={map.areas} onSelect={(area) => setSelectedId(area.id)} />}
-          </aside>
+            }
+          />
         )}
       </div>
     </main>
+  );
+}
+
+/** Whether a token change touches more than this map's tokens: the party's places, or the lists. */
+function changesElsewhere(action: TokenAction): boolean {
+  return (
+    action.type === "place" ||
+    action.type === "remove" ||
+    action.type === "setAside" ||
+    (action.type === "move" && !!action.map)
   );
 }

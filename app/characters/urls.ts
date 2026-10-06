@@ -1,3 +1,4 @@
+import { shortHash } from "~/shared/short-hash";
 import type { CharacterId } from "./types";
 
 export const CHARACTERS_URL = "/characters";
@@ -19,13 +20,3 @@ export const giveUrl = (id: CharacterId) => `${characterUrl(id)}/give`;
  */
 export const portraitUrl = (id: CharacterId, imagePath: string) =>
   `${characterUrl(id)}/portrait?v=${shortHash(imagePath)}`;
-
-/** FNV-1a, for cache-busting only. */
-function shortHash(text: string): string {
-  let hash = 0x811c9dc5;
-  for (let index = 0; index < text.length; index++) {
-    hash ^= text.charCodeAt(index);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return (hash >>> 0).toString(36);
-}

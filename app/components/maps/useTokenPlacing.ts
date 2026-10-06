@@ -6,11 +6,12 @@ import type { PartyPlacement, Token } from "~/maps/tokens/types";
 import type { MapView, Point } from "~/maps/types";
 import { newId } from "~/shared/ids";
 import { TOKEN_RADIUS } from "./TokenLayer";
-import type { Placing } from "./TokenPanel";
+import type { Placing } from "./PlacingHint";
 
 /**
  * The DM placing tokens on the map: what the next click places (a party member, the whole party,
- * or a marker), and placing it where the click lands, on a square while tokens snap to the grid.
+ * new markers, or one brought from elsewhere), and placing it where the click lands, on a square
+ * while tokens snap to the grid. Several go side by side.
  */
 export function useTokenPlacing({
   map,
@@ -33,43 +34,62 @@ export function useTokenPlacing({
     return normalise(x, y, map.size);
   };
 
-  function place(clicked: Point, scale: number) {
+  /**
+   * Points for `count` tokens side by side around a click: in neighbouring squares on a battle
+   * map, else far enough apart on screen for their names.
+   */
+  function sideBySide(clicked: Point, count: number, scale: number): Point[] {
     const at = landing(clicked);
-    if (placing?.kind === "party") {
-      // Side by side around the click: in neighbouring squares on a battle map, else far enough
-      // apart on screen for their names.
-      const step = map.grid ? map.grid.square : (TOKEN_RADIUS * 4.5) / scale / map.size.width;
-      const first = at[0] - step * Math.floor((party.length - 1) / 2);
-      const placed = party.map((member, index): TokenAction => ({
+    const step = map.grid ? map.grid.square : (TOKEN_RADIUS * 4.5) / scale / map.size.width;
+    const first = at[0] - step * Math.floor((count - 1) / 2);
+    return Array.from({ length: count }, (_, index) =>
+      landing(clamp(offset([first, at[1]], step * index, 0))),
+    );
+  }
+
+  function place(clicked: Point, scale: number) {
+    if (!placing) return;
+    let actions: TokenAction[];
+    if (placing.kind === "bring") {
+      actions = [{ type: "move", id: placing.id, to: landing(clicked), map: map.id }];
+    } else if (placing.kind === "party") {
+      const points = sideBySide(clicked, party.length, scale);
+      actions = party.map((member, index) => ({
         type: "place",
         token: {
           kind: "character",
           id: newId(),
           map: map.id,
-          at: landing(offset([first, at[1]], step * index, 0)),
+          at: points[index],
           note: member.note,
         },
       }));
-      void send(placed);
-      setPlacing(undefined);
-      return;
+    } else if (placing.kind === "markers") {
+      const points = sideBySide(clicked, placing.markers.length, scale);
+      actions = placing.markers.map((draft, index) => ({
+        type: "place",
+        token: { kind: "marker", id: newId(), map: map.id, at: points[index], ...draft },
+      }));
+    } else {
+      const token: Token = {
+        kind: "character",
+        id: newId(),
+        map: map.id,
+        at: landing(clicked),
+        note: placing.note,
+      };
+      actions = [{ type: "place", token }];
     }
-    const token: Token =
-      placing?.kind === "character"
-        ? { kind: "character", id: newId(), map: map.id, at, note: placing.note }
-        : {
-            kind: "marker",
-            id: newId(),
-            map: map.id,
-            at,
-            name: placing?.name ?? "",
-            colour: placing?.kind === "marker" ? placing.colour : "red",
-            visibility: placing?.kind === "marker" && placing.shown ? "players" : "dm",
-          };
-    void send([{ type: "place", token }]);
+    void send(actions);
     setPlacing(undefined);
-    onPlaced(token.id);
+    const placed = actions.map((action) => (action.type === "place" ? action.token.id : action.id));
+    if (placed.length === 1) onPlaced(placed[0]);
   }
 
   return { placing, setPlacing, place };
+}
+
+/** Kept on the image. */
+function clamp([x, y]: Point): Point {
+  return [Math.min(1, Math.max(0, x)), Math.min(1, Math.max(0, y))];
 }

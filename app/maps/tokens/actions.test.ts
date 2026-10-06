@@ -74,6 +74,67 @@ describe("applyTokenAction", () => {
     expect(tokens).toEqual([{ ...marker, colour: "blue", visibility: "players" }]);
   });
 
+  it("links a marker to a note and picks its picture", () => {
+    const { tokens } = applyTokenAction([marker], {
+      type: "editMarker",
+      id: "inn",
+      name: "Hooded figure",
+      note: "NPCs/Mira",
+      picture: "icon",
+      icon: "hood",
+    });
+    expect(tokens).toEqual([
+      { ...marker, name: "Hooded figure", note: "NPCs/Mira", picture: "icon", icon: "hood" },
+    ]);
+  });
+
+  it("takes a marker's note and picture away with null, keeping its icon for later", () => {
+    const npc = aMarker({ id: "inn", note: "NPCs/Mira", picture: "icon", icon: "hood" });
+    const { tokens } = applyTokenAction([npc], {
+      type: "editMarker",
+      id: "inn",
+      note: null,
+      picture: null,
+    });
+    expect(tokens).toEqual([aMarker({ id: "inn", icon: "hood" })]);
+  });
+
+  describe("setting a marker aside", () => {
+    const aside = { ...marker, aside: true as const };
+
+    it("keeps it, where it was, but off the map", () => {
+      expect(applyTokenAction([pc, marker], { type: "setAside", id: "inn" })).toEqual({
+        tokens: [pc, aside],
+        changed: true,
+      });
+    });
+
+    it("puts it down again when it's moved, here or on another map", () => {
+      const here = applyTokenAction([aside], { type: "move", id: "inn", to: [0.2, 0.3] });
+      expect(here.tokens).toEqual([{ ...marker, at: [0.2, 0.3] }]);
+      const there = applyTokenAction([aside], {
+        type: "move",
+        id: "inn",
+        to: [0.2, 0.3],
+        map: "town",
+      });
+      expect(there.tokens).toEqual([{ ...marker, map: "town", at: [0.2, 0.3] }]);
+    });
+
+    it("puts it down again when it's placed again (a retried bring-here)", () => {
+      const { tokens } = applyTokenAction([aside], { type: "place", token: marker });
+      expect(tokens).toEqual([marker]);
+    });
+
+    it("leaves a party member alone, who's taken off the map instead", () => {
+      expect(applyTokenAction([pc], { type: "setAside", id: "pc" }).changed).toBe(false);
+    });
+
+    it("touches the map it was on", () => {
+      expect(mapsTouched([marker], { type: "setAside", id: "inn" })).toEqual(["world"]);
+    });
+  });
+
   it("sizes a token in squares, storing nothing for the usual one square", () => {
     const large = applyTokenAction([pc], { type: "setSize", id: "pc", size: 2 });
     expect(large.tokens).toEqual([{ ...pc, size: 2 }]);

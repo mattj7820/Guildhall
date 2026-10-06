@@ -50,9 +50,9 @@ test("the DM places the party and markers, and a player gets only what they may 
 
   await view.placeMember("Fixture PC One", LIT);
   await view.placeMember("Fixture PC Two", DARK);
-  await view.addMarker({ name: secret, shown: false, at: LIT_TOO });
-  await view.addMarker({ name: shownInTheDark, shown: true, at: DARK });
-  await view.addMarker({ name: shown, shown: true, at: LIT_TOO });
+  await view.addToken({ name: secret, shown: false, at: LIT_TOO });
+  await view.addToken({ name: shownInTheDark, shown: true, at: DARK });
+  await view.addToken({ name: shown, shown: true, at: LIT_TOO });
 
   // The DM sees everything, with what players can't see of it.
   await expect(
@@ -118,10 +118,12 @@ test("the DM brings a party member from another map, and takes tokens away", asy
   await (await maps.view(first)).placeMember("Fixture PC One", LIT);
   const second = await sharedMap(api);
   const view = await maps.view(second);
+  await view.openTokens();
   await expect(view.party).toContainText(`Fixture PC One on ${first.name}`);
 
   await view.placeMember("Fixture PC One", LIT_TOO);
   const firstView = await maps.view(first);
+  await firstView.openTokens();
   await expect(firstView.tokenGroup.getByRole("button", { name: /^Fixture PC One/ })).toHaveCount(
     0,
   );
@@ -143,13 +145,13 @@ test("a player can't place, change or move tokens that aren't theirs", async ({
   const view = await maps.view(lit);
   await view.placeMember("Fixture PC Two", LIT);
   const marker = uniqueName("Marker");
-  await view.addMarker({ name: marker, shown: true, at: LIT_TOO });
+  await view.addToken({ name: marker, shown: true, at: LIT_TOO });
 
   const player = await openAs("playerOne");
   const theirs = await player.maps.view(lit);
   // Nothing to change: tokens are pictures for them, and there's no panel.
   await expect(theirs.tokenGroup.getByRole("button")).toHaveCount(0);
-  await expect(player.page.getByRole("button", { name: "Add marker" })).toHaveCount(0);
+  await expect(player.page.getByRole("tab", { name: "Tokens" })).toHaveCount(0);
 
   const tokens = await api.tokens(lit);
   const idOf = (name: string) => tokens.find((token) => token.name === name)!.id;
@@ -268,6 +270,7 @@ test("the DM brings everyone into a deeper map, and players find where they are"
   await api.saveMap(outer, { areas: [town] });
 
   const view = await maps.view(inner);
+  await view.openTokens();
   await page.getByRole("button", { name: "Bring everyone here" }).click();
   await view.click([0.15, 0.5]);
   await expect(view.anyToken).toHaveCount(3);

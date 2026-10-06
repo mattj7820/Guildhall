@@ -49,9 +49,11 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         (token.kind !== "character" || controllersOf(token.note) !== "unknown")
       );
     }
-    // Everything else acts on a token on this map, and a move elsewhere needs a map to go to.
+    // Everything else acts on a token on this map, and a move elsewhere needs a map to go to;
+    // except that the DM may bring one here from another map, or from being set aside.
     const token = tokens.find((each) => each.id === action.id);
-    if (token?.map !== map.id) return false;
+    const broughtHere = action.type === "move" && action.map === map.id;
+    if (!token || (token.map !== map.id && !(broughtHere && viewer.role === "dm"))) return false;
     // In a fight here, players move on their own turn.
     if (token.kind === "character" && !fightAllowsMove(fight, map.id, token.note, viewer)) {
       return false;

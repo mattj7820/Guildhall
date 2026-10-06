@@ -4,7 +4,10 @@ import { characterAccess, type Controllers } from "~/characters/permissions";
 import { pointRevealed } from "../fog/mask";
 import type { FogMask } from "../fog/types";
 import { fightAllowsMove, type Fight } from "~/combat/fight";
-import type { Token, TokenView } from "./types";
+import type { MarkerToken, Token, TokenView } from "./types";
+
+/** The URL of an NPC's picture (by the token), if its note has one; looked up on the server. */
+export type PictureOf = (token: MarkerToken) => string | undefined;
 
 /** A party member as this viewer may know them: missing if they may not know of them at all. */
 export interface PartyMember {
@@ -21,6 +24,7 @@ interface Input {
   party: (note: EntityId) => PartyMember | undefined;
   /** The fight the table is in, which monsters' tokens stand for, and party members are in. */
   fight?: Fight;
+  pictureOf?: PictureOf;
 }
 
 /**
@@ -29,12 +33,21 @@ interface Input {
  *   it tells them only where they already know they are;
  * - other party members only where it's revealed;
  * - markers only if the DM shows them, and only where it's revealed.
+ * Markers set aside are off the map, for everyone: the DM finds them in their own list.
  * Anything else is left out entirely, so it can't be found in the page's data. The DM gets every
  * token, with what players can't see of it. Tokens under the fog are "under" by their centre.
  */
-export function tokensForViewer({ tokens, viewer, fog, party, fight }: Input): TokenView[] {
+export function tokensForViewer({
+  tokens,
+  viewer,
+  fog,
+  party,
+  fight,
+  pictureOf = () => undefined,
+}: Input): TokenView[] {
   const views: TokenView[] = [];
   for (const token of tokens) {
+    if (token.kind === "marker" && token.aside) continue;
     const revealed = pointRevealed(fog, token.at);
     if (token.kind === "combatant") {
       const monster = fight?.encounter.combatants.find((c) => c.id === token.combatant);
@@ -64,19 +77,7 @@ export function tokensForViewer({ tokens, viewer, fog, party, fight }: Input): T
     if (token.kind === "marker") {
       const secret = token.visibility !== "players";
       if (viewer.role !== "dm" && (secret || !revealed)) continue;
-      views.push({
-        id: token.id,
-        kind: "marker",
-        at: token.at,
-        size: token.size ?? 1,
-        name: token.name,
-        colour: token.colour,
-        movable: viewer.role === "dm",
-        ...(viewer.role === "dm" && {
-          visibility: token.visibility,
-          ...(secret ? { hidden: "secret" as const } : !revealed && { hidden: "fog" as const }),
-        }),
-      });
+      views.push(markerView(token, viewer, revealed, pictureOf));
       continue;
     }
 
@@ -104,4 +105,39 @@ export function tokensForViewer({ tokens, viewer, fog, party, fight }: Input): T
     });
   }
   return views;
+}
+
+/**
+ * A marker as a viewer who may see it sees it: its own name, and the picture the DM chose for it
+ * (the one the DM sees on it), so showing a token shows exactly what's on it. Its note, and the
+ * settings behind the picture, are the DM's only.
+ */
+export function markerView(
+  token: MarkerToken,
+  viewer: Viewer,
+  revealed: boolean,
+  pictureOf: PictureOf,
+): TokenView {
+  const portraitUrl = token.picture === "note" ? pictureOf(token) : undefined;
+  const icon = token.picture === "icon" ? token.icon : undefined;
+  const secret = token.visibility !== "players";
+  return {
+    id: token.id,
+    kind: "marker",
+    at: token.at,
+    size: token.size ?? 1,
+    name: token.name,
+    colour: token.colour,
+    ...(portraitUrl ? { portraitUrl } : icon && { icon }),
+    movable: viewer.role === "dm",
+    ...(viewer.role === "dm" && {
+      visibility: token.visibility,
+      marker: {
+        ...(token.note && { note: token.note }),
+        ...(token.picture && { picture: token.picture }),
+        ...(token.icon && { icon: token.icon }),
+      },
+      ...(secret ? { hidden: "secret" as const } : !revealed && { hidden: "fog" as const }),
+    }),
+  };
 }
