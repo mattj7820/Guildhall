@@ -43,7 +43,7 @@ describe("tokenSchema", () => {
   ])("drops an unreadable %s rather than refusing the marker", (field, fields) => {
     const parsed = tokenSchema.parse({ ...aMarker(), ...fields });
     expect(parsed).toEqual(aMarker());
-    expect((parsed as Record<string, unknown>)[field]).toBeUndefined();
+    expect((parsed as unknown as Record<string, unknown>)[field]).toBeUndefined();
   });
 
   it.each([
