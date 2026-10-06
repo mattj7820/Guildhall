@@ -64,10 +64,6 @@ export function MapViewerBar({
       <button type="button" className={buttonClass} onClick={onPresent}>
         Present
       </button>
-      {/* PROTOTYPE (removed before the PR) */}
-      <Link to={`/maps/${map.id}/tokens-prototype`} className={buttonClass}>
-        Tokens tab (prototype)
-      </Link>
       <Link to={mapEditUrl(map.id)} className={buttonClass}>
         Edit map
       </Link>

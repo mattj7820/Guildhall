@@ -1152,3 +1152,67 @@ Sheets still poll every 10 seconds, as each one is mostly changed by its owner a
 already hears of hit point changes. Pushing changes live is the next step: a small message with
 only the new revision, sent to those who may edit, after which the browser fetches the character
 through the changes endpoint as now, so what anyone may see is still decided in one place.
+
+## 65. NPC tokens are markers with a note; their name is their own, and players see what the DM sees
+
+**Date:** 2026-10-06
+
+**Context.** The DM wants NPCs on the map (the innkeeper, a hooded stranger, a cart) with a
+picture, moved like the party's tokens, and points of interest with something better than a
+colour. A shown NPC may be in disguise: the note says who they really are.
+
+**Options considered.**
+
+- **A new kind of token for NPCs:** clear types, but it repeats everything markers already do
+  (visibility failing closed, editing, showing and hiding, End fight's leftovers) on a second path.
+- **Markers gain an optional note, picture and icon (chosen):** one kind for everything the DM
+  places, so every rule about markers covers NPCs.
+- **Pictures:** the note's first image (as portraits are, decision 32), built-in icons from
+  game-icons.net (as the bag's, decision 33), a tokens folder in the vault, or initials. The first
+  two now, initials as the fallback; a folder would need a picker and its own rule for which
+  images may be served, and can come with handouts.
+
+**Decision.** A marker may carry a `note` (the NPC's, by entity ID), a `picture` (`note` or
+`icon`) and an `icon`. Its name is always its own, filled in from the note's title when it's
+added and never read from the note again, so the note's title can't reach anyone through a
+token: a shown NPC can be "Hooded figure". Showing a token shows exactly what the DM sees on it:
+its name and its picture, even when the picture comes from a DM-only note, since the DM chose it
+(an icon suits a disguise better than the real face). The picture is the note's first image as
+the DM sees it, served from `/maps/:id/tokens/:token/picture`: by the token, never the image's
+path or the note, to the DM, or to a player only if the token is among those they're sent (shown,
+revealed, not set aside); otherwise the same 404 as a missing token. The URL's version hashes the
+token and the image together, so two tokens showing one image can't be matched. The note, and
+what's behind the picture, are the DM's only. The new fields are optional and dropped if
+unreadable, so stored tokens load as they were; an old build strips them, leaving plain markers.
+56 icons for people, creatures and places are imported with the item icons and credited, and one
+is guessed from a token's name. Placing several of the same numbers them (Bandit 1 to 3), carrying
+on from those already on the map, side by side in one click.
+
+## 66. The DM's side panel in tabs, with all token management in a Tokens tab
+
+**Date:** 2026-10-06
+
+The DM's panel on a map stacked the map's note, the party, markers and areas, and combat and fog
+replaced it. It's now tabs, as the players' panel is (decision 64), sharing its one width,
+folding and remembering what's open: **Map** (the note and areas) and **Tokens** (the party as
+before, NPCs and markers on this map with a one-click Shown / DM only button, adding them, those
+set aside or on other maps, and the chosen token's settings). While the fight is open, a **Fight**
+tab holds the tracker and opens when it starts, so the DM can drop in an NPC mid-fight and come
+back. Fog still takes over the panel while it's on, since it changes what a click on the map does.
+Choosing a token on the map opens the Tokens tab, except while the fight is picking monsters.
+Monsters in the fight stay in the tracker, not the Tokens tab. The panel stays on the right, like
+the players' and most virtual tabletops'. Another tab (handouts) can join these.
+
+## 67. Setting a token aside, and moving tokens between maps
+
+**Date:** 2026-10-06
+
+Trying the prototype, the DM asked for a way to take a token off the map without deleting it (an
+innkeeper who walks off but may be back soon); hiding is for what players haven't come across yet.
+So a marker can be **set aside**: kept, with everything about it, but drawn nowhere and sent to
+no one, and listed in the Tokens tab of every map ("last on" where it was) to place again there.
+A set-aside marker survives its map being deleted. NPCs on other maps are listed too, folded, to
+bring here; plain markers belong to their own maps. The DM moves any token but a monster to
+another map with **Send to map** (to its middle, to be moved from there), or brings one here from
+the lists, which is a move naming this map: the only move the server accepts for a token on
+another map, and only from the DM. The party's one place each (decision 45) is unchanged.

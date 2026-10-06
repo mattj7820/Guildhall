@@ -125,7 +125,11 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
     whatever is under the fog. The fog's edge is soft and only ever eats into what's revealed.
 - **Tokens, shared live**, like a game's map screen showing where the party is.
   - A token for each PC and the party's companion, with their portrait (or an initial), and the
-    DM's own markers (an NPC, a point of interest) with a name and a colour, DM-only unless shown.
+    DM's own: NPCs from their vault notes, drawn with the note's picture under a name of the DM's
+    choosing (so a hooded figure stays hooded), and markers with an icon or a colour. All DM-only
+    until shown, in one click.
+  - The DM manages every token from a Tokens tab beside the map: add several at once (Bandit 1 to
+    3), set one aside off the map to bring back later, and send tokens between maps.
   - Players drag their own PC and the companion, or move them with the arrow keys; the DM moves
     anything. Everyone sees a token move as it's dragged, and whoever picks one up holds it until
     they let go, so nobody fights over the blink dog (the DM can always take it).
@@ -133,7 +137,8 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
     where you are, and Find takes you to your token. The DM brings the party into a deeper map
     with one click.
   - Tokens under the fog never reach players, not in the page, its data or the live connection:
-    only their own, drawn "in the dark". Live updates run over websockets on the same server,
+    only their own, drawn "in the dark". An NPC's picture is served by its token, only to those
+    who may see the token, and its note never reaches players at all. Live updates run over websockets on the same server,
     signed in like pages, with every message built for the person receiving it.
 - **Battle maps**: turn a grid on for any map (a Dungeondraft export, a town, a cave) and it
   becomes a battle map.

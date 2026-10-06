@@ -21,8 +21,6 @@ export default [
   route("maps/:id/tokens", "routes/map-tokens.ts"),
   route("maps/:id/tokens/:token/picture", "routes/map-token-picture.ts"),
   route("maps/:id/stunts", "routes/map-stunts.ts"),
-  // PROTOTYPE (removed before the PR).
-  route("maps/:id/tokens-prototype", "routes/map-tokens-prototype.tsx"),
   route("vault-asset/*", "routes/vault-asset.ts"),
   route("sounds/*", "routes/sound.ts"),
   route("view-mode", "routes/view-mode.ts"),
