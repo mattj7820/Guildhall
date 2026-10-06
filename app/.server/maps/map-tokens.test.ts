@@ -166,6 +166,14 @@ describe("MapTokens", () => {
     expect(await tokens.list()).toEqual([cellar]);
   });
 
+  it("keeps a marker set aside from a deleted map, to place elsewhere", async () => {
+    const tokens = MapTokens.inFolder(folder);
+    const innkeeper = aMarker({ id: "innkeeper", map: "world", aside: true });
+    await tokens.apply("world", [place(inn), place(innkeeper)], everything);
+    await tokens.deleteMap("world");
+    expect(await tokens.list()).toEqual([innkeeper]);
+  });
+
   it("refuses to read a damaged file, and never overwrites it", async () => {
     const file = path.join(folder, "tokens.json");
     await writeFile(file, '{"version":1,"tokens":[{"kind":"marker"}]}', "utf8");

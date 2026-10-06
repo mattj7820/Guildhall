@@ -199,6 +199,53 @@ describe("Live", () => {
     expect(JSON.stringify(player.received)).not.toMatch(/secret|Fixture PC Two/);
   });
 
+  it("never sends a player a hidden NPC, nor a shown one's note, its title or image", async () => {
+    await services.fogs.apply(shared.id, shared.image, [
+      { type: "paint", mode: "reveal", shape: { kind: "all" } },
+    ]);
+    const player = await connect(DISCORD_IDS.playerOne, "player one");
+    const dm = await connect(DISCORD_IDS.dm);
+    for (const client of [player, dm]) client.send({ type: "watch", map: shared.id });
+    await briefly();
+    const npc = aMarker({
+      id: "stranger",
+      map: shared.id,
+      at: LIT,
+      name: "Hooded figure",
+      note: "NPCs/Fixture Hidden NPC",
+      picture: "note",
+      visibility: "dm",
+    });
+
+    // DM-only: the DM hears of it, the player nothing at all.
+    const dmHears = dm.next(about(shared.id));
+    await placeOn(shared.id, npc);
+    expect(await dmHears).toMatchObject({ tokens: [{ name: "Hooded figure" }] });
+    await briefly();
+    expect(JSON.stringify(player.received)).not.toMatch(/stranger|Hooded/);
+
+    // Shown: the player gets its own name and a picture by the token, and nothing of the note.
+    const heard = player.next(about(shared.id));
+    await services.tokens.apply(
+      shared.id,
+      [{ type: "editMarker", id: "stranger", visibility: "players" }],
+      () => true,
+    );
+    await live.mapChanged(shared.id);
+    expect(await heard).toMatchObject({
+      type: "tokens",
+      tokens: [
+        {
+          name: "Hooded figure",
+          portraitUrl: expect.stringMatching(/\/tokens\/stranger\/picture/),
+        },
+      ],
+    });
+    expect(JSON.stringify(player.received)).not.toMatch(
+      /Fixture Hidden NPC|fixture-hidden-npc|NPCs\//,
+    );
+  });
+
   it("shows everyone the fight as they may see it: players get no HP, initiative or DM notes", async () => {
     const player = await connect(DISCORD_IDS.playerOne, "player one");
     const dm = await connect(DISCORD_IDS.dm);

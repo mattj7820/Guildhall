@@ -107,10 +107,18 @@ export class MapTokens {
     });
   }
 
-  /** When a map is deleted: its markers go, and the party members on it are no longer anywhere. */
+  /**
+   * When a map is deleted: its markers go, and the party members on it are no longer anywhere.
+   * Markers set aside from it are kept, since they're on no map.
+   */
   deleteMap(map: MapId): Promise<void> {
     return this.file.update((data) => ({
-      next: { ...data, tokens: data.tokens.filter((token) => token.map !== map) },
+      next: {
+        ...data,
+        tokens: data.tokens.filter(
+          (token) => token.map !== map || (token.kind === "marker" && token.aside),
+        ),
+      },
       result: undefined,
     }));
   }

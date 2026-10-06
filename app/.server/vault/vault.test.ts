@@ -20,6 +20,7 @@ describe("readVault", () => {
     expect(snapshot.assets).toEqual([
       "Attachments/Fixture Duplicate.png",
       "Attachments/dm-map.png",
+      "Attachments/fixture-hidden-npc.png",
       "Attachments/mira-portrait.png",
       "Attachments/voice-sample.wav",
       "Maps/Fixture Duplicate.png",

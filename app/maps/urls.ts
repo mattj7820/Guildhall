@@ -1,4 +1,6 @@
 /** In-app URLs for maps. Isomorphic, so server rendering and client components agree. */
+import { shortHash } from "~/shared/short-hash";
+import type { TokenId } from "./tokens/types";
 import type { AreaId, MapId } from "./types";
 
 export function mapUrl(id: MapId): string {
@@ -36,6 +38,15 @@ export function mapVersionUrl(id: MapId): string {
 /** Where token changes are sent, as JSON. */
 export function mapTokensUrl(id: MapId): string {
   return `${mapUrl(id)}/tokens`;
+}
+
+/**
+ * An NPC token's picture, by the token, never by the image's path or the note. The version is a
+ * hash of both, so it changes with the picture but can't match two tokens showing the same one.
+ */
+export function tokenPictureUrl(map: MapId, token: TokenId, imagePath: string): string {
+  const version = shortHash(`${token}/${imagePath}`);
+  return `${mapTokensUrl(map)}/${encodeURIComponent(token)}/picture?v=${version}`;
 }
 
 /** A sound from the DM's sound board, by its path inside the sounds folder. */

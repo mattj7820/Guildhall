@@ -3,7 +3,7 @@ import { DM_VIEWER, PLAYER_VIEWER, type Viewer } from "~/campaign/types";
 import type { FogMask } from "../fog/types";
 import { encounter, monster, player } from "~/combat/test-builders";
 import { aCharacterToken, aMarker } from "./test-builders";
-import type { Token } from "./types";
+import type { MarkerToken, Token } from "./types";
 import { tokensForViewer, type PartyMember } from "./visibility";
 
 /** Two cells side by side: the left one revealed, the right one under the fog. */
@@ -67,6 +67,67 @@ describe("tokensForViewer", () => {
         { id: "secret", hidden: "secret", movable: true },
       ]);
       expect(views[2].visibility).toBe("dm");
+    });
+  });
+
+  describe("NPCs", () => {
+    const pictureOf = (token: MarkerToken) =>
+      token.note === "NPCs/Secret Villain"
+        ? `/maps/world/tokens/${token.id}/picture?v=1`
+        : undefined;
+    const npcView = (viewer: Viewer, tokens: Token[]) =>
+      tokensForViewer({ tokens, viewer, fog, party: () => undefined, pictureOf });
+    const disguised = aMarker({
+      id: "stranger",
+      name: "Hooded figure",
+      note: "NPCs/Secret Villain",
+      picture: "note",
+      icon: "hood",
+      visibility: "players",
+      at: LIT,
+    });
+
+    it("shows players a shown NPC by its own name and picture, and nothing of its note", () => {
+      const [seen] = npcView(playerOne, [disguised]);
+      expect(seen).toEqual({
+        id: "stranger",
+        kind: "marker",
+        at: LIT,
+        size: 1,
+        name: "Hooded figure",
+        colour: "red",
+        portraitUrl: "/maps/world/tokens/stranger/picture?v=1",
+        movable: false,
+      });
+      expect(JSON.stringify(seen)).not.toMatch(/Secret Villain|hood"/);
+    });
+
+    it("gives players nothing at all of a DM-only NPC, or one under the fog", () => {
+      const hidden = { ...disguised, visibility: "dm" as const };
+      const dark = { ...disguised, id: "dark", at: DARK };
+      expect(npcView(playerOne, [hidden, dark])).toEqual([]);
+    });
+
+    it("draws the icon when that's the picture, and initials when the note has no image", () => {
+      const icon = { ...disguised, picture: "icon" as const };
+      const noImage = aMarker({
+        id: "plain",
+        note: "NPCs/Other",
+        picture: "note",
+        at: LIT,
+        visibility: "players",
+      });
+      const [withIcon, initials] = npcView(playerOne, [icon, noImage]);
+      expect(withIcon.icon).toBe("hood");
+      expect(withIcon.portraitUrl).toBeUndefined();
+      expect(initials.icon).toBeUndefined();
+      expect(initials.portraitUrl).toBeUndefined();
+    });
+
+    it("gives the DM the NPC's note and picture settings, for its form", () => {
+      const [seen] = npcView(DM_VIEWER, [disguised]);
+      expect(seen.marker).toEqual({ note: "NPCs/Secret Villain", picture: "note", icon: "hood" });
+      expect(seen.portraitUrl).toBe("/maps/world/tokens/stranger/picture?v=1");
     });
   });
 

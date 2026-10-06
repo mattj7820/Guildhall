@@ -19,6 +19,7 @@ export default [
   route("maps/:id/tiles/:x/:y", "routes/map-tile.ts"),
   route("maps/:id/version", "routes/map-version.ts"),
   route("maps/:id/tokens", "routes/map-tokens.ts"),
+  route("maps/:id/tokens/:token/picture", "routes/map-token-picture.ts"),
   route("maps/:id/stunts", "routes/map-stunts.ts"),
   // PROTOTYPE (removed before the PR).
   route("maps/:id/tokens-prototype", "routes/map-tokens-prototype.tsx"),

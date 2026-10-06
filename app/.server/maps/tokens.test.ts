@@ -5,8 +5,8 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { DM_VIEWER, PLAYER_VIEWER, type Viewer } from "~/campaign/types";
 import type { Services } from "~/context";
 import type { FogChange } from "~/maps/fog/types";
-import { aCharacterToken } from "~/maps/tokens/test-builders";
-import type { Token } from "~/maps/tokens/types";
+import { aCharacterToken, aMarker } from "~/maps/tokens/test-builders";
+import type { MarkerToken, Token } from "~/maps/tokens/types";
 import type { Area, CampaignMap, Point } from "~/maps/types";
 import { FIXTURE_VAULT } from "../../../tests/support/fixture-vault";
 import { Characters } from "../characters/characters";
@@ -15,7 +15,7 @@ import { Vault } from "../vault/vault";
 import { CampaignMaps } from "./campaign-maps";
 import { MapFogs } from "./map-fogs";
 import { MapTokens } from "./map-tokens";
-import { loadMapTokens, whereabouts } from "./tokens";
+import { loadMapTokens, tokensElsewhere, whereabouts } from "./tokens";
 
 /**
  * Where the party is, over the fixture vault (Player One plays Fixture PC One, Player Two Fixture
@@ -197,5 +197,38 @@ describe("whereabouts", () => {
     expect((await where(PLAYER_VIEWER)).map((member) => member.name)).toEqual([
       "Fixture Companion",
     ]);
+  });
+});
+
+describe("tokensElsewhere", () => {
+  const marker = (fields: Partial<MarkerToken>) => aMarker({ id: "m", map: world.id, ...fields });
+
+  it("lists NPCs on other maps and markers set aside, never plain markers elsewhere", async () => {
+    await services.tokens.apply(
+      world.id,
+      [
+        marker({ id: "here", map: town.id, note: "NPCs/Mira Stonehand", name: "Mira" }),
+        marker({ id: "npc", map: keep.id, note: "NPCs/Mira Stonehand", name: "Mira 2" }),
+        marker({ id: "chest", map: keep.id, name: "Chest" }),
+        marker({ id: "aside", map: town.id, name: "Innkeeper", aside: true }),
+      ].map((token) => ({ type: "place" as const, token })),
+      () => true,
+    );
+    const listed = await tokensElsewhere(services, [world, town, keep], town);
+    expect(listed.map(({ token, map, aside }) => [token.name, map?.name, aside])).toEqual([
+      ["Innkeeper", "Town", true],
+      ["Mira 2", "Keep", false],
+    ]);
+  });
+
+  it("gives each the DM's view, with its picture by the token", async () => {
+    await services.tokens.apply(
+      world.id,
+      [{ type: "place", token: marker({ note: "NPCs/Mira Stonehand", picture: "note" }) }],
+      () => true,
+    );
+    const [listed] = await tokensElsewhere(services, [world, town, keep], town);
+    expect(listed.token.portraitUrl).toMatch(new RegExp(`^/maps/${world.id}/tokens/m/picture`));
+    expect(listed.token.marker).toEqual({ note: "NPCs/Mira Stonehand", picture: "note" });
   });
 });

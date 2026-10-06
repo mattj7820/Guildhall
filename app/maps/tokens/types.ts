@@ -152,6 +152,8 @@ export interface TokenElsewhere {
   token: TokenView;
   /** Where it is (or, set aside, where it was last), if that map still exists. */
   map?: { id: MapId; name: string };
+  /** Off every map, to place again; otherwise on another map. */
+  aside: boolean;
 }
 
 /** A party member for the DM's panel, and which map their token is on, if any. */

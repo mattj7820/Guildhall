@@ -9,12 +9,20 @@ import { descendants } from "~/maps/tree";
 import type {
   InsideBadge,
   MapTokensView,
+  MarkerToken,
   PartyFace,
   PartyPlacement,
+  TokenElsewhere,
   TokenView,
   Whereabouts,
 } from "~/maps/tokens/types";
-import { tokensForViewer, type PartyMember } from "~/maps/tokens/visibility";
+import {
+  markerView,
+  tokensForViewer,
+  type PartyMember,
+  type PictureOf,
+} from "~/maps/tokens/visibility";
+import { tokenPictureUrl } from "~/maps/urls";
 import type { CampaignMap } from "~/maps/types";
 import { controllersFor } from "../characters/controllers";
 import { partyCards } from "../characters/load";
@@ -30,6 +38,24 @@ function partyNotes(vault: Vault): Map<EntityId, Note> {
       .filter((note) => note.type === "pc" || note.type === "companion")
       .map((note) => [note.id, note]),
   );
+}
+
+/**
+ * The image an NPC token shows when its picture is its note's: the note's first image, as the DM
+ * sees it. Showing the token shows what the DM sees on it; the picture route serves it only to
+ * those who may see the token.
+ */
+export function notePicture(vault: Vault, token: MarkerToken): string | undefined {
+  const note = token.note === undefined ? undefined : vault.noteById(token.note, DM_VIEWER);
+  return note && vault.firstImage(note, DM_VIEWER);
+}
+
+/** NPC pictures' URLs, by token: never the image's path or the note. */
+export function picturesIn(vault: Vault): PictureOf {
+  return (token) => {
+    const image = token.picture === "note" ? notePicture(vault, token) : undefined;
+    return image && tokenPictureUrl(token.map, token.id, image);
+  };
 }
 
 /** Who plays a party member, from their note; unknown for anything that isn't one. */
@@ -180,7 +206,34 @@ export async function loadTokens(
     fog: mask,
     party: partyFor(services.vault.current, characters, viewer),
     fight,
+    pictureOf: picturesIn(services.vault.current),
   });
+}
+
+/**
+ * For the DM's Tokens tab: markers set aside (from any map), and NPCs (markers with a note) on
+ * other maps, to bring here. Plain markers elsewhere belong to their own maps.
+ */
+export async function tokensElsewhere(
+  services: Pick<Services, "vault" | "tokens">,
+  maps: readonly CampaignMap[],
+  here: CampaignMap,
+): Promise<TokenElsewhere[]> {
+  const pictureOf = picturesIn(services.vault.current);
+  const markers = (await services.tokens.list()).filter(
+    (token): token is MarkerToken =>
+      token.kind === "marker" && (!!token.aside || (!!token.note && token.map !== here.id)),
+  );
+  return markers
+    .map((token) => {
+      const map = maps.find((each) => each.id === token.map);
+      return {
+        token: markerView(token, DM_VIEWER, true, pictureOf),
+        ...(map && { map: { id: map.id, name: map.name } }),
+        aside: !!token.aside,
+      };
+    })
+    .sort((a, b) => a.token.name.localeCompare(b.token.name, undefined, { numeric: true }));
 }
 
 /** The whole party, for the DM to place: every PC and companion, and which map each is on. */
