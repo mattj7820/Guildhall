@@ -6,6 +6,7 @@ import {
   type MapGrid,
   type PixelGrid,
 } from "~/maps/grid/grid";
+import { tokenIcon } from "~/maps/tokens/icons";
 import type { ShownToken } from "~/maps/tokens/moves";
 import type { MarkerColour, TokenView } from "~/maps/tokens/types";
 import type { Point, Size } from "~/maps/types";
@@ -347,6 +348,21 @@ function TokenFace({ token, r }: { token: TokenView; r: number }) {
     );
   }
   const fill = token.colour ? MARKER_FILLS[token.colour] : "fill-stone-700";
+  const icon = tokenIcon(token.icon);
+  if (icon) {
+    // The icon's 512-unit canvas, inset a little inside the circle.
+    const side = 1.3 * r;
+    return (
+      <>
+        <circle r={r} className={fill} />
+        <path
+          d={icon.path}
+          transform={`translate(${-side / 2} ${-side / 2}) scale(${side / 512})`}
+          className="pointer-events-none fill-white"
+        />
+      </>
+    );
+  }
   const label = initials(token.name);
   // Smaller for more letters, so "G12" still fits inside.
   const fontSize = r * ([1, 1, 0.75, 0.6][label.length] ?? 0.5);

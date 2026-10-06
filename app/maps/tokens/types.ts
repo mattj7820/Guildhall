@@ -80,6 +80,8 @@ export interface TokenView {
   portraitUrl?: string;
   /** Markers. */
   colour?: MarkerColour;
+  /** Markers: a built-in icon drawn on the colour, instead of initials. */
+  icon?: string;
   /** Whether this viewer may drag it. */
   movable: boolean;
   /** Players: their own token, somewhere still under the fog. */
