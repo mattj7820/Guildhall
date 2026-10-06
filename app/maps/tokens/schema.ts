@@ -17,6 +17,11 @@ const point = z.tuple([coordinate, coordinate]);
 const markerName = z.string().trim().min(1).max(MARKER_NAME_MAX);
 const colour = z.enum(MARKER_COLOURS);
 const size = z.union(TOKEN_SIZES.map((each) => z.literal(each)));
+/** Optional additions to markers: anything unreadable is dropped, never refused (live data). */
+const note = z.string().min(1).max(500).optional().catch(undefined);
+const picture = z.enum(["note", "icon"]).optional().catch(undefined);
+const icon = z.string().min(1).max(40).optional().catch(undefined);
+const aside = z.literal(true).optional().catch(undefined);
 
 export const tokenSchema: z.ZodType<Token> = z.discriminatedUnion("kind", [
   z.object({
@@ -36,6 +41,10 @@ export const tokenSchema: z.ZodType<Token> = z.discriminatedUnion("kind", [
     name: markerName,
     colour,
     visibility,
+    note,
+    picture,
+    icon,
+    aside,
   }),
   z.object({
     kind: z.literal("combatant"),
@@ -72,12 +81,17 @@ export const tokenActionSchema: z.ZodType<TokenAction> = z.discriminatedUnion("t
   }),
   z.object({ type: z.literal("remove"), id }),
   z.object({ type: z.literal("setSize"), id, size }),
+  z.object({ type: z.literal("setAside"), id }),
   z.object({
     type: z.literal("editMarker"),
     id,
     name: markerName.optional(),
     colour: colour.optional(),
     visibility: z.enum(["dm", "players"]).optional(),
+    // null takes it away.
+    note: z.string().min(1).max(500).nullable().optional(),
+    picture: z.enum(["note", "icon"]).nullable().optional(),
+    icon: z.string().min(1).max(40).optional(),
   }),
 ]);
 

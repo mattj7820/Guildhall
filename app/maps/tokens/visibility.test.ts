@@ -35,6 +35,12 @@ describe("tokensForViewer", () => {
     const shownInTheDark = aMarker({ id: "shown-dark", visibility: "players", at: DARK });
     const secret = aMarker({ id: "secret", visibility: "dm", at: LIT });
 
+    it("leaves out a marker set aside, for the DM too", () => {
+      const aside = aMarker({ id: "aside", visibility: "players", at: LIT, aside: true });
+      expect(ids(DM_VIEWER, [aside, shown])).toEqual(["shown"]);
+      expect(ids(playerOne, [aside, shown])).toEqual(["shown"]);
+    });
+
     it("shows players a marker the DM shows them, where it's revealed", () => {
       expect(view(playerOne, [shown])).toEqual([
         {

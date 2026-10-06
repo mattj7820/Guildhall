@@ -49,12 +49,29 @@ export interface CharacterToken extends TokenBase {
   note: EntityId;
 }
 
-/** The DM's own marker: an NPC, a point of interest. DM-only unless the DM shows it. */
+/** What a marker shows: its note's picture, a built-in icon, or (if neither) initials. */
+export type MarkerPicture = "note" | "icon";
+
+/**
+ * The DM's own token: an NPC (linked to their note), a point of interest, a monster left after a
+ * fight. DM-only unless the DM shows it. Its name is its own, never read from the note, so a
+ * shown NPC can go by another name ("Hooded figure") without the note's title reaching players.
+ */
 export interface MarkerToken extends TokenBase {
   kind: "marker";
   name: string;
   colour: MarkerColour;
   visibility: Visibility;
+  /** The NPC's note, for its picture and the DM's link to it. */
+  note?: EntityId;
+  picture?: MarkerPicture;
+  /** A built-in icon (`TOKEN_ICONS`), drawn when `picture` is "icon". */
+  icon?: string;
+  /**
+   * Off the map but kept, to place again (an innkeeper who's walked off): drawn nowhere and sent
+   * to no one, and listed for the DM. `map` is where it was last.
+   */
+  aside?: true;
 }
 
 /**
@@ -82,6 +99,8 @@ export interface TokenView {
   colour?: MarkerColour;
   /** Markers: a built-in icon drawn on the colour, instead of initials. */
   icon?: string;
+  /** DM only: a marker's own settings, for its form (what's drawn is above). */
+  marker?: Pick<MarkerToken, "note" | "picture" | "icon">;
   /** Whether this viewer may drag it. */
   movable: boolean;
   /** Players: their own token, somewhere still under the fog. */
@@ -126,6 +145,13 @@ export interface Whereabouts extends PartyFace {
   map?: { id: MapId; name: string };
   /** One of the viewer's own (their PC, or the companion they share). */
   theirs: boolean;
+}
+
+/** For the DM: a marker on another map, or set aside, to bring here. */
+export interface TokenElsewhere {
+  token: TokenView;
+  /** Where it is (or, set aside, where it was last), if that map still exists. */
+  map?: { id: MapId; name: string };
 }
 
 /** A party member for the DM's panel, and which map their token is on, if any. */

@@ -29,12 +29,14 @@ interface Input {
  *   it tells them only where they already know they are;
  * - other party members only where it's revealed;
  * - markers only if the DM shows them, and only where it's revealed.
+ * Markers set aside are off the map, for everyone: the DM finds them in their own list.
  * Anything else is left out entirely, so it can't be found in the page's data. The DM gets every
  * token, with what players can't see of it. Tokens under the fog are "under" by their centre.
  */
 export function tokensForViewer({ tokens, viewer, fog, party, fight }: Input): TokenView[] {
   const views: TokenView[] = [];
   for (const token of tokens) {
+    if (token.kind === "marker" && token.aside) continue;
     const revealed = pointRevealed(fog, token.at);
     if (token.kind === "combatant") {
       const monster = fight?.encounter.combatants.find((c) => c.id === token.combatant);

@@ -3,7 +3,8 @@
  * once) and on the server (to what's stored now), as for character sheets (decision 30).
  */
 import type { MapId, Point } from "../types";
-import type { MarkerToken, Token, TokenId, TokenSize } from "./types";
+import type { EntityId } from "~/campaign/types";
+import type { MarkerPicture, MarkerToken, Token, TokenId, TokenSize } from "./types";
 
 export type TokenAction =
   /**
@@ -13,18 +14,25 @@ export type TokenAction =
   | { type: "place"; token: Token }
   /**
    * Moves a token to a point, and to another map if `map` is given (the DM only). `from` is where
-   * the sender saw it; the move wins either way, as the last one made.
+   * the sender saw it; the move wins either way, as the last one made. A marker set aside is put
+   * down again.
    */
   | { type: "move"; id: TokenId; to: Point; from?: Point; map?: MapId }
   | { type: "remove"; id: TokenId }
   /** How many squares across it is on a battle map (the DM's). */
   | { type: "setSize"; id: TokenId; size: TokenSize }
+  /** Takes a marker off the map but keeps it, to place again (the DM's). */
+  | { type: "setAside"; id: TokenId }
+  /** Changes what's given of a marker; a `null` note or picture takes it away. */
   | {
       type: "editMarker";
       id: TokenId;
       name?: string;
       colour?: MarkerToken["colour"];
       visibility?: MarkerToken["visibility"];
+      note?: EntityId | null;
+      picture?: MarkerPicture | null;
+      icon?: string;
     };
 
 export interface Applied {
@@ -46,14 +54,14 @@ export function applyTokenAction(tokens: readonly Token[], action: TokenAction):
       if (!existing) return { tokens: [...tokens, placed], changed: true };
       // Placing again (a retried request, or a party member brought here) moves what's there.
       return replace(tokens, existing.id, (token) => ({
-        ...token,
+        ...putDown(token),
         map: placed.map,
         at: placed.at,
       }));
     }
     case "move":
       return replace(tokens, action.id, (token) => ({
-        ...token,
+        ...putDown(token),
         at: action.to,
         ...(action.map && { map: action.map }),
       }));
@@ -63,26 +71,46 @@ export function applyTokenAction(tokens: readonly Token[], action: TokenAction):
         : unchanged;
     case "setSize":
       return replace(tokens, action.id, (token) =>
-        action.size === 1 ? withoutSize(token) : { ...token, size: action.size },
+        action.size === 1 ? without(token, "size") : { ...token, size: action.size },
+      );
+    case "setAside":
+      return replace(tokens, action.id, (token) =>
+        token.kind === "marker" ? { ...token, aside: true } : token,
       );
     case "editMarker":
       return replace(tokens, action.id, (token) =>
-        token.kind === "marker"
-          ? {
-              ...token,
-              ...(action.name !== undefined && { name: action.name }),
-              ...(action.colour && { colour: action.colour }),
-              ...(action.visibility && { visibility: action.visibility }),
-            }
-          : token,
+        token.kind === "marker" ? editMarker(token, action) : token,
       );
   }
 }
 
-/** Size 1 is the default, so it isn't stored. */
-function withoutSize(token: Token): Token {
+function editMarker(
+  token: MarkerToken,
+  action: Extract<TokenAction, { type: "editMarker" }>,
+): MarkerToken {
+  let next: MarkerToken = {
+    ...token,
+    ...(action.name !== undefined && { name: action.name }),
+    ...(action.colour && { colour: action.colour }),
+    ...(action.visibility && { visibility: action.visibility }),
+    ...(action.note && { note: action.note }),
+    ...(action.picture && { picture: action.picture }),
+    ...(action.icon && { icon: action.icon }),
+  };
+  if (action.note === null) next = without(next, "note");
+  if (action.picture === null) next = without(next, "picture");
+  return next;
+}
+
+/** A marker set aside is back on a map once it's placed or moved. */
+function putDown(token: Token): Token {
+  return token.kind === "marker" ? without(token, "aside") : token;
+}
+
+/** Leaves out an optional field: size 1 and defaults aren't stored. */
+function without<T extends Token, K extends keyof T>(token: T, key: K): T {
   const copy = { ...token };
-  delete copy.size;
+  delete copy[key];
   return copy;
 }
 
