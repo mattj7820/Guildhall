@@ -147,6 +147,24 @@ export interface Whereabouts extends PartyFace {
   theirs: boolean;
 }
 
+/** A note the DM may link an NPC token to, with its picture (DM only: it's served by path). */
+export interface NoteChoice {
+  id: EntityId;
+  slug: string;
+  title: string;
+  /** `type: npc`, offered first. */
+  npc: boolean;
+  imageUrl?: string;
+}
+
+/** What the DM's Tokens tab needs besides the map's tokens and the party. */
+export interface TokenTools {
+  notes: NoteChoice[];
+  elsewhere: TokenElsewhere[];
+  /** Maps to send a token to. */
+  otherMaps: { id: MapId; name: string }[];
+}
+
 /** For the DM: a marker on another map, or set aside, to bring here. */
 export interface TokenElsewhere {
   token: TokenView;

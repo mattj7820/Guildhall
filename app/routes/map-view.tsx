@@ -3,7 +3,7 @@ import { partyCards } from "~/.server/characters/load";
 import { combatCatalogue } from "~/.server/combat/catalogue";
 import { fightView } from "~/.server/combat/fight-view";
 import { loadMapView, mapVersion } from "~/.server/maps/load";
-import { loadMapTokens, partyPlacements } from "~/.server/maps/tokens";
+import { loadMapTokens, partyPlacements, tokenTools } from "~/.server/maps/tokens";
 import { notFound } from "~/.server/not-found";
 import { MapViewer } from "~/components/maps/MapViewer";
 import { PlayerMapViewer } from "~/components/maps/PlayerMapViewer";
@@ -53,6 +53,7 @@ export async function loader({ params, request, context }: Route.LoaderArgs) {
     tokens,
     inside,
     party: await partyPlacements(services, maps),
+    tokenTools: await tokenTools(services, maps, map),
     images: services.vault.current.mapImages(),
     // By their paths inside the sounds folder, as the sounds route takes them.
     sounds: services.vault.current
@@ -109,6 +110,7 @@ export default function MapPage({ loaderData }: Route.ComponentProps) {
       tokens={loaderData.tokens}
       inside={loaderData.inside}
       party={loaderData.party}
+      tokenTools={loaderData.tokenTools}
       images={loaderData.images}
       sounds={loaderData.sounds}
       fight={loaderData.fight}

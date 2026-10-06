@@ -1,48 +1,57 @@
 import { useState, type ReactNode } from "react";
-import { buttonClass, inputClass, labelClass, primaryButtonClass } from "~/components/styles";
+import { buttonClass, inputClass, labelClass } from "~/components/styles";
 import type { TokenAction } from "~/maps/tokens/actions";
 import { MARKER_NAME_MAX } from "~/maps/tokens/schema";
 import {
-  MARKER_COLOURS,
   SIZE_NAMES,
   TOKEN_SIZES,
-  type MarkerColour,
   type TokenSize,
+  type TokenTools,
   type TokenView,
 } from "~/maps/tokens/types";
+import { noteUrl } from "~/wiki/urls";
+import { NotePicker } from "./NotePicker";
+import { TokenLook } from "./TokenLook";
 
-/** The chosen token, to change or remove. */
+/**
+ * The chosen token, to change, send to another map, set aside or remove. An NPC or marker's
+ * name, note, look and whether players see it are changed as they're picked; a party member or
+ * monster has only its size and where it is.
+ */
 export function TokenSettings({
   token,
+  tools,
   onClose,
   send,
   children,
 }: {
   token: TokenView;
+  tools: TokenTools;
   onClose: () => void;
   send: (actions: TokenAction[]) => void;
+  /** More about it, such as how far the others are. */
   children?: ReactNode;
 }) {
+  const marker = token.kind === "marker";
   return (
     <section
       aria-label={`Token: ${token.name}`}
-      className="flex flex-col gap-2 rounded-md border border-stone-200 p-3 dark:border-stone-800"
+      className="flex flex-col gap-2 rounded-md border border-stone-200 p-3 text-sm dark:border-stone-800"
     >
       <div className="flex items-baseline gap-2">
         <h3 className="mr-auto font-serif text-lg font-bold">{token.name}</h3>
-        <button type="button" onClick={onClose} className="text-sm text-stone-500 hover:underline">
+        <button type="button" onClick={onClose} className="text-stone-500 hover:underline">
           Close
         </button>
       </div>
       {token.hidden === "fog" && (
-        <p className="text-sm text-stone-500">
+        <p className="text-stone-500">
           Under the fog:{" "}
-          {token.kind === "marker"
-            ? "players can't see it."
-            : "only the players who move it can see it."}
+          {marker ? "players can't see it." : "only the players who move it can see it."}
         </p>
       )}
-      <label className="flex items-center gap-2 text-sm">
+      {marker && <MarkerFields token={token} tools={tools} send={send} />}
+      <label className="flex items-center gap-2">
         <span className={labelClass}>Size</span>
         <select
           className={inputClass}
@@ -58,116 +67,158 @@ export function TokenSettings({
           ))}
         </select>
       </label>
-      {token.kind === "marker" && (
-        <MarkerForm
-          initial={{
-            name: token.name,
-            colour: token.colour ?? "red",
-            shown: token.visibility === "players",
+      <div className="flex flex-wrap gap-2">
+        {token.kind !== "combatant" && tools.otherMaps.length > 0 && (
+          <select
+            aria-label="Send to map"
+            className={inputClass}
+            value=""
+            onChange={(event) => {
+              const map = event.target.value;
+              if (!map) return;
+              // To the middle of the other map, to be moved there.
+              send([{ type: "move", id: token.id, to: [0.5, 0.5], map }]);
+              onClose();
+            }}
+          >
+            <option value="">Send to map…</option>
+            {tools.otherMaps.map((each) => (
+              <option key={each.id} value={each.id}>
+                {each.name}
+              </option>
+            ))}
+          </select>
+        )}
+        {marker && (
+          <button
+            type="button"
+            className={buttonClass}
+            title="Off the map, but kept in the Tokens tab to place again"
+            onClick={() => {
+              send([{ type: "setAside", id: token.id }]);
+              onClose();
+            }}
+          >
+            Set aside
+          </button>
+        )}
+        <button
+          type="button"
+          className={buttonClass}
+          onClick={() => {
+            send([{ type: "remove", id: token.id }]);
+            onClose();
           }}
-          label="Edit marker"
-          submitLabel="Save"
-          onSubmit={({ name, colour, shown }) =>
-            send([
-              {
-                type: "editMarker",
-                id: token.id,
-                name,
-                colour,
-                visibility: shown ? "players" : "dm",
-              },
-            ])
-          }
-        />
-      )}
-      <button
-        type="button"
-        className={buttonClass}
-        onClick={() => {
-          send([{ type: "remove", id: token.id }]);
-          onClose();
-        }}
-      >
-        {token.kind === "marker" ? "Remove marker" : "Take off this map"}
-      </button>
+        >
+          {marker ? "Remove" : "Take off this map"}
+        </button>
+      </div>
       {children}
     </section>
   );
 }
 
-export interface MarkerFields {
-  name: string;
-  colour: MarkerColour;
-  shown: boolean;
-}
-
-export function MarkerForm({
-  initial = { name: "", colour: "red", shown: false },
-  label,
-  submitLabel,
-  onSubmit,
-  onCancel,
+/** An NPC or marker's own settings, each sent as it's changed. */
+function MarkerFields({
+  token,
+  tools,
+  send,
 }: {
-  initial?: MarkerFields;
-  label: string;
-  submitLabel: string;
-  onSubmit: (marker: MarkerFields) => void;
-  onCancel?: () => void;
+  token: TokenView;
+  tools: TokenTools;
+  send: (actions: TokenAction[]) => void;
 }) {
-  const [fields, setFields] = useState(initial);
+  const [name, setName] = useState(token.name);
+  const [changingNote, setChangingNote] = useState(false);
+  const settings = token.marker ?? {};
+  const note = tools.notes.find((each) => each.id === settings.note);
+  const edit = (change: Omit<Extract<TokenAction, { type: "editMarker" }>, "type" | "id">) =>
+    send([{ type: "editMarker", id: token.id, ...change }]);
+  const saveName = () => {
+    const trimmed = name.trim();
+    if (trimmed && trimmed !== token.name) edit({ name: trimmed });
+  };
+
   return (
-    <form
-      aria-label={label}
-      className="flex flex-col gap-2 text-sm"
-      onSubmit={(event) => {
-        event.preventDefault();
-        const name = fields.name.trim();
-        if (name) onSubmit({ ...fields, name });
-      }}
-    >
+    <>
       <label className="flex flex-col gap-1">
-        <span className={labelClass}>Marker name</span>
+        <span className="font-medium">Name players see</span>
         <input
           className={inputClass}
-          value={fields.name}
+          value={name}
           maxLength={MARKER_NAME_MAX}
-          required
-          onChange={(event) => setFields({ ...fields, name: event.target.value })}
+          onChange={(event) => setName(event.target.value)}
+          onBlur={saveName}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") saveName();
+          }}
         />
       </label>
-      <fieldset className="flex flex-wrap gap-1">
-        <legend className={`${labelClass} mb-1`}>Colour</legend>
-        {MARKER_COLOURS.map((colour) => (
-          <label key={colour} className="flex items-center gap-1 capitalize">
-            <input
-              type="radio"
-              name="colour"
-              value={colour}
-              checked={fields.colour === colour}
-              onChange={() => setFields({ ...fields, colour })}
-            />
-            {colour}
-          </label>
-        ))}
-      </fieldset>
-      <label className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          checked={fields.shown}
-          onChange={(event) => setFields({ ...fields, shown: event.target.checked })}
-        />
-        Players can see it (where it's revealed)
-      </label>
-      <div className="flex gap-2">
-        <button type="submit" className={primaryButtonClass}>
-          {submitLabel}
+      <div className="flex items-center gap-2">
+        <span className={labelClass}>Note</span>
+        <span className="mr-auto truncate">
+          {note ? (
+            <a href={noteUrl(note.slug)} target="_blank" rel="noreferrer" className="underline">
+              {note.title} ↗
+            </a>
+          ) : settings.note ? (
+            <span className="text-rose-700 dark:text-rose-400">no longer in the vault</span>
+          ) : (
+            <span className="text-stone-500">none</span>
+          )}
+        </span>
+        <button
+          type="button"
+          className="text-stone-500 hover:underline"
+          aria-expanded={changingNote}
+          onClick={() => setChangingNote(!changingNote)}
+        >
+          {settings.note ? "Change" : "Link a note"}
         </button>
-        {onCancel && (
-          <button type="button" className={buttonClass} onClick={onCancel}>
-            Cancel
+        {settings.note && (
+          <button
+            type="button"
+            className="text-stone-500 hover:underline"
+            onClick={() =>
+              edit({ note: null, ...(settings.picture === "note" && { picture: null }) })
+            }
+          >
+            Unlink
           </button>
         )}
       </div>
-    </form>
+      {changingNote && (
+        <NotePicker
+          label="Linked note (only you see it)"
+          notes={tools.notes}
+          value={note?.slug ?? ""}
+          onChange={(slug) => {
+            const picked = tools.notes.find((each) => each.slug === slug);
+            if (!picked) return;
+            edit({ note: picked.id });
+            setChangingNote(false);
+          }}
+        />
+      )}
+      <TokenLook
+        look={{ picture: settings.picture, icon: settings.icon, colour: token.colour ?? "red" }}
+        noteImage={note?.imageUrl}
+        onChange={(look) =>
+          edit({
+            colour: look.colour,
+            picture: look.picture ?? null,
+            ...(look.icon && { icon: look.icon }),
+          })
+        }
+      />
+      <label className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          checked={token.visibility === "players"}
+          onChange={(event) => edit({ visibility: event.target.checked ? "players" : "dm" })}
+        />
+        Players can see it (where it&rsquo;s revealed)
+      </label>
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useRevalidator } from "react-router";
 import type { DmFightView } from "~/combat/fight";
 import type { CombatCatalogue, PreparedEncounter } from "~/combat/types";
 import { buttonClass, primaryButtonClass } from "~/components/styles";
@@ -6,7 +7,8 @@ import { areaRevealed } from "~/maps/fog/coverage";
 import type { FogMask } from "~/maps/fog/types";
 import { normalise, toPixels } from "~/maps/geometry";
 import { useStuntSettings } from "~/maps/stunt-settings";
-import type { InsideBadge, PartyPlacement, TokenView } from "~/maps/tokens/types";
+import type { InsideBadge, PartyPlacement, TokenTools, TokenView } from "~/maps/tokens/types";
+import type { TokenAction } from "~/maps/tokens/actions";
 import { useMapTokens } from "~/maps/tokens/useMapTokens";
 import type { AreaView, MapView, Size } from "~/maps/types";
 import { AreaShape } from "./AreaShape";
@@ -61,6 +63,7 @@ export function MapViewer({
   tokens: fromPage,
   inside: insideFromPage,
   party,
+  tokenTools,
   images,
   sounds,
   fight: fightFromPage,
@@ -71,6 +74,7 @@ export function MapViewer({
   tokens: TokenView[];
   inside: InsideBadge[];
   party: PartyPlacement[];
+  tokenTools: TokenTools;
   images: string[];
   /** Audio in the vault's sounds folder, by path inside it, for the stunts' sound board. */
   sounds: string[];
@@ -89,7 +93,13 @@ export function MapViewer({
   const shared = !!map.shared;
   const fogOpacity = presenting ? 1 : DM_FOG_OPACITY;
   const mapTokens = useMapTokens(map.id, { tokens: fromPage, inside: insideFromPage });
-  const { tokens, inside, error: tokenError, send } = mapTokens;
+  const { tokens, inside, error: tokenError, send: sendTokens } = mapTokens;
+  const revalidator = useRevalidator();
+  /** Sends token changes; ones that change the party's places or the lists elsewhere reload them. */
+  const send = async (actions: TokenAction[]) => {
+    await sendTokens(actions);
+    if (actions.some(changesElsewhere)) void revalidator.revalidate();
+  };
   const [focus, setFocus] = useState<{ at: [number, number]; key: number }>();
   const find = (token: TokenView) =>
     setFocus({ at: toPixels(token.at, map.size), key: (focus?.key ?? 0) + 1 });
@@ -399,6 +409,7 @@ export function MapViewer({
               <TokensTab
                 mapId={map.id}
                 party={party}
+                tools={tokenTools}
                 tokens={tokens}
                 selected={selectedToken}
                 placing={placing}
@@ -415,5 +426,15 @@ export function MapViewer({
         )}
       </div>
     </main>
+  );
+}
+
+/** Whether a token change touches more than this map's tokens: the party's places, or the lists. */
+function changesElsewhere(action: TokenAction): boolean {
+  return (
+    action.type === "place" ||
+    action.type === "remove" ||
+    action.type === "setAside" ||
+    (action.type === "move" && !!action.map)
   );
 }

@@ -4,6 +4,7 @@ import type { PartyPlacement, TokenView } from "~/maps/tokens/types";
 import type { MapId } from "~/maps/types";
 import { mapUrl } from "~/maps/urls";
 import type { Placing } from "./PlacingHint";
+import { TokenThumb } from "./TokenThumb";
 
 /**
  * The party in the DM's Tokens tab: where each member is, finding them here, or placing them here
@@ -35,6 +36,7 @@ export function PartyTokens({
           const elsewhere = !here && member.on && member.on.id !== mapId ? member.on : undefined;
           return (
             <li key={member.note} className="flex items-center gap-2">
+              <TokenThumb token={member} />
               <span className="mr-auto">
                 {member.name}{" "}
                 <span className="text-xs text-stone-500">

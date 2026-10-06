@@ -1,17 +1,20 @@
 import { useState } from "react";
 import type { MapGrid } from "~/maps/grid/grid";
-import { buttonClass, labelClass } from "~/components/styles";
+import { buttonClass, iconButtonClass, labelClass } from "~/components/styles";
 import type { TokenAction } from "~/maps/tokens/actions";
-import type { PartyPlacement, TokenView } from "~/maps/tokens/types";
+import type { PartyPlacement, TokenElsewhere, TokenTools, TokenView } from "~/maps/tokens/types";
 import type { MapId, Size } from "~/maps/types";
+import { AddTokenForm } from "./AddTokenForm";
 import { PartyTokens } from "./PartyTokens";
 import { PlacingHint, type Placing } from "./PlacingHint";
 import { TokenDistances } from "./TokenDistances";
-import { MarkerForm, TokenSettings } from "./TokenSettings";
+import { TokenSettings } from "./TokenSettings";
+import { TokenThumb } from "./TokenThumb";
 
 interface Props {
   mapId: MapId;
   party: PartyPlacement[];
+  tools: TokenTools;
   tokens: TokenView[];
   selected?: TokenView;
   placing?: Placing;
@@ -26,13 +29,18 @@ interface Props {
   size: Size;
 }
 
+const byName = (a: { name: string }, b: { name: string }) =>
+  a.name.localeCompare(b.name, undefined, { numeric: true });
+
 /**
- * The DM's Tokens tab: every token on this map and the party wherever they are, adding and
- * placing, and the chosen token's settings.
+ * The DM's Tokens tab: the party wherever they are; NPCs and markers on this map, each shown or
+ * hidden in one click; adding them; those set aside or on other maps, to bring here; and the
+ * chosen token's settings. Monsters in the fight stay in the tracker.
  */
 export function TokensTab({
   mapId,
   party,
+  tools,
   tokens,
   selected,
   placing,
@@ -44,8 +52,12 @@ export function TokensTab({
   grid,
   size,
 }: Props) {
-  const [addingMarker, setAddingMarker] = useState(false);
-  const markers = tokens.filter((token) => token.kind === "marker");
+  const [adding, setAdding] = useState(false);
+  const markers = tokens.filter((token) => token.kind === "marker").sort(byName);
+  const aside = tools.elsewhere.filter((each) => each.aside);
+  const elsewhere = tools.elsewhere.filter((each) => !each.aside);
+  const bring = ({ token }: TokenElsewhere) =>
+    onPlace({ kind: "bring", id: token.id, name: token.name });
 
   return (
     <>
@@ -64,52 +76,80 @@ export function TokensTab({
         onFind={onFind}
       />
 
-      <section aria-labelledby="markers-heading" className="flex flex-col gap-2">
+      <section aria-labelledby="on-this-map-heading" className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <h2 id="markers-heading" className={`${labelClass} mr-auto`}>
-            Markers
+          <h2 id="on-this-map-heading" className={`${labelClass} mr-auto`}>
+            On this map
           </h2>
-          {!addingMarker && (
-            <button type="button" className={buttonClass} onClick={() => setAddingMarker(true)}>
-              Add marker
+          {!adding && (
+            <button type="button" className={buttonClass} onClick={() => setAdding(true)}>
+              Add
             </button>
           )}
         </div>
-        {addingMarker && (
-          <MarkerForm
-            label="New marker"
-            submitLabel="Place on the map"
-            onCancel={() => setAddingMarker(false)}
-            onSubmit={(marker) => {
-              setAddingMarker(false);
-              onPlace({ kind: "marker", ...marker });
+        {adding && (
+          <AddTokenForm
+            notes={tools.notes}
+            existing={markers.map((marker) => marker.name)}
+            onCancel={() => setAdding(false)}
+            onPlace={(drafts) => {
+              setAdding(false);
+              const first = drafts[0].name;
+              const last = drafts.at(-1)?.name;
+              onPlace({
+                kind: "markers",
+                name: drafts.length > 1 ? `${first} to ${last}` : first,
+                markers: drafts,
+              });
             }}
           />
         )}
+        {markers.length === 0 && !adding && (
+          <p className="text-sm text-stone-500">No NPCs or markers here yet.</p>
+        )}
         {markers.length > 0 && (
-          <ul aria-label="Markers" className="flex flex-col text-sm">
+          <ul aria-label="On this map" className="flex flex-col text-sm">
             {markers.map((marker) => (
-              <li key={marker.id}>
-                <button
-                  type="button"
-                  onClick={() => onSelect(marker)}
-                  className="block w-full rounded px-1 py-0.5 text-left hover:bg-stone-100 dark:hover:bg-stone-800"
-                >
-                  {marker.name}
-                  {marker.hidden === "secret" && (
-                    <span className="ml-1 text-xs text-stone-500">(DM only)</span>
-                  )}
-                </button>
-              </li>
+              <MarkerRow
+                key={marker.id}
+                marker={marker}
+                chosen={marker.id === selected?.id}
+                onSelect={() => onSelect(marker)}
+                send={send}
+              />
             ))}
           </ul>
         )}
       </section>
 
+      {aside.length > 0 && (
+        <section aria-labelledby="set-aside-heading" className="flex flex-col gap-1 text-sm">
+          <h2 id="set-aside-heading" className={labelClass}>
+            Set aside
+          </h2>
+          <ElsewhereList label="Set aside" entries={aside} action="Place" onBring={bring} />
+        </section>
+      )}
+
+      {elsewhere.length > 0 && (
+        <details className="text-sm">
+          <summary className={`${labelClass} cursor-pointer`}>
+            NPCs elsewhere ({elsewhere.length})
+          </summary>
+          <ElsewhereList
+            label="NPCs elsewhere"
+            entries={elsewhere}
+            action="Bring here"
+            onBring={bring}
+          />
+        </details>
+      )}
+
       {selected && (
         <TokenSettings
           key={selected.id}
           token={selected}
+          tools={tools}
           onClose={() => onSelect(undefined)}
           send={send}
         >
@@ -117,5 +157,91 @@ export function TokensTab({
         </TokenSettings>
       )}
     </>
+  );
+}
+
+function MarkerRow({
+  marker,
+  chosen,
+  onSelect,
+  send,
+}: {
+  marker: TokenView;
+  chosen: boolean;
+  onSelect: () => void;
+  send: (actions: TokenAction[]) => void;
+}) {
+  const shown = marker.visibility === "players";
+  return (
+    <li
+      className={`flex items-center gap-2 rounded px-1 py-0.5 ${
+        chosen ? "bg-sky-100 dark:bg-sky-950" : ""
+      }`}
+    >
+      <TokenThumb token={marker} />
+      <button
+        type="button"
+        className="mr-auto truncate text-left hover:underline"
+        onClick={onSelect}
+      >
+        {marker.name}
+        {marker.hidden === "fog" && shown && (
+          <span className="ml-1 text-xs text-stone-500">(under the fog)</span>
+        )}
+      </button>
+      <button
+        type="button"
+        aria-label={shown ? `Hide ${marker.name} from players` : `Show ${marker.name} to players`}
+        title={
+          shown
+            ? "Players can see it where it's revealed. Click to hide it."
+            : "Only you can see it. Click to show players."
+        }
+        className={`${iconButtonClass} whitespace-nowrap text-xs`}
+        onClick={() =>
+          send([{ type: "editMarker", id: marker.id, visibility: shown ? "dm" : "players" }])
+        }
+      >
+        {shown ? "👁 Shown" : "DM only"}
+      </button>
+    </li>
+  );
+}
+
+function ElsewhereList({
+  label,
+  entries,
+  action,
+  onBring,
+}: {
+  label: string;
+  entries: TokenElsewhere[];
+  action: string;
+  onBring: (entry: TokenElsewhere) => void;
+}) {
+  return (
+    <ul aria-label={label} className="mt-1 flex flex-col gap-1">
+      {entries.map((entry) => (
+        <li key={entry.token.id} className="flex items-center gap-2">
+          <TokenThumb token={entry.token} />
+          <span className="mr-auto truncate">
+            {entry.token.name}{" "}
+            {entry.map && (
+              <span className="text-xs text-stone-500">
+                {entry.aside ? "last on" : "on"} {entry.map.name}
+              </span>
+            )}
+          </span>
+          <button
+            type="button"
+            aria-label={`${action}: ${entry.token.name}`}
+            className={buttonClass}
+            onClick={() => onBring(entry)}
+          >
+            {action}
+          </button>
+        </li>
+      ))}
+    </ul>
   );
 }

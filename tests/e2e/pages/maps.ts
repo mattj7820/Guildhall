@@ -241,16 +241,60 @@ export class MapView extends MapCanvasPage {
     await expect(this.token(member)).toBeVisible();
   }
 
-  async addMarker({ name, shown, at }: { name: string; shown: boolean; at: Point }) {
+  /**
+   * Adds NPCs or markers in the Tokens tab and places them where the DM clicks: from a note (by
+   * its path) if given, numbered if more than one, with an icon if given.
+   */
+  async addToken({
+    name,
+    note,
+    count = 1,
+    icon,
+    shown,
+    at,
+  }: {
+    name: string;
+    note?: string;
+    count?: number;
+    icon?: string;
+    shown: boolean;
+    at: Point;
+  }) {
     await this.openTokens();
-    await this.page.getByRole("button", { name: "Add marker" }).click();
-    const form = this.page.getByRole("form", { name: "New marker" });
-    await form.getByLabel("Marker name").fill(name);
-    await form.getByRole("radio", { name: "teal" }).check();
-    if (shown) await form.getByLabel(/Players can see it/).check();
+    await this.page.getByRole("button", { name: "Add", exact: true }).click();
+    const form = this.page.getByRole("form", { name: "New token" });
+    if (note) await form.getByLabel("Note (optional)").fill(note);
+    await form.getByLabel("Name", { exact: true }).fill(name);
+    if (count > 1) await form.getByLabel("How many").fill(String(count));
+    await form.getByRole("button", { name: "teal" }).click();
+    if (icon) {
+      // Clicked even if an icon guessed from the name is chosen already: it opens the grid.
+      await form.getByRole("radio", { name: "Icon" }).click();
+      await form
+        .getByRole("listbox", { name: "Icons" })
+        .getByRole("option", { name: icon })
+        .click();
+    }
+    if (shown) await form.getByLabel(/Players can see/).check();
     await form.getByRole("button", { name: "Place on the map" }).click();
     await this.click(at);
-    await expect(this.token(name)).toBeVisible();
+    await expect(this.token(count > 1 ? `${name} 1` : name)).toBeVisible();
+  }
+
+  /** NPCs and markers on this map, in the Tokens tab. */
+  get onThisMap() {
+    return this.page.getByRole("list", { name: "On this map" });
+  }
+
+  /** The chosen token's settings. */
+  tokenSettings(name: string) {
+    return this.page.getByRole("region", { name: `Token: ${name}` });
+  }
+
+  /** Shows a token to players, or hides it, with its button in the list. */
+  async toggleShown(name: string, to: "show" | "hide") {
+    const label = to === "show" ? `Show ${name} to players` : `Hide ${name} from players`;
+    await this.onThisMap.getByRole("button", { name: label }).click();
   }
 
   /* Fog (the DM's) */

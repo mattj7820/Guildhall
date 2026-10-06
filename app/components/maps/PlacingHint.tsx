@@ -1,4 +1,4 @@
-import type { MarkerColour } from "~/maps/tokens/types";
+import type { MarkerToken, TokenId } from "~/maps/tokens/types";
 
 /** Says what the next click on the map places, and lets the DM change their mind. */
 export function PlacingHint({ placing, onCancel }: { placing: Placing; onCancel: () => void }) {
@@ -19,4 +19,13 @@ export function PlacingHint({ placing, onCancel }: { placing: Placing; onCancel:
 export type Placing =
   | { kind: "character"; note: string; name: string }
   | { kind: "party"; name: string }
-  | { kind: "marker"; name: string; colour: MarkerColour; shown: boolean };
+  /** New NPCs or markers, side by side ("Bandit 1 to Bandit 3"). */
+  | { kind: "markers"; name: string; markers: MarkerDraft[] }
+  /** A marker set aside, or on another map, brought here. */
+  | { kind: "bring"; id: TokenId; name: string };
+
+/** A new marker, as the DM fills it in, before it has a place. */
+export type MarkerDraft = Pick<
+  MarkerToken,
+  "name" | "colour" | "visibility" | "note" | "picture" | "icon"
+>;
