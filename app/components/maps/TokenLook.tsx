@@ -41,7 +41,7 @@ export function TokenLook({
           />
           Note&rsquo;s picture
           {noteImage && (
-            <img src={noteImage} alt="" className="h-6 w-6 rounded-full object-cover" />
+            <img src={noteImage} alt="" className="h-6 w-6 rounded-full object-cover object-top" />
           )}
         </label>
         <label className="flex items-center gap-1">

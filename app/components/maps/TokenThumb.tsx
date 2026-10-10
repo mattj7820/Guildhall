@@ -27,7 +27,7 @@ export function TokenThumb({
       className={`flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-stone-900 ${fill}`}
     >
       {token.portraitUrl ? (
-        <img src={token.portraitUrl} alt="" className="h-full w-full object-cover" />
+        <img src={token.portraitUrl} alt="" className="h-full w-full object-cover object-top" />
       ) : icon ? (
         <svg viewBox="0 0 512 512" className="h-5 w-5">
           <path d={icon.path} className="fill-white" />
