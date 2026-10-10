@@ -9,11 +9,10 @@ describe("loadConfig", () => {
     expect(config.vaultPath).toBe(FIXTURE_VAULT);
   });
 
-  it("reads an optional Roll20 URL", () => {
-    const url = "https://app.roll20.net/campaigns/details/123/example";
-    expect(loadConfig({ VAULT_PATH: FIXTURE_VAULT, ROLL20_CAMPAIGN_URL: url })).toMatchObject({
-      roll20CampaignUrl: url,
-    });
+  it("ignores a Roll20 URL left over from before the hub stopped linking to it", () => {
+    expect(() =>
+      loadConfig({ VAULT_PATH: FIXTURE_VAULT, ROLL20_CAMPAIGN_URL: "roll20" }),
+    ).not.toThrow();
   });
 
   it("keeps its own data in ./data by default", () => {
@@ -104,12 +103,6 @@ describe("loadConfig", () => {
     ).toBe(true);
   });
 
-  it("treats an empty Roll20 URL as not configured", () => {
-    expect(
-      loadConfig({ VAULT_PATH: FIXTURE_VAULT, ROLL20_CAMPAIGN_URL: "" }).roll20CampaignUrl,
-    ).toBeUndefined();
-  });
-
   it.each([
     ["VAULT_PATH is missing", {}, /VAULT_PATH is not set/],
     ["VAULT_PATH is blank", { VAULT_PATH: "  " }, /VAULT_PATH is not set/],
@@ -138,16 +131,6 @@ describe("loadConfig", () => {
       "the data folder is a file",
       { VAULT_PATH: FIXTURE_VAULT, DATA_PATH: path.resolve("package.json") },
       /points to a file/,
-    ],
-    [
-      "the Roll20 URL is not a URL",
-      { VAULT_PATH: FIXTURE_VAULT, ROLL20_CAMPAIGN_URL: "roll20" },
-      /ROLL20_CAMPAIGN_URL/,
-    ],
-    [
-      "the Roll20 URL is not http(s)",
-      { VAULT_PATH: FIXTURE_VAULT, ROLL20_CAMPAIGN_URL: "javascript:alert(1)" },
-      /ROLL20_CAMPAIGN_URL/,
     ],
     [
       "the public address has a path",

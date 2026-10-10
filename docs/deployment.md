@@ -70,7 +70,6 @@ leave it "DNS only", so Traefik can get a Let's Encrypt certificate itself.
 | `DISCORD_CLIENT_ID`           |                                 | From the Discord application.                                                                                          |
 | `DISCORD_CLIENT_SECRET`       |                                 | From the Discord application.                                                                                          |
 | `DM_DISCORD_IDS`              | `123456789012345678`            | The DM's Discord ID; comma-separate several.                                                                           |
-| `ROLL20_CAMPAIGN_URL`         |                                 | Optional.                                                                                                              |
 | `GDRIVE_FOLDER_ID`            |                                 | The vault folder's ID.                                                                                                 |
 | `GDRIVE_SERVICE_ACCOUNT_JSON` | `{"type":"service_account",…}`  | The whole JSON key, on one line.                                                                                       |
 
