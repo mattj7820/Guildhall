@@ -22,7 +22,6 @@ services:
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
       DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
       DM_DISCORD_IDS: ${DM_DISCORD_IDS}
-      ROLL20_CAMPAIGN_URL: ${ROLL20_CAMPAIGN_URL:-}
     volumes:
       # Read-only: Guildhall never writes to the vault, and here it couldn't if it tried.
       - vault:/vault:ro

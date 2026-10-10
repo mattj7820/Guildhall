@@ -6,7 +6,7 @@ locations, maps, characters, sessions).
 
 ## Built
 
-- **Hub shell:** a home page linking to table tools (Roll20) and to Guildhall's own modules.
+- **Hub shell:** a home page linking to Guildhall's own modules.
 - **Campaign wiki (read-only):** browse and search the Obsidian vault, with DM/player preview.
   Shared notes can keep DM-only parts: a `## DM` section or a `> [!dm]` callout.
 - **Combat tracker:** encounters built from vault statblocks and PC notes, initiative with

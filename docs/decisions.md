@@ -1216,3 +1216,13 @@ bring here; plain markers belong to their own maps. The DM moves any token but a
 another map with **Send to map** (to its middle, to be moved from there), or brings one here from
 the lists, which is a move naming this map: the only move the server accepts for a token on
 another map, and only from the DM. The party's one place each (decision 45) is unchanged.
+
+## 68. The hub no longer links to Roll20
+
+**Date:** 2026-10-10
+
+Guildhall now does what the table used Roll20 for (battle maps, tokens, fog, the fight), so the
+hub's "At the table" link to the Roll20 campaign is gone, and with it `ROLL20_CAMPAIGN_URL`. It was
+the hub's only external link, so the cards are all Guildhall's own modules and the support for
+external and unconfigured links went too. A `ROLL20_CAMPAIGN_URL` still set on a server is ignored,
+so an old `.env` doesn't stop it starting.

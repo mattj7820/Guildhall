@@ -19,7 +19,7 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
 
 ## Features
 
-- **Hub home page** with a configurable link to the Roll20 campaign and cards for in-app modules.
+- **Hub home page** with cards for in-app modules.
 - **Campaign wiki**, read straight from an Obsidian vault folder, which stays the source of truth:
   - Obsidian-flavoured markdown: frontmatter, `[[wikilinks]]` (aliases, heading links, Obsidian's
     shortest-path resolution), `![[image]]` embeds with sizes, GitHub-flavoured markdown.
@@ -179,7 +179,7 @@ Requires Node.js 26 or later (see `.nvmrc`).
 
 ```sh
 npm install
-cp .env.example .env    # then set VAULT_PATH (and optionally ROLL20_CAMPAIGN_URL)
+cp .env.example .env    # then set VAULT_PATH
 npm run dev             # http://localhost:3000
 ```
 
@@ -187,13 +187,12 @@ With no vault of your own, the default `.env.example` points at the fixture vaul
 `tests/fixtures/vault`, and turns on dev sign-in (one-click pretend accounts, this computer only),
 so the app runs out of the box.
 
-| Variable              | Required | Description                                                                                   |
-| --------------------- | -------- | --------------------------------------------------------------------------------------------- |
-| `VAULT_PATH`          | yes      | Path to the Obsidian vault. **Only ever read, never written.**                                |
-| `DATA_PATH`           | no       | Where Guildhall keeps its own data (default `./data`). Must be outside the vault; back it up. |
-| `ROLL20_CAMPAIGN_URL` | no       | Roll20 campaign link shown on the hub.                                                        |
-| `PORT`                | no       | Web server port (default `3000`).                                                             |
-| `DEV_LOGIN`           | no       | `true` for one-click sign-in as the DM or a player, on this computer only.                    |
+| Variable     | Required | Description                                                                                   |
+| ------------ | -------- | --------------------------------------------------------------------------------------------- |
+| `VAULT_PATH` | yes      | Path to the Obsidian vault. **Only ever read, never written.**                                |
+| `DATA_PATH`  | no       | Where Guildhall keeps its own data (default `./data`). Must be outside the vault; back it up. |
+| `PORT`       | no       | Web server port (default `3000`).                                                             |
+| `DEV_LOGIN`  | no       | `true` for one-click sign-in as the DM or a player, on this computer only.                    |
 
 Hosting adds a few more settings (the public address, the session secret and the Discord
 application); see `.env.example` and [docs/deployment.md](docs/deployment.md).

@@ -7,7 +7,6 @@ export interface Config {
   vaultPath: string;
   /** Absolute path to the folder where Guildhall keeps its own data. Never inside the vault. */
   dataPath: string;
-  roll20CampaignUrl?: string;
   /**
    * The vault folder (vault-relative, no slashes at either end) whose audio is the DM's sound
    * board. Every signed-in viewer may fetch audio from it, so it's for the table.
@@ -113,12 +112,6 @@ const envSchema = z.object({
       .default("false")
       .transform((value) => value === "true"),
   ),
-  ROLL20_CAMPAIGN_URL: z.preprocess(
-    emptyAsUndefined,
-    z
-      .url({ protocol: /^https?$/, error: "ROLL20_CAMPAIGN_URL must be an http(s) URL." })
-      .optional(),
-  ),
 });
 
 /**
@@ -176,7 +169,6 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
   return {
     vaultPath,
     dataPath,
-    roll20CampaignUrl: parsed.data.ROLL20_CAMPAIGN_URL,
     soundsFolder: parsed.data.SOUNDS_FOLDER,
     publicUrl: publicUrl.origin,
     trustProxy: parsed.data.TRUST_PROXY,
