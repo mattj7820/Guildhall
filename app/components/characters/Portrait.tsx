@@ -16,7 +16,7 @@ export function Portrait({
       <img
         src={url}
         alt=""
-        className={`${box} shrink-0 rounded-full object-cover ring-2 ring-stone-200 dark:ring-stone-700`}
+        className={`${box} shrink-0 rounded-full object-cover object-top ring-2 ring-stone-200 dark:ring-stone-700`}
       />
     );
   }

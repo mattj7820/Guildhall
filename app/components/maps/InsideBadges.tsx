@@ -61,7 +61,7 @@ export function InsideBadges({
                   width={2 * r}
                   height={2 * r}
                   clipPath={`url(#${CLIP_ID})`}
-                  preserveAspectRatio="xMidYMid slice"
+                  preserveAspectRatio="xMidYMin slice"
                 />
               ) : (
                 <g key={index}>

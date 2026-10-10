@@ -1226,3 +1226,13 @@ hub's "At the table" link to the Roll20 campaign is gone, and with it `ROLL20_CA
 the hub's only external link, so the cards are all Guildhall's own modules and the support for
 external and unconfigured links went too. A `ROLL20_CAMPAIGN_URL` still set on a server is ignored,
 so an old `.env` doesn't stop it starting.
+
+## 69. Portraits in circles are cropped from the top
+
+**Date:** 2026-10-10
+
+Portraits are usually tall (half or full-body art), and cropping them to a circle from the middle
+cut off heads. Every round face (party cards, sheets, map tokens, the Tokens tab, badges) now
+crops from the top, where heads almost always are. Wide or square pictures, as creature art often
+is, are only trimmed at the sides, so they're unchanged. A focus point set for each picture was
+the alternative, kept for if a picture ever needs it.
