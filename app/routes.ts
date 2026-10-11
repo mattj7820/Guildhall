@@ -33,6 +33,8 @@ export default [
   route("members", "routes/members.tsx"),
   route("settings", "routes/settings.tsx"),
   route("characters", "routes/characters.tsx"),
+  // PROTOTYPE (removed before the PR).
+  route("characters/spell-picker-prototype", "routes/spell-picker-prototype.tsx"),
   route("characters/:id", "routes/character.tsx"),
   route("characters/:id/portrait", "routes/character-portrait.ts"),
   route("characters/:id/changes", "routes/character-changes.ts"),
