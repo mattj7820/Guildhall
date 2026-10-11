@@ -94,7 +94,9 @@ test.describe("SRD monsters", () => {
     await expect(preview).toContainText("A blink dog takes its name");
 
     await preview.getByRole("link", { name: "Credits" }).click();
-    await expect(page.getByRole("heading", { name: "Monsters from the SRD" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Monsters and spells from the SRD" }),
+    ).toBeVisible();
     await expect(page.getByText(/System Reference Document 5\.1/)).toBeVisible();
     await expect(page.getByText(/System Reference Document 5\.2\.1/)).toBeVisible();
   });

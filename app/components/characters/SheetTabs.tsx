@@ -23,6 +23,7 @@ export function SheetTabs({
   setTab,
   preparing,
   onPreparing,
+  undo,
 }: {
   page: CharacterPage;
   character: PlayerCharacter;
@@ -33,6 +34,7 @@ export function SheetTabs({
   setTab: (tab: Tab) => void;
   preparing: boolean;
   onPreparing: (preparing: boolean) => void;
+  undo: () => void;
 }) {
   const id = useId();
   const tabs: { key: Tab; label: string }[] = [
@@ -87,9 +89,14 @@ export function SheetTabs({
         {tab === "spells" && (
           <SpellsTab
             parts={parts}
-            spellNotes={{ catalogue: page.spellCatalogue ?? [], notes: page.spellNotes ?? {} }}
+            spellNotes={{
+              catalogue: page.spellCatalogue ?? [],
+              notes: page.spellNotes ?? {},
+              texts: page.spellTexts,
+            }}
             preparing={preparing}
             onPreparing={onPreparing}
+            undo={undo}
           />
         )}
         {tab === "features" && <FeaturesTab parts={parts} />}

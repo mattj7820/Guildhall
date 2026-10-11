@@ -1,11 +1,10 @@
-import { expect, test } from "./support/fixtures";
-import { REVEAL_ALL, uniqueName } from "./support/test-data";
+import { expect, test } from "../support/fixtures";
+import { REVEAL_ALL, uniqueName } from "../support/test-data";
 
 /**
  * Preparing spells, as Player One on Fixture PC One: the number to prepare, Prepare mode, what's
- * ready day to day on the sheet and beside the map, and undo. Only this spec adds spells to PC One,
- * and it never rests. Counts are read first and compared after, so a run repeated against one
- * server still passes.
+ * ready day to day on the sheet and beside the map, and undo. It never rests. Counts are read
+ * first and compared after, so a run repeated against one server still passes.
  */
 
 test("a player prepares spells, sees only what's ready, and keeps it after a reload", async ({

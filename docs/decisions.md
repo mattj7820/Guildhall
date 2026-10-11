@@ -1380,3 +1380,76 @@ each row that adds How many at once. Browsing lists everything by name, tagged: 
 easier than their own first. While searching, within a match the DM's own come first, then 2024,
 then 2014. Size and environment filters were left out (the data has no environments); the DM would
 like one by home region or theme one day.
+
+## 75. The SRD's spells: a picked spell is the player's copy, linked to the SRD's text
+
+**Date:** 2026-10-11
+
+**Context.** Every spell on a sheet was typed in from paper, field by field (decision 63): slow
+for the artificer's long list to prepare from (decision 72). The SRD 5.1 and SRD 5.2.1 spells are
+CC BY 4.0 like their monsters (decision 73), and 5e-bits' 5e-database has both at the release
+already pinned. Sheets are live data, so old ones must load exactly as they are.
+
+**Options considered.**
+
+- **What the data can fill in.** Both versions have the SRD's fields and text. Only 2014's has a
+  structured save and area (and some of its areas are odd: Forbiddance is a "cube 40000"); 2024's
+  has neither, gives damage only at the spell's own level, and healing only in the text. Leaving
+  saves and areas to the player, taking them only from 2014, or reading them from 2024's text by
+  strict patterns.
+- **A copy, a link, or both.** A copy alone can't hold the text (20 descriptions in 2014 and 12 in
+  2024 are longer than a sheet's 2000 characters, and a reaction's casting time is up to 136
+  against 80) and would put kilobytes per spell into every save and poll. A link alone leaves
+  nothing to edit.
+
+**Decision.** `scripts/import-srd.ts` also writes `spells-5.1.json` (319) and `spells-5.2.json`
+(339) through a pure `convertSpell`, which lays the text out (paragraphs, 2014's tables kept
+together so they render) without changing a word, and fills in what a sheet's spell can use: a
+save (2014's own; 2024's from "makes" or "succeeds on" one named ability, so "advantage on
+Dexterity saving throws" isn't one: 123 found, agreeing with 2014 wherever both have one, bar
+Black Tentacles, which 2024 changed), a roll (the first typed damage at the spell's level, or
+healing, without 2014's "+ MOD"), and an area in the battle map's shapes (2014's own; 2024's from
+the text, an Emanation as a sphere around the caster). Five spells whose only damage in the data
+is a mishap or a cost (Wish, Teleport, Dimension Door, Meld into Stone, Contact Other Plane) are
+named and get no roll; the DM chose that over filling in rolls only for spells that attack, save
+or heal, which lost every smite, Hex and Magic Missile. `srd:check` covers the spells, and the
+removal guard protects them, as sheets point at them.
+
+Picking one adds an ordinary spell through the usual action (`pickedSpell`): the short fields are
+the player's copy, edited like any typed spell, and `srd: { source, id }` links its text, shown
+from the data with its material, higher levels and a reaction's trigger. The description stays
+the player's own words. A re-import changes the text a link shows, never a sheet's fields. Old
+spells have no link and load as they were; a link this build can't read is dropped, never the
+sheet refused; rolling a deploy back drops links on the next save (decision 61's backups cover
+it). The SRD's names and rules move to `app/campaign/srd.ts`, shared by monsters and spells.
+
+Known gaps, from the data: 2024's Control Water has part of Control Weather's text, three 2024
+tables are flattened into lines and Divine Word's lacks a row; 2014's Spirit Guardians has no
+save or damage; cantrips' damage is their first level's, with the upgrade in the text.
+
+## 76. The spell picker: loaded when opened, with the DM's spell notes as theirs
+
+**Date:** 2026-10-11
+
+**Context.** All 658 SRD spells with their text are 149 KB compressed; sent with every sheet
+page (and the sheet beside the map) that's decision 74's problem again. Players pick their own
+spells (decision 55), and the DM's vault spell notes may be DM-only. A prototype tried the feel.
+
+**Decision.** Add spells on the Spells tab (and Find a spell beside Add spell while editing)
+opens the picker, which loads its list from `/spells` (20 KB compressed with the fixture vault,
+held to a budget in a test): the SRD's spells and the vault spell notes the viewer may read, a
+DM-only one marked for the DM and never there for players. A row opens to the spell's text from
+`/spells/text?key=` (the same 404 for a note that's missing or not theirs); + adds it. The sheet
+page carries only the text of the SRD spells its spells link to (1.6 KB compressed for twenty).
+Anyone who can edit the sheet can pick, the DM included; it's always someone's click, and nothing
+checks a spell against class rules.
+
+From the prototype: chips for Mine / 2024 / 2014 start on 2024 and Mine (2014 is a click away,
+where 300 near-duplicates would confuse new players); browsing goes by level under headings,
+searching best match first as for monsters; filters for level, class, concentration and ritual
+(school didn't earn its place). A new spell starts prepared as decision 72 says, and the notice
+says which, with Undo. A class's whole list at once waits for class lists.
+
+The SRD has no Artificer, and some of the table's spells aren't in it, so vault spell notes can
+say what they are in frontmatter (level, classes, casting time and the rest, all optional, read
+leniently and documented in the README); picking one fills in what it gives and links the note.

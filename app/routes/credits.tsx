@@ -26,7 +26,10 @@ const FONTS = [
   { name: "Jost", theme: "Gemlight" },
 ];
 
-/** Where the item and token icons, the SRD's monsters and the fonts come from, as their licences ask. */
+/**
+ * Where the item and token icons, the SRD's monsters and spells, and the fonts come from, as their
+ * licences ask.
+ */
 export default function Credits() {
   return (
     <main className="mx-auto max-w-4xl px-4 py-6">
@@ -44,11 +47,11 @@ export default function Credits() {
       </p>
       <section aria-labelledby="srd" className="mt-6">
         <h2 id="srd" className="font-serif text-xl font-bold">
-          Monsters from the SRD
+          Monsters and spells from the SRD
         </h2>
         <p className="mt-2 text-ink">
-          The combat tools&rsquo; SRD monsters (tagged 2014 and 2024) are bundled with Guildhall, as
-          their licence allows.
+          The combat tools&rsquo; SRD monsters and the character sheets&rsquo; SRD spells (tagged
+          2014 and 2024) are bundled with Guildhall, as their licence allows.
         </p>
         {/* Each SRD's notice is quoted as its licence asks, word for word. */}
         <blockquote className="mt-2 border-l-4 border-line pl-3 text-sm text-ink">
@@ -87,7 +90,7 @@ export default function Credits() {
           .
         </blockquote>
         <p className="mt-2 text-sm text-ink">
-          The monsters come from{" "}
+          The monsters and spells come from{" "}
           <a href="https://github.com/5e-bits/5e-srd-api" className="text-link underline">
             5e-bits&rsquo; 5e-database
           </a>{" "}
@@ -96,8 +99,8 @@ export default function Credits() {
           <a href="https://github.com/open5e/open5e-api" className="text-link underline">
             Open5e
           </a>{" "}
-          (MIT License, copyright Ean Moody). Guildhall lays them out as statblocks; the SRD&rsquo;s
-          text is unchanged.
+          (MIT License, copyright Ean Moody). Guildhall lays the monsters out as statblocks and the
+          spells as paragraphs; the SRD&rsquo;s text is unchanged.
         </p>
       </section>
       <section aria-labelledby="fonts" className="mt-6">

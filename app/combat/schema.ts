@@ -1,6 +1,7 @@
 /** zod schemas for combat data that crosses a trust boundary: browser storage, requests, files. */
 import { z } from "zod";
-import { CONDITIONS, SRD_SOURCES, type Encounter, type PreparedEncounter } from "./types";
+import { SRD_SOURCES } from "~/campaign/srd";
+import { CONDITIONS, type Encounter, type PreparedEncounter } from "./types";
 
 const player = z.object({ id: z.string(), name: z.string() });
 const statblockRef = z.object({

@@ -136,9 +136,14 @@ function CompactSheet({ page, editor }: { page: CharacterPage; editor: Character
             <SpellsTab
               parts={parts}
               compact
-              spellNotes={{ catalogue: page.spellCatalogue ?? [], notes: page.spellNotes ?? {} }}
+              spellNotes={{
+                catalogue: page.spellCatalogue ?? [],
+                notes: page.spellNotes ?? {},
+                texts: page.spellTexts,
+              }}
               preparing={preparing}
               onPreparing={setPreparing}
+              undo={editor.undo}
             />
           )}
           {part === "features" && <FeaturesTab parts={parts} compact />}

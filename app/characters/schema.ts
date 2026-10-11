@@ -16,6 +16,7 @@ import {
 } from "./abilities";
 import { QUANTITY_MAX } from "./inventory";
 import { DESCRIPTION_MAX, NAME_MAX, PURSE_MAX, SOURCE_MAX } from "./inventory-changes";
+import { SRD_SOURCES } from "~/campaign/srd";
 import { SPELL_SHAPES } from "~/maps/grid/shapes";
 import {
   ACTIVATIONS,
@@ -117,6 +118,12 @@ export const attackSchema: z.ZodType<Attack> = z.object({
   notes: optionalText(LONG_TEXT_MAX),
 });
 
+/** A link a newer build made, or to an SRD this one doesn't know, is dropped, never refused. */
+export const srdSpellRef = z.object({
+  source: z.enum(SRD_SOURCES),
+  id: z.string().min(1).max(64),
+});
+
 export const spellSchema: z.ZodType<Spell> = z.object({
   id,
   name,
@@ -136,6 +143,7 @@ export const spellSchema: z.ZodType<Spell> = z.object({
   freeUse: id.optional(),
   description: optionalText(LONG_TEXT_MAX),
   note: entityId.optional(),
+  srd: srdSpellRef.optional().catch(undefined),
   // Spells stored before preparing existed were all ready, so they stay so.
   prepared: z.boolean().catch(true),
 });

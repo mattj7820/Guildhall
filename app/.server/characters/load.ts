@@ -16,6 +16,7 @@ import type { Note } from "../vault/parse-note";
 import { renderStatblock } from "../vault/statblock/rehype-statblocks";
 import type { Vault } from "../vault/vault";
 import { controllersFor } from "./controllers";
+import { sheetSpellTexts } from "./spell-catalogue";
 
 const byName = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
@@ -173,7 +174,10 @@ export function characterPage(
     ...(fromNote && { notePortrait: fromNote }),
     ...(character.kind === "pc" && { portraitChoices: portraitChoices(vault, viewer) }),
     ...itemCatalogue(vault, viewer),
-    ...(character.kind === "pc" && spellCatalogue(vault, viewer)),
+    ...(character.kind === "pc" && {
+      ...spellCatalogue(vault, viewer),
+      spellTexts: sheetSpellTexts(character.sheet),
+    }),
     recipients: partyCards(vault, party, viewer).cards.flatMap(({ id, name, kind }) =>
       id && id !== character.id
         ? [{ id, name, ...(kind === "companion" && { companion: true }) }]

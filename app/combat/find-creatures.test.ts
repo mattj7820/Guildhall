@@ -7,7 +7,8 @@ import {
   type CreatureFilters,
   type CreatureTag,
 } from "./find-creatures";
-import { statblockKey, type CreatureOption, type SrdSource } from "./types";
+import type { SrdSource } from "~/campaign/srd";
+import { statblockKey, type CreatureOption } from "./types";
 
 function creature(
   name: string,

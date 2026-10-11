@@ -75,3 +75,15 @@ export function ListControls({
     </span>
   );
 }
+
+/** A small letter after a name: C for concentration, R for ritual. */
+export function Badge({ title, children }: { title: string; children: string }) {
+  return (
+    <abbr
+      title={title}
+      className="ml-1 rounded border border-line-strong px-1 text-[10px] font-semibold text-muted no-underline"
+    >
+      {children}
+    </abbr>
+  );
+}

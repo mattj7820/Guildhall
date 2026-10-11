@@ -1641,7 +1641,7 @@
    ]
   }
  ],
- "note": "Real records from the pinned sources, for converter tests: 5e-bits 5e-database v7.8.0 (2014 and 2024) and Open5e (2024 creatures, initiative only). SRD 5.1 and SRD 5.2.1 by Wizards of the Coast LLC, CC BY 4.0.",
+ "note": "Real records from the pinned sources, for converter tests: 5e-bits 5e-database v7.8.0 (2014 and 2024 monsters and spells) and Open5e (2024 creatures, initiative only). SRD 5.1 and SRD 5.2.1 by Wizards of the Coast LLC, CC BY 4.0.",
  "open5e": [
   {
    "fields": {
@@ -1678,5 +1678,1442 @@
   "mage-armor": 1,
   "mage-hand": 0,
   "prestidigitation": 0
+ },
+ "spells": {
+  "2014": [
+   {
+    "index": "animate-objects",
+    "name": "Animate Objects",
+    "desc": [
+     "Objects come to life at your command. Choose up to ten nonmagical objects within range that are not being worn or carried. Medium targets count as two objects, Large targets count as four objects, Huge targets count as eight objects. You can't animate any object larger than Huge. Each target animates and becomes a creature under your control until the spell ends or until reduced to 0 hit points.",
+     "As a bonus action, you can mentally command any creature you made with this spell if the creature is within 500 feet of you (if you control multiple creatures, you can command any or all of them at the same time, issuing the same command to each one). You decide what action the creature will take and where it will move during its next turn, or you can issue a general command, such as to guard a particular chamber or corridor. If you issue no commands, the creature only defends itself against hostile creatures. Once given an order, the creature continues to follow it until its task is complete.",
+     "##### Animated Object Statistics",
+     "| Size | HP | AC | Attack | Str | Dex |",
+     "|---|---|---|---|---|---|",
+     "| Tiny | 20 | 18 | +8 to hit, 1d4 + 4 damage | 4 | 18 |",
+     "| Small | 25 | 16 | +6 to hit, 1d8 + 2 damage | 6 | 14 |",
+     "| Medium | 40 | 13 | +5 to hit, 2d6 + 1 damage | 10 | 12 |",
+     "| Large | 50 | 10 | +6 to hit, 2d10 + 2 damage | 14 | 10 |",
+     "| Huge | 80 | 10 | +8 to hit, 2d12 + 4 damage | 18 | 6 |",
+     "An animated object is a construct with AC, hit points, attacks, Strength, and Dexterity determined by its size. Its Constitution is 10 and its Intelligence and Wisdom are 3, and its Charisma is 1. Its speed is 30 feet; if the object lacks legs or other appendages it can use for locomotion, it instead has a flying speed of 30 feet and can hover. If the object is securely attached to a surface or a larger object, such as a chain bolted to a wall, its speed is 0. It has blindsight with a radius of 30 feet and is blind beyond that distance. When the animated object drops to 0 hit points, it reverts to its original object form, and any remaining damage carries over to its original object form.",
+     "If you command an object to attack, it can make a single melee attack against a creature within 5 feet of it. It makes a slam attack with an attack bonus and bludgeoning damage determined by its size. The GM might rule that a specific object inflicts slashing or piercing damage based on its form."
+    ],
+    "higher_level": [
+     "If you cast this spell using a spell slot of 6th level or higher, you can animate two additional objects for each slot level above 5th."
+    ],
+    "range": "120 feet",
+    "components": [
+     "V",
+     "S"
+    ],
+    "ritual": false,
+    "duration": "Up to 1 minute",
+    "concentration": true,
+    "casting_time": "1 action",
+    "level": 5,
+    "school": {
+     "index": "transmutation",
+     "name": "Transmutation",
+     "url": "/api/2014/magic-schools/transmutation"
+    },
+    "classes": [
+     {
+      "index": "bard",
+      "name": "Bard",
+      "url": "/api/2014/classes/bard"
+     },
+     {
+      "index": "sorcerer",
+      "name": "Sorcerer",
+      "url": "/api/2014/classes/sorcerer"
+     },
+     {
+      "index": "wizard",
+      "name": "Wizard",
+      "url": "/api/2014/classes/wizard"
+     }
+    ],
+    "subclasses": [],
+    "url": "/api/2014/spells/animate-objects"
+   },
+   {
+    "index": "burning-hands",
+    "name": "Burning Hands",
+    "desc": [
+     "As you hold your hands with thumbs touching and fingers spread, a thin sheet of flames shoots forth from your outstretched fingertips. Each creature in a 15-foot cone must make a dexterity saving throw. A creature takes 3d6 fire damage on a failed save, or half as much damage on a successful one.",
+     "The fire ignites any flammable objects in the area that aren't being worn or carried."
+    ],
+    "higher_level": [
+     "When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st."
+    ],
+    "range": "Self",
+    "components": [
+     "V",
+     "S"
+    ],
+    "ritual": false,
+    "duration": "Instantaneous",
+    "concentration": false,
+    "casting_time": "1 action",
+    "level": 1,
+    "damage": [
+     {
+      "damage_type": {
+       "index": "fire",
+       "name": "Fire",
+       "url": "/api/2014/damage-types/fire"
+      },
+      "damage_at_slot_level": {
+       "1": "3d6",
+       "2": "4d6",
+       "3": "5d6",
+       "4": "6d6",
+       "5": "7d6",
+       "6": "8d6",
+       "7": "9d6",
+       "8": "10d6",
+       "9": "11d6"
+      }
+     }
+    ],
+    "dc": {
+     "dc_type": {
+      "index": "dex",
+      "name": "DEX",
+      "url": "/api/2014/ability-scores/dex"
+     },
+     "dc_success": "half"
+    },
+    "area_of_effect": {
+     "type": "cone",
+     "size": 15
+    },
+    "school": {
+     "index": "evocation",
+     "name": "Evocation",
+     "url": "/api/2014/magic-schools/evocation"
+    },
+    "classes": [
+     {
+      "index": "sorcerer",
+      "name": "Sorcerer",
+      "url": "/api/2014/classes/sorcerer"
+     },
+     {
+      "index": "wizard",
+      "name": "Wizard",
+      "url": "/api/2014/classes/wizard"
+     }
+    ],
+    "subclasses": [
+     {
+      "index": "lore",
+      "name": "Lore",
+      "url": "/api/2014/subclasses/lore"
+     },
+     {
+      "index": "fiend",
+      "name": "Fiend",
+      "url": "/api/2014/subclasses/fiend"
+     }
+    ],
+    "url": "/api/2014/spells/burning-hands"
+   },
+   {
+    "index": "cure-wounds",
+    "name": "Cure Wounds",
+    "desc": [
+     "A creature you touch regains a number of hit points equal to 1d8 + your spellcasting ability modifier. This spell has no effect on undead or constructs."
+    ],
+    "higher_level": [
+     "When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d8 for each slot level above 1st."
+    ],
+    "range": "Touch",
+    "components": [
+     "V",
+     "S"
+    ],
+    "ritual": false,
+    "duration": "Instantaneous",
+    "concentration": false,
+    "casting_time": "1 action",
+    "level": 1,
+    "heal_at_slot_level": {
+     "1": "1d8 + MOD",
+     "2": "2d8 + MOD",
+     "3": "3d8 + MOD",
+     "4": "4d8 + MOD",
+     "5": "5d8 + MOD",
+     "6": "6d8 + MOD",
+     "7": "7d8 + MOD",
+     "8": "8d8 + MOD",
+     "9": "9d8 + MOD"
+    },
+    "school": {
+     "index": "evocation",
+     "name": "Evocation",
+     "url": "/api/2014/magic-schools/evocation"
+    },
+    "classes": [
+     {
+      "index": "bard",
+      "name": "Bard",
+      "url": "/api/2014/classes/bard"
+     },
+     {
+      "index": "cleric",
+      "name": "Cleric",
+      "url": "/api/2014/classes/cleric"
+     },
+     {
+      "index": "druid",
+      "name": "Druid",
+      "url": "/api/2014/classes/druid"
+     },
+     {
+      "index": "paladin",
+      "name": "Paladin",
+      "url": "/api/2014/classes/paladin"
+     },
+     {
+      "index": "ranger",
+      "name": "Ranger",
+      "url": "/api/2014/classes/ranger"
+     }
+    ],
+    "subclasses": [
+     {
+      "index": "lore",
+      "name": "Lore",
+      "url": "/api/2014/subclasses/lore"
+     },
+     {
+      "index": "life",
+      "name": "Life",
+      "url": "/api/2014/subclasses/life"
+     }
+    ],
+    "url": "/api/2014/spells/cure-wounds"
+   },
+   {
+    "index": "detect-magic",
+    "name": "Detect Magic",
+    "desc": [
+     "For the duration, you sense the presence of magic within 30 feet of you. If you sense magic in this way, you can use your action to see a faint aura around any visible creature or object in the area that bears magic, and you learn its school of magic, if any.",
+     "The spell can penetrate most barriers, but it is blocked by 1 foot of stone, 1 inch of common metal, a thin sheet of lead, or 3 feet of wood or dirt."
+    ],
+    "range": "Self",
+    "components": [
+     "V",
+     "S"
+    ],
+    "ritual": true,
+    "duration": "Up to 10 minutes",
+    "concentration": true,
+    "casting_time": "1 action",
+    "level": 1,
+    "area_of_effect": {
+     "type": "sphere",
+     "size": 30
+    },
+    "school": {
+     "index": "divination",
+     "name": "Divination",
+     "url": "/api/2014/magic-schools/divination"
+    },
+    "classes": [
+     {
+      "index": "bard",
+      "name": "Bard",
+      "url": "/api/2014/classes/bard"
+     },
+     {
+      "index": "cleric",
+      "name": "Cleric",
+      "url": "/api/2014/classes/cleric"
+     },
+     {
+      "index": "druid",
+      "name": "Druid",
+      "url": "/api/2014/classes/druid"
+     },
+     {
+      "index": "paladin",
+      "name": "Paladin",
+      "url": "/api/2014/classes/paladin"
+     },
+     {
+      "index": "ranger",
+      "name": "Ranger",
+      "url": "/api/2014/classes/ranger"
+     },
+     {
+      "index": "sorcerer",
+      "name": "Sorcerer",
+      "url": "/api/2014/classes/sorcerer"
+     },
+     {
+      "index": "wizard",
+      "name": "Wizard",
+      "url": "/api/2014/classes/wizard"
+     }
+    ],
+    "subclasses": [
+     {
+      "index": "lore",
+      "name": "Lore",
+      "url": "/api/2014/subclasses/lore"
+     }
+    ],
+    "url": "/api/2014/spells/detect-magic"
+   },
+   {
+    "index": "fire-bolt",
+    "name": "Fire Bolt",
+    "desc": [
+     "You hurl a mote of fire at a creature or object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 fire damage. A flammable object hit by this spell ignites if it isn't being worn or carried.",
+     "This spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10)."
+    ],
+    "range": "120 feet",
+    "components": [
+     "V",
+     "S"
+    ],
+    "ritual": false,
+    "duration": "Instantaneous",
+    "concentration": false,
+    "casting_time": "1 action",
+    "level": 0,
+    "attack_type": "ranged",
+    "damage": [
+     {
+      "damage_type": {
+       "index": "fire",
+       "name": "Fire",
+       "url": "/api/2014/damage-types/fire"
+      },
+      "damage_at_character_level": {
+       "1": "1d10",
+       "5": "2d10",
+       "11": "3d10",
+       "17": "4d10"
+      }
+     }
+    ],
+    "school": {
+     "index": "evocation",
+     "name": "Evocation",
+     "url": "/api/2014/magic-schools/evocation"
+    },
+    "classes": [
+     {
+      "index": "sorcerer",
+      "name": "Sorcerer",
+      "url": "/api/2014/classes/sorcerer"
+     },
+     {
+      "index": "wizard",
+      "name": "Wizard",
+      "url": "/api/2014/classes/wizard"
+     }
+    ],
+    "subclasses": [],
+    "url": "/api/2014/spells/fire-bolt"
+   },
+   {
+    "index": "fireball",
+    "name": "Fireball",
+    "desc": [
+     "A bright streak flashes from your pointing finger to a point you choose within range and then blossoms with a low roar into an explosion of flame. Each creature in a 20-foot-radius sphere centered on that point must make a dexterity saving throw. A target takes 8d6 fire damage on a failed save, or half as much damage on a successful one.",
+     "The fire spreads around corners. It ignites flammable objects in the area that aren't being worn or carried."
+    ],
+    "higher_level": [
+     "When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 for each slot level above 3rd."
+    ],
+    "range": "150 feet",
+    "components": [
+     "V",
+     "S",
+     "M"
+    ],
+    "material": "A tiny ball of bat guano and sulfur.",
+    "ritual": false,
+    "duration": "Instantaneous",
+    "concentration": false,
+    "casting_time": "1 action",
+    "level": 3,
+    "damage": [
+     {
+      "damage_type": {
+       "index": "fire",
+       "name": "Fire",
+       "url": "/api/2014/damage-types/fire"
+      },
+      "damage_at_slot_level": {
+       "3": "8d6",
+       "4": "9d6",
+       "5": "10d6",
+       "6": "11d6",
+       "7": "12d6",
+       "8": "13d6",
+       "9": "14d6"
+      }
+     }
+    ],
+    "dc": {
+     "dc_type": {
+      "index": "dex",
+      "name": "DEX",
+      "url": "/api/2014/ability-scores/dex"
+     },
+     "dc_success": "half"
+    },
+    "area_of_effect": {
+     "type": "sphere",
+     "size": 20
+    },
+    "school": {
+     "index": "evocation",
+     "name": "Evocation",
+     "url": "/api/2014/magic-schools/evocation"
+    },
+    "classes": [
+     {
+      "index": "sorcerer",
+      "name": "Sorcerer",
+      "url": "/api/2014/classes/sorcerer"
+     },
+     {
+      "index": "wizard",
+      "name": "Wizard",
+      "url": "/api/2014/classes/wizard"
+     }
+    ],
+    "subclasses": [
+     {
+      "index": "lore",
+      "name": "Lore",
+      "url": "/api/2014/subclasses/lore"
+     },
+     {
+      "index": "fiend",
+      "name": "Fiend",
+      "url": "/api/2014/subclasses/fiend"
+     }
+    ],
+    "url": "/api/2014/spells/fireball"
+   },
+   {
+    "index": "flame-strike",
+    "name": "Flame Strike",
+    "desc": [
+     "A vertical column of divine fire roars down from the heavens in a location you specify. Each creature in a 10-foot-radius, 40-foot-high cylinder centered on a point within range must make a dexterity saving throw. A creature takes 4d6 fire damage and 4d6 radiant damage on a failed save, or half as much damage on a successful one."
+    ],
+    "higher_level": [
+     "When you cast this spell using a spell slot of 6th level or higher, the fire damage or the radiant damage (your choice) increases by 1d6 for each slot level above 5th."
+    ],
+    "range": "60 feet",
+    "components": [
+     "V",
+     "S",
+     "M"
+    ],
+    "material": "Pinch of sulfur.",
+    "ritual": false,
+    "duration": "Instantaneous",
+    "concentration": false,
+    "casting_time": "1 action",
+    "level": 5,
+    "damage": [
+     {
+      "damage_type": {
+       "index": "fire",
+       "name": "Fire",
+       "url": "/api/2014/damage-types/fire"
+      },
+      "damage_at_slot_level": {
+       "5": "4d6",
+       "6": "4d6 OR 5d6",
+       "7": "4d6 OR 6d6",
+       "8": "4d6 OR 7d6",
+       "9": "4d6 OR 8d6"
+      }
+     },
+     {
+      "damage_type": {
+       "index": "radiant",
+       "name": "Radiant",
+       "url": "/api/2014/damage-types/radiant"
+      },
+      "damage_at_slot_level": {
+       "5": "4d6",
+       "6": "4d6 OR 5d6",
+       "7": "4d6 OR 6d6",
+       "8": "4d6 OR 7d6",
+       "9": "4d6 OR 8d6"
+      }
+     }
+    ],
+    "dc": {
+     "dc_type": {
+      "index": "dex",
+      "name": "DEX",
+      "url": "/api/2014/ability-scores/dex"
+     },
+     "dc_success": "half"
+    },
+    "area_of_effect": {
+     "type": "cylinder",
+     "size": 40
+    },
+    "school": {
+     "index": "evocation",
+     "name": "Evocation",
+     "url": "/api/2014/magic-schools/evocation"
+    },
+    "classes": [
+     {
+      "index": "cleric",
+      "name": "Cleric",
+      "url": "/api/2014/classes/cleric"
+     }
+    ],
+    "subclasses": [
+     {
+      "index": "devotion",
+      "name": "Devotion",
+      "url": "/api/2014/subclasses/devotion"
+     },
+     {
+      "index": "fiend",
+      "name": "Fiend",
+      "url": "/api/2014/subclasses/fiend"
+     }
+    ],
+    "url": "/api/2014/spells/flame-strike"
+   },
+   {
+    "index": "haste",
+    "name": "Haste",
+    "desc": [
+     "Choose a willing creature that you can see within range. Until the spell ends, the target's speed is doubled, it gains a +2 bonus to AC, it has advantage on dexterity saving throws, and it gains an additional action on each of its turns. That action can be used only to take the Attack (one weapon attack only), Dash, Disengage, Hide, or Use an Object action.",
+     "When the spell ends, the target can't move or take actions until after its next turn, as a wave of lethargy sweeps over it."
+    ],
+    "range": "30 feet",
+    "components": [
+     "V",
+     "S",
+     "M"
+    ],
+    "material": "A shaving of licorice root.",
+    "ritual": false,
+    "duration": "Up to 1 minute",
+    "concentration": true,
+    "casting_time": "1 action",
+    "level": 3,
+    "school": {
+     "index": "transmutation",
+     "name": "Transmutation",
+     "url": "/api/2014/magic-schools/transmutation"
+    },
+    "classes": [
+     {
+      "index": "sorcerer",
+      "name": "Sorcerer",
+      "url": "/api/2014/classes/sorcerer"
+     },
+     {
+      "index": "wizard",
+      "name": "Wizard",
+      "url": "/api/2014/classes/wizard"
+     }
+    ],
+    "subclasses": [
+     {
+      "index": "lore",
+      "name": "Lore",
+      "url": "/api/2014/subclasses/lore"
+     },
+     {
+      "index": "land",
+      "name": "Land",
+      "url": "/api/2014/subclasses/land"
+     }
+    ],
+    "url": "/api/2014/spells/haste"
+   },
+   {
+    "index": "hold-person",
+    "name": "Hold Person",
+    "desc": [
+     "Choose a humanoid that you can see within range. The target must succeed on a wisdom saving throw or be paralyzed for the duration. At the end of each of its turns, the target can make another wisdom saving throw. On a success, the spell ends on the target."
+    ],
+    "higher_level": [
+     "When you cast this spell using a spell slot of 3rd level or higher, you can target one additional humanoid for each slot level above 2nd. The humanoids must be within 30 feet of each other when you target them."
+    ],
+    "range": "60 feet",
+    "components": [
+     "V",
+     "S",
+     "M"
+    ],
+    "material": "A small, straight piece of iron.",
+    "ritual": false,
+    "duration": "Up to 1 minute",
+    "concentration": true,
+    "casting_time": "1 action",
+    "level": 2,
+    "dc": {
+     "dc_type": {
+      "index": "wis",
+      "name": "WIS",
+      "url": "/api/2014/ability-scores/wis"
+     },
+     "dc_success": "none"
+    },
+    "school": {
+     "index": "enchantment",
+     "name": "Enchantment",
+     "url": "/api/2014/magic-schools/enchantment"
+    },
+    "classes": [
+     {
+      "index": "bard",
+      "name": "Bard",
+      "url": "/api/2014/classes/bard"
+     },
+     {
+      "index": "cleric",
+      "name": "Cleric",
+      "url": "/api/2014/classes/cleric"
+     },
+     {
+      "index": "druid",
+      "name": "Druid",
+      "url": "/api/2014/classes/druid"
+     },
+     {
+      "index": "sorcerer",
+      "name": "Sorcerer",
+      "url": "/api/2014/classes/sorcerer"
+     },
+     {
+      "index": "warlock",
+      "name": "Warlock",
+      "url": "/api/2014/classes/warlock"
+     },
+     {
+      "index": "wizard",
+      "name": "Wizard",
+      "url": "/api/2014/classes/wizard"
+     }
+    ],
+    "subclasses": [
+     {
+      "index": "lore",
+      "name": "Lore",
+      "url": "/api/2014/subclasses/lore"
+     },
+     {
+      "index": "land",
+      "name": "Land",
+      "url": "/api/2014/subclasses/land"
+     }
+    ],
+    "url": "/api/2014/spells/hold-person"
+   },
+   {
+    "index": "lightning-bolt",
+    "name": "Lightning Bolt",
+    "desc": [
+     "A stroke of lightning forming a line 100 feet long and 5 feet wide blasts out from you in a direction you choose. Each creature in the line must make a dexterity saving throw. A creature takes 8d6 lightning damage on a failed save, or half as much damage on a successful one.",
+     "The lightning ignites flammable objects in the area that aren't being worn or carried."
+    ],
+    "higher_level": [
+     "When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 for each slot level above 3rd."
+    ],
+    "range": "Self",
+    "components": [
+     "V",
+     "S",
+     "M"
+    ],
+    "material": "A bit of fur and a rod of amber, crystal, or glass.",
+    "ritual": false,
+    "duration": "Instantaneous",
+    "concentration": false,
+    "casting_time": "1 action",
+    "level": 3,
+    "damage": [
+     {
+      "damage_type": {
+       "index": "lightning",
+       "name": "Lightning",
+       "url": "/api/2014/damage-types/lightning"
+      },
+      "damage_at_slot_level": {
+       "3": "8d6",
+       "4": "9d6",
+       "5": "10d6",
+       "6": "11d6",
+       "7": "12d6",
+       "8": "13d6",
+       "9": "14d6"
+      }
+     }
+    ],
+    "dc": {
+     "dc_type": {
+      "index": "dex",
+      "name": "DEX",
+      "url": "/api/2014/ability-scores/dex"
+     },
+     "dc_success": "half"
+    },
+    "area_of_effect": {
+     "type": "line",
+     "size": 100
+    },
+    "school": {
+     "index": "evocation",
+     "name": "Evocation",
+     "url": "/api/2014/magic-schools/evocation"
+    },
+    "classes": [
+     {
+      "index": "sorcerer",
+      "name": "Sorcerer",
+      "url": "/api/2014/classes/sorcerer"
+     },
+     {
+      "index": "wizard",
+      "name": "Wizard",
+      "url": "/api/2014/classes/wizard"
+     }
+    ],
+    "subclasses": [
+     {
+      "index": "lore",
+      "name": "Lore",
+      "url": "/api/2014/subclasses/lore"
+     },
+     {
+      "index": "land",
+      "name": "Land",
+      "url": "/api/2014/subclasses/land"
+     }
+    ],
+    "url": "/api/2014/spells/lightning-bolt"
+   },
+   {
+    "index": "shield",
+    "name": "Shield",
+    "desc": [
+     "An invisible barrier of magical force appears and protects you. Until the start of your next turn, you have a +5 bonus to AC, including against the triggering attack, and you take no damage from magic missile."
+    ],
+    "range": "Self",
+    "components": [
+     "V",
+     "S"
+    ],
+    "ritual": false,
+    "duration": "1 round",
+    "concentration": false,
+    "casting_time": "1 reaction",
+    "level": 1,
+    "school": {
+     "index": "abjuration",
+     "name": "Abjuration",
+     "url": "/api/2014/magic-schools/abjuration"
+    },
+    "classes": [
+     {
+      "index": "sorcerer",
+      "name": "Sorcerer",
+      "url": "/api/2014/classes/sorcerer"
+     },
+     {
+      "index": "wizard",
+      "name": "Wizard",
+      "url": "/api/2014/classes/wizard"
+     }
+    ],
+    "subclasses": [
+     {
+      "index": "lore",
+      "name": "Lore",
+      "url": "/api/2014/subclasses/lore"
+     }
+    ],
+    "url": "/api/2014/spells/shield"
+   },
+   {
+    "index": "spirit-guardians",
+    "name": "Spirit Guardians",
+    "desc": [
+     "You call forth spirits to protect you. They flit around you to a distance of 15 feet for the duration. If you are good or neutral, their spectral form appears angelic or fey (your choice). If you are evil, they appear fiendish.",
+     "When you cast this spell, you can designate any number of creatures you can see to be unaffected by it. An affected creature's speed is halved in the area, and when the creature enters the area for the first time on a turn or starts its turn there, it must make a wisdom saving throw. On a failed save, the creature takes 3d8 radiant damage (if you are good or neutral) or 3d8 necrotic damage (if you are evil). On a successful save, the creature takes half as much damage."
+    ],
+    "higher_level": [
+     "When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d8 for each slot level above 3rd."
+    ],
+    "range": "Self",
+    "components": [
+     "V",
+     "S",
+     "M"
+    ],
+    "material": "A holy symbol.",
+    "ritual": false,
+    "duration": "Up to 10 minutes",
+    "concentration": true,
+    "casting_time": "1 action",
+    "level": 3,
+    "school": {
+     "index": "conjuration",
+     "name": "Conjuration",
+     "url": "/api/2014/magic-schools/conjuration"
+    },
+    "classes": [
+     {
+      "index": "cleric",
+      "name": "Cleric",
+      "url": "/api/2014/classes/cleric"
+     }
+    ],
+    "subclasses": [
+     {
+      "index": "lore",
+      "name": "Lore",
+      "url": "/api/2014/subclasses/lore"
+     }
+    ],
+    "url": "/api/2014/spells/spirit-guardians"
+   },
+   {
+    "index": "wish",
+    "name": "Wish",
+    "desc": [
+     "Wish is the mightiest spell a mortal creature can cast. By simply speaking aloud, you can alter the very foundations of reality in accord with your desires.",
+     "The basic use of this spell is to duplicate any other spell of 8th level or lower. You don't need to meet any requirements in that spell, including costly components. The spell simply takes effect.",
+     "Alternatively, you can create one of the following effects of your choice:",
+     "- You create one object of up to 25,000 gp in value that isn't a magic item. The object can be no more than 300 feet in any dimension, and it appears in an unoccupied space you can see on the ground.",
+     "- You allow up to twenty creatures that you can see to regain all hit points, and you end all effects on them described in the greater restoration spell.",
+     "- You grant up to ten creatures that you can see resistance to a damage type you choose.",
+     "- You grant up to ten creatures you can see immunity to a single spell or other magical effect for 8 hours. For instance, you could make yourself and all your companions immune to a lich's life drain attack.",
+     "- You undo a single recent event by forcing a reroll of any roll made within the last round (including your last turn). Reality reshapes itself to accommodate the new result. For example, a wish spell could undo an opponent's successful save, a foe's critical hit, or a friend's failed save. You can force the reroll to be made with advantage or disadvantage, and you can choose whether to use the reroll or the original roll.",
+     "You might be able to achieve something beyond the scope of the above examples. State your wish to the GM as precisely as possible. The GM has great latitude in ruling what occurs in such an instance; the greater the wish, the greater the likelihood that something goes wrong. This spell might simply fail, the effect you desire might only be partly achieved, or you might suffer some unforeseen consequence as a result of how you worded the wish. For example, wishing that a villain were dead might propel you forward in time to a period when that villain is no longer alive, effectively removing you from the game. Similarly, wishing for a legendary magic item or artifact might instantly transport you to the presence of the item's current owner.",
+     "The stress of casting this spell to produce any effect other than duplicating another spell weakens you. After enduring that stress, each time you cast a spell until you finish a long rest, you take 1d10 necrotic damage per level of that spell. This damage can't be reduced or prevented in any way. In addition, your Strength drops to 3, if it isn't 3 or lower already, for 2d4 days. For each of those days that you spend resting and doing nothing more than light activity, your remaining recovery time decreases by 2 days. Finally, there is a 33 percent chance that you are unable to cast wish ever again if you suffer this stress."
+    ],
+    "range": "Self",
+    "components": [
+     "V"
+    ],
+    "ritual": false,
+    "duration": "Instantaneous",
+    "concentration": false,
+    "casting_time": "1 action",
+    "level": 9,
+    "school": {
+     "index": "conjuration",
+     "name": "Conjuration",
+     "url": "/api/2014/magic-schools/conjuration"
+    },
+    "classes": [
+     {
+      "index": "sorcerer",
+      "name": "Sorcerer",
+      "url": "/api/2014/classes/sorcerer"
+     },
+     {
+      "index": "wizard",
+      "name": "Wizard",
+      "url": "/api/2014/classes/wizard"
+     }
+    ],
+    "subclasses": [],
+    "url": "/api/2014/spells/wish"
+   }
+  ],
+  "2024": [
+   {
+    "index": "animate-objects",
+    "url": "/api/2024/spells/animate-objects",
+    "name": "Animate Objects",
+    "level": 5,
+    "school": {
+     "index": "transmutation",
+     "name": "Transmutation",
+     "url": "/api/2024/magic-schools/transmutation"
+    },
+    "classes": [
+     {
+      "index": "bard",
+      "name": "Bard",
+      "url": "/api/2024/classes/bard"
+     },
+     {
+      "index": "sorcerer",
+      "name": "Sorcerer",
+      "url": "/api/2024/classes/sorcerer"
+     },
+     {
+      "index": "wizard",
+      "name": "Wizard",
+      "url": "/api/2024/classes/wizard"
+     }
+    ],
+    "casting_time": "Action",
+    "ritual": false,
+    "range": "120 feet",
+    "components": [
+     "V",
+     "S"
+    ],
+    "duration": "up to 1 minute",
+    "concentration": true,
+    "description": "Objects animate at your command. Choose a number of nonmagical objects within range that aren't being worn or carried, aren't fixed to a surface, and aren't Gargantuan. The maximum number of objects is equal to your spellcasting ability modifier; for this number, a Medium or smaller target counts as one object, a Large target counts as two, and a Huge target counts as three.\n  Each target animates, sprouts legs, and becomes a Construct that uses the Animated Object stat block; this creature is under your control until the spell ends or until it is reduced to 0 Hit Points. Each creature you make with this spell is an ally to you and your allies. In combat, it shares your Initiative count and takes its turn immediately after yours.\n  Until the spell ends, you can take a Bonus Action to mentally command any creature you made with this spell if the creature is within 500 feet of you (if you control multiple creatures, you can command any of them at the same time, issuing the same command to each one). If you issue no commands, the creature takes the Dodge action and moves only to avoid harm. When the creature drops to 0 Hit Points, it reverts to its object form, and any remaining damage carries over to that form.",
+    "higher_level": "The creature's Slam damage increases by 1d4 (Medium or smaller), 1d6 (Large), or 1d12 (Huge) for each spell slot level above 5. Huge or Smaller Construct, Unaligned AC 15 HP 10 (Medium or smaller), 20 (Large), 40 (Huge) Speed 30 ft. MOD SAVE    MOD SAVE    MOD SAVE Str 16 +3 +3 dex 10 +0 +0 con 10 +0 +0 int 3 -4 -4 WiS 3 -4 -4 chA 1 -5 -5 Immunities Poison, Psychic; Charmed, Exhaustion, Frightened, Paralyzed, Poisoned Senses Blindsight 30 ft.; Passive Perception 6 Languages Understands the languages you know CR None (XP 0; PB equals your Proficiency Bonus) Actions     Slam. Melee Attack Roll: Bonus equals your spell attack modifier, reach 5 ft. Hit: Force damage equal to 1d4 + 3 (Medium or smaller), 2d6 + 3 + your spellcasting ability modifier (Large), or 2d12 + 3 + your spellcasting ability modifier (Huge)."
+   },
+   {
+    "index": "burning-hands",
+    "url": "/api/2024/spells/burning-hands",
+    "name": "Burning Hands",
+    "level": 1,
+    "school": {
+     "index": "evocation",
+     "name": "Evocation",
+     "url": "/api/2024/magic-schools/evocation"
+    },
+    "classes": [
+     {
+      "index": "sorcerer",
+      "name": "Sorcerer",
+      "url": "/api/2024/classes/sorcerer"
+     },
+     {
+      "index": "wizard",
+      "name": "Wizard",
+      "url": "/api/2024/classes/wizard"
+     }
+    ],
+    "casting_time": "Action",
+    "ritual": false,
+    "range": "Self",
+    "components": [
+     "V",
+     "S"
+    ],
+    "duration": "Instantaneous",
+    "concentration": false,
+    "damage": {
+     "damage_type": {
+      "index": "fire",
+      "name": "Fire",
+      "url": "/api/2024/damage-types/fire"
+     },
+     "damage_at_slot_level": {
+      "1": "3d6"
+     }
+    },
+    "description": "A thin sheet of flames shoots forth from you. Each creature in a 15-foot Cone makes a Dexterity saving throw, taking 3d6 Fire damage on a failed save or half as much damage on a successful one.\n  Flammable objects in the Cone that aren't being worn or carried start burning.",
+    "higher_level": "The damage increases by 1d6 for each spell slot level above 1."
+   },
+   {
+    "index": "cure-wounds",
+    "url": "/api/2024/spells/cure-wounds",
+    "name": "Cure Wounds",
+    "level": 1,
+    "school": {
+     "index": "abjuration",
+     "name": "Abjuration",
+     "url": "/api/2024/magic-schools/abjuration"
+    },
+    "classes": [
+     {
+      "index": "bard",
+      "name": "Bard",
+      "url": "/api/2024/classes/bard"
+     },
+     {
+      "index": "cleric",
+      "name": "Cleric",
+      "url": "/api/2024/classes/cleric"
+     },
+     {
+      "index": "druid",
+      "name": "Druid",
+      "url": "/api/2024/classes/druid"
+     },
+     {
+      "index": "paladin",
+      "name": "Paladin",
+      "url": "/api/2024/classes/paladin"
+     },
+     {
+      "index": "ranger",
+      "name": "Ranger",
+      "url": "/api/2024/classes/ranger"
+     }
+    ],
+    "casting_time": "Action",
+    "ritual": false,
+    "range": "Touch",
+    "components": [
+     "V",
+     "S"
+    ],
+    "duration": "Instantaneous",
+    "concentration": false,
+    "description": "A creature you touch regains a number of Hit Points equal to 2d8 plus your spellcasting ability modifier. Using a Higher-Level Spell Slot. The healing increases by 2d8 for each spell slot level above 1."
+   },
+   {
+    "index": "detect-magic",
+    "url": "/api/2024/spells/detect-magic",
+    "name": "Detect Magic",
+    "level": 1,
+    "school": {
+     "index": "divination",
+     "name": "Divination",
+     "url": "/api/2024/magic-schools/divination"
+    },
+    "classes": [
+     {
+      "index": "bard",
+      "name": "Bard",
+      "url": "/api/2024/classes/bard"
+     },
+     {
+      "index": "cleric",
+      "name": "Cleric",
+      "url": "/api/2024/classes/cleric"
+     },
+     {
+      "index": "druid",
+      "name": "Druid",
+      "url": "/api/2024/classes/druid"
+     },
+     {
+      "index": "paladin",
+      "name": "Paladin",
+      "url": "/api/2024/classes/paladin"
+     },
+     {
+      "index": "ranger",
+      "name": "Ranger",
+      "url": "/api/2024/classes/ranger"
+     },
+     {
+      "index": "sorcerer",
+      "name": "Sorcerer",
+      "url": "/api/2024/classes/sorcerer"
+     },
+     {
+      "index": "warlock",
+      "name": "Warlock",
+      "url": "/api/2024/classes/warlock"
+     },
+     {
+      "index": "wizard",
+      "name": "Wizard",
+      "url": "/api/2024/classes/wizard"
+     }
+    ],
+    "casting_time": "Action",
+    "ritual": true,
+    "range": "Self",
+    "components": [
+     "V",
+     "S"
+    ],
+    "duration": "up to 10 minutes",
+    "concentration": true,
+    "description": "For the duration, you sense the presence of magical effects within 30 feet of yourself. If you sense such effects, you can take the Magic action to see a faint aura around any visible creature or object in the area that bears the magic, and if an effect was created by a spell, you learn the spell's school of magic.\n  The spell is blocked by 1 foot of stone, dirt, or wood; 1 inch of metal; or a thin sheet of lead."
+   },
+   {
+    "index": "fireball",
+    "url": "/api/2024/spells/fireball",
+    "name": "Fireball",
+    "level": 3,
+    "school": {
+     "index": "evocation",
+     "name": "Evocation",
+     "url": "/api/2024/magic-schools/evocation"
+    },
+    "classes": [
+     {
+      "index": "sorcerer",
+      "name": "Sorcerer",
+      "url": "/api/2024/classes/sorcerer"
+     },
+     {
+      "index": "wizard",
+      "name": "Wizard",
+      "url": "/api/2024/classes/wizard"
+     }
+    ],
+    "casting_time": "Action",
+    "ritual": false,
+    "range": "150 feet",
+    "components": [
+     "V",
+     "S",
+     "M"
+    ],
+    "material": "a ball of bat guano and sulfur",
+    "duration": "Instantaneous",
+    "concentration": false,
+    "damage": {
+     "damage_type": {
+      "index": "fire",
+      "name": "Fire",
+      "url": "/api/2024/damage-types/fire"
+     },
+     "damage_at_slot_level": {
+      "3": "8d6"
+     }
+    },
+    "description": "A bright streak flashes from you to a point you choose within range and then blossoms with a low roar into a fiery explosion. Each creature in a 20-foot-radius Sphere centered on that point makes a Dexterity saving throw, taking 8d6 Fire damage on a failed save or half as much damage on a successful one.\n  Flammable objects in the area that aren't being worn or carried start burning.",
+    "higher_level": "The damage increases by 1d6 for each spell slot level above 3."
+   },
+   {
+    "index": "fire-bolt",
+    "url": "/api/2024/spells/fire-bolt",
+    "name": "Fire Bolt",
+    "level": 0,
+    "school": {
+     "index": "evocation",
+     "name": "Evocation",
+     "url": "/api/2024/magic-schools/evocation"
+    },
+    "classes": [
+     {
+      "index": "sorcerer",
+      "name": "Sorcerer",
+      "url": "/api/2024/classes/sorcerer"
+     },
+     {
+      "index": "wizard",
+      "name": "Wizard",
+      "url": "/api/2024/classes/wizard"
+     }
+    ],
+    "casting_time": "Action",
+    "ritual": false,
+    "range": "120 feet",
+    "components": [
+     "V",
+     "S"
+    ],
+    "duration": "Instantaneous",
+    "concentration": false,
+    "attack_type": "ranged",
+    "damage": {
+     "damage_type": {
+      "index": "fire",
+      "name": "Fire",
+      "url": "/api/2024/damage-types/fire"
+     },
+     "damage_at_slot_level": {
+      "0": "1d10"
+     }
+    },
+    "description": "You hurl a mote of fire at a creature or an object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 Fire damage. A flammable object hit by this spell starts burning if it isn't being worn or carried.\n  Cantrip Upgrade. The damage increases by 1d10 when you reach levels 5 (2d10), 11 (3d10), and 17 (4d10)."
+   },
+   {
+    "index": "flame-strike",
+    "url": "/api/2024/spells/flame-strike",
+    "name": "Flame Strike",
+    "level": 5,
+    "school": {
+     "index": "evocation",
+     "name": "Evocation",
+     "url": "/api/2024/magic-schools/evocation"
+    },
+    "classes": [
+     {
+      "index": "cleric",
+      "name": "Cleric",
+      "url": "/api/2024/classes/cleric"
+     }
+    ],
+    "casting_time": "Action",
+    "ritual": false,
+    "range": "60 feet",
+    "components": [
+     "V",
+     "S",
+     "M"
+    ],
+    "material": "a pinch of sulfur",
+    "duration": "Instantaneous",
+    "concentration": false,
+    "damage": {
+     "damage_type": {
+      "index": "fire",
+      "name": "Fire",
+      "url": "/api/2024/damage-types/fire"
+     },
+     "damage_at_slot_level": {
+      "5": "5d6"
+     }
+    },
+    "description": "A vertical column of brilliant fire roars down from above. Each creature in a 10-foot-radius, 40-foothigh Cylinder centered on a point within range makes a Dexterity saving throw, taking 5d6 Fire damage and 5d6 Radiant damage on a failed save or half as much damage on a successful one.",
+    "higher_level": "The Fire damage and the Radiant damage increase by 1d6 for each spell slot level above 5."
+   },
+   {
+    "index": "haste",
+    "url": "/api/2024/spells/haste",
+    "name": "Haste",
+    "level": 3,
+    "school": {
+     "index": "transmutation",
+     "name": "Transmutation",
+     "url": "/api/2024/magic-schools/transmutation"
+    },
+    "classes": [
+     {
+      "index": "sorcerer",
+      "name": "Sorcerer",
+      "url": "/api/2024/classes/sorcerer"
+     },
+     {
+      "index": "wizard",
+      "name": "Wizard",
+      "url": "/api/2024/classes/wizard"
+     }
+    ],
+    "casting_time": "Action",
+    "ritual": false,
+    "range": "30 feet",
+    "components": [
+     "V",
+     "S",
+     "M"
+    ],
+    "material": "a shaving of licorice root",
+    "duration": "up to 1 minute",
+    "concentration": true,
+    "description": "Choose a willing creature that you can see within range. Until the spell ends, the target's Speed is doubled, it gains a +2 bonus to Armor Class, it has Advantage on Dexterity saving throws, and it gains an additional action on each of its turns. That action can be used to take only the Attack (one attack only), Dash, Disengage, Hide, or Utilize action.\n  When the spell ends, the target is Incapacitated and has a Speed of 0 until the end of its next turn, as a wave of lethargy washes over it."
+   },
+   {
+    "index": "hold-person",
+    "url": "/api/2024/spells/hold-person",
+    "name": "Hold Person",
+    "level": 2,
+    "school": {
+     "index": "enchantment",
+     "name": "Enchantment",
+     "url": "/api/2024/magic-schools/enchantment"
+    },
+    "classes": [
+     {
+      "index": "bard",
+      "name": "Bard",
+      "url": "/api/2024/classes/bard"
+     },
+     {
+      "index": "cleric",
+      "name": "Cleric",
+      "url": "/api/2024/classes/cleric"
+     },
+     {
+      "index": "druid",
+      "name": "Druid",
+      "url": "/api/2024/classes/druid"
+     },
+     {
+      "index": "sorcerer",
+      "name": "Sorcerer",
+      "url": "/api/2024/classes/sorcerer"
+     },
+     {
+      "index": "warlock",
+      "name": "Warlock",
+      "url": "/api/2024/classes/warlock"
+     },
+     {
+      "index": "wizard",
+      "name": "Wizard",
+      "url": "/api/2024/classes/wizard"
+     }
+    ],
+    "casting_time": "Action",
+    "ritual": false,
+    "range": "60 feet",
+    "components": [
+     "V",
+     "S",
+     "M"
+    ],
+    "material": "a straight piece of iron",
+    "duration": "up to 1 minute",
+    "concentration": true,
+    "description": "Choose a Humanoid that you can see within range. The target must succeed on a Wisdom saving throw or have the Paralyzed condition for the duration. At the end of each of its turns, the target repeats the save, ending the spell on itself on a success.",
+    "higher_level": "You can target one additional Humanoid for each spell slot level above 2."
+   },
+   {
+    "index": "lightning-bolt",
+    "url": "/api/2024/spells/lightning-bolt",
+    "name": "Lightning Bolt",
+    "level": 3,
+    "school": {
+     "index": "evocation",
+     "name": "Evocation",
+     "url": "/api/2024/magic-schools/evocation"
+    },
+    "classes": [
+     {
+      "index": "sorcerer",
+      "name": "Sorcerer",
+      "url": "/api/2024/classes/sorcerer"
+     },
+     {
+      "index": "wizard",
+      "name": "Wizard",
+      "url": "/api/2024/classes/wizard"
+     }
+    ],
+    "casting_time": "Action",
+    "ritual": false,
+    "range": "Self",
+    "components": [
+     "V",
+     "S",
+     "M"
+    ],
+    "material": "a bit of fur and a crystal rod",
+    "duration": "Instantaneous",
+    "concentration": false,
+    "damage": {
+     "damage_type": {
+      "index": "lightning",
+      "name": "Lightning",
+      "url": "/api/2024/damage-types/lightning"
+     },
+     "damage_at_slot_level": {
+      "3": "8d6"
+     }
+    },
+    "description": "A stroke of lightning forming a 100-foot-long, 5-foot-wide Line blasts out from you in a direction you choose. Each creature in the Line makes a Dexterity saving throw, taking 8d6 Lightning damage on a failed save or half as much damage on a successful one.",
+    "higher_level": "The damage increases by 1d6 for each spell slot level above 3."
+   },
+   {
+    "index": "shield",
+    "url": "/api/2024/spells/shield",
+    "name": "Shield",
+    "level": 1,
+    "school": {
+     "index": "abjuration",
+     "name": "Abjuration",
+     "url": "/api/2024/magic-schools/abjuration"
+    },
+    "classes": [
+     {
+      "index": "sorcerer",
+      "name": "Sorcerer",
+      "url": "/api/2024/classes/sorcerer"
+     },
+     {
+      "index": "wizard",
+      "name": "Wizard",
+      "url": "/api/2024/classes/wizard"
+     }
+    ],
+    "casting_time": "Reaction, which you take when you are hit by an attack roll or targeted by the Magic Missile spell",
+    "ritual": false,
+    "range": "Self",
+    "components": [
+     "V",
+     "S"
+    ],
+    "duration": "1 round",
+    "concentration": false,
+    "description": "An imperceptible barrier of magical force protects you. Until the start of your next turn, you have a +5 bonus to AC, including against the triggering attack, and you take no damage from Magic Missile."
+   },
+   {
+    "index": "spirit-guardians",
+    "url": "/api/2024/spells/spirit-guardians",
+    "name": "Spirit Guardians",
+    "level": 3,
+    "school": {
+     "index": "conjuration",
+     "name": "Conjuration",
+     "url": "/api/2024/magic-schools/conjuration"
+    },
+    "classes": [
+     {
+      "index": "cleric",
+      "name": "Cleric",
+      "url": "/api/2024/classes/cleric"
+     }
+    ],
+    "casting_time": "Action",
+    "ritual": false,
+    "range": "Self",
+    "components": [
+     "V",
+     "S",
+     "M"
+    ],
+    "material": "a prayer scroll",
+    "duration": "up to 10 minutes",
+    "concentration": true,
+    "damage": {
+     "damage_type": {
+      "index": "radiant",
+      "name": "Radiant",
+      "url": "/api/2024/damage-types/radiant"
+     },
+     "damage_at_slot_level": {
+      "3": "3d8"
+     }
+    },
+    "description": "Protective spirits flit around you in a 15-foot Emanation for the duration. If you are good or neutral, their spectral form appears angelic or fey (your choice). If you are evil, they appear fiendish.\n  When you cast this spell, you can designate creatures to be unaffected by it. Any other creature's Speed is halved in the Emanation, and whenever the Emanation enters a creature's space and whenever a creature enters the Emanation or ends its turn there, the creature must make a Wisdom saving throw. On a failed save, the creature takes 3d8 Radiant damage (if you are good or neutral) or 3d8 Necrotic damage (if you are evil). On a successful save, the creature takes half as much damage. A creature makes this save only once per turn.",
+    "higher_level": "The damage increases by 1d8 for each spell slot level above 3."
+   },
+   {
+    "index": "wish",
+    "url": "/api/2024/spells/wish",
+    "name": "Wish",
+    "level": 9,
+    "school": {
+     "index": "conjuration",
+     "name": "Conjuration",
+     "url": "/api/2024/magic-schools/conjuration"
+    },
+    "classes": [
+     {
+      "index": "sorcerer",
+      "name": "Sorcerer",
+      "url": "/api/2024/classes/sorcerer"
+     },
+     {
+      "index": "wizard",
+      "name": "Wizard",
+      "url": "/api/2024/classes/wizard"
+     }
+    ],
+    "casting_time": "Action",
+    "ritual": false,
+    "range": "Self",
+    "components": [
+     "V"
+    ],
+    "duration": "Instantaneous",
+    "concentration": false,
+    "damage": {
+     "damage_type": {
+      "index": "necrotic",
+      "name": "Necrotic",
+      "url": "/api/2024/damage-types/necrotic"
+     },
+     "damage_at_slot_level": {
+      "9": "1d10"
+     }
+    },
+    "description": "Wish is the mightiest spell a mortal can cast. By simply speaking aloud, you can alter reality itself.\n  The basic use of this spell is to duplicate any other spell of level 8 or lower. If you use it this way, you don't need to meet any requirements to cast that spell, including costly components. The spell simply takes effect.\n  Alternatively, you can create one of the following effects of your choice: Object Creation. You create one object of up to 25,000 GP in value that isn't a magic item. The object can be no more than 300 feet in any dimension, and it appears in an unoccupied space that you can see on the ground. Instant Health. You allow yourself and up to twenty creatures that you can see to regain all Hit Points, and you end all effects on them listed in the Greater Restoration spell. Resistance. You grant up to ten creatures that you can see Resistance to one damage type that you choose. This Resistance is permanent. Spell Immunity. You grant up to ten creatures you can see immunity to a single spell or other magical effect for 8 hours. Sudden Learning. You replace one of your feats with another feat for which you are eligible. You lose all the benefits of the old feat and gain the benefits of the new one. You can't replace a feat that is a prerequisite for any of your other feats or features. Roll Redo. You undo a single recent event by forcing a reroll of any die roll made within the last round (including your last turn). Reality reshapes itself to accommodate the new result. For example, a Wish spell could undo an ally's failed saving throw or a foe's Critical Hit. You can force the reroll to be made with Advantage or Disadvantage, and you choose whether to use the reroll or the original roll. Reshape Reality. You may wish for something not included in any of the other effects. To do so, state your wish to the GM as precisely as possible. The GM has great latitude in ruling what occurs in such an instance; the greater the wish, the greater the likelihood that something goes wrong. This spell might simply fail, the effect you desire might be achieved only in part, or you might suffer an unforeseen consequence as a result of how you worded the wish. For example, wishing that a villain were dead might propel you forward in time to a period when that villain is no longer alive, effectively removing you from the game. Similarly, wishing for a Legendary magic item or an Artifact might instantly transport you to the presence of the item's current owner. If your wish is granted and its effects have consequences for a whole community, region, or world, you are likely to attract powerful foes. If your wish would affect a god, the god's divine servants might instantly intervene to prevent it or to encourage you to craft the wish in a particular way. If your wish would undo the multiverse itself, your wish fails. The stress of casting Wish to produce any effect other than duplicating another spell weakens you. After enduring that stress, each time you cast a spell until you finish a Long Rest, you take 1d10 Necrotic damage per level of that spell. This damage can't be reduced or prevented in any way. In addition, your Strength score becomes 3 for 2d4 days. For each of those days that you spend resting and doing nothing more than light activity, your remaining recovery time decreases by 2 days. Finally, there is a 33 percent chance that you are unable to cast Wish ever again if you suffer this stress."
+   }
+  ]
  }
 }

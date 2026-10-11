@@ -2,7 +2,9 @@
  * Finding a monster among hundreds: the DM's own statblocks and the SRD's, by name, with filters
  * for where it's from, its challenge rating and its type. Pure and isomorphic.
  */
-import { SRD_RULES, type CreatureOption } from "./types";
+import { SRD_RULES } from "~/campaign/srd";
+import { byName, matchRank } from "~/shared/name-search";
+import type { CreatureOption } from "./types";
 
 /** Where a statblock is from, as the picker tags it: the DM's vault, or the SRD by its rules. */
 export type CreatureTag = "Mine" | "2024" | "2014";
@@ -46,8 +48,6 @@ export function creatureTypes(creatures: CreatureOption[]): string[] {
 /** With the same name: the DM's own first, then the 2024 rules, then 2014. */
 const TAG_ORDER: Record<CreatureTag, number> = { Mine: 0, "2024": 1, "2014": 2 };
 
-const byName = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
-
 /**
  * The creatures that match. While searching, best first: an exact name, then one starting with
  * the search, then a word in it starting with it, then the search anywhere; within each, the DM's
@@ -70,7 +70,7 @@ export function findCreatures(
         const challenge = challengeValue(creature.challenge);
         if (challenge === undefined || challenge < lowest || challenge > highest) return [];
       }
-      const rank = matchRank(creature, query);
+      const rank = matchRank([creature.name, creature.noteTitle ?? ""], query);
       return rank === undefined ? [] : [{ creature, rank }];
     })
     .sort((a, b) => {
@@ -80,17 +80,4 @@ export function findCreatures(
       return query ? a.rank - b.rank || tag || name || note : name || tag || note;
     })
     .map(({ creature }) => creature);
-}
-
-/** 0 exact, 1 a prefix, 2 a word's start, 3 anywhere; undefined if it doesn't match at all. */
-function matchRank(creature: CreatureOption, query: string): number | undefined {
-  if (!query) return 0;
-  const ranks = [creature.name, creature.noteTitle ?? ""].flatMap((text) => {
-    const name = text.toLowerCase();
-    if (name === query) return [0];
-    if (name.startsWith(query)) return [1];
-    if (name.split(/[\s(),/-]+/).some((word) => word.startsWith(query))) return [2];
-    return name.includes(query) ? [3] : [];
-  });
-  return ranks.length ? Math.min(...ranks) : undefined;
 }

@@ -80,6 +80,12 @@ locations, maps, characters, sessions).
   the SRD's lore where it has some. Found by name, with chips for Mine / 2024 / 2014, a challenge
   rating range and a type, and added with a + on the row. Bundled from openly licensed data by a
   script and credited.
+- **SRD spells on the sheet:** every spell from both SRDs, tagged, and the DM's own spell notes,
+  found in a picker on the Spells tab (and beside the map) by name, level, class, concentration or
+  ritual, and added with a + filled in: casting time, range, components, duration, save or attack,
+  dice and area. A picked spell is the player's to edit, and shows the SRD's text (or the note's).
+  Spell notes say what they are in frontmatter, so spells from outside the SRD (and the
+  Artificer's list) work the same way.
 - **Sign-in and hosting:** everyone signs in with Discord; newcomers wait for the DM, who lets
   them in and says which player they are. A Docker image with a Google Drive companion container
   that copies the vault read-only, ready for a Dokploy server (see `docs/deployment.md`).
@@ -113,24 +119,23 @@ locations, maps, characters, sessions).
 - **Wiki, next steps:** backlinks, note transclusion (`![[Note]]`), Obsidian callouts,
   browsing by entity type, and perhaps Obsidian plugins later.
 - **Character sheets, next steps:**
-  - **An SRD spell picker** (next): add a spell by searching the SRD (both versions, tagged),
-    with its details filled in, or a class's whole list to prepare from. Spells that aren't in the
-    SRD come from the DM's own vault spell notes, never the repo. The same source and script as
-    the monsters (5e-bits has both versions' spells), and the same kind of picker.
+  - **A class's whole list at once,** to prepare from (decision 72): the picker already filters
+    by class, so it's one button; the Artificer's would come from spell notes' `classes`.
   - **Always-prepared spells** from a subclass or feature, which don't count towards the number
     (one more case in `alwaysReady`).
   - **The DM's view of the party beside the map:** each PC's hit points, concentration, and slots
     and uses left, read-only in a Party tab of the DM's side panel (concentration matters most:
     a hit means a check).
   - **Spells and the map:** "Show on map" from a spell, opening the spell area tool with its
-    shape and size (spells already keep them in the map's own shapes).
+    shape and size (spells already keep them in the map's own shapes, and picked ones come with
+    theirs).
   - **Companions' recharges:** a simple toggle for a statblock's recharge ability (the blink dog's
     teleport), kept with the companion.
   - Conditions on the sheet, if the table wants them outside fights (the tracker keeps them in a
     fight); editing beside the map, if the compact view is too little.
   - **Rules on top:** proficiency bonus from level; species and class features; attacks worked
-    out from equipped weapons; AC from armour; spell slots from class and level, spells from the
-    SRD, uses that scale with level, and rest rules (decision 61 keeps typed values beside them).
+    out from equipped weapons; AC from armour; spell slots from class and level, spells known,
+    uses that scale with level, cantrips' and slots' damage at the character's level, and rest rules (decision 61 keeps typed values beside them).
     They'd add to `deriveSheet` and could flag a typed number they disagree with. The SRD (5.1 and
     5.2, CC BY 4.0) could supply the rules data and a catalogue of mundane gear for quick add, with
     its attribution.
@@ -147,7 +152,8 @@ locations, maps, characters, sessions).
   - Bestiary references in notes (`monster: Goblin`, perhaps with the note's own changes on top,
     as the plugin does) resolved against the SRD (the plugin's bestiary is 2014's).
   - "Make this my own": an SRD monster's statblock as YAML to copy into a vault note and
-    reflavour (the vault is read-only, so only ever something to copy).
+    reflavour (the vault is read-only, so only ever something to copy). A picked spell's shape
+    (the player's copy, linked to the SRD's text; decision 75) may suit a monster too.
   - SRD monsters in the wiki, for reading outside a fight.
   - Gaps in the data: 2024's Octopus and Giant Fly, legendary actions' uses, and 2024 saving
     throws in the ability table.

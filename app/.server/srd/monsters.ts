@@ -1,10 +1,6 @@
 import { toHtml } from "hast-util-to-html";
-import {
-  statblockKey,
-  type SrdSource,
-  type StatblockRef,
-  type StatblockView,
-} from "~/combat/types";
+import type { SrdSource } from "~/campaign/srd";
+import { statblockKey, type StatblockRef, type StatblockView } from "~/combat/types";
 import { statblockFromData, type Statblock } from "~/.server/vault/statblock/parse-statblock";
 import { renderStatblock } from "~/.server/vault/statblock/rehype-statblocks";
 import srd51 from "./monsters-5.1.json";
