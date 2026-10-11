@@ -123,7 +123,7 @@ export function SheetTabs({
           (page.story ? (
             <>
               <div
-                className="note-body prose prose-stone prose-sm dark:prose-invert max-w-none"
+                className="note-body prose prose-theme prose-sm max-w-none"
                 dangerouslySetInnerHTML={{ __html: page.story.html }}
               />
               <Link

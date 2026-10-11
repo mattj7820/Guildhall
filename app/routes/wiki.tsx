@@ -24,7 +24,7 @@ export default function WikiLayout({ loaderData }: Route.ComponentProps) {
             name="q"
             defaultValue={searchParams.get("q") ?? ""}
             placeholder="Search the wiki…"
-            className="w-full rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm dark:border-stone-700 dark:bg-stone-900"
+            className="w-full rounded-md border border-line-strong bg-surface px-3 py-1.5 text-sm"
           />
         </Form>
         <FolderTree root={loaderData.tree} />

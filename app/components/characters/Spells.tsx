@@ -337,7 +337,7 @@ function SpellRow({
             <div className="rounded border border-stone-200 p-2 dark:border-stone-700">
               <div
                 // The note's title is in the link below it.
-                className="note-body prose prose-stone prose-sm dark:prose-invert max-w-none [&>h1:first-child]:hidden"
+                className="note-body prose prose-theme prose-sm max-w-none [&>h1:first-child]:hidden"
                 dangerouslySetInnerHTML={{ __html: note.html }}
               />
               <Link

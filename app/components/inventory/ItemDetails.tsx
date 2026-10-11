@@ -241,7 +241,7 @@ export function ItemDetails({
               </a>
             </div>
             <div
-              className="note-body prose prose-stone prose-sm dark:prose-invert mt-2 max-w-none [&>h1:first-child]:hidden"
+              className="note-body prose prose-theme prose-sm mt-2 max-w-none [&>h1:first-child]:hidden"
               dangerouslySetInnerHTML={{ __html: note.html }}
             />
           </section>
