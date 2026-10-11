@@ -68,7 +68,7 @@ export function HitPointsPanel({
         />
         <button
           type="button"
-          className={`${buttonClass} text-emerald-800 dark:text-emerald-300`}
+          className={`${buttonClass} text-good`}
           disabled={!valid}
           onClick={() => change("heal")}
         >
@@ -76,7 +76,7 @@ export function HitPointsPanel({
         </button>
         <button
           type="button"
-          className={`${buttonClass} text-rose-700 dark:text-rose-400`}
+          className={`${buttonClass} text-danger`}
           disabled={!valid}
           onClick={() => change("damage")}
         >

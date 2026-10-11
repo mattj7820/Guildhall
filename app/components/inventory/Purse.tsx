@@ -29,16 +29,16 @@ export function Purse({
 }) {
   const total = purseInGold(purse);
   return (
-    <fieldset className="mt-4 rounded-lg bg-stone-100/70 px-3 pt-1 pb-2 dark:bg-stone-900/70">
+    <fieldset className="mt-4 rounded-lg bg-raised/70 px-3 pt-1 pb-2">
       <legend className="sr-only">Coins</legend>
       <div className="flex items-baseline justify-between py-1">
         <span
           aria-hidden="true"
-          className="text-xs font-semibold tracking-wide text-stone-500 uppercase"
+          className="text-xs font-semibold tracking-wide text-muted uppercase"
         >
           Coins
         </span>
-        <span className="text-xs text-stone-500">
+        <span className="text-xs text-muted">
           Worth {total.toLocaleString(undefined, { maximumFractionDigits: 2 })} gp in all
         </span>
       </div>
@@ -46,7 +46,7 @@ export function Purse({
         {COINS.map((coin) => (
           <label
             key={coin}
-            className="flex flex-col items-center rounded-md px-1 py-1 focus-within:bg-white hover:bg-white dark:focus-within:bg-stone-800 dark:hover:bg-stone-800"
+            className="flex flex-col items-center rounded-md px-1 py-1 focus-within:bg-surface hover:bg-surface"
           >
             <CoinArt coin={coin} className="h-7 w-7 drop-shadow-sm" />
             <input
@@ -63,9 +63,9 @@ export function Purse({
               onKeyDown={(event) => {
                 if (event.key === "Enter") event.currentTarget.blur();
               }}
-              className={`mt-0.5 w-full min-w-0 [appearance:textfield] rounded border border-transparent bg-transparent text-center tabular-nums hover:border-stone-300 focus:border-stone-400 dark:hover:border-stone-700 [&::-webkit-inner-spin-button]:appearance-none ${coin === "gp" ? "font-bold" : ""}`}
+              className={`mt-0.5 w-full min-w-0 [appearance:textfield] rounded border border-transparent bg-transparent text-center tabular-nums hover:border-line-strong focus:border-line-strong [&::-webkit-inner-spin-button]:appearance-none ${coin === "gp" ? "font-bold" : ""}`}
             />
-            <span aria-hidden="true" className="text-[11px] text-stone-500">
+            <span aria-hidden="true" className="text-[11px] text-muted">
               {coin}
             </span>
           </label>

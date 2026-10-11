@@ -42,7 +42,7 @@ export function Trackers({
       className={compact ? "flex flex-col gap-2" : `${sheetPanelClass} mt-3 flex flex-col gap-3`}
     >
       {empty ? (
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-muted">
           Nothing to track yet. {compact ? "On the full sheet, edit" : "Edit"} the sheet to set
           spell slots and hit dice, or give a feature uses.
         </p>
@@ -55,7 +55,7 @@ export function Trackers({
               <span className={labelClass}>Slots</span>
               {slots.map(({ slot, level }) => (
                 <span key={level} className="inline-flex items-center gap-1.5">
-                  <span className="text-xs text-stone-500">{ORDINALS[level]}</span>
+                  <span className="text-xs text-muted">{ORDINALS[level]}</span>
                   <Pips
                     label={`${ORDINALS[level]}-level slot`}
                     counter={slot}
@@ -82,7 +82,7 @@ export function Trackers({
       )}
       <div
         className={`flex flex-wrap items-center gap-x-6 gap-y-2 ${
-          compact || empty ? "" : "border-t border-stone-100 pt-3 dark:border-stone-800"
+          compact || empty ? "" : "border-t border-line pt-3"
         }`}
       >
         {hitDice.map((die) => (
@@ -107,10 +107,10 @@ export function Trackers({
 function Concentration({ parts }: { parts: Parts }) {
   const { sheet, dispatch } = parts;
   if (!sheet.concentrating) {
-    return <span className="text-sm text-stone-400">Not concentrating</span>;
+    return <span className="text-sm text-faint">Not concentrating</span>;
   }
   return (
-    <span className="inline-flex items-center gap-2 rounded-full bg-sky-100 px-2.5 py-0.5 text-sm text-sky-900 dark:bg-sky-900/40 dark:text-sky-200">
+    <span className="inline-flex items-center gap-2 rounded-full bg-info-surface px-2.5 py-0.5 text-sm text-info">
       <span aria-hidden="true">◎</span>
       <span>
         Concentrating: <strong>{sheet.concentrating}</strong>

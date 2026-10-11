@@ -37,9 +37,7 @@ export function FeatureRow({
   if (parts.editing) return <FeatureForm feature={feature} parts={parts} />;
   const { uses } = feature;
   return (
-    <li
-      className={`border-b border-stone-100 last:border-0 dark:border-stone-800 ${compact ? "py-1" : "py-1.5"}`}
-    >
+    <li className={`border-b border-line last:border-0 ${compact ? "py-1" : "py-1.5"}`}>
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
@@ -49,11 +47,11 @@ export function FeatureRow({
           className="mr-auto min-w-0 text-left disabled:cursor-default"
         >
           <span className="font-medium">{feature.name}</span>
-          <span className="ml-2 text-[11px] text-stone-500">
+          <span className="ml-2 text-[11px] text-muted">
             {feature.sourceName || SOURCE_NAMES[feature.source]}
           </span>
           {showActivation && (
-            <span className="ml-2 text-[11px] text-stone-400">
+            <span className="ml-2 text-[11px] text-faint">
               {ACTIVATION_NAMES[feature.activation]}
             </span>
           )}
@@ -83,9 +81,7 @@ export function FeatureRow({
         )}
       </div>
       {open && feature.note && (
-        <p className="mt-0.5 pl-2 text-sm whitespace-pre-line text-stone-600 dark:text-stone-300">
-          {feature.note}
-        </p>
+        <p className="mt-0.5 pl-2 text-sm whitespace-pre-line text-muted">{feature.note}</p>
       )}
     </li>
   );
@@ -98,7 +94,7 @@ function FeatureForm({ feature, parts }: { feature: Feature; parts: Parts }) {
   return (
     <li
       aria-label={feature.name}
-      className="flex flex-col gap-2 border-b border-stone-200 py-2 last:border-0 dark:border-stone-700"
+      className="flex flex-col gap-2 border-b border-line py-2 last:border-0"
     >
       <div className="flex flex-wrap items-end gap-2">
         <TextField
@@ -249,7 +245,7 @@ export function FeaturesTab({ parts, compact = false }: { parts: Parts; compact?
         />
       )}
       {features.length === 0 && (
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-muted">
           No features yet.{" "}
           {parts.editing
             ? ""

@@ -44,29 +44,29 @@ export function TileFace({
       className={[
         "relative flex aspect-square w-full items-center justify-center rounded-lg border-2 transition",
         state === "placeholder"
-          ? "border-dashed border-stone-300 bg-transparent text-stone-300 dark:border-stone-700 dark:text-stone-700"
+          ? "border-dashed border-line-strong bg-transparent text-faint"
           : item.equipped
-            ? "border-amber-500 bg-amber-50 text-stone-800 dark:border-amber-500 dark:bg-amber-950/40 dark:text-stone-100"
-            : "border-stone-300 bg-stone-100 text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200",
+            ? "border-accent bg-accent-surface text-ink"
+            : "border-line-strong bg-raised text-ink",
         state === "lifted" ? "scale-110 -rotate-3 shadow-xl" : "",
-        state === "stackTarget" ? "scale-105 ring-4 ring-amber-400/80 dark:ring-amber-500/70" : "",
+        state === "stackTarget" ? "scale-105 ring-4 ring-trim/80" : "",
       ].join(" ")}
     >
       <ItemIconSvg icon={item.icon} className="h-3/5 w-3/5" />
       {item.equipped && state !== "placeholder" && (
         <span
           aria-hidden="true"
-          className="absolute top-0 left-0 h-0 w-0 border-t-[14px] border-r-[14px] border-t-amber-500 border-r-transparent"
+          className="absolute top-0 left-0 h-0 w-0 border-t-[14px] border-r-[14px] border-t-accent border-r-transparent"
         />
       )}
       {item.unseen && state !== "placeholder" && (
         <span
           aria-hidden="true"
-          className="absolute top-1 right-1 h-2.5 w-2.5 animate-pulse rounded-full bg-amber-500 ring-2 ring-white dark:ring-stone-900"
+          className="absolute top-1 right-1 h-2.5 w-2.5 animate-pulse rounded-full bg-accent ring-2 ring-surface"
         />
       )}
       {quantity > 1 && state !== "placeholder" && (
-        <span className="absolute right-1 bottom-0.5 text-xs font-bold text-stone-900 tabular-nums [text-shadow:0_0_3px_white] dark:text-stone-50 dark:[text-shadow:0_0_3px_black]">
+        <span className="absolute right-1 bottom-0.5 text-xs font-bold text-ink tabular-nums [text-shadow:0_0_3px_white] dark:[text-shadow:0_0_3px_black]">
           {quantity}
         </span>
       )}

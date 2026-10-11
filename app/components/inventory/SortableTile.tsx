@@ -69,12 +69,12 @@ export function SortableTile({
         onBlur={onBlur}
         onPointerEnter={onPointerEnter}
         onPointerLeave={onPointerLeave}
-        className="group block w-full rounded-lg text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
+        className="group block w-full rounded-lg text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         <span className="block transition group-hover:-translate-y-0.5">
           <TileFace item={item} state={state} quantity={quantity} />
         </span>
-        <span className="mt-1 block truncate text-center text-[11px] leading-tight text-stone-600 dark:text-stone-400">
+        <span className="mt-1 block truncate text-center text-[11px] leading-tight text-muted">
           {item.name}
         </span>
       </button>

@@ -39,11 +39,7 @@ export function SheetTabs({
 
   return (
     <section aria-label="More" className={sheetPanelClass}>
-      <div
-        role="tablist"
-        aria-label="More"
-        className="flex gap-4 border-b border-stone-200 text-sm dark:border-stone-700"
-      >
+      <div role="tablist" aria-label="More" className="flex gap-4 border-b border-line text-sm">
         {tabs.map(({ key, label }) => (
           <button
             key={key}
@@ -64,8 +60,8 @@ export function SheetTabs({
             }}
             className={
               tab === key
-                ? "-mb-px border-b-2 border-amber-600 pb-2 font-semibold"
-                : "pb-2 text-stone-500 hover:text-stone-900 dark:hover:text-stone-100"
+                ? "-mb-px border-b-2 border-accent pb-2 font-semibold"
+                : "pb-2 text-muted hover:text-ink"
             }
           >
             {label}
@@ -92,19 +88,14 @@ export function SheetTabs({
             <ul className="space-y-1.5">
               {equipped.map((item) => (
                 <li key={item.id} className="flex items-center gap-2 text-sm">
-                  <ItemIconSvg
-                    icon={item.icon}
-                    className="h-5 w-5 text-stone-600 dark:text-stone-300"
-                  />
+                  <ItemIconSvg icon={item.icon} className="h-5 w-5 text-muted" />
                   <span>{item.name}</span>
-                  {item.attuned && (
-                    <span className="text-xs text-amber-700 dark:text-amber-400">attuned</span>
-                  )}
+                  {item.attuned && <span className="text-xs text-link">attuned</span>}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-stone-500">Nothing equipped.</p>
+            <p className="text-sm text-muted">Nothing equipped.</p>
           ))}
         {tab === "notes" &&
           (parts.editing ? (
@@ -128,13 +119,13 @@ export function SheetTabs({
               />
               <Link
                 to={page.story.url}
-                className="mt-2 inline-block text-sm text-amber-800 hover:underline dark:text-amber-400"
+                className="mt-2 inline-block text-sm text-link hover:underline"
               >
                 Open {page.story.title} in the wiki
               </Link>
             </>
           ) : (
-            <p className="text-sm text-stone-500">The story isn&rsquo;t shared yet.</p>
+            <p className="text-sm text-muted">The story isn&rsquo;t shared yet.</p>
           ))}
       </div>
     </section>

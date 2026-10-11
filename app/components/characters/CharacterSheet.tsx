@@ -58,10 +58,7 @@ export function CharacterSheet({ page }: { page: CharacterPage }) {
       >
         <div className="@container min-w-0">
           <p className="mb-3 text-sm">
-            <Link
-              to={CHARACTERS_URL}
-              className="text-stone-600 hover:underline dark:text-stone-400"
-            >
+            <Link to={CHARACTERS_URL} className="text-muted hover:underline">
               ← Characters
             </Link>
           </p>
@@ -77,7 +74,7 @@ export function CharacterSheet({ page }: { page: CharacterPage }) {
               {editing ? (
                 <HeaderFields page={page} parts={parts} text={text} />
               ) : (
-                <p className="text-stone-600 dark:text-stone-400">{subtitle(sheet)}</p>
+                <p className="text-muted">{subtitle(sheet)}</p>
               )}
             </div>
             <button
@@ -90,7 +87,7 @@ export function CharacterSheet({ page }: { page: CharacterPage }) {
                   from: sheet.heroicInspiration,
                 })
               }
-              className={`rounded-full border px-3 py-1 text-sm ${sheet.heroicInspiration ? "border-amber-400 bg-amber-100 font-semibold text-amber-900 dark:border-amber-700 dark:bg-amber-900/50 dark:text-amber-200" : "border-stone-300 text-stone-600 dark:border-stone-700 dark:text-stone-400"}`}
+              className={`rounded-full border px-3 py-1 text-sm ${sheet.heroicInspiration ? "border-trim bg-accent-surface font-semibold text-title" : "border-line-strong text-muted"}`}
             >
               {sheet.heroicInspiration ? "★ " : "☆ "}Heroic inspiration
             </button>
@@ -304,7 +301,7 @@ function LatestRoll({ rolls }: { rolls: RollLogControls }) {
     >
       <p
         key={latest.id}
-        className="animate-[fade_4s_ease-in_forwards] rounded-full bg-stone-900 px-4 py-2 text-sm text-stone-50 shadow-lg dark:bg-stone-100 dark:text-stone-900"
+        className="animate-[fade_4s_ease-in_forwards] rounded-full bg-ink px-4 py-2 text-sm text-page shadow-lg"
       >
         {latest.label}: <strong className="text-lg">{latest.result.total}</strong>
         {latest.result.natural === 20 && " · Natural 20!"}

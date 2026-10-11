@@ -16,7 +16,7 @@ export function Portrait({
       <img
         src={url}
         alt=""
-        className={`${box} shrink-0 rounded-full object-cover object-top ring-2 ring-stone-200 dark:ring-stone-700`}
+        className={`${box} shrink-0 rounded-full object-cover object-top ring-2 ring-line`}
       />
     );
   }
@@ -26,9 +26,7 @@ export function Portrait({
       className={[
         box,
         "flex shrink-0 items-center justify-center rounded-full font-serif font-bold",
-        companion
-          ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-100"
-          : "bg-stone-200 text-stone-700 dark:bg-stone-700 dark:text-stone-100",
+        companion ? "bg-good-surface text-good" : "bg-line text-ink",
       ].join(" ")}
     >
       {name.slice(0, 1).toUpperCase()}
