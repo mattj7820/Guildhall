@@ -1,6 +1,7 @@
 /**
  * Character sheets and their inventories. Isomorphic: stored by the server, edited in the browser.
  */
+import type { SrdSource } from "~/campaign/srd";
 import type { EntityId } from "~/campaign/types";
 import type { SpellShape } from "~/maps/grid/shapes";
 import type { Ability, PassiveSkill, Proficiency, Skill } from "./abilities";
@@ -145,6 +146,12 @@ export interface SpellArea {
  * A spell the character knows or has prepared, as typed in. Its details are short text, as
  * spells write them ("1 bonus action", "60 ft."). It can point at a vault spell note.
  */
+/** One of the SRD's spells, bundled with Guildhall, by its source and 5e-bits' index. */
+export interface SrdSpellRef {
+  source: SrdSource;
+  id: string;
+}
+
 export interface Spell {
   id: SpellId;
   name: string;
@@ -171,6 +178,10 @@ export interface Spell {
   description?: string;
   /** The vault spell note this is, if any. */
   note?: EntityId;
+  /**
+   * The SRD spell it was picked from, whose text the sheet shows; its fields are the player's copy.
+   */
+  srd?: SrdSpellRef;
   /**
    * Ready today, chosen by the player. Ignored for spells that are always ready (cantrips and free
    * spells; see `preparing.ts`). Spells stored before preparing existed load as prepared.

@@ -2,24 +2,9 @@
  * The combat tracker's model. Isomorphic: shared by the server (which builds the catalogue from
  * the vault) and the browser (which runs encounters).
  */
+import type { SrdSource } from "~/campaign/srd";
 import type { EntityId, Player } from "~/campaign/types";
 import type { MapId, Point } from "~/maps/types";
-
-/** The SRD's monsters, bundled with Guildhall: SRD 5.1 (the 2014 rules) or 5.2.1 (2024). */
-export const SRD_SOURCES = ["srd-5.1", "srd-5.2"] as const;
-export type SrdSource = (typeof SRD_SOURCES)[number];
-
-/** Each SRD's name, as its licence asks it to be credited. */
-export const SRD_DOCUMENTS: Record<SrdSource, string> = {
-  "srd-5.1": "SRD 5.1",
-  "srd-5.2": "SRD 5.2.1",
-};
-
-/** The rules each SRD is for, as the DM knows them. */
-export const SRD_RULES: Record<SrdSource, "2014" | "2024"> = {
-  "srd-5.1": "2014",
-  "srd-5.2": "2024",
-};
 
 /**
  * Points at one statblock. In the vault (no `source`): the note's stable ID plus the statblock's

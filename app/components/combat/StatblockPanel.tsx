@@ -1,12 +1,8 @@
 import type { MouseEvent } from "react";
 import { Link } from "react-router";
 import { useStatblock } from "~/combat/statblocks";
-import {
-  SRD_DOCUMENTS,
-  SRD_RULES,
-  type CombatCatalogue,
-  type CreatureOption,
-} from "~/combat/types";
+import { SRD_DOCUMENTS, SRD_RULES } from "~/campaign/srd";
+import type { CombatCatalogue, CreatureOption } from "~/combat/types";
 import type { RollKind, RollRequest } from "~/dice/roll-log";
 import { labelClass, panelClass } from "~/components/styles";
 

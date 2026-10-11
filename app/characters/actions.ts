@@ -59,6 +59,7 @@ import {
   SLOTS_MAX,
   PREPARE_MAX,
   spellSchema,
+  srdSpellRef,
   USES_MAX,
 } from "./schema";
 import {
@@ -475,6 +476,7 @@ const spellEdits = z.object({
   freeUse: itemId.nullable().optional(),
   description: long.nullable().optional(),
   note: z.string().min(1).max(1024).nullable().optional(),
+  srd: srdSpellRef.nullable().optional(),
   prepared: z.boolean().optional(),
 }) satisfies z.ZodType<Edits<Spell>>;
 

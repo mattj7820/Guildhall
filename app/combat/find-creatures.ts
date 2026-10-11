@@ -2,7 +2,8 @@
  * Finding a monster among hundreds: the DM's own statblocks and the SRD's, by name, with filters
  * for where it's from, its challenge rating and its type. Pure and isomorphic.
  */
-import { SRD_RULES, type CreatureOption } from "./types";
+import { SRD_RULES } from "~/campaign/srd";
+import type { CreatureOption } from "./types";
 
 /** Where a statblock is from, as the picker tags it: the DM's vault, or the SRD by its rules. */
 export type CreatureTag = "Mine" | "2024" | "2014";

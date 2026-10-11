@@ -253,3 +253,52 @@ describe("what gets used up, as stored", () => {
     expect(sheetSchema.safeParse(sheet).success).toBe(false);
   });
 });
+
+describe("sheets saved before the SRD spell picker", () => {
+  /** A sheet's spells as preparing left them: typed, one linked to a vault note. */
+  const savedBefore = {
+    className: "Fixture class",
+    spellAbility: "int",
+    spellsToPrepare: 1,
+    spells: [
+      { id: "s0", name: "Fixture Spark", level: 0, castingTime: "1 action", note: "fixture-spark" },
+      { id: "s1", name: "Fixture Ward", level: 1, concentration: true, prepared: false },
+    ],
+  };
+
+  it("loads unchanged, with no spell linked to the SRD", () => {
+    const sheet = sheetSchema.parse(savedBefore);
+    expect(sheet.spells.map((spell) => spell.srd)).toEqual([undefined, undefined]);
+    expect(sheet.spells[0]).toMatchObject(savedBefore.spells[0]);
+    expect(sheet.spells[1]).toMatchObject(savedBefore.spells[1]);
+  });
+
+  it("reads back exactly what it writes", () => {
+    const sheet = sheetSchema.parse(savedBefore);
+    expect(sheetSchema.parse(JSON.parse(JSON.stringify(sheet)))).toEqual(sheet);
+  });
+
+  it("keeps a spell's link to the SRD, and reads it back", () => {
+    const linked = {
+      id: "s2",
+      name: "Fireball",
+      level: 3,
+      srd: { source: "srd-5.2", id: "fireball" },
+    };
+    const sheet = sheetSchema.parse({ spells: [linked] });
+    expect(sheet.spells[0].srd).toEqual(linked.srd);
+    expect(sheetSchema.parse(JSON.parse(JSON.stringify(sheet)))).toEqual(sheet);
+  });
+
+  it.each([
+    ["an SRD this build doesn't know", { source: "srd-6.0", id: "fireball" }],
+    ["no ID", { source: "srd-5.2", id: "" }],
+    ["a link that isn't one", "fireball"],
+  ])("drops a link to %s, keeping the spell and the sheet", (_, srd) => {
+    const [spell] = sheetSchema.parse({
+      spells: [{ id: "s2", name: "Fireball", level: 3, range: "150 feet", srd }],
+    }).spells;
+    expect(spell.srd).toBeUndefined();
+    expect(spell).toMatchObject({ name: "Fireball", level: 3, range: "150 feet" });
+  });
+});
