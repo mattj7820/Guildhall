@@ -86,6 +86,11 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
     (`type: spell`, DM parts left out) and be cast for free through a feat's once a day.
   - Cast spends the lowest slot left in one click (or a higher slot, the free use, or as a ritual)
     and takes over concentration. Rolling stays a click of its own.
+  - **Spells from the SRD:** Add spells opens a picker with every spell from the SRD 5.1 (2014)
+    and SRD 5.2.1 (2024), tagged, and the DM's own spell notes ("Mine"; see Spell notes below), found
+    by name, level, class, concentration or ritual. Open one to read it; + adds it filled in
+    (casting time, range, components, duration, save or attack, dice and area), to edit like any
+    spell, with the SRD's text (or the note's) in its details. Players see only notes they may read.
   - **Preparing spells:** keep a class's whole list on the sheet and tick which are ready today in
     Prepare mode, against a typed "Spells to prepare" (going over warns, never blocks). Day to day
     the Spells tab shows only what's ready: prepared spells, cantrips and a feat's free spell, which
@@ -253,17 +258,17 @@ area: 20 ft cube # a size in feet and a shape: sphere (or radius), cube, cone or
 
 ## Scripts
 
-| Command              | What it does                                                                  |
-| -------------------- | ----------------------------------------------------------------------------- |
-| `npm run dev`        | Development server with hot reload                                            |
-| `npm run build`      | Production build                                                              |
-| `npm start`          | Run the production build                                                      |
-| `npm run lint`       | ESLint + Prettier check                                                       |
-| `npm run typecheck`  | Generate route types and run `tsc`                                            |
-| `npm test`           | Unit tests (Vitest)                                                           |
-| `npm run test:e2e`   | End-to-end tests (Playwright; builds and starts the app)                      |
-| `npm run check`      | All of the above, as CI runs it                                               |
-| `npm run srd:import` | Regenerates the SRD's monsters from the pinned data (`srd:check` checks them) |
+| Command              | What it does                                                                             |
+| -------------------- | ---------------------------------------------------------------------------------------- |
+| `npm run dev`        | Development server with hot reload                                                       |
+| `npm run build`      | Production build                                                                         |
+| `npm start`          | Run the production build                                                                 |
+| `npm run lint`       | ESLint + Prettier check                                                                  |
+| `npm run typecheck`  | Generate route types and run `tsc`                                                       |
+| `npm test`           | Unit tests (Vitest)                                                                      |
+| `npm run test:e2e`   | End-to-end tests (Playwright; builds and starts the app)                                 |
+| `npm run check`      | All of the above, as CI runs it                                                          |
+| `npm run srd:import` | Regenerates the SRD's monsters and spells from the pinned data (`srd:check` checks them) |
 
 Before running the end-to-end tests for the first time: `npx playwright install chromium`.
 

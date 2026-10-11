@@ -17,7 +17,7 @@ outlined areas leading to deeper maps and notes; kept in the data folder), fog o
 maps (the party's, NPCs from their notes and the DM's markers, moved live over websockets and
 managed from the DM's Tokens tab; kept in the data folder),
 character sheets with a game-style bag (players edit their own, the DM gives items; spells, slots,
-features' uses, hit dice and rests tracked on them, and spells prepared from a longer list; a player's sheet and bag beside the map; kept in
+features' uses, hit dice and rests tracked on them, spells picked from both SRDs and the DM's spell notes, and prepared from a longer list; a player's sheet and bag beside the map; kept in
 the data folder), sign-in with Discord, where the DM lets players in and says who they play, and three themes
 (Storybook, Iron and Ember, Gemlight), each person's pick saved on their account.
 It's built to be hosted: a Docker image, with the vault copied read-only from Google Drive (see
@@ -74,7 +74,7 @@ npm run typecheck    # react-router typegen && tsc -b
 npm test             # vitest unit/integration
 npm run test:e2e     # playwright: builds, serves on :4173 with the fixture vault
 npm run check        # everything CI runs (CI also builds and checks the Docker image)
-npm run srd:import   # regenerate the SRD's monsters from the pinned data (srd:check: CI's check)
+npm run srd:import   # regenerate the SRD's monsters and spells from the pinned data (srd:check: CI's check)
 ```
 
 Locally, `DEV_LOGIN=true` in `.env` gives one-click sign-in as the DM or a player (see
@@ -102,11 +102,13 @@ First e2e run needs `npx playwright install chromium`.
 - `app/.server/members/`: `members.ts` (repository over `members.json`: waiting list, approval,
   session keys), `players.ts` (`partyPlayers`). Shared shapes in `app/members/`.
 - `app/campaign/`: shared model (isomorphic): `Viewer` (with optional `playerId`), `Player`,
-  `Visibility`, `EntityId`, entity types, `canView`.
+  `Visibility`, `EntityId`, entity types, `canView`; `srd.ts` (`SRD_SOURCES`, `SRD_DOCUMENTS`,
+  `SRD_RULES`: the bundled SRDs, for monsters and spells).
 - `app/theme/`: `themes.ts` (`THEMES`, `THEME_INFO`, `isTheme`) and `modules.ts` (`moduleOf`: which
   part of the app a path is in, for `<body data-module>`). The themes themselves are CSS in
   `app/app.css`: named colours, fonts, and each theme's decoration on the `gh-*` hooks.
-- `app/shared/`: small generic helpers used by several modules: `newId()` and `history.ts` (undo).
+- `app/shared/`: small generic helpers used by several modules: `newId()`, `history.ts` (undo) and
+  `name-search.ts` (`matchRank`, `byName`: the pickers' search).
 - `app/dice/`: dice expressions (`parseDice`, `rollText`, `critical`), the `Rng` type, and the
   roll log (`rollInto`: labelled rolls, one-roll advantage, Critical) with its `useRollLog` hook
   (isomorphic).
@@ -164,7 +166,10 @@ First e2e run needs `npx playwright install chromium`.
   `shortRest`, `longRest`, `restSummary`), `lists.ts` (`ListChange` for spells, attacks and
   features, with edits by field and `inverseListChange`), `spells.ts` (`castOptions`,
   `castActions`, `numbersFor`), `preparing.ts` (`alwaysReady`, `isReady`, `preparedCount`,
-  `startsPrepared`, `prepareAction`), `permissions.ts` (`characterAccess`: edit, summary or none;
+  `startsPrepared`, `prepareAction`), `spell-options.ts` (`SpellOption`, one spell in the picker;
+  tags, keys, and `pickedSpell`: what picking one adds), `find-spells.ts` (`findSpells`,
+  `spellClasses`), `spell-texts.ts` (`loadSpellOptions`, `loadSpellText`, `useSpellText`: loaded
+  when wanted), `permissions.ts` (`characterAccess`: edit, summary or none;
   `canGive`), `inventory.ts` (move, stack, split, equip), `inventory-changes.ts`
   (`InventoryChange`, `giveItem`), `actions.ts`
   (`CharacterAction`, `applyAction`, request schemas), `undo.ts` (`inverseOf`, the undo stack),
@@ -175,10 +180,14 @@ First e2e run needs `npx playwright install chromium`.
 - `app/.server/characters/`: `characters.ts` (the repository over `characters.json`: apply
   actions, give, relink), `controllers.ts` (who plays a character, read from its note),
   `openable.ts` (the character if the viewer may open it, else 404), `load.ts` (`partyCards`,
-  `characterPage`, `itemCatalogue`, `spellCatalogue`, `portraitPath`).
+  `characterPage`, `itemCatalogue`, `spellCatalogue`, `portraitPath`), `spell-catalogue.ts`
+  (`spellOptions`: the SRD's spells and the viewer's spell notes for the picker; `spellText`;
+  `sheetSpellTexts`, the text of a sheet's SRD spells, sent with it).
 - `app/.server/vault/`:
   - `read-vault.ts`: the only reader of vault files. Skips dotfolders.
-  - `parse-note.ts`: frontmatter → `Note`. Visibility fails closed to `dm`.
+  - `parse-note.ts`: frontmatter → `Note`. Visibility fails closed to `dm`. A `type: spell`
+    note's fields come from `spell-fields.ts` (the README's format, read leniently);
+    `frontmatter.ts` holds the lenient readers.
   - `link-resolver.ts`: Obsidian wikilink parsing and shortest-path resolution.
   - `comments.ts`: `%%comments%%` stripped for players, highlighted for the DM.
   - `dm-parts.ts`: DM sections (a heading that is exactly "DM") and DM callouts (`> [!dm]`).
@@ -223,10 +232,11 @@ First e2e run needs `npx playwright install chromium`.
   `map-rooms.ts` (a map's state and tokens for one viewer), `holds.ts` (who's moving which token),
   `live.ts` (`Live`, in the services: `mapChanged`, `memberChanged`, `fightChanged`, `stunt`,
   drags).
-- `app/.server/srd/`: the SRD's monsters, generated by `scripts/import-srd.ts` (with
-  `scripts/srd/convert.ts`, the pure conversion) and never edited by hand: `monsters-5.1.json`,
-  `monsters-5.2.json`, `NOTICE.md` (the licences), and `monsters.ts` (`srdMonsters`, parsed once;
-  `srdStatblockView`, rendered once).
+- `app/.server/srd/`: the SRD's monsters and spells, generated by `scripts/import-srd.ts` (with
+  `scripts/srd/convert.ts` and `scripts/srd/spells.ts`, the pure conversions) and never edited by
+  hand: `monsters-5.1.json`, `monsters-5.2.json`, `spells-5.1.json`, `spells-5.2.json`,
+  `NOTICE.md` (the licences), `monsters.ts` (`srdMonsters`, parsed once; `srdStatblockView`,
+  rendered once) and `spells.ts` (`srdSpells`, as picker options; `srdSpellText`, rendered once).
 - `app/.server/data/json-store.ts`: `JsonFile`, a validated, queued, atomically written JSON file.
   `file-cache.ts`: `FileCache`, disposable generated files in `DATA_PATH/cache`, one folder per key
   and version, made one set at a time. `when-free.ts`: retries a read or rename while Windows holds
@@ -258,8 +268,9 @@ First e2e run needs `npx playwright install chromium`.
   `characters` (the party; start, relink and delete actions), `character` (`/characters/:id`, a
   sheet or companion), `character-changes` (JSON: GET the stored character, POST a batch of
   actions), `character-sheet-data` (JSON: a sheet's page data, for opening it beside the map),
-  `character-give` (JSON: a gift to another bag), `character-portrait` (resource route), `credits`
-  (icon credits).
+  `character-give` (JSON: a gift to another bag), `character-portrait` (resource route), `spells`
+  (JSON: every spell the viewer may pick, for the picker when it opens), `spell-text` (JSON: one
+  spell's text as the viewer may read it), `credits` (icon and SRD credits).
 - `app/components/combat/`: the tracker's UI (`CombatTracker` lays it out), and the prepared
   encounter editor (`PreparedEditor`). `TurnStrip` (the turn order as round faces, over a map or
   in a page), `PlayerFight` (a player's Combat page, and `EndMyTurn`), `FightStatus` (saving,
@@ -272,7 +283,8 @@ First e2e run needs `npx playwright install chromium`.
   `EditorBar`, `HitPointsPanel`, `Fields`, `SheetParts`, `Portrait`. What gets used up: `Trackers`
   (slots, uses, hit dice and concentration at a glance; their maximums while editing), `Pips`,
   `Rests` (Short and Long rest), and the tabs `ActionsTab` (attacks, then features by how they're
-  used), `SpellsTab` (by level, Cast; only what's ready day to day, and Prepare mode) and `FeaturesTab`, with `FilterChips` and `SheetLists`.
+  used), `SpellsTab` (by level, Cast; only what's ready day to day, Prepare mode, and Add spells opening
+  `SpellPicker`, whose `SpellTextBox` also shows a linked spell's SRD text) and `FeaturesTab`, with `FilterChips` and `SheetLists`.
   `CharacterPanel` is a character beside the map: a compact sheet, the companion, or the bag.
   `app/components/inventory/`: `Bag`, `InventoryBoard` (the drag-and-drop grid; the drag's state
   and rules are `useInventoryDrag`, its other drop targets `DropZones`, with `SortableTile`,
@@ -314,7 +326,8 @@ First e2e run needs `npx playwright install chromium`.
   included; put shared shapes in `app/wiki/`, `app/campaign/`, `app/combat/`, `app/maps/` or
   `app/members/`).
 - Frontmatter: `visibility` (`players`|`dm`, default `dm`), `type`, `aliases`, `tags`, `id`, and
-  `player` on `type: pc` notes (who plays the character).
+  `player` on `type: pc` notes (who plays the character). `type: spell` notes may give the spell's
+  fields (level, classes, casting time…; the README's "Spell notes").
 - Combat: every encounter change is an `EncounterAction` through the pure `encounterReducer`.
   Dice are rolled in action creators (or `perform`) and carried in the action. All randomness goes
   through an injected `Rng`; never call `Math.random` directly. IDs come from `newId()`
@@ -323,8 +336,8 @@ First e2e run needs `npx playwright install chromium`.
   statblock's name, or with `source` ("srd-5.1", "srd-5.2") an SRD monster's ID; refs without a
   source are the vault's (everything stored before the SRD). Pages carry the catalogue without
   statblocks; a statblock is loaded when shown (`combat-statblock`), never sent with a page. The
-  SRD's data changes only by re-running `npm run srd:import` (pinned sources; never hand-edited,
-  and its text is never rewritten), and its notices stay on Credits.
+  SRD's data (monsters and spells) changes only by re-running `npm run srd:import` (pinned sources;
+  never hand-edited, and its text is never rewritten), and its notices stay on Credits.
 - Maps: outlines are stored as fractions of the image (0..1), never pixels; the map records the
   pixel size they were drawn against. Maps and areas reference notes by entity ID and images by
   vault path. A map's parent is derived from area links, never stored (one parent per map). Map
@@ -373,7 +386,10 @@ First e2e run needs `npx playwright install chromium`.
   reset, never how many are used. A rest is one action. Casting only ticks off what's spent;
   rolling is its own click. Preparing is a `prepared` field edit of one spell; cantrips and free
   spells are always ready (worked out in `preparing.ts`, never stored), and nothing checks a cast
-  against what's prepared. New stored fields get defaults and stored data is never refused
+  against what's prepared. A spell picked from the SRD is an ordinary spell (`pickedSpell`), the
+  player's copy, with `srd` linking the SRD's text, which is shown from the data and never copied
+  onto the sheet; the picker's list and texts are loaded when wanted (`/spells`), never sent with a
+  page, and players get only spell notes they may read. New stored fields get defaults and stored data is never refused
   (clamp or `catch` instead): sheets are live data.
 - Anything players read from a note's body must come from `forPlayers`, never `note.body`.
 - Hidden content must be indistinguishable from missing content in player view (same 404, links
@@ -394,7 +410,8 @@ First e2e run needs `npx playwright install chromium`.
   named items and never assert on a whole bag. Only `map-tokens.spec.ts` places party members (in
   order, since each is in one place). Rests give back everything on a sheet, so only
   `sheet-tracking.spec.ts` changes Fixture PC Two's sheet (as Player Two), and the specs on PC One
-  never rest. See `docs/testing.md`.
+  never rest. Specs that add spells to PC One are gathered in `spells.spec.ts`, which runs them in
+  order (preparing counts its prepared spells). See `docs/testing.md`.
 - Themes: components use the named colours (`bg-surface`, `text-ink`, `text-muted`, `border-line`,
   `bg-accent`, `text-link`, `text-danger`, `bg-dm-surface`, `text-module`, …; see `@theme` in
   `app/app.css`), never raw palette classes (a lint error in `app/`). White or black with an
