@@ -127,11 +127,7 @@ export function MapCanvas({
                 preserveAspectRatio="none"
               />
             ) : (
-              <rect
-                width={size.width}
-                height={size.height}
-                className="fill-stone-300 dark:fill-stone-700"
-              />
+              <rect width={size.width} height={size.height} className="fill-line-strong" />
             ))}
           {children?.({ scale, clientToImage })}
         </svg>

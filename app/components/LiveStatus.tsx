@@ -17,11 +17,11 @@ export function LiveStatus({ status }: { status: Status }) {
           ? "Changes show as they happen"
           : "Changes show within a few seconds while reconnecting"
       }
-      className="flex items-center gap-1.5 text-xs text-stone-500"
+      className="flex items-center gap-1.5 text-xs text-muted"
     >
       <span
         aria-hidden
-        className={`size-2 rounded-full ${status === "live" ? "bg-emerald-500" : "bg-amber-500"}`}
+        className={`size-2 rounded-full ${status === "live" ? "bg-good" : "bg-warn"}`}
       />
       {LABELS[status]}
     </span>

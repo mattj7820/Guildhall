@@ -2,6 +2,12 @@ import type { ReactNode } from "react";
 import type { EncounterView } from "~/combat/visibility";
 import { initials } from "~/components/maps/TokenLayer";
 
+// The faces are content, like tokens on a map: the same in every theme.
+// eslint-disable-next-line no-restricted-syntax
+const MONSTER_FACE = "bg-red-700";
+// eslint-disable-next-line no-restricted-syntax
+const PARTY_FACE = "bg-stone-700";
+
 interface Props {
   round: number;
   /** `dim`: for the DM, a monster that's down or hidden from players. */
@@ -51,7 +57,7 @@ export function TurnStrip({ round, turnOrder, floating = false, onSelect, childr
               onClick={() => onSelect?.(entry.id)}
               className={`flex size-9 items-center justify-center rounded-full font-serif text-sm font-bold text-white ${
                 entry.isActive ? "ring-3 ring-accent" : ""
-              } ${entry.kind === "monster" ? "bg-red-700" : "bg-stone-700"} ${
+              } ${entry.kind === "monster" ? MONSTER_FACE : PARTY_FACE} ${
                 entry.dim ? "opacity-40" : ""
               }`}
             >

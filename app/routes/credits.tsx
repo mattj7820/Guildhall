@@ -20,16 +20,13 @@ export default function Credits() {
   return (
     <main className="mx-auto max-w-4xl px-4 py-6">
       <h1 className="font-serif text-3xl font-bold">Credits</h1>
-      <p className="mt-2 text-stone-700 dark:text-stone-300">
+      <p className="mt-2 text-ink">
         The item and token icons are from{" "}
-        <a href="https://game-icons.net" className="text-amber-800 underline dark:text-amber-400">
+        <a href="https://game-icons.net" className="text-link underline">
           game-icons.net
         </a>
         , licensed under{" "}
-        <a
-          href="https://creativecommons.org/licenses/by/3.0/"
-          className="text-amber-800 underline dark:text-amber-400"
-        >
+        <a href="https://creativecommons.org/licenses/by/3.0/" className="text-link underline">
           CC BY 3.0
         </a>
         . They&rsquo;re drawn in Guildhall&rsquo;s own colours; the shapes are unchanged.

@@ -346,9 +346,12 @@ function EditableArea({
       strokeWidth={selected ? 3 : 2}
       strokeDasharray={area.map ? undefined : "6 4"}
       className={
+        // Area outlines are map content: the same in every theme.
         selected
-          ? "fill-sky-400/30 stroke-sky-700"
-          : `${onSelect ? "cursor-pointer hover:fill-amber-400/40" : ""} fill-amber-400/15 stroke-amber-700 dark:stroke-amber-400`
+          ? // eslint-disable-next-line no-restricted-syntax
+            "fill-sky-400/30 stroke-sky-700"
+          : // eslint-disable-next-line no-restricted-syntax
+            `${onSelect ? "cursor-pointer hover:fill-amber-400/40" : ""} fill-amber-400/15 stroke-amber-700 dark:stroke-amber-400`
       }
       onClick={
         onSelect &&

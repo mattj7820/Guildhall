@@ -119,9 +119,12 @@ export function Legend() {
   return (
     <div className="pointer-events-none absolute bottom-3 left-3 flex flex-col gap-1 rounded-md bg-surface/90 px-2 py-1.5 text-xs shadow">
       <span className="flex items-center gap-2">
+        {/* The key matches the outlines on the map, which are the same in every theme. */}
+        {/* eslint-disable-next-line no-restricted-syntax */}
         {swatch(false, "fill-amber-400/30 stroke-amber-700")} Leads to a map
       </span>
       <span className="flex items-center gap-2">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         {swatch(true, "fill-stone-300/30 stroke-stone-700")} Not mapped yet
       </span>
     </div>
