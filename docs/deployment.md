@@ -20,7 +20,8 @@ Browser ─► https://<domain> ─► Traefik (HTTPS) ─► app (Guildhall) �
   the vault volume every minute, using a Google service account that can only read that folder.
   Edits reach Guildhall about a minute after Drive has them. It never deletes more than 50 files
   in one sync, so a mis-shared or emptied folder can't wipe the copy.
-- **Data** lives in the `data` named volume and survives redeploys. It isn't backed up yet.
+- **Data** lives in the `data` named volume and survives redeploys. Dokploy backs it up every
+  night to a bucket off the server (see [Backups](#backups)).
 
 Both services are defined in `docker-compose.yml`.
 
@@ -102,6 +103,44 @@ and dev sign-ins are refused from outside the container anyway.
   connection every 25 seconds, so idle timeouts in a proxy don't close them. A redeploy closes
   them all; browsers reconnect by themselves.
 
+## Backups
+
+The data volume is everything Guildhall knows that the vault doesn't: members, maps, fog,
+tokens, fights and character sheets. The vault itself is safe in Google Drive. The data is backed
+up with a Dokploy **Volume Backup** to an S3-compatible bucket in an account the DM owns (we use
+Cloudflare R2's free tier), so a lost or rebuilt server doesn't lose the campaign.
+
+### Setting it up
+
+1. Make a **private** bucket, and a key that can only read and write that bucket. On Cloudflare
+   R2: an Account API token with Object Read & Write, limited to the bucket. Dokploy uses its
+   Access Key ID, Secret Access Key and S3 endpoint, not the token value.
+2. In Dokploy, add the bucket under **S3 Destinations** (region `auto` for R2), and test it.
+3. On the compose service's **Volume Backups**, back up service `app`'s volume ending in `_data`
+   (not `_vault`) nightly, keeping the latest 14. Leave **Turn Off Container During Backup** off:
+   every file is written whole and renamed into place, so a copy taken while the app runs is
+   never half-written.
+4. Run it once, download the `.tar` and check the JSON files are inside.
+
+Each backup is a tar of the volume, with the JSON files at the top and the `cache` folder
+(most of its size; it could be left out, but it's small enough not to bother).
+
+### Restoring
+
+1. Stop `app` in Dokploy, so nothing writes while the files are replaced.
+2. On the server, unpack the backup into the volume (the volume's full name is in
+   `docker volume ls`):
+
+   ```sh
+   docker run --rm -v <project>_data:/data -v "$PWD":/backup alpine      sh -c 'rm -rf /data/* && tar -xf /backup/<backup>.tar -C /data'
+   ```
+
+3. Start `app` again. Anything changed since the backup is lost, so restore from just before
+   whatever went wrong.
+
+Before a deploy that changes how data is stored, run the backup by hand first: rolling back an
+image after new data is written can lose the new fields (older code drops what it doesn't know).
+
 ## Security notes
 
 - Everything that players are allowed to see is reachable over the internet, behind a Discord
@@ -109,7 +148,8 @@ and dev sign-ins are refused from outside the container anyway.
 - The server's administrator can read the vault copy, the data volume and the environment
   (including secrets). Only host it where you trust the administrator.
 - The app mounts the vault read-only; the only place it writes is `/data`. Its `cache` folder
-  holds generated files (the tiles of players' maps): it needn't be backed up, and deleting it only
-  means they're made again.
+  holds generated files (the tiles of players' maps): deleting it only means they're made again.
+- Backups hold the same data as the volume (including members' Discord IDs), so the bucket is
+  private and its key can reach nothing else.
 - `app` is only exposed to Traefik's network (`expose`, not `ports`), so it can't be reached
   over plain HTTP on the server's public address.

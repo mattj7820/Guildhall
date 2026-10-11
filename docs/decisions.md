@@ -1236,3 +1236,15 @@ cut off heads. Every round face (party cards, sheets, map tokens, the Tokens tab
 crops from the top, where heads almost always are. Wide or square pictures, as creature art often
 is, are only trimmed at the sides, so they're unchanged. A focus point set for each picture was
 the alternative, kept for if a picture ever needs it.
+
+## 70. Nightly backups of the data folder, off the server
+
+**Date:** 2026-10-11
+
+The hosted app holds real campaign data (sheets, maps, fog, tokens), and the server is a friend's,
+so a backup on the same machine wouldn't protect against losing it. Dokploy's Volume Backups copy
+the data volume every night to a private S3-compatible bucket in the DM's own account (Cloudflare
+R2, well inside its free tier), keeping two weeks. Nothing in Guildhall changed: the backup is the
+host's job, and since every file is written whole and renamed into place, it's taken with the app
+running. The tile cache is included rather than split into its own volume; it's tens of
+megabytes. A restore was checked by hand the day it was set up.
