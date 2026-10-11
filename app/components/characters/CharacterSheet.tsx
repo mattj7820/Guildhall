@@ -240,6 +240,7 @@ export function CharacterSheet({ page }: { page: CharacterPage }) {
                 setTab={setTab}
                 preparing={preparing}
                 onPreparing={setPreparing}
+                undo={editor.undo}
               />
             </div>
           </div>

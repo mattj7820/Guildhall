@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { ABILITIES, ABILITY_NAMES, signed, type Ability } from "~/characters/abilities";
+import { SRD_DOCUMENTS } from "~/campaign/srd";
 import { levelName, ORDINALS } from "~/characters/describe";
 import type { Edits } from "~/characters/lists";
 import { AREA_FEET_MAX, LONG_TEXT_MAX, SHORT_TEXT_MAX } from "~/characters/schema";
@@ -22,8 +23,9 @@ import {
   startsPrepared,
 } from "~/characters/preparing";
 import { PREPARE_MAX } from "~/characters/schema";
+import { srdSpellKey } from "~/characters/spell-options";
 import { SPELL_LEVELS, type Sheet, type Spell, type SpellLevel } from "~/characters/types";
-import type { CatalogueItem, LinkedNote } from "~/characters/view";
+import type { CatalogueItem, LinkedNote, SpellText } from "~/characters/view";
 import { SPELL_SHAPES, type SpellShape } from "~/maps/grid/shapes";
 import { newId } from "~/shared/ids";
 import { buttonClass } from "../styles";
@@ -37,16 +39,18 @@ import {
   TextField,
 } from "./Fields";
 import { FilterChips } from "./FilterChips";
+import { SpellPicker, SpellTextBox } from "./SpellPicker";
 import { Pips } from "./Pips";
-import { DiceChip, ListControls } from "./SheetLists";
+import { Badge, DiceChip, ListControls } from "./SheetLists";
 import type { Parts } from "./SheetSections";
 
 type SpellFilter = "all" | SpellLevel | "concentration" | "ritual";
 
-/** Vault spell notes the viewer may link, and read. */
+/** Vault spell notes the viewer may link, and read; and the text of the SRD spells linked. */
 export interface SpellNotes {
   catalogue: CatalogueItem[];
   notes: Record<string, LinkedNote>;
+  texts?: Record<string, SpellText>;
 }
 
 /**
@@ -55,7 +59,8 @@ export interface SpellNotes {
  * level, concentration or ritual.
  *
  * Day to day it lists only what's ready (prepared spells, cantrips and free spells), with a line
- * saying how many aren't. Prepare mode lists them all to choose from, and so does editing.
+ * saying how many aren't. Prepare mode lists them all to choose from, and so does editing. Add
+ * spells opens the picker (the SRD's and the DM's spell notes); editing can also type one in.
  */
 export function SpellsTab({
   parts,
@@ -63,6 +68,7 @@ export function SpellsTab({
   compact = false,
   preparing,
   onPreparing,
+  undo,
 }: {
   parts: Parts;
   spellNotes?: SpellNotes;
@@ -70,8 +76,11 @@ export function SpellsTab({
   /** Prepare mode, kept by the sheet so that a long rest can open it. */
   preparing: boolean;
   onPreparing: (preparing: boolean) => void;
+  /** The editor's undo, offered when a spell is added from the picker. */
+  undo?: () => void;
 }) {
   const [filter, setFilter] = useState<SpellFilter>("all");
+  const [picking, setPicking] = useState(false);
   const [notice, setNotice] = useState<string>();
   const { sheet, editing } = parts;
   const choosing = preparing && !editing;
@@ -92,6 +101,26 @@ export function SpellsTab({
           ? spell.ritual
           : spell.level === filter,
   );
+  const typeOne = () =>
+    parts.dispatch({
+      type: "spells",
+      change: {
+        type: "add",
+        item: {
+          id: newId(),
+          name: "New spell",
+          level: typeof filter === "number" ? filter : 0,
+          castingTime: "1 action",
+          range: "",
+          components: "",
+          duration: "",
+          concentration: false,
+          ritual: false,
+          attack: false,
+          prepared: startsPrepared(sheet),
+        },
+      },
+    });
 
   return (
     <div className="flex flex-col gap-3">
@@ -100,12 +129,30 @@ export function SpellsTab({
       ) : (
         <div className="flex flex-wrap items-start gap-2">
           <Spellcasting parts={parts} />
-          {!editing && canPrepare(sheet) && (
-            <button type="button" className={`${buttonClass} ml-auto`} onClick={openPrepare}>
-              Prepare spells
-            </button>
+          {!editing && (
+            <span className="ml-auto flex flex-wrap gap-2">
+              {!picking && (
+                <button type="button" className={buttonClass} onClick={() => setPicking(true)}>
+                  {compact ? "+ Add" : "Add spells"}
+                </button>
+              )}
+              {canPrepare(sheet) && (
+                <button type="button" className={buttonClass} onClick={openPrepare}>
+                  {compact ? "Prepare" : "Prepare spells"}
+                </button>
+              )}
+            </span>
           )}
         </div>
+      )}
+      {picking && !choosing && (
+        <SpellPicker
+          parts={parts}
+          compact={compact}
+          undo={undo}
+          onType={editing ? typeOne : undefined}
+          onDone={() => setPicking(false)}
+        />
       )}
       {listed.length > 0 && (
         <FilterChips<SpellFilter>
@@ -126,7 +173,7 @@ export function SpellsTab({
         </p>
       )}
       {sheet.spells.length === 0 && !editing && (
-        <p className="text-sm text-muted">No spells yet. Edit the sheet to add them.</p>
+        <p className="text-sm text-muted">No spells yet.</p>
       )}
       {levels
         .filter((level) => shown.some((spell) => spell.level === level))
@@ -175,6 +222,7 @@ export function SpellsTab({
                         spell={spell}
                         parts={parts}
                         note={spell.note ? spellNotes.notes[spell.note] : undefined}
+                        srdText={spell.srd && spellNotes.texts?.[srdSpellKey(spell.srd)]}
                         compact={compact}
                         onNotice={setNotice}
                       />
@@ -198,33 +246,16 @@ export function SpellsTab({
         </p>
       )}
       {editing && (
-        <button
-          type="button"
-          className={`${buttonClass} self-start`}
-          onClick={() =>
-            parts.dispatch({
-              type: "spells",
-              change: {
-                type: "add",
-                item: {
-                  id: newId(),
-                  name: "New spell",
-                  level: typeof filter === "number" ? filter : 0,
-                  castingTime: "1 action",
-                  range: "",
-                  components: "",
-                  duration: "",
-                  concentration: false,
-                  ritual: false,
-                  attack: false,
-                  prepared: startsPrepared(sheet),
-                },
-              },
-            })
-          }
-        >
-          Add spell
-        </button>
+        <span className="flex flex-wrap gap-2">
+          <button type="button" className={buttonClass} onClick={typeOne}>
+            Add spell
+          </button>
+          {!picking && (
+            <button type="button" className={buttonClass} onClick={() => setPicking(true)}>
+              Find a spell
+            </button>
+          )}
+        </span>
       )}
     </div>
   );
@@ -439,12 +470,15 @@ function SpellRow({
   spell,
   parts,
   note,
+  srdText,
   compact,
   onNotice,
 }: {
   spell: Spell;
   parts: Parts;
   note?: LinkedNote;
+  /** The SRD spell's text, if the page brought it; otherwise it's loaded when opened. */
+  srdText?: SpellText;
   compact: boolean;
   onNotice: (text: string) => void;
 }) {
@@ -530,20 +564,10 @@ function SpellRow({
               </Link>
             </div>
           )}
+          {spell.srd && <SpellTextBox spellKey={srdSpellKey(spell.srd)} known={srdText} />}
         </div>
       )}
     </li>
-  );
-}
-
-function Badge({ title, children }: { title: string; children: string }) {
-  return (
-    <abbr
-      title={title}
-      className="ml-1 rounded border border-line-strong px-1 text-[10px] font-semibold text-muted no-underline"
-    >
-      {children}
-    </abbr>
   );
 }
 
@@ -838,6 +862,19 @@ function SpellForm({
           />
         )}
       </div>
+      {spell.srd && (
+        <p className="text-xs text-muted">
+          From the {SRD_DOCUMENTS[spell.srd.source]}: its text shows with the spell.{" "}
+          <button
+            type="button"
+            className="font-semibold text-link hover:underline"
+            aria-label={`Unlink ${spell.name} from the SRD`}
+            onClick={() => set({ srd: null })}
+          >
+            Unlink
+          </button>
+        </p>
+      )}
       <TextAreaField
         label={`${spell.name} description`}
         value={spell.description ?? ""}
