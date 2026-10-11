@@ -53,30 +53,24 @@ export default function WikiNote({ loaderData: note }: Route.ComponentProps) {
       <header className="mb-4 flex flex-wrap items-center gap-2 text-sm">
         {note.type && <TypeBadge type={note.type} />}
         {note.showVisibility && (
-          <span
-            className={
-              note.visibility === "players"
-                ? "text-emerald-700 dark:text-emerald-400"
-                : "text-rose-700 dark:text-rose-400"
-            }
-          >
+          <span className={note.visibility === "players" ? "text-good" : "text-danger"}>
             {note.visibility === "players" ? "Visible to players" : "DM only"}
           </span>
         )}
         {note.aliases.length > 0 && (
-          <span className="text-stone-500">Also known as {note.aliases.join(", ")}</span>
+          <span className="text-muted">Also known as {note.aliases.join(", ")}</span>
         )}
         {note.maps.map((map) => (
           <Link
             key={map.id}
             to={mapUrl(map.id)}
-            className="rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-900 hover:bg-amber-200 dark:bg-amber-950 dark:text-amber-200"
+            className="rounded-full bg-accent-surface px-2 py-0.5 font-medium text-title hover:ring-1 hover:ring-trim"
           >
             Open map: {map.name}
           </Link>
         ))}
         {note.tags.map((tag) => (
-          <span key={tag} className="text-stone-500">
+          <span key={tag} className="text-muted">
             #{tag}
           </span>
         ))}
@@ -86,7 +80,7 @@ export default function WikiNote({ loaderData: note }: Route.ComponentProps) {
       {/* Server-rendered from the vault and sanitised in app/.server/vault/render.ts. */}
       <div
         onClick={handleBodyClick}
-        className="note-body prose prose-stone max-w-none dark:prose-invert"
+        className="note-body prose prose-theme max-w-none"
         dangerouslySetInnerHTML={{ __html: note.html }}
       />
     </article>
@@ -100,7 +94,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
         <h1 className="font-serif text-3xl font-bold">Note not found</h1>
         <p className="mt-2">
           There's no note at this address.{" "}
-          <Link to="/wiki" className="text-amber-800 underline dark:text-amber-400">
+          <Link to="/wiki" className="text-link underline">
             Back to the wiki
           </Link>
         </p>

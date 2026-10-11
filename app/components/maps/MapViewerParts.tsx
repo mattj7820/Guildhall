@@ -38,23 +38,21 @@ export function SelectedArea({
     <section aria-label={area.name} className="flex flex-col gap-3">
       <div className="flex items-baseline gap-2">
         <h2 className="mr-auto font-serif text-xl font-bold">{area.name}</h2>
-        <button type="button" onClick={onClose} className="text-sm text-stone-500 hover:underline">
+        <button type="button" onClick={onClose} className="text-sm text-muted hover:underline">
           Close
         </button>
       </div>
       <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="text-stone-600 dark:text-stone-400">Not mapped yet.</span>
+        <span className="text-muted">Not mapped yet.</span>
         <Link to={mapEditUrl(mapId, area.id)} className={buttonClass}>
           Attach a map
         </Link>
       </div>
       {area.broken.includes("map") && (
-        <p className="text-sm text-rose-700 dark:text-rose-400">
-          The map this area led to has been deleted.
-        </p>
+        <p className="text-sm text-danger">The map this area led to has been deleted.</p>
       )}
       {area.broken.includes("note") && (
-        <p className="text-sm text-rose-700 dark:text-rose-400">
+        <p className="text-sm text-danger">
           The wiki note this area linked to is no longer in the vault.
         </p>
       )}
@@ -76,7 +74,7 @@ export function AreaList({
     <section aria-labelledby="map-areas-heading">
       <h2
         id="map-areas-heading"
-        className="mb-1 text-xs font-semibold tracking-wide text-stone-500 uppercase"
+        className="mb-1 text-xs font-semibold tracking-wide text-muted uppercase"
       >
         Areas
       </h2>
@@ -84,17 +82,14 @@ export function AreaList({
         {sorted.map((area) => (
           <li key={area.id}>
             {area.map ? (
-              <Link
-                to={mapUrl(area.map.id)}
-                className="block rounded px-1 py-0.5 hover:bg-stone-100 dark:hover:bg-stone-800"
-              >
+              <Link to={mapUrl(area.map.id)} className="block rounded px-1 py-0.5 hover:bg-raised">
                 ▸ {area.name}
               </Link>
             ) : (
               <button
                 type="button"
                 onClick={() => onSelect(area)}
-                className="block w-full rounded px-1 py-0.5 text-left text-stone-600 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
+                className="block w-full rounded px-1 py-0.5 text-left text-muted hover:bg-raised"
               >
                 ◌ {area.name} <span className="text-xs">(not mapped yet)</span>
               </button>
@@ -122,11 +117,14 @@ export function Legend() {
     </svg>
   );
   return (
-    <div className="pointer-events-none absolute bottom-3 left-3 flex flex-col gap-1 rounded-md bg-white/90 px-2 py-1.5 text-xs shadow dark:bg-stone-900/90">
+    <div className="pointer-events-none absolute bottom-3 left-3 flex flex-col gap-1 rounded-md bg-surface/90 px-2 py-1.5 text-xs shadow">
       <span className="flex items-center gap-2">
+        {/* The key matches the outlines on the map, which are the same in every theme. */}
+        {/* eslint-disable-next-line no-restricted-syntax */}
         {swatch(false, "fill-amber-400/30 stroke-amber-700")} Leads to a map
       </span>
       <span className="flex items-center gap-2">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         {swatch(true, "fill-stone-300/30 stroke-stone-700")} Not mapped yet
       </span>
     </div>

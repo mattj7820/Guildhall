@@ -47,15 +47,15 @@ export function ImagePicker({ images, onChange, compact = false }: Props) {
         <div
           role="radiogroup"
           aria-label="Vault images"
-          className={`flex ${compact ? "max-h-40" : "max-h-72"} flex-col overflow-y-auto rounded-md border border-stone-200 p-1 dark:border-stone-800`}
+          className={`flex ${compact ? "max-h-40" : "max-h-72"} flex-col overflow-y-auto rounded-md border border-line p-1`}
         >
           {matches.length === 0 && (
-            <p className="p-2 text-sm text-stone-500">No images match “{query}”.</p>
+            <p className="p-2 text-sm text-muted">No images match “{query}”.</p>
           )}
           {matches.slice(0, SHOWN).map((path) => (
             <label
               key={path}
-              className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-stone-100 has-checked:bg-amber-100 dark:hover:bg-stone-800 dark:has-checked:bg-amber-950"
+              className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-raised has-checked:bg-accent-surface"
             >
               <input
                 type="radio"
@@ -68,12 +68,12 @@ export function ImagePicker({ images, onChange, compact = false }: Props) {
             </label>
           ))}
           {matches.length > SHOWN && (
-            <p className="p-2 text-xs text-stone-500">
+            <p className="p-2 text-xs text-muted">
               {matches.length - SHOWN} more; keep typing to narrow the list.
             </p>
           )}
         </div>
-        <div className="flex min-h-40 flex-col items-center justify-center gap-1 rounded-md bg-stone-100 p-2 text-sm text-stone-500 dark:bg-stone-800">
+        <div className="flex min-h-40 flex-col items-center justify-center gap-1 rounded-md bg-raised p-2 text-sm text-muted">
           {chosen ? (
             <>
               <img

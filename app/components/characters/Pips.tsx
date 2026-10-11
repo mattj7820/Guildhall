@@ -25,8 +25,7 @@ export function Pips({
   const summary = `${label}: ${left} of ${counter.max} left`;
 
   if (counter.max > MAX_PIPS) {
-    const step =
-      "rounded border border-stone-300 px-1.5 text-sm leading-5 disabled:opacity-40 dark:border-stone-700";
+    const step = "rounded border border-line-strong px-1.5 text-sm leading-5 disabled:opacity-40";
     return (
       <span role="group" aria-label={summary} className="inline-flex items-center gap-1">
         <button
@@ -66,10 +65,10 @@ export function Pips({
             aria-label={spent ? `Give back one ${label}` : `Use one ${label}`}
             title={spent ? "Spent: click to give it back" : "Click to use"}
             onClick={() => onCount(spent ? -1 : 1)}
-            className={`${box} rotate-45 rounded-[3px] border-2 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 ${
+            className={`${box} rotate-45 rounded-[3px] border-2 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
               spent
-                ? "border-stone-300 bg-transparent dark:border-stone-600"
-                : "border-amber-600 bg-amber-400 shadow-[0_0_6px] shadow-amber-400/60 dark:border-amber-400 dark:bg-amber-500"
+                ? "border-line-strong bg-transparent"
+                : "border-accent bg-accent shadow-[0_0_6px] shadow-trim/60"
             }`}
           />
         );
@@ -91,7 +90,7 @@ export function ResetBadge({ reset }: { reset: Reset }) {
   return (
     <abbr
       title={badge[1]}
-      className="rounded bg-stone-100 px-1 text-[10px] font-semibold text-stone-500 no-underline dark:bg-stone-800"
+      className="rounded bg-raised px-1 text-[10px] font-semibold text-muted no-underline"
     >
       {badge[0]}
     </abbr>

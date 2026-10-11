@@ -47,6 +47,7 @@
   --color-title: var(--gh-title);
   --color-accent: var(--gh-accent);
   --color-accent-strong: var(--gh-accent-strong);
+  --color-accent-surface: var(--gh-accent-surface);
   --color-on-accent: var(--gh-on-accent);
   --color-link: var(--gh-link);
   --color-trim: var(--gh-trim);
@@ -64,6 +65,7 @@
   --color-warn-surface: var(--gh-warn-surface);
   --color-danger: var(--gh-danger);
   --color-danger-surface: var(--gh-danger-surface);
+  --color-on-danger: var(--gh-page);
   --color-module: var(--gh-module);
 }
 
@@ -83,6 +85,7 @@
   --gh-title: light-dark(#1e4a4e, #efe5d6);
   --gh-accent: light-dark(#1e5a5e, #b23d16);
   --gh-accent-strong: light-dark(#164448, #c94a1c);
+  --gh-accent-surface: light-dark(#dcebe8, #2c1710);
   --gh-on-accent: light-dark(#fdf3d4, #fbe9d6);
   --gh-link: light-dark(#8a2f5c, #ef7a45);
   --gh-trim: light-dark(#d9b450, #ff8a3d);
@@ -107,6 +110,13 @@
   --gh-module-characters: light-dark(#a3366a, #c94a1c);
   --gh-module-maps: light-dark(#3f6f3a, #c94a1c);
   --gh-module-combat: light-dark(#9b3b23, #c94a1c);
+
+  /* Statblocks: the books' parchment in Storybook, a dark page in the dark themes. */
+  --gh-statblock-page: light-dark(#fdf1dc, #1b1513);
+  --gh-statblock-ink: light-dark(#1c1917, #e6d8c4);
+  --gh-statblock-red: light-dark(#7a200d, #ef8a60);
+  --gh-statblock-rule: light-dark(#922610, #b23d16);
+  --gh-statblock-edge: light-dark(#e69a28, #8a2c10);
 
   --gh-font-display: "Fondamento", Georgia, serif;
   --gh-font-prose: "Crimson Pro", Georgia, serif;
@@ -146,6 +156,7 @@
   --gh-title: #f2f8ff;
   --gh-accent: #8fd3ff;
   --gh-accent-strong: #b5e3ff;
+  --gh-accent-surface: #16304d;
   --gh-on-accent: #071120;
   --gh-link: #9fdcff;
   --gh-trim: #8fd3ff;
@@ -168,6 +179,11 @@
   --gh-module-characters: #6fe3a4;
   --gh-module-maps: #ffd17a;
   --gh-module-combat: #ff7c8f;
+  --gh-statblock-page: #111d31;
+  --gh-statblock-ink: #e1ebf8;
+  --gh-statblock-red: #ff9fb0;
+  --gh-statblock-rule: #c9506a;
+  --gh-statblock-edge: #7cc8ff;
   --gh-font-display: "Marcellus SC", Georgia, serif;
   --gh-font-prose: "Cormorant Garamond", Georgia, serif;
   --gh-font-ui: "Jost", system-ui, sans-serif;
@@ -428,6 +444,28 @@ body {
   }
 }
 
+/* Note text in the theme's colours and prose font (the typography plugin's variables). */
+.prose-theme {
+  --tw-prose-body: var(--gh-ink);
+  --tw-prose-headings: var(--gh-title);
+  --tw-prose-lead: var(--gh-muted);
+  --tw-prose-links: var(--gh-link);
+  --tw-prose-bold: var(--gh-title);
+  --tw-prose-counters: var(--gh-muted);
+  --tw-prose-bullets: var(--gh-line-strong);
+  --tw-prose-hr: var(--gh-line);
+  --tw-prose-quotes: var(--gh-ink);
+  --tw-prose-quote-borders: var(--gh-trim);
+  --tw-prose-captions: var(--gh-muted);
+  --tw-prose-kbd: var(--gh-ink);
+  --tw-prose-code: var(--gh-title);
+  --tw-prose-pre-code: var(--gh-ink);
+  --tw-prose-pre-bg: var(--gh-raised);
+  --tw-prose-th-borders: var(--gh-line-strong);
+  --tw-prose-td-borders: var(--gh-line);
+  font-family: var(--gh-font-prose);
+}
+
 /*
  * Rendered note content (see app/.server/vault/render.ts for the classes). Deliberately unlayered
  * so these rules win over the typography plugin's defaults.
@@ -440,15 +478,15 @@ body {
 }
 
 .note-body a.wikilink {
-  @apply font-medium text-amber-800 decoration-amber-800/40 hover:decoration-amber-800 dark:text-amber-400 dark:decoration-amber-400/40;
+  @apply text-link decoration-link/40 hover:decoration-link font-medium;
 }
 
 .note-body .wikilink-missing {
-  @apply text-stone-400 italic underline decoration-dotted underline-offset-2 dark:text-stone-500;
+  @apply text-faint italic underline decoration-dotted underline-offset-2;
 }
 
 .note-body .dm-comment {
-  @apply rounded bg-rose-50 px-1 text-rose-900 ring-1 ring-rose-200 dark:bg-rose-950/60 dark:text-rose-200 dark:ring-rose-900;
+  @apply bg-dm-surface text-dm ring-dm/30 rounded px-1 ring-1;
 }
 
 .note-body div.dm-comment {
@@ -466,13 +504,13 @@ body {
  */
 .note-body .dm-section,
 .note-body .dm-callout {
-  @apply my-4 rounded border-l-4 border-rose-400 bg-rose-50/70 px-4 py-2 text-stone-900 dark:border-rose-700 dark:bg-rose-950/40 dark:text-stone-100;
+  @apply border-dm bg-dm-surface text-ink my-4 rounded border-l-4 px-4 py-2;
 }
 
 .note-body .dm-section::before,
 .note-body .dm-callout::before {
   content: "DM only";
-  @apply mb-1 block text-xs font-semibold tracking-wide text-rose-800 uppercase dark:text-rose-300;
+  @apply text-dm mb-1 block text-xs font-semibold tracking-wide uppercase;
 }
 
 .note-body .dm-section > :first-child {
@@ -491,14 +529,14 @@ body {
 
 /* Statblocks, styled after the 5e books (see app/.server/vault/statblock/). */
 .statblock {
-  --statblock-red: #7a200d;
-  --statblock-rule: #922610;
+  --statblock-red: var(--gh-statblock-red);
+  --statblock-rule: var(--gh-statblock-rule);
   margin-block: 1.5rem;
   max-width: 42rem;
   padding: 0.75rem 1rem 1rem;
-  background: #fdf1dc;
-  color: #1c1917;
-  border-block: 5px solid #e69a28;
+  background: var(--gh-statblock-page);
+  color: var(--gh-statblock-ink);
+  border-block: 5px solid var(--gh-statblock-edge);
   box-shadow: 0 0 1.25rem rgb(0 0 0 / 0.15);
   font-size: 0.95rem;
   line-height: 1.4;
@@ -559,7 +597,7 @@ body {
 }
 
 .statblock-error {
-  @apply my-4 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200;
+  @apply border-warn/40 bg-warn-surface text-warn my-4 rounded border p-3 text-sm;
 }
 
 /* Rolls in the combat tracker's statblocks: subtle, so the book look survives, but clearly

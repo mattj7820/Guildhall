@@ -85,9 +85,9 @@ export function MapSidePanel({
       {tab === "map" ? (
         mapDetails
       ) : !chosen ? (
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-muted">
           No sheet yet.{" "}
-          <Link to={CHARACTERS_URL} className="text-amber-800 underline dark:text-amber-400">
+          <Link to={CHARACTERS_URL} className="text-link underline">
             Start one on the Characters page
           </Link>
           .
@@ -123,10 +123,10 @@ function LoadedCharacter({ id, tab }: { id: string; tab: PanelTab }) {
     };
   }, [id, attempt]);
 
-  if (state.kind === "loading") return <p className="text-sm text-stone-500">Opening…</p>;
+  if (state.kind === "loading") return <p className="text-sm text-muted">Opening…</p>;
   if (state.kind === "failed") {
     return (
-      <p className="flex items-center gap-2 text-sm text-rose-700 dark:text-rose-400">
+      <p className="flex items-center gap-2 text-sm text-danger">
         The sheet couldn&rsquo;t be opened.
         <button
           type="button"

@@ -18,10 +18,10 @@ function FolderContents({ folder }: { folder: FolderNode }) {
       {folder.folders.map((child) => (
         <li key={child.path}>
           <details open>
-            <summary className="cursor-pointer rounded px-1.5 py-1 font-medium text-stone-700 select-none hover:bg-stone-200/60 dark:text-stone-300 dark:hover:bg-stone-800">
+            <summary className="cursor-pointer rounded px-1.5 py-1 font-medium text-ink select-none hover:bg-line/60">
               {child.name}
             </summary>
-            <div className="ml-3 border-l border-stone-200 pl-2 dark:border-stone-800">
+            <div className="ml-3 border-l border-line pl-2">
               <FolderContents folder={child} />
             </div>
           </details>
@@ -33,9 +33,7 @@ function FolderContents({ folder }: { folder: FolderNode }) {
             to={noteUrl(note.slug)}
             className={({ isActive }) =>
               `flex items-center justify-between gap-2 rounded px-1.5 py-1 ${
-                isActive
-                  ? "bg-amber-100 font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200"
-                  : "hover:bg-stone-200/60 dark:hover:bg-stone-800"
+                isActive ? "bg-accent-surface font-medium text-title" : "hover:bg-line/60"
               }`
             }
           >

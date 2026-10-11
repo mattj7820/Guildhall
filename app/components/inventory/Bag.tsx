@@ -80,7 +80,7 @@ export function Bag({
       <div
         role="group"
         aria-label="Show"
-        className="flex overflow-hidden rounded-md border border-stone-300 text-sm dark:border-stone-700"
+        className="flex overflow-hidden rounded-md border border-line-strong text-sm"
       >
         {(["all", "equipped"] as const).map((value) => (
           <button
@@ -89,9 +89,7 @@ export function Bag({
             aria-pressed={filter === value}
             onClick={() => setFilter(value)}
             className={
-              filter === value
-                ? "bg-stone-800 px-2 py-1 text-white dark:bg-stone-200 dark:text-stone-900"
-                : "px-2 py-1 hover:bg-stone-100 dark:hover:bg-stone-800"
+              filter === value ? "bg-ink px-2 py-1 text-page" : "px-2 py-1 hover:bg-raised"
             }
           >
             {value === "all" ? "All" : "Equipped"}
@@ -141,7 +139,7 @@ export function Bag({
         toolbar={toolbar}
       />
       <Purse purse={state.purse} onChange={onChange} />
-      <p className="mt-3 text-right text-xs text-stone-500">
+      <p className="mt-3 text-right text-xs text-muted">
         <Link to="/credits" className="hover:underline">
           Icon credits
         </Link>

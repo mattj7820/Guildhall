@@ -60,7 +60,7 @@ export function ActionsTab({ parts, compact = false }: { parts: Parts; compact?:
         ]}
       />
       {nothing && !parts.editing && (
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-muted">
           No attacks or features yet. Edit the sheet to add them.
         </p>
       )}
@@ -96,7 +96,7 @@ function AttackList({ parts, compact }: { parts: Parts; compact: boolean }) {
   const { attacks } = parts.sheet;
   return (
     <>
-      <ul className="divide-y divide-stone-100 dark:divide-stone-800">
+      <ul className="divide-y divide-line">
         {attacks.map((attack, index) =>
           parts.editing ? (
             <AttackForm key={attack.id} attack={attack} index={index} parts={parts} />
@@ -108,7 +108,7 @@ function AttackList({ parts, compact }: { parts: Parts; compact: boolean }) {
               <span className="mr-auto min-w-0">
                 <span className="font-medium">{attack.name}</span>
                 {attack.notes && !compact && (
-                  <span className="ml-2 text-xs text-stone-500">{attack.notes}</span>
+                  <span className="ml-2 text-xs text-muted">{attack.notes}</span>
                 )}
               </span>
               <DiceChip
@@ -137,7 +137,7 @@ function AttackList({ parts, compact }: { parts: Parts; compact: boolean }) {
                 >
                   {attack.damage}
                   {attack.damageType && !compact && (
-                    <span className="ml-1 text-xs text-stone-500">{attack.damageType}</span>
+                    <span className="ml-1 text-xs text-muted">{attack.damageType}</span>
                   )}
                 </DiceChip>
               )}

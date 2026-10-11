@@ -107,7 +107,7 @@ export default function Characters({ loaderData, actionData }: Route.ComponentPr
     <main className="mx-auto max-w-6xl px-4 py-6">
       <h1 className="font-serif text-3xl font-bold">Characters</h1>
       {problem && (
-        <p role="alert" className="mt-3 text-rose-700 dark:text-rose-400">
+        <p role="alert" className="mt-3 text-danger">
           {problem}
         </p>
       )}
@@ -115,12 +115,12 @@ export default function Characters({ loaderData, actionData }: Route.ComponentPr
       <section aria-labelledby="party-heading" className="mt-6">
         <h2
           id="party-heading"
-          className="text-sm font-semibold tracking-wider text-stone-500 uppercase"
+          className="text-sm font-semibold tracking-wider text-muted uppercase"
         >
           The party
         </h2>
         {pcs.length === 0 ? (
-          <p className="mt-3 text-stone-600 dark:text-stone-400">
+          <p className="mt-3 text-muted">
             No player characters yet. A note with <code>type: pc</code> and a <code>player</code>{" "}
             becomes one.
           </p>
@@ -139,7 +139,7 @@ export default function Characters({ loaderData, actionData }: Route.ComponentPr
         <section aria-labelledby="companions-heading" className="mt-8">
           <h2
             id="companions-heading"
-            className="text-sm font-semibold tracking-wider text-stone-500 uppercase"
+            className="text-sm font-semibold tracking-wider text-muted uppercase"
           >
             Companions
           </h2>
@@ -158,7 +158,7 @@ export default function Characters({ loaderData, actionData }: Route.ComponentPr
           <h2 id="lost-heading" className="font-serif text-xl font-bold">
             Sheets whose note has gone
           </h2>
-          <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+          <p className="mt-1 text-sm text-muted">
             Only you can see these. Their note was moved or renamed without an <code>id</code>, or
             deleted. Link each to its note again, and add an <code>id</code> to the note so it
             doesn&rsquo;t happen again.
@@ -185,7 +185,7 @@ function OrphanRow({
   return (
     <li className="flex flex-wrap items-center gap-2">
       <span className="font-semibold">{orphan.name}</span>
-      <span className="text-sm text-stone-500">was {orphan.note}</span>
+      <span className="text-sm text-muted">was {orphan.note}</span>
       <Form method="post" className="flex flex-wrap items-center gap-2">
         <input type="hidden" name="id" value={orphan.id} />
         <select name="note" aria-label={`Note for ${orphan.name}`} className={inputClass}>
@@ -210,7 +210,7 @@ function OrphanRow({
               type="submit"
               name="intent"
               value="delete"
-              className={`${buttonClass} text-rose-700 dark:text-rose-400`}
+              className={`${buttonClass} text-danger`}
             >
               Delete {orphan.name} and their bag
             </button>

@@ -215,7 +215,7 @@ export function StuntSettingsMenu({
         </button>
       )}
       <details className="relative">
-        <summary className="cursor-pointer list-none rounded-md px-2 py-1 text-sm text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800">
+        <summary className="cursor-pointer list-none rounded-md px-2 py-1 text-sm text-muted hover:bg-raised">
           Effects{settings.effects ? "" : " off"}
           {settings.sound ? "" : " · muted"}
         </summary>
@@ -240,7 +240,7 @@ export function StuntSettingsMenu({
             />
             Play sounds
           </label>
-          <label className="flex flex-col gap-1 text-xs text-stone-500">
+          <label className="flex flex-col gap-1 text-xs text-muted">
             Volume
             <input
               type="range"
@@ -324,27 +324,27 @@ export function StuntPalette({
     >
       <div className="flex items-center">
         <span className="mr-auto font-semibold">Stunts</span>
-        <button type="button" className="text-xs text-stone-500 hover:underline" onClick={onClose}>
+        <button type="button" className="text-xs text-muted hover:underline" onClick={onClose}>
           Close
         </button>
       </div>
-      <p className="text-xs text-stone-500">Pick one, then click the map or a token.</p>
+      <p className="text-xs text-muted">Pick one, then click the map or a token.</p>
       <div className="flex flex-wrap gap-1">
         {POINT_KINDS.map(button)}
         <button type="button" className={`${buttonClass} text-xs`} onClick={stunts.shakeScreen}>
           Shake
         </button>
       </div>
-      <span className="text-xs font-semibold text-stone-500">On a token</span>
+      <span className="text-xs font-semibold text-muted">On a token</span>
       <div className="flex flex-wrap gap-1">
         {TOKEN_KINDS.map(button)}
         <button type="button" className={`${buttonClass} text-xs`} onClick={stunts.standUp}>
           Stand them up
         </button>
       </div>
-      <span className="text-xs font-semibold text-stone-500">Sounds</span>
+      <span className="text-xs font-semibold text-muted">Sounds</span>
       {sounds.length === 0 ? (
-        <p className="text-xs text-stone-500">
+        <p className="text-xs text-muted">
           Put audio files in the vault's sounds folder (Sounds, unless set otherwise).
         </p>
       ) : (
@@ -353,7 +353,7 @@ export function StuntPalette({
             <li key={path}>
               <button
                 type="button"
-                className="w-full truncate rounded px-1 py-0.5 text-left text-xs hover:bg-stone-100 dark:hover:bg-stone-800"
+                className="w-full truncate rounded px-1 py-0.5 text-left text-xs hover:bg-raised"
                 onClick={() => stunts.playSound(path)}
               >
                 ▶ {soundName(path)}

@@ -36,16 +36,16 @@ export function TokenSettings({
   return (
     <section
       aria-label={`Token: ${token.name}`}
-      className="flex flex-col gap-2 rounded-md border border-stone-200 p-3 text-sm dark:border-stone-800"
+      className="flex flex-col gap-2 rounded-md border border-line p-3 text-sm"
     >
       <div className="flex items-baseline gap-2">
         <h3 className="mr-auto font-serif text-lg font-bold">{token.name}</h3>
-        <button type="button" onClick={onClose} className="text-stone-500 hover:underline">
+        <button type="button" onClick={onClose} className="text-muted hover:underline">
           Close
         </button>
       </div>
       {token.hidden === "fog" && (
-        <p className="text-stone-500">
+        <p className="text-muted">
           Under the fog:{" "}
           {marker ? "players can't see it." : "only the players who move it can see it."}
         </p>
@@ -162,14 +162,14 @@ function MarkerFields({
               {note.title} ↗
             </a>
           ) : settings.note ? (
-            <span className="text-rose-700 dark:text-rose-400">no longer in the vault</span>
+            <span className="text-danger">no longer in the vault</span>
           ) : (
-            <span className="text-stone-500">none</span>
+            <span className="text-muted">none</span>
           )}
         </span>
         <button
           type="button"
-          className="text-stone-500 hover:underline"
+          className="text-muted hover:underline"
           aria-expanded={changingNote}
           onClick={() => setChangingNote(!changingNote)}
         >
@@ -178,7 +178,7 @@ function MarkerFields({
         {settings.note && (
           <button
             type="button"
-            className="text-stone-500 hover:underline"
+            className="text-muted hover:underline"
             onClick={() =>
               edit({ note: null, ...(settings.picture === "note" && { picture: null }) })
             }

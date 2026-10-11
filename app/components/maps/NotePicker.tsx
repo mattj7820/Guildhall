@@ -43,7 +43,7 @@ export function NotePicker({ label, notes, value, onChange, name, onBlur }: Prop
           </option>
         ))}
       </datalist>
-      {!known && <span className="text-xs text-rose-700 dark:text-rose-400">No such note.</span>}
+      {!known && <span className="text-xs text-danger">No such note.</span>}
     </div>
   );
 }

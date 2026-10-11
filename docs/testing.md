@@ -283,6 +283,16 @@ Dice decide initiative, tie-breaks and monster HP, so tests must control them.
   `app/characters/editor.test.ts` against a stand-in server that applies actions like the real
   one, with fake timers.
 
+## Themes
+
+- **Every theme on every part of the app:** `theme.spec.ts` opens the hub, a wiki note, the party,
+  maps and combat in each theme and runs axe's colour-contrast check (`@axe-core/playwright`), so a
+  colour that's unreadable in one theme fails the run. Storybook and Iron and Ember are reached
+  with the DM's account and the browser's colour scheme (no pick follows the device); Gemlight is
+  picked by a newcomer, since a theme saved on a shared account would change other specs' pages.
+- **Raw palette classes are a lint error** in `app/` (`no-restricted-syntax` in
+  `eslint.config.js`); the files that draw map content are the allowed exceptions.
+
 ## Data written by tests
 
 - Unit and integration tests of the JSON store and prepared encounters use a fresh temporary

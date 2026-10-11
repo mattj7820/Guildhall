@@ -93,13 +93,13 @@ export default function PreparedList({ loaderData }: Route.ComponentProps) {
       </div>
 
       {"error" in loaderData ? (
-        <p role="alert" className="rounded-md bg-rose-100 px-3 py-2 text-sm text-rose-900">
+        <p role="alert" className="rounded-md bg-danger-surface px-3 py-2 text-sm text-danger">
           {loaderData.error}
         </p>
       ) : loaderData.encounters.length === 0 ? (
         <div className={`${panelClass} text-center`}>
           <p className="font-semibold">Nothing prepared yet.</p>
-          <p className="mt-1 text-sm text-stone-500">
+          <p className="mt-1 text-sm text-muted">
             Set up the fights that might happen before a session: add the monsters now, and at the
             table just pick who's playing and type their initiative.
           </p>
@@ -142,7 +142,7 @@ function PreparedCard({ prepared }: { prepared: Card }) {
             {prepared.name}
           </Link>
         </h2>
-        <p className="text-xs text-stone-500">
+        <p className="text-xs text-muted">
           Edited <Day iso={prepared.updatedAt} /> ·{" "}
           {prepared.lastRunAt ? (
             <>
@@ -154,16 +154,12 @@ function PreparedCard({ prepared }: { prepared: Card }) {
         </p>
       </div>
       <p className="text-sm">
-        {monsters || <span className="text-stone-500">No monsters yet</span>}
-        {companions && <span className="text-stone-500"> · {companions}</span>}
+        {monsters || <span className="text-muted">No monsters yet</span>}
+        {companions && <span className="text-muted"> · {companions}</span>}
       </p>
-      {prepared.mapName && (
-        <p className="text-sm text-stone-600 dark:text-stone-400">Set up on {prepared.mapName}</p>
-      )}
+      {prepared.mapName && <p className="text-sm text-muted">Set up on {prepared.mapName}</p>}
       {prepared.notes && (
-        <p className="line-clamp-2 text-sm whitespace-pre-line text-stone-600 dark:text-stone-400">
-          {prepared.notes}
-        </p>
+        <p className="line-clamp-2 text-sm whitespace-pre-line text-muted">{prepared.notes}</p>
       )}
       <div className="mt-1 flex flex-wrap items-center gap-2">
         <Link
@@ -200,7 +196,7 @@ function PreparedCard({ prepared }: { prepared: Card }) {
               type="submit"
               name="intent"
               value="delete"
-              className="rounded-md bg-rose-700 px-2.5 py-1 text-sm font-semibold text-white hover:bg-rose-800"
+              className="rounded-md bg-danger px-2.5 py-1 text-sm font-semibold text-on-danger hover:opacity-90"
             >
               Delete {prepared.name}
             </button>

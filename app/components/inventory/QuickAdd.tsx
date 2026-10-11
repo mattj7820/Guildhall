@@ -79,7 +79,7 @@ export function QuickAdd({
   }
 
   return (
-    <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50/60 p-3 dark:border-amber-800 dark:bg-amber-950/30">
+    <div className="mb-4 rounded-lg border border-trim bg-accent-surface/60 p-3">
       <div className="flex gap-2">
         <input
           ref={input}
@@ -116,7 +116,7 @@ export function QuickAdd({
           id={listId}
           role="listbox"
           aria-label="Suggestions"
-          className="mt-2 overflow-hidden rounded-md border border-stone-200 bg-white dark:border-stone-700 dark:bg-stone-900"
+          className="mt-2 overflow-hidden rounded-md border border-line bg-surface"
         >
           {options.map((option, index) => {
             const name = option.kind === "vault" ? option.item.title : parsed!.name;
@@ -132,18 +132,16 @@ export function QuickAdd({
                 onClick={() => add(option)}
                 className={[
                   "flex cursor-pointer items-center gap-2 px-2 py-1.5 text-sm",
-                  index === active
-                    ? "bg-amber-100 dark:bg-amber-900/50"
-                    : "hover:bg-stone-100 dark:hover:bg-stone-800",
+                  index === active ? "bg-accent-surface" : "hover:bg-raised",
                 ].join(" ")}
               >
                 <ItemIconSvg icon={{ builtin: icon }} className="h-5 w-5 shrink-0" />
                 {option.kind === "vault" ? (
                   <span>
                     {parsed!.quantity > 1 && `${parsed!.quantity} × `}
-                    {name} <span className="text-xs text-stone-500">· from the wiki</span>
+                    {name} <span className="text-xs text-muted">· from the wiki</span>
                     {option.item.hiddenFromPlayers && (
-                      <span className="ml-1 text-xs text-rose-700 dark:text-rose-400">
+                      <span className="ml-1 text-xs text-danger">
                         · players can&rsquo;t read its note yet, so they&rsquo;ll see only this name
                       </span>
                     )}
@@ -155,7 +153,7 @@ export function QuickAdd({
                       {parsed!.quantity > 1 && `${parsed!.quantity} × `}
                       {name}
                     </strong>{" "}
-                    <span className="text-xs text-stone-500">· your own item</span>
+                    <span className="text-xs text-muted">· your own item</span>
                   </span>
                 )}
               </li>
@@ -167,14 +165,14 @@ export function QuickAdd({
         type="button"
         aria-expanded={details}
         onClick={() => setDetails(!details)}
-        className="mt-2 text-sm text-stone-600 underline-offset-2 hover:underline dark:text-stone-400"
+        className="mt-2 text-sm text-muted underline-offset-2 hover:underline"
       >
         {details ? "Hide details" : "Add a description or where it came from"}
       </button>
       {details && (
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
           <label className="text-sm">
-            <span className="block text-stone-600 dark:text-stone-400">Description</span>
+            <span className="block text-muted">Description</span>
             <input
               value={description}
               maxLength={DESCRIPTION_MAX}
@@ -183,7 +181,7 @@ export function QuickAdd({
             />
           </label>
           <label className="text-sm">
-            <span className="block text-stone-600 dark:text-stone-400">
+            <span className="block text-muted">
               Came from <span className="text-xs">(kept for the next item)</span>
             </span>
             <input

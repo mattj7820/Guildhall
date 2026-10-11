@@ -35,10 +35,7 @@ export function GridSettings({ grid, size, dispatch }: Props) {
     pixels && dispatch({ type: "setGrid", grid: fromPixels({ ...pixels, ...next }, size, lines) });
 
   return (
-    <details
-      open={!!grid}
-      className="rounded-md border border-stone-200 p-3 text-sm dark:border-stone-800"
-    >
+    <details open={!!grid} className="rounded-md border border-line p-3 text-sm">
       <summary className="cursor-pointer font-semibold">Battle map grid</summary>
       <div className="mt-3 flex flex-col gap-3">
         <label className="flex items-center gap-2">
@@ -86,10 +83,10 @@ export function GridSettings({ grid, size, dispatch }: Props) {
               <Nudge label="Bigger squares" onClick={() => set({ square: pixels.square + 0.5 })}>
                 +
               </Nudge>
-              <span className="ml-1 text-stone-500">pixels a square</span>
+              <span className="ml-1 text-muted">pixels a square</span>
             </div>
             {suggested && round(pixels.square) !== suggested && (
-              <p className="text-stone-500">
+              <p className="text-muted">
                 This image fits {suggested}-pixel squares exactly (
                 {squaresAcross({ square: suggested, x: 0, y: 0 }, size).join(" × ")}).{" "}
                 <button
@@ -105,7 +102,7 @@ export function GridSettings({ grid, size, dispatch }: Props) {
               <legend className="mb-1">Offset, to line up with a grid in the image</legend>
               {(["x", "y"] as const).map((axis) => (
                 <div key={axis} className="flex items-center gap-1">
-                  <span className="w-20 text-stone-500">{axis === "x" ? "Across" : "Down"}</span>
+                  <span className="w-20 text-muted">{axis === "x" ? "Across" : "Down"}</span>
                   <Nudge
                     label={`Offset ${axis === "x" ? "left" : "up"}`}
                     onClick={() => set({ [axis]: pixels[axis] - 0.5 })}

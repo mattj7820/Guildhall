@@ -31,7 +31,7 @@ export function EditorBar({
         </button>
         <p
           role="status"
-          className={`text-sm ${status.kind === "error" ? "text-rose-700 dark:text-rose-400" : "text-stone-500"}`}
+          className={`text-sm ${status.kind === "error" ? "text-danger" : "text-muted"}`}
         >
           {status.kind === "error"
             ? status.message
@@ -53,7 +53,7 @@ function Notices({ notices, onDismiss }: { notices: Notice[]; onDismiss: (id: nu
       {notices.map((notice) => (
         <li
           key={notice.id}
-          className="flex items-center gap-2 rounded-md bg-sky-50 px-3 py-1.5 text-sm text-sky-900 dark:bg-sky-950/60 dark:text-sky-200"
+          className="flex items-center gap-2 rounded-md bg-info-surface px-3 py-1.5 text-sm text-info"
         >
           <span className="mr-auto">{notice.text}</span>
           <button

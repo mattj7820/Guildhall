@@ -83,12 +83,12 @@ export function SpellsTab({
         />
       )}
       {notice && (
-        <p role="status" className="text-sm text-sky-800 dark:text-sky-300">
+        <p role="status" className="text-sm text-info">
           {notice}
         </p>
       )}
       {sheet.spells.length === 0 && !editing && (
-        <p className="text-sm text-stone-500">No spells yet. Edit the sheet to add them.</p>
+        <p className="text-sm text-muted">No spells yet. Edit the sheet to add them.</p>
       )}
       {levels
         .filter((level) => shown.some((spell) => spell.level === level))
@@ -96,7 +96,7 @@ export function SpellsTab({
           const slot = level > 0 ? sheet.spellSlots[level - 1] : undefined;
           return (
             <section key={level} aria-label={levelName(level)}>
-              <h3 className="flex items-center gap-3 border-b border-stone-200 pb-1 text-xs font-semibold tracking-wide text-stone-500 uppercase dark:border-stone-700">
+              <h3 className="flex items-center gap-3 border-b border-line pb-1 text-xs font-semibold tracking-wide text-muted uppercase">
                 {levelName(level)}
                 {slot && slot.max > 0 && (
                   <Pips
@@ -197,10 +197,7 @@ function Spellcasting({ parts }: { parts: Parts }) {
               ["spell.attack", "Spell attack bonus", numbers.attack],
             ] as const
           ).map(([key, label, value]) => (
-            <label
-              key={key}
-              className="flex flex-col gap-0.5 text-xs text-stone-600 dark:text-stone-400"
-            >
+            <label key={key} className="flex flex-col gap-0.5 text-xs text-muted">
               {label}
               <OverrideField
                 label={label}
@@ -217,7 +214,7 @@ function Spellcasting({ parts }: { parts: Parts }) {
   }
   if (!numbers) {
     return sheet.spells.length > 0 ? (
-      <p className="text-sm text-stone-500">
+      <p className="text-sm text-muted">
         Choose a spellcasting ability while editing to work out the save DC and attack.
       </p>
     ) : null;
@@ -269,7 +266,7 @@ function SpellRow({
     .filter(Boolean)
     .join(" · ");
   return (
-    <li className="border-b border-stone-100 py-1.5 last:border-0 dark:border-stone-800">
+    <li className="border-b border-line py-1.5 last:border-0">
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
@@ -281,7 +278,7 @@ function SpellRow({
           <span className="font-medium">{spell.name}</span>
           {spell.concentration && <Badge title="Concentration">C</Badge>}
           {spell.ritual && <Badge title="Ritual">R</Badge>}
-          {!compact && meta && <span className="ml-2 text-xs text-stone-500">{meta}</span>}
+          {!compact && meta && <span className="ml-2 text-xs text-muted">{meta}</span>}
         </button>
         {spell.attack && numbers && (
           <DiceChip
@@ -299,7 +296,7 @@ function SpellRow({
           </DiceChip>
         )}
         {spell.save && (
-          <span className="text-xs font-semibold text-stone-600 dark:text-stone-300">
+          <span className="text-xs font-semibold text-muted">
             {spell.save.toUpperCase()} {numbers?.dc.value ?? "save"}
           </span>
         )}
@@ -317,15 +314,15 @@ function SpellRow({
           >
             {spell.roll}
             {!compact && spell.effect && (
-              <span className="ml-1 text-xs text-stone-500">{spell.effect}</span>
+              <span className="ml-1 text-xs text-muted">{spell.effect}</span>
             )}
           </DiceChip>
         )}
         {spell.level > 0 && <CastButton spell={spell} parts={parts} onNotice={onNotice} />}
       </div>
       {open && (
-        <div className="mt-1 space-y-1 pl-2 text-sm text-stone-600 dark:text-stone-300">
-          {compact && meta && <p className="text-xs text-stone-500">{meta}</p>}
+        <div className="mt-1 space-y-1 pl-2 text-sm text-muted">
+          {compact && meta && <p className="text-xs text-muted">{meta}</p>}
           {spell.save && <p className="text-xs">{ABILITY_NAMES[spell.save]} save</p>}
           {spell.area && (
             <p className="text-xs">
@@ -334,16 +331,13 @@ function SpellRow({
           )}
           {spell.description && <p className="whitespace-pre-line">{spell.description}</p>}
           {note && (
-            <div className="rounded border border-stone-200 p-2 dark:border-stone-700">
+            <div className="rounded border border-line p-2">
               <div
                 // The note's title is in the link below it.
-                className="note-body prose prose-stone prose-sm dark:prose-invert max-w-none [&>h1:first-child]:hidden"
+                className="note-body prose prose-theme prose-sm max-w-none [&>h1:first-child]:hidden"
                 dangerouslySetInnerHTML={{ __html: note.html }}
               />
-              <Link
-                to={note.url}
-                className="text-xs text-amber-800 hover:underline dark:text-amber-400"
-              >
+              <Link to={note.url} className="text-xs text-link hover:underline">
                 Open {note.title} in the wiki
               </Link>
             </div>
@@ -358,7 +352,7 @@ function Badge({ title, children }: { title: string; children: string }) {
   return (
     <abbr
       title={title}
-      className="ml-1 rounded border border-stone-300 px-1 text-[10px] font-semibold text-stone-500 no-underline dark:border-stone-600"
+      className="ml-1 rounded border border-line-strong px-1 text-[10px] font-semibold text-muted no-underline"
     >
       {children}
     </abbr>
@@ -402,7 +396,7 @@ function CastButton({
         }
         disabled={!first}
         onClick={() => first && cast(first)}
-        className="rounded-l-md bg-amber-700 px-2 py-0.5 text-sm font-semibold text-white hover:bg-amber-800 disabled:bg-stone-200 disabled:text-stone-500 dark:bg-amber-600 dark:disabled:bg-stone-800"
+        className="rounded-l-md bg-accent px-2 py-0.5 text-sm font-semibold text-on-accent hover:bg-accent-strong disabled:bg-line disabled:text-muted"
       >
         {first ? "Cast" : "No slots"}
       </button>
@@ -412,20 +406,20 @@ function CastButton({
         aria-expanded={menu}
         disabled={options.length < 2}
         onClick={() => setMenu(!menu)}
-        className="rounded-r-md border-l border-amber-900/30 bg-amber-700 px-1.5 text-sm text-white hover:bg-amber-800 disabled:bg-stone-200 disabled:text-stone-400 dark:bg-amber-600 dark:disabled:bg-stone-800"
+        className="rounded-r-md border-l border-link/30 bg-accent px-1.5 text-sm text-on-accent hover:bg-accent-strong disabled:bg-line disabled:text-faint"
       >
         ▾
       </button>
       {menu && (
         <ul
           aria-label={`Ways to cast ${spell.name}`}
-          className="absolute top-full right-0 z-20 mt-1 w-60 rounded-md border border-stone-200 bg-white py-1 text-sm shadow-lg dark:border-stone-700 dark:bg-stone-900"
+          className="absolute top-full right-0 z-20 mt-1 w-60 rounded-md border border-line bg-surface py-1 text-sm shadow-lg"
         >
           {options.map((option) => (
             <li key={castOptionLabel(option)}>
               <button
                 type="button"
-                className="block w-full px-3 py-1 text-left hover:bg-stone-100 dark:hover:bg-stone-800"
+                className="block w-full px-3 py-1 text-left hover:bg-raised"
                 onClick={() => cast(option)}
               >
                 {castOptionLabel(option)}
@@ -500,7 +494,7 @@ function SpellForm({
   return (
     <li
       aria-label={spell.name}
-      className="flex flex-col gap-2 border-b border-stone-200 py-2 last:border-0 dark:border-stone-700"
+      className="flex flex-col gap-2 border-b border-line py-2 last:border-0"
     >
       <div className="flex flex-wrap items-end gap-2">
         <TextField

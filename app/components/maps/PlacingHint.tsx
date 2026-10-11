@@ -3,10 +3,7 @@ import type { MarkerToken, TokenId } from "~/maps/tokens/types";
 /** Says what the next click on the map places, and lets the DM change their mind. */
 export function PlacingHint({ placing, onCancel }: { placing: Placing; onCancel: () => void }) {
   return (
-    <p
-      role="status"
-      className="rounded bg-sky-50 px-2 py-1 text-sm text-sky-900 dark:bg-sky-950 dark:text-sky-100"
-    >
+    <p role="status" className="rounded bg-info-surface px-2 py-1 text-sm text-info">
       Click the map to place {placing.name}.{" "}
       <button type="button" className="underline" onClick={onCancel}>
         Cancel

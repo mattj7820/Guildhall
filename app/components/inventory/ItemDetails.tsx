@@ -61,7 +61,7 @@ export function ItemDetails({
         // A click on the backdrop (the dialog itself, outside its content) closes it.
         if (event.target === dialog.current) dialog.current.close();
       }}
-      className="m-auto mb-0 w-full max-w-lg rounded-t-xl border border-stone-200 bg-white p-0 text-stone-900 shadow-2xl backdrop:bg-stone-950/50 sm:mb-auto sm:rounded-xl dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100"
+      className="m-auto mb-0 w-full max-w-lg rounded-t-xl border border-line bg-surface p-0 text-ink shadow-2xl backdrop:bg-black/50 sm:mb-auto sm:rounded-xl"
     >
       <div className="max-h-[85vh] overflow-y-auto p-5">
         <div className="flex items-start gap-4">
@@ -69,9 +69,7 @@ export function ItemDetails({
             <span
               className={[
                 "flex aspect-square items-center justify-center rounded-xl border-2",
-                item.equipped
-                  ? "border-amber-500 bg-amber-50 dark:bg-amber-950/40"
-                  : "border-stone-300 bg-stone-100 dark:border-stone-700 dark:bg-stone-800",
+                item.equipped ? "border-accent bg-accent-surface" : "border-line-strong bg-raised",
               ].join(" ")}
             >
               <ItemIconSvg icon={item.icon} className="h-3/5 w-3/5" />
@@ -80,7 +78,7 @@ export function ItemDetails({
               type="button"
               aria-expanded={choosingIcon}
               onClick={() => setChoosingIcon(!choosingIcon)}
-              className="mt-1 w-full text-xs text-stone-600 hover:underline dark:text-stone-400"
+              className="mt-1 w-full text-xs text-muted hover:underline"
             >
               Change icon
             </button>
@@ -101,7 +99,7 @@ export function ItemDetails({
                 onKeyDown={(event) => {
                   if (event.key === "Enter") event.currentTarget.blur();
                 }}
-                className="w-full rounded border border-transparent bg-transparent px-1 font-serif text-2xl font-bold hover:border-stone-300 focus:border-stone-400 dark:hover:border-stone-700"
+                className="w-full rounded border border-transparent bg-transparent px-1 font-serif text-2xl font-bold hover:border-line-strong focus:border-line-strong"
               />
             </label>
             <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -154,9 +152,7 @@ export function ItemDetails({
               </label>
             </div>
             {item.givenBy && (
-              <p className="mt-2 text-xs font-semibold text-amber-800 dark:text-amber-400">
-                Given by {item.givenBy}
-              </p>
+              <p className="mt-2 text-xs font-semibold text-link">Given by {item.givenBy}</p>
             )}
           </div>
         </div>
@@ -178,9 +174,7 @@ export function ItemDetails({
                   }}
                   className={[
                     "aspect-square rounded p-1",
-                    icon.id === item.icon.builtin
-                      ? "bg-amber-200 dark:bg-amber-800"
-                      : "hover:bg-stone-100 dark:hover:bg-stone-800",
+                    icon.id === item.icon.builtin ? "bg-accent-surface" : "hover:bg-raised",
                   ].join(" ")}
                 >
                   <ItemIconSvg icon={{ builtin: icon.id }} className="h-full w-full" />
@@ -223,32 +217,29 @@ export function ItemDetails({
         </label>
 
         {note && (
-          <section className="mt-4 border-t border-stone-200 pt-3 dark:border-stone-700">
+          <section className="mt-4 border-t border-line pt-3">
             <div className="flex items-baseline justify-between gap-2">
               <h3 className={labelClass}>
                 From the wiki: {note.title}
                 {note.hiddenFromPlayers && (
-                  <span className="ml-1 font-normal tracking-normal text-rose-700 normal-case dark:text-rose-400">
+                  <span className="ml-1 font-normal tracking-normal text-danger normal-case">
                     (players can&rsquo;t read this note yet)
                   </span>
                 )}
               </h3>
-              <a
-                href={note.url}
-                className="text-sm text-amber-800 hover:underline dark:text-amber-400"
-              >
+              <a href={note.url} className="text-sm text-link hover:underline">
                 Open in wiki
               </a>
             </div>
             <div
-              className="note-body prose prose-stone prose-sm dark:prose-invert mt-2 max-w-none [&>h1:first-child]:hidden"
+              className="note-body prose prose-theme prose-sm mt-2 max-w-none [&>h1:first-child]:hidden"
               dangerouslySetInnerHTML={{ __html: note.html }}
             />
           </section>
         )}
 
         {recipients.length > 0 && onGive && (
-          <fieldset className="mt-4 flex flex-wrap items-center gap-2 border-t border-stone-200 pt-3 text-sm dark:border-stone-700">
+          <fieldset className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-3 text-sm">
             <legend className="sr-only">Give</legend>
             <label className="flex items-center gap-1">
               Give
@@ -299,7 +290,7 @@ export function ItemDetails({
           </fieldset>
         )}
 
-        <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-stone-200 pt-4 dark:border-stone-700">
+        <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-line pt-4">
           {item.quantity > 1 && (
             <div className="flex items-center gap-1">
               <label className="flex items-center gap-1 text-sm">
@@ -334,7 +325,7 @@ export function ItemDetails({
           )}
           <button
             type="button"
-            className={`${buttonClass} ml-auto text-rose-700 dark:text-rose-400`}
+            className={`${buttonClass} ml-auto text-danger`}
             onClick={() => {
               onChange({ type: "remove", id: item.id });
               dialog.current?.close();

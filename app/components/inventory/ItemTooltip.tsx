@@ -23,21 +23,21 @@ export function ItemTooltip({
         left,
         ...(above ? { bottom: window.innerHeight - anchor.top + 8 } : { top: anchor.bottom + 8 }),
       }}
-      className="pointer-events-none fixed z-50 w-56 rounded-lg border border-stone-700 bg-stone-900/95 px-3 py-2 text-sm text-stone-100 shadow-xl"
+      className="pointer-events-none fixed z-50 w-56 rounded-lg border border-line-strong bg-raised px-3 py-2 text-sm text-ink shadow-xl"
     >
-      <p className="font-serif font-semibold text-amber-300">
+      <p className="font-serif font-semibold text-title">
         {item.name}
-        {item.quantity > 1 && <span className="ml-1 text-stone-400">×{item.quantity}</span>}
+        {item.quantity > 1 && <span className="ml-1 text-muted">×{item.quantity}</span>}
       </p>
       {(item.equipped || item.attuned) && (
-        <p className="text-xs text-amber-200/80">
+        <p className="text-xs text-link">
           {[item.equipped && "Equipped", item.attuned && "Attuned"].filter(Boolean).join(" · ")}
         </p>
       )}
-      {item.description && <p className="mt-1 text-stone-200">{item.description}</p>}
-      {item.source?.text && <p className="mt-1 text-xs text-stone-400">From: {item.source.text}</p>}
-      {item.givenBy && <p className="mt-1 text-xs text-amber-200/80">Given by {item.givenBy}</p>}
-      {item.note && <p className="mt-1 text-xs text-stone-400">Has a note in the wiki</p>}
+      {item.description && <p className="mt-1 text-ink">{item.description}</p>}
+      {item.source?.text && <p className="mt-1 text-xs text-muted">From: {item.source.text}</p>}
+      {item.givenBy && <p className="mt-1 text-xs text-link">Given by {item.givenBy}</p>}
+      {item.note && <p className="mt-1 text-xs text-muted">Has a note in the wiki</p>}
     </div>
   );
 }

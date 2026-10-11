@@ -19,9 +19,7 @@ export function FilterChips<T extends string | number>({
           aria-pressed={value === key}
           onClick={() => onChange(key)}
           className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-            value === key
-              ? "bg-amber-700 text-white dark:bg-amber-600"
-              : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+            value === key ? "bg-accent text-on-accent" : "bg-raised text-muted hover:bg-line"
           }`}
         >
           {text}

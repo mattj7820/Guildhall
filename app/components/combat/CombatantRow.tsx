@@ -44,9 +44,7 @@ export function CombatantRow({
       aria-label={name}
       aria-current={isActive ? "step" : undefined}
       className={`flex flex-col gap-2 py-3 pl-3 ${
-        isActive
-          ? "border-l-4 border-amber-600 bg-amber-50 dark:bg-amber-950/40"
-          : "border-l-4 border-transparent"
+        isActive ? "border-l-4 border-accent bg-accent-surface" : "border-l-4 border-transparent"
       } ${down ? "opacity-50" : ""}`}
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -68,14 +66,14 @@ export function CombatantRow({
               <Badge tone="hidden">Hidden</Badge>
             )}
           </p>
-          <p className="text-xs text-stone-500">
+          <p className="text-xs text-muted">
             {combatant.kind === "monster"
               ? combatant.armorClass !== undefined
                 ? `AC ${combatant.armorClass}`
                 : "Monster"
               : `${combatant.entityId && !combatant.statblock ? "PC" : "Companion"} · ${combatant.controller.name}`}
             {sheetHp && (
-              <span className="ml-2 font-semibold text-stone-700 tabular-nums dark:text-stone-300">
+              <span className="ml-2 font-semibold text-ink tabular-nums">
                 HP {sheetHp.current}/{sheetHp.max}
                 {sheetHp.temp > 0 && ` (+${sheetHp.temp} temp)`}
               </span>
@@ -150,7 +148,7 @@ export function CombatantRow({
             key={condition}
             type="button"
             aria-label={`Remove ${condition} from ${name}`}
-            className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-900 hover:bg-violet-200 dark:bg-violet-950 dark:text-violet-200"
+            className="rounded-full bg-info-surface px-2 py-0.5 text-xs font-medium text-info hover:bg-info-surface"
             onClick={() => dispatch({ type: "toggleCondition", id, condition })}
           >
             {condition} ×
@@ -230,9 +228,9 @@ function PrepHp({
 }
 
 const BADGE_COLOURS = {
-  down: "bg-stone-700 text-white",
-  bloodied: "bg-rose-100 text-rose-900 dark:bg-rose-950 dark:text-rose-200",
-  hidden: "bg-violet-100 text-violet-900 dark:bg-violet-950 dark:text-violet-200",
+  down: "bg-ink text-page",
+  bloodied: "bg-danger-surface text-danger",
+  hidden: "bg-info-surface text-info",
 };
 
 function Badge({ tone, children }: { tone: keyof typeof BADGE_COLOURS; children: string }) {
@@ -327,7 +325,7 @@ function HpControls({ monster, dispatch }: { monster: MonsterCombatant; dispatch
     <form onSubmit={submit} className="flex flex-wrap items-center gap-2">
       <p className="w-28 font-mono text-sm">
         HP <strong className="text-base">{hp.current}</strong>/{hp.max}
-        {hp.temp > 0 && <span className="text-sky-700 dark:text-sky-400"> +{hp.temp}</span>}
+        {hp.temp > 0 && <span className="text-info"> +{hp.temp}</span>}
       </p>
       <input
         type="number"

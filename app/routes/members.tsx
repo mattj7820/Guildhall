@@ -70,18 +70,18 @@ export default function Members({ loaderData, actionData }: Route.ComponentProps
     <main className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-6">
       <div>
         <h1 className="font-serif text-3xl font-bold">Members</h1>
-        <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+        <p className="mt-1 text-sm text-muted">
           Anyone can sign in with Discord, but only people you let in can see the campaign. Pick
           which player each person is, to link them to their characters' notes.
         </p>
       </div>
       {"error" in loaderData && loaderData.error && (
-        <p role="alert" className="rounded-md bg-rose-100 px-3 py-2 text-sm text-rose-900">
+        <p role="alert" className="rounded-md bg-danger-surface px-3 py-2 text-sm text-danger">
           {loaderData.error}
         </p>
       )}
       {actionData && "error" in actionData && (
-        <p role="alert" className="text-sm text-rose-700 dark:text-rose-400">
+        <p role="alert" className="text-sm text-danger">
           {actionData.error}
         </p>
       )}
@@ -91,7 +91,7 @@ export default function Members({ loaderData, actionData }: Route.ComponentProps
           Waiting to be let in ({waiting.length})
         </h2>
         {waiting.length === 0 ? (
-          <p className="text-sm text-stone-500">No one is waiting.</p>
+          <p className="text-sm text-muted">No one is waiting.</p>
         ) : (
           <ul aria-label="Waiting" className="flex flex-col gap-2">
             {waiting.map((member) => (
@@ -125,7 +125,7 @@ function Who({ member }: { member: Member }) {
   return (
     <div className="mr-auto">
       <p className="font-semibold">{member.name}</p>
-      <p className="text-xs text-stone-500">@{member.username}</p>
+      <p className="text-xs text-muted">@{member.username}</p>
     </div>
   );
 }
@@ -194,12 +194,12 @@ function MemberRow({
     <li aria-label={member.name} className={`${panelClass} flex flex-wrap items-end gap-3`}>
       <Who member={member} />
       {unknown && !isDm && (
-        <p className="basis-full text-xs text-rose-700 dark:text-rose-400">
+        <p className="basis-full text-xs text-danger">
           Their player (“{member.playerId}”) isn't named in any PC note any more.
         </p>
       )}
       {isDm ? (
-        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+        <span className="rounded-full bg-accent-surface px-2 py-0.5 text-xs font-semibold text-title">
           DM
         </span>
       ) : (
@@ -212,7 +212,7 @@ function MemberRow({
         </Form>
       )}
       {isYou ? (
-        <span className="text-xs text-stone-500">That's you</span>
+        <span className="text-xs text-muted">That's you</span>
       ) : confirmingRemove ? (
         <Form method="post" className="flex flex-wrap items-center gap-2">
           <input type="hidden" name="discordId" value={member.discordId} />
@@ -221,7 +221,7 @@ function MemberRow({
             type="submit"
             name="intent"
             value="remove"
-            className="rounded-md bg-rose-700 px-2.5 py-1 text-sm font-semibold text-white hover:bg-rose-800"
+            className="rounded-md bg-danger px-2.5 py-1 text-sm font-semibold text-on-danger hover:opacity-90"
           >
             Remove {member.name}
           </button>

@@ -46,7 +46,7 @@ export function AddTokenForm({
   return (
     <form
       aria-label="New token"
-      className="flex flex-col gap-2 rounded-md border border-stone-200 p-3 text-sm dark:border-stone-800"
+      className="flex flex-col gap-2 rounded-md border border-line p-3 text-sm"
       onSubmit={(event) => {
         event.preventDefault();
         if (!name.trim()) return;
@@ -106,7 +106,7 @@ export function AddTokenForm({
         </label>
       </div>
       {count > 1 && name.trim() && (
-        <p className="text-xs text-stone-500">
+        <p className="text-xs text-muted">
           {names[0]} to {names.at(-1)}
         </p>
       )}

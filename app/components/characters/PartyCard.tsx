@@ -19,7 +19,7 @@ export function PartyCard({ card }: { card: CharacterCard }) {
   return (
     <article
       aria-labelledby={headingId}
-      className="flex h-full flex-col rounded-lg border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-800 dark:bg-stone-900"
+      className="flex h-full flex-col rounded-lg border border-line bg-surface p-4 shadow-sm"
     >
       <div className="flex items-center gap-3">
         <Portrait name={card.name} url={card.portraitUrl} companion={card.kind === "companion"} />
@@ -33,7 +33,7 @@ export function PartyCard({ card }: { card: CharacterCard }) {
               card.name
             )}
           </h3>
-          <p className="truncate text-sm text-stone-600 dark:text-stone-400">
+          <p className="truncate text-sm text-muted">
             {subtitle.filter(Boolean).join(" · ") || (card.id ? "" : "No sheet yet")}
           </p>
         </div>
@@ -43,13 +43,13 @@ export function PartyCard({ card }: { card: CharacterCard }) {
 
       {card.equipped.length > 0 && (
         <div className="mt-3">
-          <h4 className="text-xs font-semibold tracking-wide text-stone-500 uppercase">Equipped</h4>
+          <h4 className="text-xs font-semibold tracking-wide text-muted uppercase">Equipped</h4>
           <ul className="mt-1 flex flex-wrap gap-1.5">
             {card.equipped.map((item, index) => (
               <li
                 key={index}
                 title={item.name}
-                className="flex items-center gap-1 rounded-full bg-amber-50 py-0.5 pr-2 pl-1 text-xs text-stone-800 ring-1 ring-amber-300 dark:bg-amber-950/40 dark:text-stone-100 dark:ring-amber-800"
+                className="flex items-center gap-1 rounded-full bg-accent-surface py-0.5 pr-2 pl-1 text-xs text-ink ring-1 ring-trim"
               >
                 <ItemIconSvg icon={item.icon} className="h-4 w-4" />
                 {item.name}
@@ -84,19 +84,16 @@ function HpBar({ hp }: { hp: { current: number; max: number; temp: number } }) {
   const fraction = hp.max > 0 ? Math.min(1, hp.current / hp.max) : 0;
   return (
     <div className="mt-3">
-      <div className="flex justify-between text-xs text-stone-600 dark:text-stone-400">
+      <div className="flex justify-between text-xs text-muted">
         <span>Hit points</span>
         <span className="tabular-nums">
           {hp.current} / {hp.max}
           {hp.temp > 0 && ` (+${hp.temp} temp)`}
         </span>
       </div>
-      <div
-        aria-hidden="true"
-        className="mt-1 h-1.5 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-800"
-      >
+      <div aria-hidden="true" className="mt-1 h-1.5 overflow-hidden rounded-full bg-line">
         <div
-          className={`h-full rounded-full ${fraction > 0.5 ? "bg-emerald-600" : fraction > 0.25 ? "bg-amber-500" : "bg-rose-600"}`}
+          className={`h-full rounded-full ${fraction > 0.5 ? "bg-good" : fraction > 0.25 ? "bg-warn" : "bg-danger"}`}
           style={{ width: `${fraction * 100}%` }}
         />
       </div>

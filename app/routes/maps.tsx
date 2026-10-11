@@ -133,7 +133,7 @@ export default function Maps({ loaderData }: Route.ComponentProps) {
       <PartyWhereabouts party={loaderData.party} forDm={forDm} />
 
       {"error" in loaderData && loaderData.error ? (
-        <p role="alert" className="rounded-md bg-rose-100 px-3 py-2 text-sm text-rose-900">
+        <p role="alert" className="rounded-md bg-danger-surface px-3 py-2 text-sm text-danger">
           {loaderData.error}
         </p>
       ) : loaderData.tree.length === 0 ? (
@@ -141,7 +141,7 @@ export default function Maps({ loaderData }: Route.ComponentProps) {
         (forDm ? (
           <div className={`${panelClass} text-center`}>
             <p className="font-semibold">No maps yet.</p>
-            <p className="mt-1 text-sm text-stone-500">
+            <p className="mt-1 text-sm text-muted">
               Make one from any image in the vault, then outline the places on it that lead to more
               detailed maps or to wiki notes.
             </p>
@@ -149,7 +149,7 @@ export default function Maps({ loaderData }: Route.ComponentProps) {
         ) : (
           <div className={`${panelClass} text-center`}>
             <p className="font-semibold">No maps yet.</p>
-            <p className="mt-1 text-sm text-stone-500">
+            <p className="mt-1 text-sm text-muted">
               Maps appear here as the DM shares them, and open up as the party explores.
             </p>
           </div>
@@ -169,9 +169,7 @@ function PartyWhereabouts({ party, forDm }: { party: Whereabouts[]; forDm: boole
   const heading = forDm ? "Where the party is" : "Where you are";
   return (
     <section aria-label={heading} className={`${panelClass} mb-4`}>
-      <h2 className="mb-2 text-xs font-semibold tracking-wide text-stone-500 uppercase">
-        {heading}
-      </h2>
+      <h2 className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">{heading}</h2>
       <ul className="flex flex-col gap-1 text-sm">
         {party.map((member) => (
           <li key={member.name}>
@@ -179,15 +177,12 @@ function PartyWhereabouts({ party, forDm }: { party: Whereabouts[]; forDm: boole
             {member.map ? (
               <>
                 is on{" "}
-                <Link
-                  to={mapUrl(member.map.id)}
-                  className="text-amber-800 underline dark:text-amber-400"
-                >
+                <Link to={mapUrl(member.map.id)} className="text-link underline">
                   {member.map.name}
                 </Link>
               </>
             ) : (
-              <span className="text-stone-500">isn't on a map yet</span>
+              <span className="text-muted">isn't on a map yet</span>
             )}
           </li>
         ))}
@@ -198,7 +193,7 @@ function PartyWhereabouts({ party, forDm }: { party: Whereabouts[]; forDm: boole
 
 function MapList({ nodes, forDm }: { nodes: MapTreeNode<ListedMap>[]; forDm: boolean }) {
   return (
-    <ul className="flex flex-col gap-1 [&_ul]:mt-1 [&_ul]:ml-5 [&_ul]:border-l [&_ul]:border-stone-200 [&_ul]:pl-3 dark:[&_ul]:border-stone-800">
+    <ul className="flex flex-col gap-1 [&_ul]:mt-1 [&_ul]:ml-5 [&_ul]:border-l [&_ul]:border-line [&_ul]:pl-3">
       {nodes.map(({ map, children }) => (
         <li key={map.id}>
           <div className="flex flex-wrap items-baseline gap-x-3">
@@ -207,22 +202,20 @@ function MapList({ nodes, forDm }: { nodes: MapTreeNode<ListedMap>[]; forDm: boo
             </Link>
             {forDm && (
               <>
-                <span className="text-xs text-stone-500">
+                <span className="text-xs text-muted">
                   {map.areas.length === 1 ? "1 area" : `${map.areas.length} areas`}
                 </span>
                 <Link
                   to={mapEditUrl(map.id)}
                   aria-label={`Edit ${map.name}`}
-                  className="text-xs text-stone-500 hover:underline"
+                  className="text-xs text-muted hover:underline"
                 >
                   Edit
                 </Link>
               </>
             )}
             {map.imageMissing && (
-              <span className="text-xs font-semibold text-rose-700 dark:text-rose-400">
-                Image not found
-              </span>
+              <span className="text-xs font-semibold text-danger">Image not found</span>
             )}
           </div>
           {children.length > 0 && <MapList nodes={children} forDm={forDm} />}
@@ -277,7 +270,7 @@ function NewMapForm({ loaded, onCancel }: { loaded: Loaded; onCancel: () => void
         />
       </div>
       {actionData && "error" in actionData && (
-        <p role="alert" className="text-sm text-rose-700 dark:text-rose-400">
+        <p role="alert" className="text-sm text-danger">
           {actionData.error}
         </p>
       )}

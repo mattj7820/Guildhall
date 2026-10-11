@@ -31,7 +31,7 @@ export function TokenDistances({
       {others.map(({ token, feet }) => (
         <li key={token.id} className="flex justify-between gap-2">
           <span>{token.name}</span>
-          <span className="text-stone-500 tabular-nums">{formatFeet(feet)}</span>
+          <span className="text-muted tabular-nums">{formatFeet(feet)}</span>
         </li>
       ))}
     </ul>

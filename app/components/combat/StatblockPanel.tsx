@@ -51,13 +51,13 @@ export function StatblockPanel({
             dangerouslySetInnerHTML={{ __html: creature.html }}
           />
           <p className="mt-3 text-sm">
-            <Link to={creature.noteUrl} className="text-amber-800 underline dark:text-amber-400">
+            <Link to={creature.noteUrl} className="text-link underline">
               Open {creature.noteTitle} in the wiki
             </Link>
           </p>
         </>
       ) : (
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-muted">
           {!combatantName
             ? "Statblocks for monsters show here on their turn, or when you pick one with 📜."
             : hasStatblock

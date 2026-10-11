@@ -30,7 +30,7 @@ export function UndoToast({
       className="pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center px-4"
     >
       {message && hidden !== serial && (
-        <p className="pointer-events-auto flex items-center gap-3 rounded-full bg-stone-900 px-4 py-2 text-sm text-stone-50 shadow-lg dark:bg-stone-100 dark:text-stone-900">
+        <p className="pointer-events-auto flex items-center gap-3 rounded-full bg-ink px-4 py-2 text-sm text-page shadow-lg">
           {message}
           {onUndo && (
             <button
@@ -39,7 +39,7 @@ export function UndoToast({
                 setHidden(serial);
                 onUndo();
               }}
-              className="font-semibold text-amber-300 hover:underline dark:text-amber-700"
+              className="font-semibold text-page underline hover:no-underline"
             >
               Undo
             </button>

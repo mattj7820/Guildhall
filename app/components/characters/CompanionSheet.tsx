@@ -22,7 +22,7 @@ export function CompanionSheet({ page }: { page: CharacterPage }) {
   return (
     <main className="mx-auto max-w-5xl px-4 py-6">
       <p className="mb-3 text-sm">
-        <Link to={CHARACTERS_URL} className="text-stone-600 hover:underline dark:text-stone-400">
+        <Link to={CHARACTERS_URL} className="text-muted hover:underline">
           ← Characters
         </Link>
       </p>
@@ -30,7 +30,7 @@ export function CompanionSheet({ page }: { page: CharacterPage }) {
         <Portrait name={page.name} url={page.portraitUrl} size="lg" companion />
         <div>
           <h1 className="font-serif text-3xl font-bold">{page.name}</h1>
-          <p className="text-stone-600 dark:text-stone-400">The party&rsquo;s companion</p>
+          <p className="text-muted">The party&rsquo;s companion</p>
         </div>
       </header>
 
@@ -67,9 +67,7 @@ export function CompanionSheet({ page }: { page: CharacterPage }) {
         <h2 id="bag-heading" className="font-serif text-2xl font-bold">
           Bag
         </h2>
-        <p className="mb-3 text-sm text-stone-600 dark:text-stone-400">
-          Shared by the whole party.
-        </p>
+        <p className="mb-3 text-sm text-muted">Shared by the whole party.</p>
         <SheetBag editor={editor} page={page} />
       </section>
     </main>

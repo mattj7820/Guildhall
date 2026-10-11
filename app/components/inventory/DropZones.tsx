@@ -25,18 +25,16 @@ export function EquippedSlots({
   const empty = Math.max(0, 4 - items.length);
   return (
     <section aria-label="Equipped" className="mb-4">
-      <h3 className="mb-1 text-xs font-semibold tracking-wide text-stone-500 uppercase">
-        Equipped
-      </h3>
+      <h3 className="mb-1 text-xs font-semibold tracking-wide text-muted uppercase">Equipped</h3>
       <div
         ref={setNodeRef}
         className={[
           "flex flex-wrap gap-3 rounded-lg p-2 transition",
           isOver
-            ? "bg-amber-100 ring-2 ring-amber-500 dark:bg-amber-950/60"
+            ? "bg-accent-surface ring-2 ring-accent"
             : dragging
-              ? "bg-amber-50/60 ring-1 ring-amber-300 dark:bg-amber-950/20 dark:ring-amber-800"
-              : "bg-stone-100/60 dark:bg-stone-900/60",
+              ? "bg-accent-surface/60 ring-1 ring-trim"
+              : "bg-raised/60",
         ].join(" ")}
       >
         {items.length === 0 && (
@@ -57,12 +55,10 @@ export function EquippedSlots({
           <span
             key={index}
             aria-hidden="true"
-            className="aspect-square w-12 rounded-lg border-2 border-dashed border-stone-300 dark:border-stone-700"
+            className="aspect-square w-12 rounded-lg border-2 border-dashed border-line-strong"
           />
         ))}
-        {isOver && (
-          <span className="self-center text-sm text-amber-800 dark:text-amber-300">Equip</span>
-        )}
+        {isOver && <span className="self-center text-sm text-link">Equip</span>}
       </div>
     </section>
   );
@@ -99,7 +95,7 @@ function EquippedSlot({
         aria-label={tileLabel(item)}
         title={item.name}
         onClick={() => onOpen(item.id)}
-        className="block w-full rounded-lg focus-visible:outline-2 focus-visible:outline-amber-600"
+        className="block w-full rounded-lg focus-visible:outline-2 focus-visible:outline-accent"
       >
         <TileFace item={item} state={lifted ? "placeholder" : "idle"} />
       </button>
@@ -108,7 +104,7 @@ function EquippedSlot({
         aria-label={`Unequip ${item.name}`}
         title="Unequip"
         onClick={() => onUnequip(item.id)}
-        className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full border border-stone-300 bg-white text-[10px] leading-none text-stone-600 shadow-sm hover:border-rose-400 hover:text-rose-700 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300"
+        className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full border border-line-strong bg-surface text-[10px] leading-none text-muted shadow-sm hover:border-danger hover:text-danger"
       >
         ✕
       </button>
@@ -126,7 +122,7 @@ export function GiveTargets({
 }) {
   return (
     <section aria-label="Give to" className="mb-3">
-      <h3 className="mb-1 text-xs font-semibold tracking-wide text-stone-500 uppercase">Give to</h3>
+      <h3 className="mb-1 text-xs font-semibold tracking-wide text-muted uppercase">Give to</h3>
       <ul className="flex flex-wrap gap-2">
         {recipients.map((recipient) => (
           <GiveTarget key={recipient.id} recipient={recipient} dragging={dragging} />
@@ -144,19 +140,17 @@ function GiveTarget({ recipient, dragging }: { recipient: GiftRecipient; draggin
       className={[
         "flex items-center gap-2 rounded-full py-1 pr-3 pl-1 text-sm transition",
         isOver
-          ? "scale-105 bg-amber-100 ring-2 ring-amber-500 dark:bg-amber-950/60"
+          ? "scale-105 bg-accent-surface ring-2 ring-accent"
           : dragging
-            ? "bg-amber-50/60 ring-1 ring-amber-300 dark:bg-amber-950/20 dark:ring-amber-800"
-            : "bg-stone-100/60 dark:bg-stone-900/60",
+            ? "bg-accent-surface/60 ring-1 ring-trim"
+            : "bg-raised/60",
       ].join(" ")}
     >
       <span
         aria-hidden="true"
         className={[
           "flex h-8 w-8 items-center justify-center rounded-full font-serif font-bold",
-          recipient.companion
-            ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-100"
-            : "bg-stone-200 text-stone-700 dark:bg-stone-700 dark:text-stone-100",
+          recipient.companion ? "bg-good-surface text-good" : "bg-line text-ink",
         ].join(" ")}
       >
         {recipient.name.slice(0, 1).toUpperCase()}
@@ -164,7 +158,7 @@ function GiveTarget({ recipient, dragging }: { recipient: GiftRecipient; draggin
       <span>
         {isOver ? `Give to ${recipient.name}` : recipient.name}
         {recipient.companion && !isOver && (
-          <span className="ml-1 text-xs text-stone-500">companion</span>
+          <span className="ml-1 text-xs text-muted">companion</span>
         )}
       </span>
     </li>
@@ -180,10 +174,10 @@ export function RemoveZone({ dragging }: { dragging: boolean }) {
       className={[
         "mt-4 flex items-center justify-center gap-2 rounded-lg border-2 border-dashed px-3 py-2 text-sm transition",
         isOver
-          ? "border-rose-500 bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-200"
+          ? "border-danger bg-danger-surface text-danger"
           : dragging
-            ? "border-rose-300 text-rose-700 dark:border-rose-800 dark:text-rose-300"
-            : "border-stone-200 text-stone-400 dark:border-stone-800 dark:text-stone-600",
+            ? "border-danger text-danger"
+            : "border-line text-faint",
       ].join(" ")}
     >
       <TrashIcon /> {isOver ? "Let go to remove" : "Drag here to remove"}

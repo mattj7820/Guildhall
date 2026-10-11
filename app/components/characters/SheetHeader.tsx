@@ -69,7 +69,7 @@ export function HeaderFields({
         className="w-32"
       />
       {page.portraitChoices && (
-        <label className="flex flex-col gap-0.5 text-xs text-stone-600 dark:text-stone-400">
+        <label className="flex flex-col gap-0.5 text-xs text-muted">
           Portrait
           <select
             value={sheet.portrait ?? ""}

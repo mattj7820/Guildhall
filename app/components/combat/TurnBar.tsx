@@ -30,14 +30,12 @@ export function TurnBar({
         {encounter.phase === "active" ? (
           <p className="font-serif text-2xl font-bold">
             Round {encounter.round}
-            {active && (
-              <span className="text-amber-800 dark:text-amber-400"> · {active.name}'s turn</span>
-            )}
+            {active && <span className="text-link"> · {active.name}'s turn</span>}
           </p>
         ) : (
           <>
             <p className="font-serif text-2xl font-bold">Setting up</p>
-            <p className="text-sm text-stone-500">
+            <p className="text-sm text-muted">
               {encounter.combatants.length === 0
                 ? "Add combatants, then roll initiative."
                 : missing.length > 0

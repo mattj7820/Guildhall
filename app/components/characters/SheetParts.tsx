@@ -4,11 +4,9 @@ import { signed, type Proficiency } from "~/characters/abilities";
 import type { DerivedValue } from "~/characters/derive";
 import type { HitPoints } from "~/characters/types";
 
-export const sheetPanelClass =
-  "rounded-lg border border-stone-200 bg-white p-3 shadow-sm dark:border-stone-800 dark:bg-stone-900";
+export const sheetPanelClass = "rounded-lg border border-line bg-surface p-3 shadow-sm";
 
-export const sheetHeadingClass =
-  "text-xs font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400";
+export const sheetHeadingClass = "text-xs font-semibold tracking-wide text-muted uppercase";
 
 /** A labelled panel of the sheet. */
 export function SheetPanel({
@@ -51,7 +49,7 @@ export function OverrideMark({
 }) {
   const text = `typed over; the sheet works out ${signedValue ? signed(computed) : computed}`;
   return (
-    <span title={text} className="ml-0.5 align-super text-[10px] text-amber-600">
+    <span title={text} className="ml-0.5 align-super text-[10px] text-link">
       •<span className="sr-only"> ({text})</span>
     </span>
   );
@@ -67,13 +65,7 @@ const MARKS: Record<Proficiency, { symbol: string; label: string }> = {
 export function ProficiencyMark({ proficiency }: { proficiency: Proficiency }) {
   const mark = MARKS[proficiency];
   return (
-    <span
-      className={
-        proficiency === "none"
-          ? "text-stone-300 dark:text-stone-600"
-          : "text-amber-700 dark:text-amber-400"
-      }
-    >
+    <span className={proficiency === "none" ? "text-faint" : "text-link"}>
       <span aria-hidden="true">{mark.symbol}</span>
       <span className="sr-only">{mark.label}</span>
     </span>
@@ -105,7 +97,7 @@ export function HitPointsView({ hp }: { hp: HitPoints }) {
   return (
     <div className="flex items-end justify-center gap-4">
       <HpNumber label="Current" value={hp.current} large />
-      <span aria-hidden="true" className="pb-1 text-2xl text-stone-400">
+      <span aria-hidden="true" className="pb-1 text-2xl text-faint">
         /
       </span>
       <HpNumber label="Max" value={hp.max} />
@@ -127,9 +119,9 @@ function HpNumber({
 }) {
   return (
     <div className="flex flex-col items-center">
-      <span className="text-[11px] text-stone-500 uppercase">{label}</span>
+      <span className="text-[11px] text-muted uppercase">{label}</span>
       <span
-        className={`tabular-nums ${large ? "text-3xl font-bold" : "text-2xl font-semibold"} ${muted ? "text-stone-400" : ""}`}
+        className={`tabular-nums ${large ? "text-3xl font-bold" : "text-2xl font-semibold"} ${muted ? "text-faint" : ""}`}
       >
         {value}
       </span>
@@ -142,6 +134,6 @@ export function TextBlock({ text, empty = "—" }: { text: string; empty?: strin
   return text.trim() ? (
     <p className="text-sm whitespace-pre-line">{text}</p>
   ) : (
-    <p className="text-sm text-stone-400">{empty}</p>
+    <p className="text-sm text-faint">{empty}</p>
   );
 }

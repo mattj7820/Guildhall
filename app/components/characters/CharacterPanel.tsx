@@ -39,10 +39,7 @@ export function CharacterPanel({ page, tab }: { page: CharacterPage; tab: PanelT
         <CompactCompanion page={page} editor={editor} />
       )}
       <EditorBar editor={editor}>
-        <Link
-          to={characterUrl(page.character.id)}
-          className="text-sm text-amber-800 hover:underline dark:text-amber-400"
-        >
+        <Link to={characterUrl(page.character.id)} className="text-sm text-link hover:underline">
           Full {tab === "bag" ? "page" : "sheet"} ↗
         </Link>
       </EditorBar>
@@ -75,7 +72,7 @@ function CompactSheet({ page, editor }: { page: CharacterPage; editor: Character
         />
         <div className="min-w-0">
           <h2 className="truncate font-serif text-xl font-bold">{name}</h2>
-          <p className="truncate text-sm text-stone-500">{subtitle(sheet)}</p>
+          <p className="truncate text-sm text-muted">{subtitle(sheet)}</p>
         </div>
       </div>
       <HitPointsPanel hp={sheet.hp} editing={false} dispatch={editor.dispatch} />
@@ -106,7 +103,7 @@ function CompactSheet({ page, editor }: { page: CharacterPage; editor: Character
         <div
           role="tablist"
           aria-label="Sheet beside the map"
-          className="flex gap-4 border-b border-stone-200 text-sm dark:border-stone-700"
+          className="flex gap-4 border-b border-line text-sm"
         >
           {PARTS.map(([key, label]) => (
             <button
@@ -117,8 +114,8 @@ function CompactSheet({ page, editor }: { page: CharacterPage; editor: Character
               onClick={() => setPart(key)}
               className={
                 part === key
-                  ? "-mb-px border-b-2 border-amber-600 pb-1.5 font-semibold"
-                  : "pb-1.5 text-stone-500 hover:text-stone-900 dark:hover:text-stone-100"
+                  ? "-mb-px border-b-2 border-accent pb-1.5 font-semibold"
+                  : "pb-1.5 text-muted hover:text-ink"
               }
             >
               {label}
@@ -178,7 +175,7 @@ function LastRoll({ rolls }: { rolls: RollLogControls }) {
       {latest && (
         <>
           {latest.label}: <strong className="text-lg">{latest.result.total}</strong>{" "}
-          <span className="text-xs text-stone-500">{latest.result.expression}</span>
+          <span className="text-xs text-muted">{latest.result.expression}</span>
           {latest.critical && " · Critical!"}
           {latest.result.natural === 20 && " · Natural 20!"}
           {latest.result.natural === 1 && " · Natural 1"}
@@ -203,7 +200,7 @@ function CompactCompanion({
         <Portrait name={page.name} url={page.portraitUrl} companion />
         <div className="min-w-0">
           <h2 className="truncate font-serif text-xl font-bold">{page.name}</h2>
-          <p className="text-sm text-stone-500">The party&rsquo;s companion</p>
+          <p className="text-sm text-muted">The party&rsquo;s companion</p>
         </div>
       </div>
       <HitPointsPanel hp={companion.hp} editing={false} dispatch={editor.dispatch} />

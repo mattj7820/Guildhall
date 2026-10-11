@@ -88,7 +88,7 @@ export function OverrideField({
         if (next !== value) onCommit(next);
       }}
       onKeyDown={commitOnEnter}
-      className={`${inputClass} w-14 px-1 text-center tabular-nums placeholder:text-stone-400`}
+      className={`${inputClass} w-14 px-1 text-center tabular-nums placeholder:text-faint`}
     />
   );
 }
@@ -155,7 +155,7 @@ export function DiceField({
           if (readable && next !== value) onCommit(next);
         }}
         onKeyDown={commitOnEnter}
-        className={`${inputClass} font-mono ${problem ? "border-rose-500 dark:border-rose-500" : ""} ${className}`}
+        className={`${inputClass} font-mono ${problem ? "border-danger" : ""} ${className}`}
       />
     </Labelled>
   );
@@ -234,7 +234,7 @@ function Labelled({
 }) {
   if (!show) return <>{children}</>;
   return (
-    <label className="flex flex-col gap-0.5 text-xs text-stone-600 dark:text-stone-400">
+    <label className="flex flex-col gap-0.5 text-xs text-muted">
       {label}
       {children}
     </label>

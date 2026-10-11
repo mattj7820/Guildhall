@@ -17,7 +17,8 @@ maps (the party's, NPCs from their notes and the DM's markers, moved live over w
 managed from the DM's Tokens tab; kept in the data folder),
 character sheets with a game-style bag (players edit their own, the DM gives items; spells, slots,
 features' uses, hit dice and rests tracked on them; a player's sheet and bag beside the map; kept in
-the data folder), and sign-in with Discord, where the DM lets players in and says who they play.
+the data folder), sign-in with Discord, where the DM lets players in and says who they play, and three themes
+(Storybook, Iron and Ember, Gemlight), each person's pick saved on their account.
 It's built to be hosted: a Docker image, with the vault copied read-only from Google Drive (see
 `docs/deployment.md`).
 
@@ -100,6 +101,9 @@ First e2e run needs `npx playwright install chromium`.
   session keys), `players.ts` (`partyPlayers`). Shared shapes in `app/members/`.
 - `app/campaign/`: shared model (isomorphic): `Viewer` (with optional `playerId`), `Player`,
   `Visibility`, `EntityId`, entity types, `canView`.
+- `app/theme/`: `themes.ts` (`THEMES`, `THEME_INFO`, `isTheme`) and `modules.ts` (`moduleOf`: which
+  part of the app a path is in, for `<body data-module>`). The themes themselves are CSS in
+  `app/app.css`: named colours, fonts, and each theme's decoration on the `gh-*` hooks.
 - `app/shared/`: small generic helpers used by several modules: `newId()` and `history.ts` (undo).
 - `app/dice/`: dice expressions (`parseDice`, `rollText`, `critical`), the `Rng` type, and the
   roll log (`rollInto`: labelled rolls, one-roll advantage, Critical) with its `useRollLog` hook
@@ -237,7 +241,7 @@ First e2e run needs `npx playwright install chromium`.
   sounds folder only, for anyone signed in), `map-image` (resource route: a map's
   image by map ID), `vault-asset` (resource route), `view-mode` (the DM's preview toggle), `login`
   (sign-in page; dev sign-in action), `logout` (POST), `auth-discord` (starts Discord sign-in) and
-  `auth-discord-callback`, `waiting` (for newcomers), `members` (DM-only: approve, assign, remove),
+  `auth-discord-callback`, `waiting` (for newcomers), `members` (DM-only: approve, assign, remove), `settings` (each member's own: their theme),
   `characters` (the party; start, relink and delete actions), `character` (`/characters/:id`, a
   sheet or companion), `character-changes` (JSON: GET the stored character, POST a batch of
   actions), `character-sheet-data` (JSON: a sheet's page data, for opening it beside the map),
@@ -369,4 +373,13 @@ First e2e run needs `npx playwright install chromium`.
   order, since each is in one place). Rests give back everything on a sheet, so only
   `sheet-tracking.spec.ts` changes Fixture PC Two's sheet (as Player Two), and the specs on PC One
   never rest. See `docs/testing.md`.
+- Themes: components use the named colours (`bg-surface`, `text-ink`, `text-muted`, `border-line`,
+  `bg-accent`, `text-link`, `text-danger`, `bg-dm-surface`, `text-module`, …; see `@theme` in
+  `app/app.css`), never raw palette classes (a lint error in `app/`). White or black with an
+  opacity (`bg-white/10`) is fine over the top bar or map art. Content drawn over maps (fog, grids,
+  outlines, tokens, measuring, spell areas, stunts) and the turn strip's faces keep fixed colours;
+  their files are listed in `eslint.config.js`. A theme's decoration goes in `app/app.css` on the
+  `gh-*` hooks (with the `storybook`, `ember` and `gem` variants), never in components. `dark:`
+  still works and means a dark theme, but a named colour is almost always better. Note text uses
+  `prose prose-theme`.
 - Prettier formats everything (print width 100). Keep comments short and about _why_.

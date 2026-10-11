@@ -98,7 +98,7 @@ export function CombatTracker({
         />
       )}
       {starting === null && (
-        <p role="alert" className="mb-4 rounded-md bg-amber-100 px-3 py-2 text-sm text-amber-900">
+        <p role="alert" className="mb-4 rounded-md bg-warn-surface px-3 py-2 text-sm text-warn">
           That prepared encounter doesn't exist any more.{" "}
           <Link to="/combat/prepared" className="underline">
             See the prepared encounters
@@ -106,7 +106,7 @@ export function CombatTracker({
         </p>
       )}
       {leftover && (
-        <div role="alert" className="mb-4 rounded-md bg-amber-100 px-3 py-2 text-sm text-amber-900">
+        <div role="alert" className="mb-4 rounded-md bg-warn-surface px-3 py-2 text-sm text-warn">
           This browser has a fight from before fights were kept for everyone to see.{" "}
           <button
             type="button"
@@ -145,14 +145,11 @@ export function CombatTracker({
               Turn order
             </h2>
             {encounter.combatants.length === 0 ? (
-              <p className="text-sm text-stone-500">
+              <p className="text-sm text-muted">
                 No one yet. Add monsters from the vault and the party.
               </p>
             ) : (
-              <ol
-                aria-label="Turn order"
-                className="divide-y divide-stone-200 dark:divide-stone-800"
-              >
+              <ol aria-label="Turn order" className="divide-y divide-line">
                 {encounter.combatants.map((combatant, index) => (
                   <CombatantRow
                     key={combatant.id}

@@ -83,7 +83,7 @@ export function PlayerMapViewer({
 
   return (
     <main className="flex h-[calc(100dvh-3.5rem)] flex-col">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-stone-200 px-4 py-2 dark:border-stone-800">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line px-4 py-2">
         <MapBreadcrumbs crumbs={map.breadcrumbs} />
         <h1 className="sr-only">{map.name}</h1>
         <div className="ml-auto flex items-center gap-3">
@@ -91,7 +91,7 @@ export function PlayerMapViewer({
           <LiveStatus status={status} />
         </div>
       </div>
-      <div className="flex min-h-0 flex-1 flex-col bg-stone-50 md:flex-row dark:bg-stone-950">
+      <div className="flex min-h-0 flex-1 flex-col bg-raised md:flex-row">
         <div className={`relative flex min-h-[50vh] flex-1 ${stunts.shaking ? "stunt-shake" : ""}`}>
           <FlashOverlay flashKey={stunts.flashKey} />
           {battle.toolbar}
@@ -164,7 +164,7 @@ export function PlayerMapViewer({
             )}
           </MapCanvas>
           {nothingYet && (
-            <p className="pointer-events-none absolute inset-x-0 top-1/2 text-center font-serif text-lg text-stone-300">
+            <p className="pointer-events-none absolute inset-x-0 top-1/2 text-center font-serif text-lg text-faint">
               Nothing explored here yet.
             </p>
           )}
@@ -209,7 +209,7 @@ function PartyHere({
     <section aria-labelledby="party-here-heading">
       <h2
         id="party-here-heading"
-        className="mb-1 text-xs font-semibold tracking-wide text-stone-500 uppercase"
+        className="mb-1 text-xs font-semibold tracking-wide text-muted uppercase"
       >
         Party here
       </h2>
@@ -218,12 +218,12 @@ function PartyHere({
           <li key={token.id} className="flex items-center gap-2">
             <span className="mr-auto">
               {token.name}
-              {token.inTheDark && <span className="text-xs text-stone-500"> (in the dark)</span>}
+              {token.inTheDark && <span className="text-xs text-muted"> (in the dark)</span>}
             </span>
             <button
               type="button"
               aria-label={`Find ${token.name}`}
-              className="rounded px-2 py-0.5 text-sm hover:bg-stone-100 dark:hover:bg-stone-800"
+              className="rounded px-2 py-0.5 text-sm hover:bg-raised"
               onClick={() => onFind(token)}
             >
               Find
@@ -233,7 +233,7 @@ function PartyHere({
       </ul>
       {grid && theirs && (
         <div className="mt-3">
-          <h3 className="mb-1 text-xs font-semibold tracking-wide text-stone-500 uppercase">
+          <h3 className="mb-1 text-xs font-semibold tracking-wide text-muted uppercase">
             How far from {theirs.name}
           </h3>
           <TokenDistances from={theirs} tokens={tokens} grid={grid} size={size} />
@@ -278,14 +278,14 @@ function SelectedArea({ area, onClose }: { area: AreaView; onClose: () => void }
     <section aria-label={area.name} className="flex flex-col gap-3">
       <div className="flex items-baseline gap-2">
         <h2 className="mr-auto font-serif text-xl font-bold">{area.name}</h2>
-        <button type="button" onClick={onClose} className="text-sm text-stone-500 hover:underline">
+        <button type="button" onClick={onClose} className="text-sm text-muted hover:underline">
           Close
         </button>
       </div>
       {area.note && hasContent(area.note) ? (
         <NotePanel note={area.note} headingLevel={3} />
       ) : (
-        <p className="text-sm text-stone-500">Nothing more is known yet.</p>
+        <p className="text-sm text-muted">Nothing more is known yet.</p>
       )}
     </section>
   );
@@ -298,7 +298,7 @@ function AreaList({ areas, onSelect }: { areas: AreaView[]; onSelect: (area: Are
     <section aria-labelledby="map-areas-heading">
       <h2
         id="map-areas-heading"
-        className="mb-1 text-xs font-semibold tracking-wide text-stone-500 uppercase"
+        className="mb-1 text-xs font-semibold tracking-wide text-muted uppercase"
       >
         Places
       </h2>
@@ -306,17 +306,14 @@ function AreaList({ areas, onSelect }: { areas: AreaView[]; onSelect: (area: Are
         {sorted.map((area) => (
           <li key={area.id}>
             {area.map ? (
-              <Link
-                to={mapUrl(area.map.id)}
-                className="block rounded px-1 py-0.5 hover:bg-stone-100 dark:hover:bg-stone-800"
-              >
+              <Link to={mapUrl(area.map.id)} className="block rounded px-1 py-0.5 hover:bg-raised">
                 ▸ {area.name}
               </Link>
             ) : (
               <button
                 type="button"
                 onClick={() => onSelect(area)}
-                className="block w-full rounded px-1 py-0.5 text-left hover:bg-stone-100 dark:hover:bg-stone-800"
+                className="block w-full rounded px-1 py-0.5 text-left hover:bg-raised"
               >
                 {area.name}
               </button>

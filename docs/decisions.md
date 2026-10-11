@@ -1248,3 +1248,37 @@ R2, well inside its free tier), keeping two weeks. Nothing in Guildhall changed:
 host's job, and since every file is written whole and renamed into place, it's taken with the app
 running. The tile cache is included rather than split into its own volume; it's tens of
 megabytes. A restore was checked by hand the day it was set up.
+
+## 71. Three themes, picked per account
+
+**Date:** 2026-10-11
+
+Guildhall looked like a default Tailwind app: stone and amber, following the device's light or
+dark mode. Eight looks were tried as mock-ups (inspired by Middle-earth, the Stormlight Archive,
+D&D's books and Avatar), three shortlisted on real screens, and rather than choose one, each person
+picks their own on a new **Settings** page, saved on their account so it follows them between
+devices: **Storybook** (light: teal and gold, rounded, a storybook serif), **Iron and Ember**
+(dark: black iron, ember red, blackletter headings, clipped corners) and **Gemlight** (dark: night
+blue, a gem colour for each part of the app, glows). Someone who hasn't picked gets Storybook on a
+light device and Iron and Ember on a dark one; a fourth "follow my device" choice was left out as
+one more thing to explain. Only the look changed: no behaviour, layout or wording.
+
+- **Named colours, not palette colours.** Components use names (`page`, `surface`, `ink`,
+  `muted`, `accent`, `link`, `dm`, `danger`, `module`, …) mapped in `app/app.css`, and each theme
+  only sets the values behind them. About a thousand hard-coded palette classes were converted, and
+  a lint rule now refuses raw palette classes in `app/`, so new screens work in every theme.
+- **Content keeps its colours.** What's drawn over map art (fog, grids, area outlines, tokens and
+  their markers, measuring, spell areas, stunts), the turn strip's faces and the Discord button
+  look the same in every theme; the bars, panels and tools around them follow it.
+- **Decoration lives in theme CSS.** Clipped corners, glows, gold rules and rounded cards hang off
+  a few `gh-*` hooks on shared pieces (cards, panels, buttons, the top bar); components never style
+  for a theme. Dense screens (the tracker, sheets, map panels) take only colours, fonts and buttons.
+- **No flash of the wrong theme.** The server puts the pick on `<html data-theme>`, so the first
+  paint is right without a script. `<body data-module>` gives each part of the app its colour.
+- **Fonts are self-hosted** (`@fontsource`, all under the SIL Open Font License, listed on the
+  Credits page): nothing is fetched from Google, and a browser downloads only its theme's faces.
+- **Stored data:** a member's `theme` is optional, and an unknown value reads as no pick, so older
+  data loads unchanged and a rollback only means picking again.
+- **Statblocks** keep the books' parchment in Storybook and get a dark page in the dark themes.
+- **Readability is tested:** an e2e spec opens each part of the app in each theme and runs axe's
+  colour-contrast check.

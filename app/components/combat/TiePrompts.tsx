@@ -21,7 +21,7 @@ export function TiePrompts({
   return (
     <section
       aria-label="Ties to break"
-      className="rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/40"
+      className="rounded-lg border border-trim bg-accent-surface p-4"
     >
       <h2 className="font-semibold">Initiative ties: each tied combatant rerolls a d20</h2>
       <ul className="mt-2 flex flex-col gap-3">
@@ -40,7 +40,7 @@ export function TiePrompts({
                 combatant.kind === "player" ? (
                   <RerollForm key={combatant.id} combatant={combatant} dispatch={dispatch} />
                 ) : (
-                  <p key={combatant.id} className="text-sm text-stone-600">
+                  <p key={combatant.id} className="text-sm text-muted">
                     {combatant.name} kept tying. Order them by hand with the arrows.
                   </p>
                 ),

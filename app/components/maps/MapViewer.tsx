@@ -156,7 +156,7 @@ export function MapViewer({
 
   return (
     <main className="flex h-[calc(100dvh-3.5rem)] flex-col">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-stone-200 px-4 py-2 dark:border-stone-800">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line px-4 py-2">
         <MapBreadcrumbs crumbs={map.breadcrumbs} />
         <h1 className="sr-only">{map.name}</h1>
         <MapViewerBar
@@ -183,7 +183,7 @@ export function MapViewer({
       {map.image.inSharedNote && (
         <p
           role="alert"
-          className="border-b border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"
+          className="border-b border-warn/40 bg-warn-surface px-4 py-2 text-sm text-warn"
         >
           This map's image is embedded in a wiki note players can read, so they can see all of it
           there, whatever the fog hides here. Take it out of that note, or make the note DM-only.
@@ -208,10 +208,7 @@ export function MapViewer({
         />
       )}
 
-      <div
-        ref={stage}
-        className="flex min-h-0 flex-1 flex-col bg-stone-50 md:flex-row dark:bg-stone-950"
-      >
+      <div ref={stage} className="flex min-h-0 flex-1 flex-col bg-raised md:flex-row">
         <div className={`relative flex min-h-[50vh] flex-1 ${stunts.shaking ? "stunt-shake" : ""}`}>
           <FlashOverlay flashKey={stunts.flashKey} />
           {stuntMode && (
@@ -396,7 +393,7 @@ export function MapViewer({
                   <NotePanel note={map.note} />
                 ) : (
                   map.noteBroken && (
-                    <p className="text-sm text-rose-700 dark:text-rose-400">
+                    <p className="text-sm text-danger">
                       This map's wiki note is no longer in the vault. Choose another in the editor's
                       map settings.
                     </p>

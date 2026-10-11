@@ -21,10 +21,8 @@ export function DiceChip({
       aria-label={label}
       title={label}
       onClick={onRoll}
-      className={`rounded-md border px-2 py-0.5 text-sm tabular-nums hover:bg-amber-50 focus-visible:outline-2 focus-visible:outline-amber-600 dark:hover:bg-amber-900/30 ${
-        strong
-          ? "border-amber-400 font-semibold text-amber-900 dark:border-amber-700 dark:text-amber-200"
-          : "border-stone-300 dark:border-stone-700"
+      className={`rounded-md border px-2 py-0.5 text-sm tabular-nums hover:bg-accent-surface focus-visible:outline-2 focus-visible:outline-accent ${
+        strong ? "border-trim font-semibold text-title" : "border-line-strong"
       }`}
     >
       {children}
@@ -70,7 +68,7 @@ export function ListControls({
         type="button"
         aria-label={`Remove ${name}`}
         onClick={onRemove}
-        className={`${iconButtonClass} hover:text-rose-700 dark:hover:text-rose-400`}
+        className={`${iconButtonClass} hover:text-danger`}
       >
         ✕
       </button>

@@ -4,14 +4,14 @@ import type { SaveStatus } from "~/combat/fight-saver";
 export function FightStatus({ status }: { status: SaveStatus }) {
   if (status === "offline") {
     return (
-      <p role="alert" className="mb-4 rounded-md bg-rose-100 px-3 py-2 text-sm text-rose-900">
+      <p role="alert" className="mb-4 rounded-md bg-danger-surface px-3 py-2 text-sm text-danger">
         Can't reach Guildhall just now: changes are kept here and saved when it's back.
       </p>
     );
   }
   if (status === "refused") {
     return (
-      <p role="alert" className="mb-4 rounded-md bg-rose-100 px-3 py-2 text-sm text-rose-900">
+      <p role="alert" className="mb-4 rounded-md bg-danger-surface px-3 py-2 text-sm text-danger">
         Guildhall wouldn't save the last change, so the table doesn't see it. Reload to see the
         fight as it's saved.
       </p>
@@ -19,7 +19,7 @@ export function FightStatus({ status }: { status: SaveStatus }) {
   }
   if (status === "replaced") {
     return (
-      <p role="status" className="mb-4 rounded-md bg-amber-100 px-3 py-2 text-sm text-amber-900">
+      <p role="status" className="mb-4 rounded-md bg-warn-surface px-3 py-2 text-sm text-warn">
         The fight changed elsewhere (a player ended their turn, or another tab), so this is the
         latest. Check your last change made it.
       </p>
@@ -27,7 +27,7 @@ export function FightStatus({ status }: { status: SaveStatus }) {
   }
   if (status === "saving") {
     return (
-      <p role="status" className="mb-2 text-right text-xs text-stone-500">
+      <p role="status" className="mb-2 text-right text-xs text-muted">
         Saving…
       </p>
     );

@@ -50,7 +50,7 @@ export function AbilityScores({ parts }: { parts: Parts }) {
           >
             <abbr
               title={name}
-              className="text-xs font-semibold tracking-wide text-stone-500 uppercase no-underline"
+              className="text-xs font-semibold tracking-wide text-muted uppercase no-underline"
             >
               {ability}
             </abbr>
@@ -77,7 +77,7 @@ export function AbilityScores({ parts }: { parts: Parts }) {
                 >
                   {signed(modifier)}
                 </RollButton>
-                <span className="rounded-full border border-stone-300 px-2 text-sm tabular-nums dark:border-stone-700">
+                <span className="rounded-full border border-line-strong px-2 text-sm tabular-nums">
                   {sheet.abilities[ability]}
                 </span>
               </>
@@ -143,7 +143,7 @@ export function SkillList({ parts }: { parts: Parts }) {
             )}
             <span className="mr-auto">
               {SKILL_NAMES[skill]}{" "}
-              <span className="text-xs text-stone-400 uppercase">{SKILL_ABILITIES[skill]}</span>
+              <span className="text-xs text-faint uppercase">{SKILL_ABILITIES[skill]}</span>
             </span>
             <DerivedNumber
               parts={parts}
@@ -303,7 +303,7 @@ export function RollButton({
       aria-label={`Roll ${label}, ${signed(bonus)}`}
       title={`Roll ${label}`}
       onClick={() => roll(label, bonus)}
-      className={`rounded px-1 hover:bg-amber-100 hover:text-amber-900 focus-visible:outline-2 focus-visible:outline-amber-600 dark:hover:bg-amber-900/40 dark:hover:text-amber-200 ${className}`}
+      className={`rounded px-1 hover:bg-accent-surface hover:text-title focus-visible:outline-2 focus-visible:outline-accent ${className}`}
     >
       {children}
     </button>
@@ -334,7 +334,7 @@ export function ProficiencyToggle({
       type="button"
       aria-label={`${name}: ${PROFICIENCY_NAMES[value]}. Change to ${PROFICIENCY_NAMES[next]}`}
       onClick={() => onChange(next)}
-      className="rounded px-0.5 hover:bg-stone-100 dark:hover:bg-stone-800"
+      className="rounded px-0.5 hover:bg-raised"
     >
       <ProficiencyMark proficiency={value} />
     </button>

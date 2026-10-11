@@ -95,17 +95,17 @@ function ShortRestDialog({
       ref={dialog}
       aria-labelledby="short-rest-heading"
       onClose={() => onClose(finished.current)}
-      className="m-auto w-full max-w-md rounded-xl border border-stone-200 bg-white p-5 text-stone-900 shadow-2xl backdrop:bg-stone-950/50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100"
+      className="m-auto w-full max-w-md rounded-xl border border-line bg-surface p-5 text-ink shadow-2xl backdrop:bg-black/50"
     >
       <h2 id="short-rest-heading" className="font-serif text-2xl font-bold">
         Short rest
       </h2>
       {pools.length === 0 ? (
-        <p className="mt-2 text-sm text-stone-500">
+        <p className="mt-2 text-sm text-muted">
           No hit dice to spend: set them while editing the sheet.
         </p>
       ) : (
-        <p className="mt-1 text-sm text-stone-500">
+        <p className="mt-1 text-sm text-muted">
           Spend hit dice to heal: each heals its roll {signed(con)} (CON), and at least 1.
         </p>
       )}
@@ -126,7 +126,7 @@ function ShortRestDialog({
               <button
                 type="button"
                 aria-label={`Take back the ${die} that rolled ${face}`}
-                className="text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
+                className="text-faint hover:text-ink"
                 onClick={() => setSpent(spent.filter((_, at) => at !== index))}
               >
                 ✕
@@ -138,7 +138,7 @@ function ShortRestDialog({
       <p className="mt-3 text-sm">
         Healing <strong>+{preview.healed}</strong> → HP {preview.sheet.hp.current} / {sheet.hp.max}
       </p>
-      <p className="mt-1 text-sm text-stone-500">
+      <p className="mt-1 text-sm text-muted">
         Also gives back: {resets.length > 0 ? resets.map((f) => f.name).join(", ") : "nothing else"}
       </p>
       <div className="mt-4 flex justify-end gap-2">
@@ -171,7 +171,7 @@ function HitDieRow({
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2">
       <span className="font-semibold">{die}</span>
-      <span className="mr-2 text-sm text-stone-500">
+      <span className="mr-2 text-sm text-muted">
         {left} of {max} left
       </span>
       <button
@@ -185,7 +185,7 @@ function HitDieRow({
       >
         Roll a {die}
       </button>
-      <label className="flex items-center gap-1 text-sm text-stone-500">
+      <label className="flex items-center gap-1 text-sm text-muted">
         or rolled at the table
         <input
           inputMode="numeric"

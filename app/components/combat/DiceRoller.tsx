@@ -71,7 +71,7 @@ export function DiceRoller({
             ))}
           </fieldset>
           <label
-            className={`flex items-center gap-1 ${log.critical ? "font-semibold text-rose-700 dark:text-rose-400" : ""}`}
+            className={`flex items-center gap-1 ${log.critical ? "font-semibold text-danger" : ""}`}
           >
             <input
               type="checkbox"
@@ -81,10 +81,10 @@ export function DiceRoller({
             Critical
           </label>
         </div>
-        <p className="text-xs text-stone-500">{hint}</p>
+        <p className="text-xs text-muted">{hint}</p>
       </form>
       {rolls.error && (
-        <p role="alert" className="mt-2 text-sm text-rose-700 dark:text-rose-400">
+        <p role="alert" className="mt-2 text-sm text-danger">
           {rolls.error}
         </p>
       )}
@@ -124,7 +124,7 @@ function RollLine({ roll, large = false }: { roll: LoggedRoll; large?: boolean }
             {roll.recharged ? "Recharged" : "Not recharged"}
           </Badge>
         )}
-        <span className="text-stone-500">
+        <span className="text-muted">
           {result.expression}
           {result.mode !== "normal" && ` (${result.mode})`}:{" "}
           {result.terms.map((term, index) => (
@@ -153,10 +153,7 @@ function RollLine({ roll, large = false }: { roll: LoggedRoll; large?: boolean }
 }
 
 function Badge({ tone, children }: { tone: "good" | "bad"; children: string }) {
-  const colours =
-    tone === "good"
-      ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"
-      : "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200";
+  const colours = tone === "good" ? "bg-good-surface text-good" : "bg-line text-ink";
   return (
     <span className={`rounded px-1.5 py-0.5 font-sans text-xs font-semibold ${colours}`}>
       {children}

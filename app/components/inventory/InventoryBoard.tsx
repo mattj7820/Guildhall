@@ -235,7 +235,7 @@ export function InventoryBoard({
               type="button"
               onClick={onAdd}
               aria-label="Add an item"
-              className="flex aspect-square w-full items-center justify-center rounded-lg border-2 border-dashed border-stone-300 text-3xl text-stone-400 hover:border-amber-500 hover:text-amber-700 dark:border-stone-700 dark:text-stone-500 dark:hover:border-amber-500 dark:hover:text-amber-400"
+              className="flex aspect-square w-full items-center justify-center rounded-lg border-2 border-dashed border-line-strong text-3xl text-faint hover:border-accent hover:text-link"
             >
               +
             </button>
@@ -244,7 +244,7 @@ export function InventoryBoard({
             <li
               key={`empty-${index}`}
               aria-hidden="true"
-              className="aspect-square rounded-lg border-2 border-stone-200/70 bg-stone-100/40 dark:border-stone-800 dark:bg-stone-900/40"
+              className="aspect-square rounded-lg border-2 border-line/70 bg-raised/40"
             />
           ))}
         </ul>
@@ -253,7 +253,7 @@ export function InventoryBoard({
         Arrow keys move between items.
       </p>
       {filtered && (
-        <p className="mt-2 text-sm text-stone-500">
+        <p className="mt-2 text-sm text-muted">
           Showing {shown.length} of {items.length}. Clear the search to rearrange items.
         </p>
       )}
@@ -265,8 +265,8 @@ export function InventoryBoard({
             {caption && (
               <span
                 className={[
-                  "absolute -bottom-7 left-1/2 -translate-x-1/2 rounded-full px-2 py-0.5 text-xs font-bold whitespace-nowrap text-white shadow",
-                  overId === REMOVE_ZONE ? "bg-rose-600" : "bg-amber-600",
+                  "absolute -bottom-7 left-1/2 -translate-x-1/2 rounded-full px-2 py-0.5 text-xs font-bold whitespace-nowrap text-on-accent shadow",
+                  overId === REMOVE_ZONE ? "bg-danger" : "bg-accent",
                 ].join(" ")}
               >
                 {caption}

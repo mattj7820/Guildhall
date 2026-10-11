@@ -32,9 +32,7 @@ export default function WikiHome({ loaderData }: Route.ComponentProps) {
     return (
       <main>
         <h1 className="font-serif text-3xl font-bold">Campaign wiki</h1>
-        <p className="mt-2 text-stone-600 dark:text-stone-400">
-          {noteCount} notes. Pick one from the sidebar, or search.
-        </p>
+        <p className="mt-2 text-muted">{noteCount} notes. Pick one from the sidebar, or search.</p>
       </main>
     );
   }
@@ -42,7 +40,7 @@ export default function WikiHome({ loaderData }: Route.ComponentProps) {
   return (
     <main>
       <h1 className="font-serif text-3xl font-bold">Search results</h1>
-      <p className="mt-1 text-stone-600 dark:text-stone-400">
+      <p className="mt-1 text-muted">
         {results.length === 0
           ? `Nothing matches “${query}”.`
           : `${results.length} ${results.length === 1 ? "note matches" : "notes match"} “${query}”.`}
@@ -51,18 +49,13 @@ export default function WikiHome({ loaderData }: Route.ComponentProps) {
         {results.map((result) => (
           <li key={result.slug}>
             <div className="flex items-center gap-2">
-              <Link
-                to={noteUrl(result.slug)}
-                className="font-semibold text-amber-800 hover:underline dark:text-amber-400"
-              >
+              <Link to={noteUrl(result.slug)} className="font-semibold text-link hover:underline">
                 {result.title}
               </Link>
               {result.type && <TypeBadge type={result.type} />}
             </div>
-            <p className="text-xs text-stone-500">{result.slug}</p>
-            {result.snippet && (
-              <p className="mt-1 text-sm text-stone-700 dark:text-stone-300">{result.snippet}</p>
-            )}
+            <p className="text-xs text-muted">{result.slug}</p>
+            {result.snippet && <p className="mt-1 text-sm text-ink">{result.snippet}</p>}
           </li>
         ))}
       </ol>

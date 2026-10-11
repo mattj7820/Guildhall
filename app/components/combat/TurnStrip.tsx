@@ -2,6 +2,12 @@ import type { ReactNode } from "react";
 import type { EncounterView } from "~/combat/visibility";
 import { initials } from "~/components/maps/TokenLayer";
 
+// The faces are content, like tokens on a map: the same in every theme.
+// eslint-disable-next-line no-restricted-syntax
+const MONSTER_FACE = "bg-red-700";
+// eslint-disable-next-line no-restricted-syntax
+const PARTY_FACE = "bg-stone-700";
+
 interface Props {
   round: number;
   /** `dim`: for the DM, a monster that's down or hidden from players. */
@@ -31,7 +37,7 @@ export function TurnStrip({ round, turnOrder, floating = false, onSelect, childr
         <p
           role="status"
           aria-label="Whose turn"
-          className="rounded-full bg-stone-900/85 px-3 py-1 text-sm font-semibold text-white shadow"
+          className="rounded-full bg-bar/90 px-3 py-1 text-sm font-semibold text-on-bar-strong shadow"
         >
           Round {round} · {active ? `${active.name}'s turn` : "between turns"}
         </p>
@@ -39,7 +45,7 @@ export function TurnStrip({ round, turnOrder, floating = false, onSelect, childr
       </div>
       <ol
         aria-label="Turn strip"
-        className="pointer-events-auto flex max-w-[90%] gap-1 overflow-x-auto rounded-full bg-white/90 p-1 shadow dark:bg-stone-900/90"
+        className="pointer-events-auto flex max-w-[90%] gap-1 overflow-x-auto rounded-full bg-surface/90 p-1 shadow"
       >
         {turnOrder.map((entry) => (
           <li key={entry.id} aria-current={entry.isActive ? "true" : undefined}>
@@ -50,8 +56,8 @@ export function TurnStrip({ round, turnOrder, floating = false, onSelect, childr
               disabled={!onSelect}
               onClick={() => onSelect?.(entry.id)}
               className={`flex size-9 items-center justify-center rounded-full font-serif text-sm font-bold text-white ${
-                entry.isActive ? "ring-3 ring-amber-500" : ""
-              } ${entry.kind === "monster" ? "bg-red-700" : "bg-stone-700"} ${
+                entry.isActive ? "ring-3 ring-accent" : ""
+              } ${entry.kind === "monster" ? MONSTER_FACE : PARTY_FACE} ${
                 entry.dim ? "opacity-40" : ""
               }`}
             >
