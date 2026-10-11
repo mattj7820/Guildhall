@@ -1,9 +1,15 @@
 /** zod schemas for combat data that crosses a trust boundary: browser storage, requests, files. */
 import { z } from "zod";
-import { CONDITIONS, type Encounter, type PreparedEncounter } from "./types";
+import { CONDITIONS, SRD_SOURCES, type Encounter, type PreparedEncounter } from "./types";
 
 const player = z.object({ id: z.string(), name: z.string() });
-const statblockRef = z.object({ entityId: z.string(), name: z.string() });
+const statblockRef = z.object({
+  entityId: z.string(),
+  name: z.string(),
+  // A source this version doesn't know (stored by a later one) is read as the vault's: the ref
+  // then finds nothing, and the combatant keeps its copied numbers. Never refused.
+  source: z.enum(SRD_SOURCES).optional().catch(undefined),
+});
 
 const base = {
   id: z.string(),

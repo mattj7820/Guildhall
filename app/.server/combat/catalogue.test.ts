@@ -1,3 +1,4 @@
+import { gzipSync } from "node:zlib";
 import { beforeAll, describe, expect, it } from "vitest";
 import { DM_VIEWER, PLAYER_VIEWER } from "~/campaign/types";
 import { WHOLE_PARTY, type CombatCatalogue } from "~/combat/types";
@@ -11,7 +12,9 @@ beforeAll(async () => {
   catalogue = combatCatalogue(await Vault.load(FIXTURE_VAULT), DM_VIEWER);
 });
 
-const creature = (name: string) => catalogue.creatures.find((c) => c.name === name);
+const creature = (name: string) =>
+  catalogue.creatures.find((c) => c.name === name && !c.ref.source);
+const creatureByKey = (key: string) => catalogue.creatures.find((c) => c.key === key);
 
 describe("combatCatalogue", () => {
   it("offers statblocks with the numbers the tracker uses", () => {
@@ -34,8 +37,8 @@ describe("combatCatalogue", () => {
     expect(bare?.hitDice).toBeUndefined();
   });
 
-  it("sorts creatures by name", () => {
-    expect(catalogue.creatures.map((c) => c.name)).toEqual([
+  it("sorts the vault's statblocks by name", () => {
+    expect(catalogue.creatures.filter((c) => !c.ref.source).map((c) => c.name)).toEqual([
       "Fixture 2024 Statblock",
       "Fixture Bare",
       "Fixture Companion",
@@ -48,6 +51,58 @@ describe("combatCatalogue", () => {
 
   it("takes a 2024 statblock's own initiative bonus", () => {
     expect(creature("Fixture 2024 Statblock")?.initiativeBonus).toBe(3);
+  });
+
+  it("adds every SRD monster from both versions, tagged with which it is", () => {
+    const from = (source: string) => catalogue.creatures.filter((c) => c.ref.source === source);
+    expect(from("srd-5.1")).toHaveLength(334);
+    expect(from("srd-5.2")).toHaveLength(341);
+    expect(creatureByKey("srd-5.2:goblin-warrior")).toMatchObject({
+      ref: { entityId: "goblin-warrior", name: "Goblin Warrior", source: "srd-5.2" },
+      name: "Goblin Warrior",
+      challenge: "1/4",
+      size: "Small",
+      type: "Fey",
+      armorClass: 15,
+      hitPoints: 10,
+      hitDice: "3d6",
+      squares: 1,
+      initiativeBonus: 2,
+    });
+    expect(creatureByKey("srd-5.2:goblin-warrior")).not.toHaveProperty("noteUrl");
+  });
+
+  it("sizes SRD monsters' tokens from their statblocks", () => {
+    expect(creatureByKey("srd-5.2:adult-red-dragon")?.squares).toBe(3);
+    expect(creatureByKey("srd-5.1:ogre")?.squares).toBe(2);
+  });
+
+  it("lists everything by name, with the vault's own first, then 2024, then 2014", () => {
+    const order = { vault: 0, "srd-5.2": 1, "srd-5.1": 2 };
+    const { creatures } = catalogue;
+    for (let i = 1; i < creatures.length; i++) {
+      const [before, after] = [creatures[i - 1], creatures[i]];
+      const byName = before.name.localeCompare(after.name, undefined, {
+        sensitivity: "base",
+        numeric: true,
+      });
+      expect(byName).toBeLessThanOrEqual(0);
+      if (byName === 0) {
+        expect(order[before.ref.source ?? "vault"]).toBeLessThanOrEqual(
+          order[after.ref.source ?? "vault"],
+        );
+      }
+    }
+    const wolves = creatures.filter((c) => c.name === "Wolf").map((c) => c.ref.source);
+    expect(wolves).toEqual(["srd-5.2", "srd-5.1"]);
+  });
+
+  it("keeps the page small: no statblocks, and a budget for finding them", () => {
+    const json = JSON.stringify(catalogue);
+    expect(json).not.toContain("statblock-roll");
+    // 17 KB compressed (177 KB raw) with every SRD monster, measured 2026-10-11. Every statblock
+    // pre-rendered would be 239 KB compressed (3.1 MB raw): this keeps them from coming back.
+    expect(gzipSync(json).length).toBeLessThan(40_000);
   });
 
   it("sends no statblocks with the page: they're loaded when shown", () => {
@@ -103,6 +158,20 @@ describe("statblockView", () => {
 
   it("has nothing for a key that isn't a statblock", () => {
     expect(statblockView(vault, DM_VIEWER, "Bestiary/Fixture Minion#Nobody")).toBeUndefined();
+  });
+
+  it("renders an SRD monster's statblock, its 2024 rolls marked", () => {
+    const html = statblockView(vault, DM_VIEWER, "srd-5.2:goblin-warrior")?.html ?? "";
+    expect(html).toContain('aria-label="Statblock: Goblin Warrior"');
+    expect(html).toContain(
+      'data-roll="1d20 + 4" data-roll-kind="attack" data-roll-label="Scimitar attack"',
+    );
+    expect(html).toContain('data-roll-label="Initiative"');
+  });
+
+  it("brings the SRD's lore with an SRD monster that has some", () => {
+    expect(statblockView(vault, DM_VIEWER, "srd-5.1:blink-dog")?.lore).toMatch(/^A blink dog/);
+    expect(statblockView(vault, DM_VIEWER, "srd-5.2:blink-dog")).not.toHaveProperty("lore");
   });
 
   it("gives players nothing from a note they can't read", () => {

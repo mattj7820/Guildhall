@@ -5,15 +5,36 @@
 import type { EntityId, Player } from "~/campaign/types";
 import type { MapId, Point } from "~/maps/types";
 
-/** Points at one statblock in the vault: the note's stable ID plus the statblock's name. */
+/** The SRD's monsters, bundled with Guildhall: SRD 5.1 (the 2014 rules) or 5.2.1 (2024). */
+export const SRD_SOURCES = ["srd-5.1", "srd-5.2"] as const;
+export type SrdSource = (typeof SRD_SOURCES)[number];
+
+/** Each SRD's name, as its licence asks it to be credited. */
+export const SRD_DOCUMENTS: Record<SrdSource, string> = {
+  "srd-5.1": "SRD 5.1",
+  "srd-5.2": "SRD 5.2.1",
+};
+
+/** The rules each SRD is for, as the DM knows them. */
+export const SRD_RULES: Record<SrdSource, "2014" | "2024"> = {
+  "srd-5.1": "2014",
+  "srd-5.2": "2024",
+};
+
+/**
+ * Points at one statblock. In the vault (no `source`): the note's stable ID plus the statblock's
+ * name. In the SRD: the monster's ID there (e.g. "goblin-warrior") and its name. Refs stored
+ * before the SRD came have no `source`, so they still point at the vault.
+ */
 export interface StatblockRef {
   entityId: EntityId;
   name: string;
+  source?: SrdSource;
 }
 
-/** One string per statblock, for lookups and form values. */
+/** One string per statblock, for lookups and form values. A vault key always has a "#". */
 export function statblockKey(ref: StatblockRef): string {
-  return `${ref.entityId}#${ref.name}`;
+  return ref.source ? `${ref.source}:${ref.entityId}` : `${ref.entityId}#${ref.name}`;
 }
 
 /** A statblock the DM can add to an encounter, with the numbers the tracker needs. */
@@ -21,8 +42,13 @@ export interface CreatureOption {
   key: string;
   ref: StatblockRef;
   name: string;
-  noteTitle: string;
-  noteUrl: string;
+  /** A vault statblock's note; the SRD's monsters have none. */
+  noteTitle?: string;
+  noteUrl?: string;
+  /** For finding it: "1/4", "Small", "humanoid". */
+  challenge?: string;
+  size?: string;
+  type?: string;
   armorClass?: number;
   hitPoints?: number;
   /** Squares across on a battle map, from its size. */
@@ -36,6 +62,8 @@ export interface CreatureOption {
 export interface StatblockView {
   /** The book-style statblock, rendered and sanitised on the server, with its rolls marked. */
   html: string;
+  /** The SRD's own description of the monster, where it has one. */
+  lore?: string;
 }
 
 /** A party member from the vault: a `type: pc` note, or the party's `type: companion`. */

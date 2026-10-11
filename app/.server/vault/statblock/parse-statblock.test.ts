@@ -55,6 +55,9 @@ describe("parseStatblock", () => {
     expect(parsed(PLUGIN_STATBLOCK)).toEqual({
       name: "Test Creature",
       description: "Small construct, unaligned",
+      size: "Small",
+      type: "construct",
+      challengeRating: "1/4",
       armorClass: "17",
       hitPoints: "17 (5d6 − 1)",
       speed: "0 ft., fly 50 ft.",

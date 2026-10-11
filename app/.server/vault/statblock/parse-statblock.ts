@@ -10,6 +10,11 @@ export interface Statblock {
   name: string;
   /** "Small humanoid (goblinoid), neutral evil" */
   description?: string;
+  /** The parts of the description finding a monster filters on: "Small", "humanoid". */
+  size?: string;
+  type?: string;
+  /** The challenge rating alone, e.g. "1/4". */
+  challengeRating?: string;
   armorClass?: string;
   /** "+2 (12)": 2024 statblocks give it, and it can differ from the DEX modifier. */
   initiative?: string;
@@ -146,6 +151,9 @@ export function statblockFromData(data: unknown): StatblockResult {
     statblock: {
       name,
       description: describe(data),
+      size: text(data.size),
+      type: text(data.type),
+      challengeRating: text(data.cr),
       armorClass: text(data.ac),
       ...(initiative !== undefined && {
         initiative: `${signed(initiative)} (${10 + initiative})`,

@@ -1,9 +1,14 @@
 import type { MouseEvent } from "react";
 import { Link } from "react-router";
 import { useStatblock } from "~/combat/statblocks";
-import type { CombatCatalogue, CreatureOption } from "~/combat/types";
+import {
+  SRD_DOCUMENTS,
+  SRD_RULES,
+  type CombatCatalogue,
+  type CreatureOption,
+} from "~/combat/types";
 import type { RollKind, RollRequest } from "~/dice/roll-log";
-import { panelClass } from "~/components/styles";
+import { labelClass, panelClass } from "~/components/styles";
 
 const ROLL_KINDS: RollKind[] = ["attack", "damage", "check", "recharge"];
 
@@ -50,7 +55,7 @@ export function StatblockPanel({
       {creature ? (
         <>
           {statblock.status === "ready" ? (
-            // Rendered on the server from the vault, with vault text as text nodes only.
+            // Rendered on the server, with the vault's or SRD's text as text nodes only.
             <div
               onClick={handleClick}
               inert={!onRoll}
@@ -61,14 +66,30 @@ export function StatblockPanel({
               {statblock.status === "failed"
                 ? `Couldn't load ${creature.name}'s statblock. It'll try again when shown next.`
                 : statblock.status === "missing"
-                  ? `${creature.name}'s statblock isn't in the vault any more.`
+                  ? `${creature.name}'s statblock isn't there any more.`
                   : `Loading ${creature.name}'s statblock…`}
             </p>
           )}
+          {statblock.status === "ready" && statblock.view.lore && (
+            <div className="mt-3 border-t border-line pt-2">
+              <h3 className={labelClass}>From the SRD</h3>
+              <p className="mt-1 text-sm">{statblock.view.lore}</p>
+            </div>
+          )}
           <p className="mt-3 text-sm">
-            <Link to={creature.noteUrl} className="text-link underline">
-              Open {creature.noteTitle} in the wiki
-            </Link>
+            {creature.noteUrl ? (
+              <Link to={creature.noteUrl} className="text-link underline">
+                Open {creature.noteTitle} in the wiki
+              </Link>
+            ) : creature.ref.source ? (
+              <span className="text-muted">
+                {SRD_DOCUMENTS[creature.ref.source]} ({SRD_RULES[creature.ref.source]} rules), CC BY
+                4.0 ·{" "}
+                <Link to="/credits" className="text-link underline">
+                  Credits
+                </Link>
+              </span>
+            ) : null}
           </p>
         </>
       ) : (
@@ -76,7 +97,7 @@ export function StatblockPanel({
           {!combatantName
             ? "Statblocks for monsters show here on their turn, or when you pick one with 📜."
             : hasStatblock
-              ? `${combatantName}'s statblock isn't in the vault any more.`
+              ? `${combatantName}'s statblock isn't there any more.`
               : `${combatantName} has no statblock.`}
         </p>
       )}
