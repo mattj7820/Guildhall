@@ -60,6 +60,7 @@ function CompactSheet({ page, editor }: { page: CharacterPage; editor: Character
   const name = sheet.name.trim() || page.name;
   const { parts, rolls } = useSheetParts(editor, sheet, name, false);
   const [part, setPart] = useState<Part>("actions");
+  const [preparing, setPreparing] = useState(false);
   const portraitPath = sheet.portrait ?? page.notePortrait;
   const { derived } = parts;
 
@@ -97,7 +98,14 @@ function CompactSheet({ page, editor }: { page: CharacterPage; editor: Character
         </span>
       </p>
       <Trackers parts={parts} compact>
-        <RestButtons parts={parts} undo={editor.undo} />
+        <RestButtons
+          parts={parts}
+          undo={editor.undo}
+          onPrepare={() => {
+            setPart("spells");
+            setPreparing(true);
+          }}
+        />
       </Trackers>
       <div>
         <div
@@ -129,6 +137,8 @@ function CompactSheet({ page, editor }: { page: CharacterPage; editor: Character
               parts={parts}
               compact
               spellNotes={{ catalogue: page.spellCatalogue ?? [], notes: page.spellNotes ?? {} }}
+              preparing={preparing}
+              onPreparing={setPreparing}
             />
           )}
           {part === "features" && <FeaturesTab parts={parts} compact />}

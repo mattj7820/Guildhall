@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { signed } from "~/characters/abilities";
+import { canPrepare } from "~/characters/preparing";
 import {
   hitDieHealing,
   longRest,
@@ -19,11 +20,23 @@ import type { Parts } from "./SheetSections";
  * Short rest and Long rest. Resting is the player's own button, never something the app decides
  * (decision 55). A rest is one action, so one Undo puts back everything it did.
  */
-export function RestButtons({ parts, undo }: { parts: Parts; undo: () => void }) {
+export function RestButtons({
+  parts,
+  undo,
+  onPrepare,
+}: {
+  parts: Parts;
+  undo: () => void;
+  /** Opens the spells to prepare, offered after a long rest when the character prepares them. */
+  onPrepare?: () => void;
+}) {
   const [resting, setResting] = useState(false);
-  const [toast, setToast] = useState<{ message?: string; serial: number }>({ serial: 0 });
-  const say = (message: string) =>
-    setToast((previous) => ({ message, serial: previous.serial + 1 }));
+  const [toast, setToast] = useState<{ message?: string; serial: number; long?: boolean }>({
+    serial: 0,
+  });
+  const say = (message: string, long = false) =>
+    setToast((previous) => ({ message, serial: previous.serial + 1, long }));
+  const prepares = parts.sheet.spellsToPrepare !== undefined && canPrepare(parts.sheet);
 
   return (
     <>
@@ -34,7 +47,7 @@ export function RestButtons({ parts, undo }: { parts: Parts; undo: () => void })
         type="button"
         className={buttonClass}
         onClick={() => {
-          say(restSummary("long", parts.sheet, longRest(parts.sheet).sheet));
+          say(restSummary("long", parts.sheet, longRest(parts.sheet).sheet), true);
           parts.dispatch({ type: "rest", rest: "long" });
         }}
       >
@@ -49,7 +62,16 @@ export function RestButtons({ parts, undo }: { parts: Parts; undo: () => void })
           }}
         />
       )}
-      <UndoToast message={toast.message} serial={toast.serial} onUndo={undo} />
+      <UndoToast
+        message={toast.message}
+        serial={toast.serial}
+        onUndo={undo}
+        next={
+          toast.long && prepares && onPrepare
+            ? { label: "Change prepared spells", onClick: onPrepare }
+            : undefined
+        }
+      />
     </>
   );
 }

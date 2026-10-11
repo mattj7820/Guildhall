@@ -55,6 +55,52 @@ export function NumberField({
   );
 }
 
+/** A whole number that can be left blank, for a value only some characters have. */
+export function OptionalNumberField({
+  label,
+  showLabel = false,
+  value,
+  min,
+  max,
+  placeholder,
+  onCommit,
+  className = "w-16",
+}: Common & {
+  value: number | undefined;
+  min: number;
+  max: number;
+  placeholder?: string;
+  onCommit: (value: number | undefined) => void;
+}) {
+  return (
+    <Labelled label={label} show={showLabel}>
+      <input
+        key={value ?? "blank"}
+        type="number"
+        inputMode="numeric"
+        min={min}
+        max={max}
+        defaultValue={value}
+        placeholder={placeholder}
+        aria-label={showLabel ? undefined : label}
+        onBlur={(event) => {
+          const text = event.target.value.trim();
+          const next = text === "" ? undefined : Number(text);
+          if (next !== undefined && !Number.isInteger(next)) {
+            event.target.value = value === undefined ? "" : String(value);
+            return;
+          }
+          const clamped = next === undefined ? undefined : Math.max(min, Math.min(max, next));
+          event.target.value = clamped === undefined ? "" : String(clamped);
+          if (clamped !== value) onCommit(clamped);
+        }}
+        onKeyDown={commitOnEnter}
+        className={`${inputClass} text-center tabular-nums placeholder:text-faint ${className}`}
+      />
+    </Labelled>
+  );
+}
+
 /** A number that can be typed over a computed one; blank goes back to the computed number. */
 export function OverrideField({
   label,

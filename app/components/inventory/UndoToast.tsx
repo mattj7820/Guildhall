@@ -9,12 +9,15 @@ export function UndoToast({
   message,
   serial,
   onUndo,
+  next,
 }: {
   message?: string;
   /** Changes with each new message, so the same text twice still shows again. */
   serial: number;
   /** None for a change that can't be undone. */
   onUndo?: () => void;
+  /** Something to do next, such as "Change prepared spells" after a long rest. */
+  next?: { label: string; onClick: () => void };
 }) {
   /** The latest message that has timed out or been used. */
   const [hidden, setHidden] = useState<number>();
@@ -42,6 +45,18 @@ export function UndoToast({
               className="font-semibold text-page underline hover:no-underline"
             >
               Undo
+            </button>
+          )}
+          {next && (
+            <button
+              type="button"
+              onClick={() => {
+                setHidden(serial);
+                next.onClick();
+              }}
+              className="font-semibold text-page underline hover:no-underline"
+            >
+              {next.label}
             </button>
           )}
         </p>

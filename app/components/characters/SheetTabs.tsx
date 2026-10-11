@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId } from "react";
 import { Link } from "react-router";
 import type { TextField as TextFieldName } from "~/characters/actions";
 import { NOTES_MAX } from "~/characters/schema";
@@ -19,13 +19,21 @@ export function SheetTabs({
   character,
   parts,
   text,
+  tab,
+  setTab,
+  preparing,
+  onPreparing,
 }: {
   page: CharacterPage;
   character: PlayerCharacter;
   parts: Parts;
   text: (field: TextFieldName) => (value: string) => void;
+  /** Kept by the sheet, so that a long rest can open the spells to prepare. */
+  tab: Tab;
+  setTab: (tab: Tab) => void;
+  preparing: boolean;
+  onPreparing: (preparing: boolean) => void;
 }) {
-  const [tab, setTab] = useState<Tab>("actions");
   const id = useId();
   const tabs: { key: Tab; label: string }[] = [
     { key: "actions", label: "Actions" },
@@ -80,6 +88,8 @@ export function SheetTabs({
           <SpellsTab
             parts={parts}
             spellNotes={{ catalogue: page.spellCatalogue ?? [], notes: page.spellNotes ?? {} }}
+            preparing={preparing}
+            onPreparing={onPreparing}
           />
         )}
         {tab === "features" && <FeaturesTab parts={parts} />}
