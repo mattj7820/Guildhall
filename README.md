@@ -304,6 +304,21 @@ Dockerfile, docker-compose.yml   The image, and the app beside its Google Drive 
 
 [MIT](LICENSE)
 
+The combat tools' SRD monsters are bundled with Guildhall (`app/.server/srd/`, made by
+`scripts/import-srd.ts` from [5e-bits' 5e-database](https://github.com/5e-bits/5e-srd-api), MIT,
+and [Open5e](https://github.com/open5e/open5e-api), MIT, for 2024 monsters' initiative; see
+`app/.server/srd/NOTICE.md`):
+
+> This work includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards
+> of the Coast LLC and available at https://dnd.wizards.com/resources/systems-reference-document.
+> The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License
+> available at https://creativecommons.org/licenses/by/4.0/legalcode.
+
+> This work includes material from the System Reference Document 5.2.1 ("SRD 5.2.1") by Wizards of
+> the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the
+> Creative Commons Attribution 4.0 International License, available at
+> https://creativecommons.org/licenses/by/4.0/legalcode.
+
 Item and token icons are from [game-icons.net](https://game-icons.net) by Lorc, Delapouite,
 Willdabeast, Lucas and Carl Olsen, licensed under
 [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Each icon's author is recorded in
