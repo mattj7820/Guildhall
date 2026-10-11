@@ -1,6 +1,6 @@
-import { useId, useState, type FormEvent } from "react";
+import { useId, type FormEvent } from "react";
 import { playerFromName, type Player } from "~/campaign/types";
-import { addMonsters, type EncounterAction } from "~/combat/encounter";
+import type { EncounterAction } from "~/combat/encounter";
 import { newId } from "~/shared/ids";
 import {
   isWholeParty,
@@ -9,18 +9,14 @@ import {
   type Encounter,
 } from "~/combat/types";
 import type { Rng } from "~/dice/rng";
-import {
-  buttonClass,
-  inputClass,
-  labelClass,
-  panelClass,
-  primaryButtonClass,
-} from "~/components/styles";
+import { tagOf } from "~/combat/find-creatures";
+import { MonsterPicker } from "./MonsterPicker";
+import { buttonClass, inputClass, labelClass, panelClass } from "~/components/styles";
 
 type Dispatch = (action: EncounterAction) => void;
 
 /**
- * Adding monsters from the vault, the party, and companions. When preparing an encounter the
+ * Adding monsters (the vault's statblocks and the SRD's), the party, and companions. When preparing an encounter the
  * party is left out (it's chosen when the fight starts) and monsters don't roll initiative yet.
  * Collapsed once combat starts.
  */
@@ -39,9 +35,10 @@ export function AddCombatants({
 }) {
   const players = knownPlayers(catalogue);
   const body = (
-    <div className="grid gap-6 md:grid-cols-2">
-      <AddMonsters creatures={catalogue.creatures} dispatch={dispatch} rng={rng} mode={mode} />
-      <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
+      {/* The picker takes the panel's whole width: there's a lot to find. */}
+      <MonsterPicker catalogue={catalogue} dispatch={dispatch} rng={rng} mode={mode} />
+      <div className="grid gap-6 md:grid-cols-2">
         {mode === "live" && (
           <AddParty catalogue={catalogue} encounter={encounter} dispatch={dispatch} />
         )}
@@ -62,121 +59,6 @@ export function AddCombatants({
       <summary className="cursor-pointer font-serif text-xl font-bold">Add combatants</summary>
       <div className="mt-3">{body}</div>
     </details>
-  );
-}
-
-function AddMonsters({
-  creatures,
-  dispatch,
-  rng,
-  mode,
-}: {
-  creatures: CreatureOption[];
-  dispatch: Dispatch;
-  rng: Rng;
-  mode: "live" | "prep";
-}) {
-  const ids = useId();
-  const [filter, setFilter] = useState("");
-  const [selectedKey, setSelectedKey] = useState(creatures[0]?.key ?? "");
-  const matching = creatures.filter((c) =>
-    `${c.name} ${c.noteTitle}`.toLowerCase().includes(filter.trim().toLowerCase()),
-  );
-  // Keep a selection the filter still shows; otherwise fall back to the first match.
-  const selected =
-    matching.find((c) => c.key === selectedKey) ?? (filter ? matching[0] : undefined);
-  const needsHp = selected && selected.hitDice === undefined && selected.hitPoints === undefined;
-
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!selected) return;
-    const form = new FormData(event.currentTarget);
-    const quantity = Number(form.get("quantity")) || 1;
-    const hp = String(form.get("hp") ?? "").trim();
-    const maxHp = hp === "" ? undefined : Number(hp);
-    dispatch(addMonsters(selected, quantity, rng, { maxHp, rollInitiative: mode === "live" }));
-  }
-
-  if (creatures.length === 0) {
-    return (
-      <p className="text-sm text-muted">
-        No statblocks found in the vault. Write ```statblock blocks (Fantasy Statblocks plugin
-        format) into notes to add monsters here.
-      </p>
-    );
-  }
-
-  return (
-    <form onSubmit={submit} className="flex flex-col gap-2" aria-label="Add monsters">
-      <h3 className={labelClass}>Monsters and NPCs</h3>
-      <label htmlFor={`${ids}-filter`} className="sr-only">
-        Filter statblocks
-      </label>
-      <input
-        id={`${ids}-filter`}
-        type="search"
-        placeholder="Filter statblocks…"
-        value={filter}
-        onChange={(event) => setFilter(event.target.value)}
-        className={inputClass}
-      />
-      <label htmlFor={`${ids}-statblock`} className="text-sm font-medium">
-        Statblock
-      </label>
-      <select
-        id={`${ids}-statblock`}
-        size={Math.min(8, Math.max(2, matching.length))}
-        value={selected?.key ?? ""}
-        onChange={(event) => setSelectedKey(event.target.value)}
-        className={inputClass}
-      >
-        {matching.map((creature) => (
-          <option key={creature.key} value={creature.key}>
-            {creature.name}
-            {creature.noteTitle !== creature.name ? ` (${creature.noteTitle})` : ""}
-          </option>
-        ))}
-      </select>
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col text-sm font-medium">
-          How many
-          <input
-            name="quantity"
-            type="number"
-            min={1}
-            max={20}
-            defaultValue={1}
-            className={`${inputClass} w-20`}
-          />
-        </label>
-        <label className="flex flex-col text-sm font-medium">
-          Max HP
-          <input
-            name="hp"
-            type="number"
-            min={1}
-            required={needsHp}
-            placeholder={
-              selected?.hitDice
-                ? `roll ${selected.hitDice}`
-                : selected?.hitPoints !== undefined
-                  ? String(selected.hitPoints)
-                  : "required"
-            }
-            className={`${inputClass} w-32`}
-          />
-        </label>
-        <button type="submit" className={primaryButtonClass} disabled={!selected}>
-          Add monsters
-        </button>
-      </div>
-      <p className="text-xs text-muted">
-        {mode === "live"
-          ? "Each rolls initiative (d20 + DEX) and hit points."
-          : "Each rolls hit points now, and initiative when the fight starts."}{" "}
-        Leave Max HP blank to roll.
-      </p>
-    </form>
   );
 }
 
@@ -305,6 +187,7 @@ function AddPlayerCombatant({
           {creatures.map((creature) => (
             <option key={creature.key} value={creature.key}>
               {creature.name}
+              {creature.ref.source ? ` (${tagOf(creature)})` : ""}
             </option>
           ))}
         </select>

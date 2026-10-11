@@ -18,12 +18,14 @@ const ROLL_KINDS: RollKind[] = ["attack", "damage", "check", "recharge"];
  * without, the rolls are inert.
  */
 export function StatblockPanel({
+  label = "Selected statblock",
   catalogue,
   combatantName,
   creature,
   hasStatblock,
   onRoll,
 }: {
+  label?: string;
   catalogue: CombatCatalogue;
   combatantName?: string;
   creature?: CreatureOption;
@@ -48,10 +50,7 @@ export function StatblockPanel({
   }
 
   return (
-    <section
-      aria-label="Selected statblock"
-      className={`${panelClass} max-h-[70vh] overflow-y-auto`}
-    >
+    <section aria-label={label} className={`${panelClass} max-h-[70vh] overflow-y-auto`}>
       {creature ? (
         <>
           {statblock.status === "ready" ? (
