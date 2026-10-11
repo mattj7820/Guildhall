@@ -117,7 +117,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
 function SignedIn({ name }: { name: string }) {
   return (
     <Form method="post" action="/logout" className="flex items-center gap-2 text-sm">
-      <span className="text-stone-600 dark:text-stone-400">{name}</span>
+      <Link
+        to="/settings"
+        title="Settings"
+        className="text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
+      >
+        {name}
+      </Link>
       <button
         type="submit"
         className="rounded-md px-2 py-1 text-stone-600 hover:bg-stone-100 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-100"
