@@ -63,9 +63,11 @@ const SQUARES_BY_SIZE: Record<string, 1 | 2 | 3 | 4> = {
   gargantuan: 4,
 };
 
+/** A size the token can take; "Medium or Small" (2024's people) takes the larger. */
 function squaresFor(size: unknown): Pick<StatblockNumbers, "squares"> {
-  const squares = SQUARES_BY_SIZE[text(size)?.toLowerCase() ?? ""];
-  return squares ? { squares } : {};
+  const sizes = (text(size)?.toLowerCase() ?? "").split(/\s+or\s+/);
+  const squares = Math.max(0, ...sizes.map((each) => SQUARES_BY_SIZE[each.trim()] ?? 0));
+  return squares ? { squares: squares as 1 | 2 | 3 | 4 } : {};
 }
 
 export interface AbilityScore {

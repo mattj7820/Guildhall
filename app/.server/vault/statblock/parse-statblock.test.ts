@@ -147,6 +147,11 @@ describe("parseStatblock", () => {
       expect(statblock.numbers.initiative).toBe(2);
     });
 
+    it("sizes a creature of either of two sizes by the larger", () => {
+      expect(parsed(yaml("name: X", "size: Medium or Small")).numbers.squares).toBe(1);
+      expect(parsed(yaml("name: X", "size: Small or Large")).numbers.squares).toBe(2);
+    });
+
     it("reads gear", () => {
       expect(parsed(yaml("name: X", "gear: Fixture Spear, Fixture Shield")).gear).toBe(
         "Fixture Spear, Fixture Shield",

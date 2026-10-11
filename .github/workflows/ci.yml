@@ -25,6 +25,8 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      # The SRD's monsters are generated from pinned data; this proves the committed files match.
+      - run: npm run srd:check
 
   unit-windows:
     # Vault paths are normalised to POSIX form; this proves it on the OS the vault lives on.
