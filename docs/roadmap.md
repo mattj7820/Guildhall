@@ -70,6 +70,10 @@ locations, maps, characters, sessions).
   with no rules engine.
 - **The sheet beside the map:** a player's side panel on a map has Map, Sheet and Bag tabs, at
   one width, folding away for more map, with C and I to open them.
+- **Preparing spells:** a character keeps their whole list and ticks which spells are ready today
+  in Prepare mode, against a typed "Spells to prepare" (over it warns, never blocks). Day to day
+  only what's ready is shown, on the sheet and beside the map; cantrips and a feat's free spell are
+  always ready. A long rest offers to change them.
 - **Sign-in and hosting:** everyone signs in with Discord; newcomers wait for the DM, who lets
   them in and says which player they are. A Docker image with a Google Drive companion container
   that copies the vault read-only, ready for a Dokploy server (see `docs/deployment.md`).
@@ -103,6 +107,15 @@ locations, maps, characters, sessions).
 - **Wiki, next steps:** backlinks, note transclusion (`![[Note]]`), Obsidian callouts,
   browsing by entity type, and perhaps Obsidian plugins later.
 - **Character sheets, next steps:**
+  - **SRD monsters** (next): creatures for the combat tracker's catalogue from the SRD, in both
+    5.1 (2014) and 5.2 (2024), each tagged with its version. Bundled as data made by a script
+    (like `scripts/import-icons.mjs`), never fetched while the app runs, and credited on
+    `/credits` (CC BY 4.0).
+  - **An SRD spell picker** (after that): add a spell by searching the SRD (both versions,
+    tagged), with its details filled in, or a class's whole list to prepare from. Spells that
+    aren't in the SRD come from the DM's own vault spell notes, never the repo.
+  - **Always-prepared spells** from a subclass or feature, which don't count towards the number
+    (one more case in `alwaysReady`).
   - **The DM's view of the party beside the map:** each PC's hit points, concentration, and slots
     and uses left, read-only in a Party tab of the DM's side panel (concentration matters most:
     a hit means a check).

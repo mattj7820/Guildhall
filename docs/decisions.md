@@ -1282,3 +1282,37 @@ one more thing to explain. Only the look changed: no behaviour, layout or wordin
 - **Statblocks** keep the books' parchment in Storybook and get a dark page in the dark themes.
 - **Readability is tested:** an e2e spec opens each part of the app in each theme and runs axe's
   colour-contrast check.
+
+## 72. Preparing spells: a flag per spell, a typed number, and only what's ready day to day
+
+**Date:** 2026-10-11
+
+**Context.** Typing in the second PC's sheet, a level 1 artificer who prepares 3 of 18 spells and
+changes them after a long rest, left two bad choices: all 18 spells (and no way to tell which are
+ready), or only 3 (retyped after every change). Sheets are live data, so existing ones must load
+as they are.
+
+**Options considered.**
+
+- **A list of prepared spell IDs on the sheet:** new add and remove actions with their own
+  inverses, IDs left behind when a spell is deleted, and a missing list that could mean "all" or
+  "none".
+- **Three states per spell (prepared, not, always):** covers subclass spells early, before they
+  exist.
+- **A `prepared` flag per spell (chosen):** preparing is a field edit of one spell, so two tabs'
+  choices merge and undo puts back only that field, with no new machinery. Spells stored before it
+  existed load as prepared, so nothing changes for a character who doesn't prepare.
+
+**Decision.** What's always ready is worked out, never stored (`preparing.ts`): cantrips (known,
+not prepared, in both rule sets) and spells cast through a feature's free use (a feat's spell is
+always prepared). They never count, and their flag is ignored. Always-prepared subclass spells can
+join that one function later. "Spells to prepare" is typed from paper like other numbers, blank for
+a character who doesn't prepare, with its own set action carrying `from`.
+
+The Spells tab lists only what's ready day to day, with a line saying how many aren't and a way in;
+greying them out was tried in a prototype and buried the three that matter among fifteen. Prepare
+mode lists everything with checkboxes and a count; going over turns it to a warning and Done asks
+once, but nothing is blocked, and casting never checks it (decision 55): rituals cast unprepared
+are left to the table. A new spell starts prepared without a number, or while there's room under
+it, so typing in a whole class list doesn't leave every spell prepared. A long rest's toast offers
+"Change prepared spells" to a character who prepares. Others' summaries still show no spells.

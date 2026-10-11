@@ -16,7 +16,7 @@ outlined areas leading to deeper maps and notes; kept in the data folder), fog o
 maps (the party's, NPCs from their notes and the DM's markers, moved live over websockets and
 managed from the DM's Tokens tab; kept in the data folder),
 character sheets with a game-style bag (players edit their own, the DM gives items; spells, slots,
-features' uses, hit dice and rests tracked on them; a player's sheet and bag beside the map; kept in
+features' uses, hit dice and rests tracked on them, and spells prepared from a longer list; a player's sheet and bag beside the map; kept in
 the data folder), sign-in with Discord, where the DM lets players in and says who they play, and three themes
 (Storybook, Iron and Ember, Gemlight), each person's pick saved on their account.
 It's built to be hosted: a Docker image, with the vault copied read-only from Google Drive (see
@@ -158,7 +158,8 @@ First e2e run needs `npx playwright install chromium`.
   (zod, with defaults; `blankSheet`), `tracking.ts` (what gets used up: counters by `CounterRef`,
   `shortRest`, `longRest`, `restSummary`), `lists.ts` (`ListChange` for spells, attacks and
   features, with edits by field and `inverseListChange`), `spells.ts` (`castOptions`,
-  `castActions`, `numbersFor`), `permissions.ts` (`characterAccess`: edit, summary or none;
+  `castActions`, `numbersFor`), `preparing.ts` (`alwaysReady`, `isReady`, `preparedCount`,
+  `startsPrepared`, `prepareAction`), `permissions.ts` (`characterAccess`: edit, summary or none;
   `canGive`), `inventory.ts` (move, stack, split, equip), `inventory-changes.ts`
   (`InventoryChange`, `giveItem`), `actions.ts`
   (`CharacterAction`, `applyAction`, request schemas), `undo.ts` (`inverseOf`, the undo stack),
@@ -257,7 +258,7 @@ First e2e run needs `npx playwright install chromium`.
   `EditorBar`, `HitPointsPanel`, `Fields`, `SheetParts`, `Portrait`. What gets used up: `Trackers`
   (slots, uses, hit dice and concentration at a glance; their maximums while editing), `Pips`,
   `Rests` (Short and Long rest), and the tabs `ActionsTab` (attacks, then features by how they're
-  used), `SpellsTab` (by level, Cast) and `FeaturesTab`, with `FilterChips` and `SheetLists`.
+  used), `SpellsTab` (by level, Cast; only what's ready day to day, and Prepare mode) and `FeaturesTab`, with `FilterChips` and `SheetLists`.
   `CharacterPanel` is a character beside the map: a compact sheet, the companion, or the bag.
   `app/components/inventory/`: `Bag`, `InventoryBoard` (the drag-and-drop grid; the drag's state
   and rules are `useInventoryDrag`, its other drop targets `DropZones`, with `SortableTile`,
@@ -351,7 +352,9 @@ First e2e run needs `npx playwright install chromium`.
   ever a summary. Gifts change both bags in one `Characters.give`. Ticking something off is a
   relative `count` (so two tabs' ticks add up); a feature's uses are edited by their maximum and
   reset, never how many are used. A rest is one action. Casting only ticks off what's spent;
-  rolling is its own click. New stored fields get defaults and stored data is never refused
+  rolling is its own click. Preparing is a `prepared` field edit of one spell; cantrips and free
+  spells are always ready (worked out in `preparing.ts`, never stored), and nothing checks a cast
+  against what's prepared. New stored fields get defaults and stored data is never refused
   (clamp or `catch` instead): sheets are live data.
 - Anything players read from a note's body must come from `forPlayers`, never `note.body`.
 - Hidden content must be indistinguishable from missing content in player view (same 404, links
