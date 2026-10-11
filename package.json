@@ -18,6 +18,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "srd:import": "node scripts/import-srd.ts",
+    "srd:check": "node scripts/import-srd.ts --check",
     "check": "npm run lint && npm run typecheck && npm test && npm run test:e2e"
   },
   "dependencies": {

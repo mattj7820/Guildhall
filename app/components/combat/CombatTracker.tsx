@@ -11,6 +11,7 @@ import {
   type CombatCatalogue,
   type PreparedEncounter,
 } from "~/combat/types";
+import { usePrefetchStatblocks } from "~/combat/statblocks";
 import { useRollLog } from "~/dice/useRollLog";
 import { AddCombatants } from "./AddCombatants";
 import { CombatantRow } from "./CombatantRow";
@@ -56,6 +57,14 @@ export function CombatTracker({
   const creatures = useMemo(
     () => new Map(catalogue.creatures.map((creature) => [creature.key, creature])),
     [catalogue.creatures],
+  );
+
+  // Everyone in the fight, so the statblock shows at once on their turn.
+
+  usePrefetchStatblocks(
+    catalogue,
+
+    encounter.combatants.flatMap((c) => (c.statblock ? [statblockKey(c.statblock)] : [])),
   );
 
   // The statblock panel follows whoever's turn it is, until the DM picks someone else.
@@ -177,6 +186,7 @@ export function CombatTracker({
           {/* Dice first, so a roll clicked in the statblock shows its result in view. */}
           <DiceRoller rolls={rolls} />
           <StatblockPanel
+            catalogue={catalogue}
             combatantName={shown?.name}
             creature={shown?.statblock ? creatures.get(statblockKey(shown.statblock)) : undefined}
             hasStatblock={Boolean(shown?.statblock)}

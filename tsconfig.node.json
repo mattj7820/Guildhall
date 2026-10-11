@@ -5,7 +5,8 @@
     "vite.config.ts",
     "vitest.config.ts",
     "playwright.config.ts",
-    "eslint.config.js"
+    "eslint.config.js",
+    "scripts/**/*.ts"
   ],
   "compilerOptions": {
     "composite": true,
@@ -14,6 +15,8 @@
     "lib": ["ES2022"],
     "target": "ES2022",
     "module": "ES2022",
-    "moduleResolution": "bundler"
+    "moduleResolution": "bundler",
+    // Scripts run on Node, which runs TypeScript itself and needs the extensions.
+    "allowImportingTsExtensions": true
   }
 }

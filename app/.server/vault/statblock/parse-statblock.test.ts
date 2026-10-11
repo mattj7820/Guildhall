@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseStatblock, type Statblock } from "./parse-statblock";
+import { parse as parseYaml } from "yaml";
+import { parseStatblock, statblockFromData, type Statblock } from "./parse-statblock";
 
 const yaml = (...lines: string[]) => lines.join("\n");
 
@@ -54,6 +55,9 @@ describe("parseStatblock", () => {
     expect(parsed(PLUGIN_STATBLOCK)).toEqual({
       name: "Test Creature",
       description: "Small construct, unaligned",
+      size: "Small",
+      type: "construct",
+      challengeRating: "1/4",
       armorClass: "17",
       hitPoints: "17 (5d6 − 1)",
       speed: "0 ft., fly 50 ft.",
@@ -85,7 +89,7 @@ describe("parseStatblock", () => {
         armorClass: 17,
         hitPoints: 17,
         hitDice: "5d6 − 1",
-        dexterityModifier: 2,
+        initiative: 2,
         squares: 1,
       },
     });
@@ -122,13 +126,45 @@ describe("parseStatblock", () => {
 
     it("rounds a negative DEX modifier down", () => {
       expect(parsed(yaml("name: X", "stats: [10, 7, 10, 10, 10, 10]")).numbers).toMatchObject({
-        dexterityModifier: -2,
+        initiative: -2,
       });
     });
 
     it("has no HP or AC, and a zero DEX modifier, when the statblock omits them", () => {
-      expect(parsed(yaml("name: X")).numbers).toEqual({ dexterityModifier: 0 });
+      expect(parsed(yaml("name: X")).numbers).toEqual({ initiative: 0 });
     });
+  });
+
+  describe("2024 statblocks", () => {
+    it("reads an initiative bonus, which wins over the DEX modifier", () => {
+      const statblock = parsed(yaml("name: X", "stats: [10, 14, 10, 10, 10, 10]", "initiative: 4"));
+      expect(statblock.initiative).toBe("+4 (14)");
+      expect(statblock.numbers.initiative).toBe(4);
+    });
+
+    it("ignores an initiative that isn't a whole number", () => {
+      const statblock = parsed(
+        yaml("name: X", "stats: [10, 14, 10, 10, 10, 10]", "initiative: fast"),
+      );
+      expect(statblock.initiative).toBeUndefined();
+      expect(statblock.numbers.initiative).toBe(2);
+    });
+
+    it("sizes a creature of either of two sizes by the larger", () => {
+      expect(parsed(yaml("name: X", "size: Medium or Small")).numbers.squares).toBe(1);
+      expect(parsed(yaml("name: X", "size: Small or Large")).numbers.squares).toBe(2);
+    });
+
+    it("reads gear", () => {
+      expect(parsed(yaml("name: X", "gear: Fixture Spear, Fixture Shield")).gear).toBe(
+        "Fixture Spear, Fixture Shield",
+      );
+    });
+  });
+
+  it("reads the same fields from data as from YAML", () => {
+    const data = parseYaml(PLUGIN_STATBLOCK) as unknown;
+    expect(statblockFromData(data)).toEqual(parseStatblock(PLUGIN_STATBLOCK));
   });
 
   it("includes the subtype in the description", () => {

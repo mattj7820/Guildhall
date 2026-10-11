@@ -26,7 +26,7 @@ const FONTS = [
   { name: "Jost", theme: "Gemlight" },
 ];
 
-/** Where the item and token icons and the fonts come from, as their licences ask. */
+/** Where the item and token icons, the SRD's monsters and the fonts come from, as their licences ask. */
 export default function Credits() {
   return (
     <main className="mx-auto max-w-4xl px-4 py-6">
@@ -42,6 +42,64 @@ export default function Credits() {
         </a>
         . They&rsquo;re drawn in Guildhall&rsquo;s own colours; the shapes are unchanged.
       </p>
+      <section aria-labelledby="srd" className="mt-6">
+        <h2 id="srd" className="font-serif text-xl font-bold">
+          Monsters from the SRD
+        </h2>
+        <p className="mt-2 text-ink">
+          The combat tools&rsquo; SRD monsters (tagged 2014 and 2024) are bundled with Guildhall, as
+          their licence allows.
+        </p>
+        {/* Each SRD's notice is quoted as its licence asks, word for word. */}
+        <blockquote className="mt-2 border-l-4 border-line pl-3 text-sm text-ink">
+          This work includes material taken from the System Reference Document 5.1 (&ldquo;SRD
+          5.1&rdquo;) by Wizards of the Coast LLC and available at{" "}
+          <a
+            href="https://dnd.wizards.com/resources/systems-reference-document"
+            className="text-link underline"
+          >
+            https://dnd.wizards.com/resources/systems-reference-document
+          </a>
+          . The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License
+          available at{" "}
+          <a
+            href="https://creativecommons.org/licenses/by/4.0/legalcode"
+            className="text-link underline"
+          >
+            https://creativecommons.org/licenses/by/4.0/legalcode
+          </a>
+          .
+        </blockquote>
+        <blockquote className="mt-2 border-l-4 border-line pl-3 text-sm text-ink">
+          This work includes material from the System Reference Document 5.2.1 (&ldquo;SRD
+          5.2.1&rdquo;) by Wizards of the Coast LLC, available at{" "}
+          <a href="https://www.dndbeyond.com/srd" className="text-link underline">
+            https://www.dndbeyond.com/srd
+          </a>
+          . The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International
+          License, available at{" "}
+          <a
+            href="https://creativecommons.org/licenses/by/4.0/legalcode"
+            className="text-link underline"
+          >
+            https://creativecommons.org/licenses/by/4.0/legalcode
+          </a>
+          .
+        </blockquote>
+        <p className="mt-2 text-sm text-ink">
+          The monsters come from{" "}
+          <a href="https://github.com/5e-bits/5e-srd-api" className="text-link underline">
+            5e-bits&rsquo; 5e-database
+          </a>{" "}
+          (MIT License, copyright Adrian Padua and Christopher Ward), and the 2024 monsters&rsquo;
+          initiative from{" "}
+          <a href="https://github.com/open5e/open5e-api" className="text-link underline">
+            Open5e
+          </a>{" "}
+          (MIT License, copyright Ean Moody). Guildhall lays them out as statblocks; the SRD&rsquo;s
+          text is unchanged.
+        </p>
+      </section>
       <section aria-labelledby="fonts" className="mt-6">
         <h2 id="fonts" className="font-serif text-xl font-bold">
           Fonts

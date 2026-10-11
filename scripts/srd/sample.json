@@ -1,0 +1,1682 @@
+{
+ "2014": [
+  {
+   "index": "goblin",
+   "name": "Goblin",
+   "size": "Small",
+   "type": "humanoid",
+   "subtype": "goblinoid",
+   "alignment": "neutral evil",
+   "armor_class": [
+    {
+     "type": "armor",
+     "value": 15,
+     "armor": [
+      {
+       "index": "leather-armor",
+       "name": "Leather Armor",
+       "url": "/api/2014/equipment/leather-armor"
+      },
+      {
+       "index": "shield",
+       "name": "Shield",
+       "url": "/api/2014/equipment/shield"
+      }
+     ]
+    }
+   ],
+   "hit_points": 7,
+   "hit_dice": "2d6",
+   "hit_points_roll": "2d6",
+   "speed": {
+    "walk": "30 ft."
+   },
+   "strength": 8,
+   "dexterity": 14,
+   "constitution": 10,
+   "intelligence": 10,
+   "wisdom": 8,
+   "charisma": 8,
+   "proficiencies": [
+    {
+     "value": 6,
+     "proficiency": {
+      "index": "skill-stealth",
+      "name": "Skill: Stealth",
+      "url": "/api/2014/proficiencies/skill-stealth"
+     }
+    }
+   ],
+   "damage_vulnerabilities": [],
+   "damage_resistances": [],
+   "damage_immunities": [],
+   "condition_immunities": [],
+   "senses": {
+    "darkvision": "60 ft.",
+    "passive_perception": 9
+   },
+   "languages": "Common, Goblin",
+   "challenge_rating": 0.25,
+   "proficiency_bonus": 2,
+   "xp": 50,
+   "special_abilities": [
+    {
+     "name": "Nimble Escape",
+     "desc": "The goblin can take the Disengage or Hide action as a bonus action on each of its turns."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Scimitar",
+     "desc": "Melee Weapon Attack: +4 to hit, reach 5 ft., one target. Hit: 5 (1d6 + 2) slashing damage.",
+     "attack_bonus": 4,
+     "damage": [
+      {
+       "damage_type": {
+        "index": "slashing",
+        "name": "Slashing",
+        "url": "/api/2014/damage-types/slashing"
+       },
+       "damage_dice": "1d6+2"
+      }
+     ]
+    },
+    {
+     "name": "Shortbow",
+     "desc": "Ranged Weapon Attack: +4 to hit, range 80/320 ft., one target. Hit: 5 (1d6 + 2) piercing damage.",
+     "attack_bonus": 4,
+     "damage": [
+      {
+       "damage_type": {
+        "index": "piercing",
+        "name": "Piercing",
+        "url": "/api/2014/damage-types/piercing"
+       },
+       "damage_dice": "1d6+2"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "index": "ankheg",
+   "name": "Ankheg",
+   "size": "Large",
+   "type": "monstrosity",
+   "alignment": "unaligned",
+   "armor_class": [
+    {
+     "type": "natural",
+     "value": 14
+    },
+    {
+     "type": "condition",
+     "value": 11,
+     "condition": {
+      "index": "prone",
+      "name": "Prone",
+      "url": "/api/2014/conditions/prone"
+     }
+    }
+   ],
+   "hit_points": 39,
+   "hit_dice": "6d10",
+   "hit_points_roll": "6d10+6",
+   "speed": {
+    "walk": "30 ft.",
+    "burrow": "10 ft."
+   },
+   "strength": 17,
+   "dexterity": 11,
+   "constitution": 13,
+   "intelligence": 1,
+   "wisdom": 13,
+   "charisma": 6,
+   "proficiencies": [],
+   "damage_vulnerabilities": [],
+   "damage_resistances": [],
+   "damage_immunities": [],
+   "condition_immunities": [],
+   "senses": {
+    "darkvision": "60 ft.",
+    "tremorsense": "60 ft.",
+    "passive_perception": 11
+   },
+   "languages": "",
+   "challenge_rating": 2,
+   "proficiency_bonus": 2,
+   "xp": 450,
+   "actions": [
+    {
+     "name": "Bite",
+     "desc": "Melee Weapon Attack: +5 to hit, reach 5 ft., one target. Hit: 10 (2d6 + 3) slashing damage plus 3 (1d6) acid damage. If the target is a Large or smaller creature, it is grappled (escape DC 13). Until this grapple ends, the ankheg can bite only the grappled creature and has advantage on attack rolls to do so.",
+     "attack_bonus": 5,
+     "damage": [
+      {
+       "damage_type": {
+        "index": "slashing",
+        "name": "Slashing",
+        "url": "/api/2014/damage-types/slashing"
+       },
+       "damage_dice": "2d6+3"
+      },
+      {
+       "damage_type": {
+        "index": "acid",
+        "name": "Acid",
+        "url": "/api/2014/damage-types/acid"
+       },
+       "damage_dice": "1d6"
+      }
+     ]
+    },
+    {
+     "name": "Acid Spray",
+     "desc": "The ankheg spits acid in a line that is 30 ft. long and 5 ft. wide, provided that it has no creature grappled. Each creature in that line must make a DC 13 Dexterity saving throw, taking 10 (3d6) acid damage on a failed save, or half as much damage on a successful one.",
+     "usage": {
+      "type": "recharge on roll",
+      "dice": "1d6",
+      "min_value": 6
+     },
+     "dc": {
+      "dc_type": {
+       "index": "dex",
+       "name": "DEX",
+       "url": "/api/2014/ability-scores/dex"
+      },
+      "dc_value": 13,
+      "success_type": "half"
+     },
+     "damage": [
+      {
+       "damage_type": {
+        "index": "acid",
+        "name": "Acid",
+        "url": "/api/2014/damage-types/acid"
+       },
+       "damage_dice": "3d6"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "index": "mage",
+   "name": "Mage",
+   "desc": "Mages spend their lives in the study and practice of magic. Good-aligned mages offer counsel to nobles and others in power, while evil mages dwell in isolated sites to perform unspeakable experiments without interference.",
+   "size": "Medium",
+   "type": "humanoid",
+   "subtype": "any race",
+   "alignment": "any alignment",
+   "armor_class": [
+    {
+     "type": "dex",
+     "value": 12
+    },
+    {
+     "type": "spell",
+     "value": 15,
+     "spell": {
+      "index": "mage-armor",
+      "name": "Mage Armor",
+      "url": "/api/2014/spells/mage-armor"
+     }
+    }
+   ],
+   "hit_points": 40,
+   "hit_dice": "9d8",
+   "hit_points_roll": "9d8",
+   "speed": {
+    "walk": "30 ft."
+   },
+   "strength": 9,
+   "dexterity": 14,
+   "constitution": 11,
+   "intelligence": 17,
+   "wisdom": 12,
+   "charisma": 11,
+   "proficiencies": [
+    {
+     "value": 6,
+     "proficiency": {
+      "index": "saving-throw-int",
+      "name": "Saving Throw: INT",
+      "url": "/api/2014/proficiencies/saving-throw-int"
+     }
+    },
+    {
+     "value": 4,
+     "proficiency": {
+      "index": "saving-throw-wis",
+      "name": "Saving Throw: WIS",
+      "url": "/api/2014/proficiencies/saving-throw-wis"
+     }
+    },
+    {
+     "value": 6,
+     "proficiency": {
+      "index": "skill-arcana",
+      "name": "Skill: Arcana",
+      "url": "/api/2014/proficiencies/skill-arcana"
+     }
+    },
+    {
+     "value": 6,
+     "proficiency": {
+      "index": "skill-history",
+      "name": "Skill: History",
+      "url": "/api/2014/proficiencies/skill-history"
+     }
+    }
+   ],
+   "damage_vulnerabilities": [],
+   "damage_resistances": [],
+   "damage_immunities": [],
+   "condition_immunities": [],
+   "senses": {
+    "passive_perception": 11
+   },
+   "languages": "any four languages",
+   "challenge_rating": 6,
+   "proficiency_bonus": 3,
+   "xp": 2300,
+   "special_abilities": [
+    {
+     "name": "Spellcasting",
+     "desc": "The mage is a 9th-level spellcaster. Its spellcasting ability is Intelligence (spell save DC 14, +6 to hit with spell attacks). The mage has the following wizard spells prepared:\n\n- Cantrips (at will): fire bolt, light, mage hand, prestidigitation\n- 1st level (4 slots): detect magic, mage armor, magic missile, shield\n- 2nd level (3 slots): misty step, suggestion\n- 3rd level (3 slots): counterspell, fireball, fly\n- 4th level (3 slots): greater invisibility, ice storm\n- 5th level (1 slot): cone of cold",
+     "spellcasting": {
+      "level": 9,
+      "ability": {
+       "index": "int",
+       "name": "INT",
+       "url": "/api/2014/ability-scores/int"
+      },
+      "dc": 14,
+      "modifier": 6,
+      "components_required": [
+       "V",
+       "S",
+       "M"
+      ],
+      "school": "wizard",
+      "slots": {
+       "1": 4,
+       "2": 3,
+       "3": 3,
+       "4": 3,
+       "5": 1
+      },
+      "spells": [
+       {
+        "name": "Fire Bolt",
+        "level": 0,
+        "url": "/api/2014/spells/fire-bolt"
+       },
+       {
+        "name": "Light",
+        "level": 0,
+        "url": "/api/2014/spells/light"
+       },
+       {
+        "name": "Mage Hand",
+        "level": 0,
+        "url": "/api/2014/spells/mage-hand"
+       },
+       {
+        "name": "Prestidigitation",
+        "level": 0,
+        "url": "/api/2014/spells/prestidigitation"
+       },
+       {
+        "name": "Detect Magic",
+        "level": 1,
+        "url": "/api/2014/spells/detect-magic"
+       },
+       {
+        "name": "Mage Armor",
+        "level": 1,
+        "url": "/api/2014/spells/mage-armor"
+       },
+       {
+        "name": "Magic Missile",
+        "level": 1,
+        "url": "/api/2014/spells/magic-missile"
+       },
+       {
+        "name": "Shield",
+        "level": 1,
+        "url": "/api/2014/spells/shield"
+       },
+       {
+        "name": "Misty Step",
+        "level": 2,
+        "url": "/api/2014/spells/misty-step"
+       },
+       {
+        "name": "Suggestion",
+        "level": 2,
+        "url": "/api/2014/spells/suggestion"
+       },
+       {
+        "name": "Counterspell",
+        "level": 3,
+        "url": "/api/2014/spells/counterspell"
+       },
+       {
+        "name": "Fireball",
+        "level": 3,
+        "url": "/api/2014/spells/fireball"
+       },
+       {
+        "name": "Fly",
+        "level": 3,
+        "url": "/api/2014/spells/fly"
+       },
+       {
+        "name": "Greater Invisibility",
+        "level": 4,
+        "url": "/api/2014/spells/greater-invisibility"
+       },
+       {
+        "name": "Ice Storm",
+        "level": 4,
+        "url": "/api/2014/spells/ice-storm"
+       },
+       {
+        "name": "Cone of Cold",
+        "level": 5,
+        "url": "/api/2014/spells/cone-of-cold"
+       }
+      ]
+     }
+    }
+   ],
+   "actions": [
+    {
+     "name": "Dagger",
+     "desc": "Melee or Ranged Weapon Attack: +5 to hit, reach 5 ft. or range 20/60 ft., one target. Hit: 4 (1d4 + 2) piercing damage.",
+     "attack_bonus": 5,
+     "damage": [
+      {
+       "damage_type": {
+        "index": "piercing",
+        "name": "Piercing",
+        "url": "/api/2014/damage-types/piercing"
+       },
+       "damage_dice": "1d4+2"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "index": "adult-red-dragon",
+   "name": "Adult Red Dragon",
+   "size": "Huge",
+   "type": "dragon",
+   "alignment": "chaotic evil",
+   "armor_class": [
+    {
+     "type": "natural",
+     "value": 19
+    }
+   ],
+   "hit_points": 256,
+   "hit_dice": "19d12",
+   "hit_points_roll": "19d12+133",
+   "speed": {
+    "walk": "40 ft.",
+    "climb": "40 ft.",
+    "fly": "80 ft."
+   },
+   "strength": 27,
+   "dexterity": 10,
+   "constitution": 25,
+   "intelligence": 16,
+   "wisdom": 13,
+   "charisma": 21,
+   "proficiencies": [
+    {
+     "value": 6,
+     "proficiency": {
+      "index": "saving-throw-dex",
+      "name": "Saving Throw: DEX",
+      "url": "/api/2014/proficiencies/saving-throw-dex"
+     }
+    },
+    {
+     "value": 13,
+     "proficiency": {
+      "index": "saving-throw-con",
+      "name": "Saving Throw: CON",
+      "url": "/api/2014/proficiencies/saving-throw-con"
+     }
+    },
+    {
+     "value": 7,
+     "proficiency": {
+      "index": "saving-throw-wis",
+      "name": "Saving Throw: WIS",
+      "url": "/api/2014/proficiencies/saving-throw-wis"
+     }
+    },
+    {
+     "value": 11,
+     "proficiency": {
+      "index": "saving-throw-cha",
+      "name": "Saving Throw: CHA",
+      "url": "/api/2014/proficiencies/saving-throw-cha"
+     }
+    },
+    {
+     "value": 13,
+     "proficiency": {
+      "index": "skill-perception",
+      "name": "Skill: Perception",
+      "url": "/api/2014/proficiencies/skill-perception"
+     }
+    },
+    {
+     "value": 6,
+     "proficiency": {
+      "index": "skill-stealth",
+      "name": "Skill: Stealth",
+      "url": "/api/2014/proficiencies/skill-stealth"
+     }
+    }
+   ],
+   "damage_vulnerabilities": [],
+   "damage_resistances": [],
+   "damage_immunities": [
+    "fire"
+   ],
+   "condition_immunities": [],
+   "senses": {
+    "blindsight": "60 ft.",
+    "darkvision": "120 ft.",
+    "passive_perception": 23
+   },
+   "languages": "Common, Draconic",
+   "challenge_rating": 17,
+   "proficiency_bonus": 6,
+   "xp": 18000,
+   "special_abilities": [
+    {
+     "name": "Legendary Resistance",
+     "desc": "If the dragon fails a saving throw, it can choose to succeed instead.",
+     "usage": {
+      "type": "per day",
+      "times": 3
+     }
+    }
+   ],
+   "actions": [
+    {
+     "name": "Multiattack",
+     "multiattack_type": "actions",
+     "desc": "The dragon can use its Frightful Presence. It then makes three attacks: one with its bite and two with its claws.",
+     "actions": [
+      {
+       "action_name": "Frightful Presence",
+       "count": "1",
+       "type": "ability"
+      },
+      {
+       "action_name": "Bite",
+       "count": "1",
+       "type": "melee"
+      },
+      {
+       "action_name": "Claw",
+       "count": "2",
+       "type": "melee"
+      }
+     ]
+    },
+    {
+     "name": "Bite",
+     "desc": "Melee Weapon Attack: +14 to hit, reach 10 ft., one target. Hit: 19 (2d10 + 8) piercing damage plus 7 (2d6) fire damage.",
+     "attack_bonus": 14,
+     "damage": [
+      {
+       "damage_type": {
+        "index": "piercing",
+        "name": "Piercing",
+        "url": "/api/2014/damage-types/piercing"
+       },
+       "damage_dice": "2d10+8"
+      },
+      {
+       "damage_type": {
+        "index": "fire",
+        "name": "Fire",
+        "url": "/api/2014/damage-types/fire"
+       },
+       "damage_dice": "2d6"
+      }
+     ]
+    },
+    {
+     "name": "Claw",
+     "desc": "Melee Weapon Attack: +14 to hit, reach 5 ft., one target. Hit: 15 (2d6 + 8) slashing damage.",
+     "attack_bonus": 14,
+     "damage": [
+      {
+       "damage_type": {
+        "index": "slashing",
+        "name": "Slashing",
+        "url": "/api/2014/damage-types/slashing"
+       },
+       "damage_dice": "2d6+8"
+      }
+     ]
+    },
+    {
+     "name": "Tail",
+     "desc": "Melee Weapon Attack: +14 to hit, reach 15 ft., one target. Hit: 17 (2d8 + 8) bludgeoning damage.",
+     "attack_bonus": 14,
+     "damage": [
+      {
+       "damage_type": {
+        "index": "bludgeoning",
+        "name": "Bludgeoning",
+        "url": "/api/2014/damage-types/bludgeoning"
+       },
+       "damage_dice": "2d8+8"
+      }
+     ]
+    },
+    {
+     "name": "Frightful Presence",
+     "desc": "Each creature of the dragon's choice that is within 120 ft. of the dragon and aware of it must succeed on a DC 19 Wisdom saving throw or become frightened for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success. If a creature's saving throw is successful or the effect ends for it, the creature is immune to the dragon's Frightful Presence for the next 24 hours.",
+     "dc": {
+      "dc_type": {
+       "index": "wis",
+       "name": "WIS",
+       "url": "/api/2014/ability-scores/wis"
+      },
+      "dc_value": 19,
+      "success_type": "none"
+     }
+    },
+    {
+     "name": "Fire Breath",
+     "desc": "The dragon exhales fire in a 60-foot cone. Each creature in that area must make a DC 21 Dexterity saving throw, taking 63 (18d6) fire damage on a failed save, or half as much damage on a successful one.",
+     "usage": {
+      "type": "recharge on roll",
+      "dice": "1d6",
+      "min_value": 5
+     },
+     "dc": {
+      "dc_type": {
+       "index": "dex",
+       "name": "DEX",
+       "url": "/api/2014/ability-scores/dex"
+      },
+      "dc_value": 21,
+      "success_type": "none"
+     },
+     "damage": [
+      {
+       "damage_type": {
+        "index": "fire",
+        "name": "Fire",
+        "url": "/api/2014/damage-types/fire"
+       },
+       "damage_dice": "18d6"
+      }
+     ]
+    }
+   ],
+   "legendary_actions": [
+    {
+     "name": "Detect",
+     "desc": "The dragon makes a Wisdom (Perception) check."
+    },
+    {
+     "name": "Tail Attack",
+     "desc": "The dragon makes a tail attack."
+    },
+    {
+     "name": "Wing Attack (Costs 2 Actions)",
+     "desc": "The dragon beats its wings. Each creature within 10 ft. of the dragon must succeed on a DC 22 Dexterity saving throw or take 15 (2d6 + 8) bludgeoning damage and be knocked prone. The dragon can then fly up to half its flying speed.",
+     "dc": {
+      "dc_type": {
+       "index": "dex",
+       "name": "DEX",
+       "url": "/api/2014/ability-scores/dex"
+      },
+      "dc_value": 22,
+      "success_type": "none"
+     },
+     "damage": [
+      {
+       "damage_type": {
+        "index": "bludgeoning",
+        "name": "Bludgeoning",
+        "url": "/api/2014/damage-types/bludgeoning"
+       },
+       "damage_dice": "2d6+8"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "index": "boar",
+   "name": "Boar",
+   "size": "Medium",
+   "type": "beast",
+   "alignment": "unaligned",
+   "armor_class": [
+    {
+     "type": "natural",
+     "value": 11
+    }
+   ],
+   "hit_points": 11,
+   "hit_dice": "2d8",
+   "hit_points_roll": "2d8+2",
+   "speed": {
+    "walk": "40 ft."
+   },
+   "strength": 13,
+   "dexterity": 11,
+   "constitution": 12,
+   "intelligence": 2,
+   "wisdom": 9,
+   "charisma": 5,
+   "proficiencies": [],
+   "damage_vulnerabilities": [],
+   "damage_resistances": [],
+   "damage_immunities": [],
+   "condition_immunities": [],
+   "senses": {
+    "passive_perception": 9
+   },
+   "languages": "",
+   "challenge_rating": 0.25,
+   "proficiency_bonus": 2,
+   "xp": 50,
+   "special_abilities": [
+    {
+     "name": "Charge",
+     "desc": "If the boar moves at least 20 ft. straight toward a target and then hits it with a tusk attack on the same turn, the target takes an extra 3 (1d6) slashing damage. If the target is a creature, it must succeed on a DC 11 Strength saving throw or be knocked prone.",
+     "damage": [
+      {
+       "damage_type": {
+        "index": "slashing",
+        "name": "Slashing",
+        "url": "/api/2014/damage-types/slashing"
+       },
+       "damage_dice": "1d6"
+      }
+     ]
+    },
+    {
+     "name": "Relentless",
+     "desc": "If the boar takes 7 damage or less that would reduce it to 0 hit points, it is reduced to 1 hit point instead.",
+     "usage": {
+      "type": "recharge after rest",
+      "rest_types": [
+       "short",
+       "long"
+      ]
+     }
+    }
+   ],
+   "actions": [
+    {
+     "name": "Tusk",
+     "desc": "Melee Weapon Attack: +3 to hit, reach 5 ft., one target. Hit: 4 (1d6 + 1) slashing damage.",
+     "attack_bonus": 3,
+     "damage": [
+      {
+       "damage_type": {
+        "index": "slashing",
+        "name": "Slashing",
+        "url": "/api/2014/damage-types/slashing"
+       },
+       "damage_dice": "1d6+1"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "index": "blink-dog",
+   "name": "Blink Dog",
+   "desc": "A blink dog takes its name from its ability to blink in and out of existence, a talent it uses to aid its attacks and to avoid harm.",
+   "size": "Medium",
+   "type": "fey",
+   "alignment": "lawful good",
+   "armor_class": [
+    {
+     "type": "dex",
+     "value": 13
+    }
+   ],
+   "hit_points": 22,
+   "hit_dice": "4d8",
+   "hit_points_roll": "4d8+4",
+   "speed": {
+    "walk": "40 ft."
+   },
+   "strength": 12,
+   "dexterity": 17,
+   "constitution": 12,
+   "intelligence": 10,
+   "wisdom": 13,
+   "charisma": 11,
+   "proficiencies": [
+    {
+     "value": 3,
+     "proficiency": {
+      "index": "skill-perception",
+      "name": "Skill: Perception",
+      "url": "/api/2014/proficiencies/skill-perception"
+     }
+    },
+    {
+     "value": 5,
+     "proficiency": {
+      "index": "skill-stealth",
+      "name": "Skill: Stealth",
+      "url": "/api/2014/proficiencies/skill-stealth"
+     }
+    }
+   ],
+   "damage_vulnerabilities": [],
+   "damage_resistances": [],
+   "damage_immunities": [],
+   "condition_immunities": [],
+   "senses": {
+    "passive_perception": 10
+   },
+   "languages": "Blink Dog, understands Sylvan but can't speak it",
+   "challenge_rating": 0.25,
+   "proficiency_bonus": 2,
+   "xp": 50,
+   "special_abilities": [
+    {
+     "name": "Keen Hearing and Smell",
+     "desc": "The dog has advantage on Wisdom (Perception) checks that rely on hearing or smell."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "desc": "Melee Weapon Attack: +3 to hit, reach 5 ft., one target. Hit: 4 (1d6 + 1) piercing damage.",
+     "attack_bonus": 3,
+     "damage": [
+      {
+       "damage_type": {
+        "index": "piercing",
+        "name": "Piercing",
+        "url": "/api/2014/damage-types/piercing"
+       },
+       "damage_dice": "1d6+1"
+      }
+     ]
+    },
+    {
+     "name": "Teleport",
+     "desc": "The dog magically teleports, along with any equipment it is wearing or carrying, up to 40 ft. to an unoccupied space it can see. Before or after teleporting, the dog can make one bite attack.",
+     "usage": {
+      "type": "recharge on roll",
+      "dice": "1d6",
+      "min_value": 4
+     }
+    }
+   ]
+  }
+ ],
+ "2024": [
+  {
+   "name": "Goblin Warrior",
+   "size": "Small",
+   "type": "fey",
+   "alignment": "chaotic neutral",
+   "armor_class": [
+    {
+     "value": 15,
+     "armor": [
+      {
+       "index": "leather-armor",
+       "name": "Leather Armor",
+       "url": "/api/2024/equipment/leather-armor"
+      },
+      {
+       "index": "shield",
+       "name": "Shield",
+       "url": "/api/2024/equipment/shield"
+      }
+     ]
+    }
+   ],
+   "hit_points": 10,
+   "hit_dice": "3d6",
+   "speed": {
+    "walk": "30 ft."
+   },
+   "strength": 8,
+   "dexterity": 15,
+   "constitution": 10,
+   "intelligence": 10,
+   "wisdom": 8,
+   "charisma": 8,
+   "damage_resistances": [],
+   "damage_vulnerabilities": [],
+   "damage_immunities": [],
+   "condition_immunities": [],
+   "senses": {
+    "darkvision": "60 ft.",
+    "passive_perception": 9
+   },
+   "languages": "Common, Goblin",
+   "challenge_rating": 0.25,
+   "special_abilities": [],
+   "actions": [
+    {
+     "name": "Scimitar",
+     "desc": "Melee Attack Roll: +4, reach 5 ft. Hit: 5 (1d6 + 2) Slashing damage, plus 2 (1d4) Slashing damage if the attack roll had Advantage.",
+     "damage": [
+      {
+       "damage_type": {
+        "index": "slashing",
+        "name": "Slashing",
+        "url": "/api/2024/damage-types/slashing"
+       },
+       "damage_dice": "1d6+2"
+      },
+      {
+       "damage_type": {
+        "index": "slashing",
+        "name": "Slashing",
+        "url": "/api/2024/damage-types/slashing"
+       },
+       "damage_dice": "1d4"
+      }
+     ],
+     "attack_bonus": 4
+    },
+    {
+     "name": "Shortbow",
+     "desc": "Ranged Attack Roll: +4, range 80/320 ft. Hit: 5 (1d6 + 2) Piercing damage, plus 2 (1d4) Piercing damage if the attack roll had Advantage.",
+     "damage": [
+      {
+       "damage_type": {
+        "index": "piercing",
+        "name": "Piercing",
+        "url": "/api/2024/damage-types/piercing"
+       },
+       "damage_dice": "1d6+2"
+      },
+      {
+       "damage_type": {
+        "index": "piercing",
+        "name": "Piercing",
+        "url": "/api/2024/damage-types/piercing"
+       },
+       "damage_dice": "1d4"
+      }
+     ],
+     "attack_bonus": 4
+    }
+   ],
+   "bonus_actions": [
+    {
+     "name": "Nimble Escape",
+     "desc": "The goblin takes the Disengage or Hide action."
+    }
+   ],
+   "legendary_actions": [],
+   "index": "goblin-warrior",
+   "hit_points_roll": "3d6",
+   "proficiencies": [
+    {
+     "value": 6,
+     "proficiency": {
+      "index": "skill-stealth",
+      "name": "Skill: Stealth",
+      "url": "/api/2024/proficiencies/skill-stealth"
+     }
+    }
+   ],
+   "gear": "Leather Armor, Scimitar, Shield, Shortbow",
+   "proficiency_bonus": 2,
+   "xp": 50
+  },
+  {
+   "name": "Mage",
+   "size": "Medium or small",
+   "type": "humanoid",
+   "alignment": "neutral",
+   "armor_class": [
+    {
+     "value": 15
+    }
+   ],
+   "hit_points": 81,
+   "hit_dice": "18d8",
+   "speed": {
+    "walk": "30 ft."
+   },
+   "strength": 9,
+   "dexterity": 14,
+   "constitution": 11,
+   "intelligence": 17,
+   "wisdom": 12,
+   "charisma": 11,
+   "damage_resistances": [],
+   "damage_vulnerabilities": [],
+   "damage_immunities": [],
+   "condition_immunities": [],
+   "senses": {
+    "passive_perception": 14
+   },
+   "languages": "Common plus three other languages",
+   "challenge_rating": 6,
+   "special_abilities": [],
+   "actions": [
+    {
+     "name": "Multiattack",
+     "desc": "The mage makes three Arcane Burst attacks.",
+     "multiattack_type": "actions",
+     "actions": [
+      {
+       "action_name": "Arcane Burst",
+       "count": "3",
+       "type": "melee"
+      }
+     ]
+    },
+    {
+     "name": "Arcane Burst",
+     "desc": "Melee or Ranged Attack Roll: +6, reach 5 ft. or range 120 ft. Hit: 16 (3d8 + 3) Force damage.",
+     "damage": [
+      {
+       "damage_type": {
+        "index": "force",
+        "name": "Force",
+        "url": "/api/2024/damage-types/force"
+       },
+       "damage_dice": "3d8+3"
+      }
+     ],
+     "attack_bonus": 6
+    },
+    {
+     "name": "Spellcasting",
+     "desc": "The mage casts one of the following spells, using Intelligence as the spellcasting ability (spell save DC 14):",
+     "spellcasting": {
+      "ability": {
+       "index": "int",
+       "name": "INT",
+       "url": "/api/2024/ability-scores/int"
+      },
+      "dc": 14,
+      "components_required": [
+       "V",
+       "S",
+       "M"
+      ],
+      "spells": [
+       {
+        "index": "detect-magic",
+        "name": "Detect Magic",
+        "level": 1,
+        "url": "/api/2024/spells/detect-magic",
+        "usage": {
+         "type": "at will"
+        }
+       },
+       {
+        "index": "light",
+        "name": "Light",
+        "level": 0,
+        "url": "/api/2024/spells/light",
+        "usage": {
+         "type": "at will"
+        }
+       },
+       {
+        "index": "mage-armor",
+        "name": "Mage Armor",
+        "level": 1,
+        "url": "/api/2024/spells/mage-armor",
+        "notes": "Included in AC",
+        "usage": {
+         "type": "at will"
+        }
+       },
+       {
+        "index": "mage-hand",
+        "name": "Mage Hand",
+        "level": 0,
+        "url": "/api/2024/spells/mage-hand",
+        "usage": {
+         "type": "at will"
+        }
+       },
+       {
+        "index": "prestidigitation",
+        "name": "Prestidigitation",
+        "level": 0,
+        "url": "/api/2024/spells/prestidigitation",
+        "usage": {
+         "type": "at will"
+        }
+       },
+       {
+        "index": "fireball",
+        "name": "Fireball",
+        "level": 4,
+        "url": "/api/2024/spells/fireball",
+        "usage": {
+         "type": "per day",
+         "times": 2
+        }
+       },
+       {
+        "index": "invisibility",
+        "name": "Invisibility",
+        "level": 2,
+        "url": "/api/2024/spells/invisibility",
+        "usage": {
+         "type": "per day",
+         "times": 2
+        }
+       },
+       {
+        "index": "cone-of-cold",
+        "name": "Cone of Cold",
+        "level": 5,
+        "url": "/api/2024/spells/cone-of-cold",
+        "usage": {
+         "type": "per day",
+         "times": 1
+        }
+       },
+       {
+        "index": "fly",
+        "name": "Fly",
+        "level": 3,
+        "url": "/api/2024/spells/fly",
+        "usage": {
+         "type": "per day",
+         "times": 1
+        }
+       }
+      ]
+     }
+    }
+   ],
+   "bonus_actions": [
+    {
+     "name": "Misty Step",
+     "desc": "The mage casts Misty Step, using the same spellcasting ability as Spellcasting.",
+     "usage": {
+      "type": "per day",
+      "times": 3
+     },
+     "spellcasting": {
+      "ability": {
+       "index": "int",
+       "name": "INT",
+       "url": "/api/2024/ability-scores/int"
+      },
+      "dc": 14,
+      "components_required": [
+       "V",
+       "S",
+       "M"
+      ],
+      "spells": [
+       {
+        "index": "misty-step",
+        "name": "Misty Step",
+        "level": 2,
+        "url": "/api/2024/spells/misty-step"
+       }
+      ]
+     }
+    }
+   ],
+   "reactions": [
+    {
+     "name": "Protective Magic",
+     "desc": "The mage casts Counterspell or Shield in response to the spell’s trigger, using the same spellcasting ability as Spellcasting.",
+     "usage": {
+      "type": "per day",
+      "times": 3
+     },
+     "spellcasting": {
+      "ability": {
+       "index": "int",
+       "name": "INT",
+       "url": "/api/2024/ability-scores/int"
+      },
+      "dc": 14,
+      "components_required": [
+       "V",
+       "S",
+       "M"
+      ],
+      "spells": [
+       {
+        "index": "counterspell",
+        "name": "Counterspell",
+        "level": 3,
+        "url": "/api/2024/spells/counterspell"
+       },
+       {
+        "index": "shield",
+        "name": "Shield",
+        "level": 1,
+        "url": "/api/2024/spells/shield"
+       }
+      ]
+     }
+    }
+   ],
+   "legendary_actions": [],
+   "index": "mage",
+   "hit_points_roll": "18d8",
+   "proficiencies": [
+    {
+     "value": 6,
+     "proficiency": {
+      "index": "saving-throw-int",
+      "name": "Saving Throw: INT",
+      "url": "/api/2024/proficiencies/saving-throw-int"
+     }
+    },
+    {
+     "value": 4,
+     "proficiency": {
+      "index": "saving-throw-wis",
+      "name": "Saving Throw: WIS",
+      "url": "/api/2024/proficiencies/saving-throw-wis"
+     }
+    },
+    {
+     "value": 6,
+     "proficiency": {
+      "index": "skill-arcana",
+      "name": "Skill: Arcana",
+      "url": "/api/2024/proficiencies/skill-arcana"
+     }
+    },
+    {
+     "value": 6,
+     "proficiency": {
+      "index": "skill-history",
+      "name": "Skill: History",
+      "url": "/api/2024/proficiencies/skill-history"
+     }
+    },
+    {
+     "value": 4,
+     "proficiency": {
+      "index": "skill-perception",
+      "name": "Skill: Perception",
+      "url": "/api/2024/proficiencies/skill-perception"
+     }
+    }
+   ],
+   "gear": "Wand",
+   "proficiency_bonus": 3,
+   "xp": 2300
+  },
+  {
+   "name": "Adult Red Dragon",
+   "size": "Huge",
+   "type": "dragon",
+   "alignment": "chaotic evil",
+   "armor_class": [
+    {
+     "value": 19
+    }
+   ],
+   "hit_points": 256,
+   "hit_dice": "19d12",
+   "speed": {
+    "walk": "40 ft.",
+    "climb": "40 ft.",
+    "fly": "80 ft."
+   },
+   "strength": 27,
+   "dexterity": 10,
+   "constitution": 25,
+   "intelligence": 16,
+   "wisdom": 13,
+   "charisma": 23,
+   "damage_resistances": [],
+   "damage_vulnerabilities": [],
+   "damage_immunities": [
+    "fire"
+   ],
+   "condition_immunities": [],
+   "senses": {
+    "darkvision": "120 ft.",
+    "blindsight": "60 ft.",
+    "passive_perception": 23
+   },
+   "languages": "Common, Draconic",
+   "challenge_rating": 17,
+   "special_abilities": [
+    {
+     "name": "Legendary Resistance",
+     "desc": "If the dragon fails a saving throw, it can choose to succeed instead.",
+     "usage": {
+      "type": "per day",
+      "times": 3,
+      "times_in_lair": 4
+     }
+    }
+   ],
+   "actions": [
+    {
+     "name": "Multiattack",
+     "desc": "The dragon makes three Rend attacks. It can replace one attack with a use of Spellcasting to cast Scorching Ray.",
+     "multiattack_type": "actions",
+     "actions": [
+      {
+       "action_name": "Rend",
+       "count": "2",
+       "type": "melee"
+      }
+     ],
+     "action_options": {
+      "choose": 1,
+      "type": "action",
+      "from": {
+       "option_set_type": "options_array",
+       "options": [
+        {
+         "option_type": "action",
+         "action_name": "Rend",
+         "count": "1",
+         "type": "melee"
+        },
+        {
+         "option_type": "action",
+         "action_name": "Scorching Ray",
+         "count": "1",
+         "type": "ranged"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "Rend",
+     "desc": "Melee Attack Roll: +14, reach 10 ft. Hit: 13 (1d10 + 8) Slashing damage plus 5 (2d4) Fire damage.",
+     "damage": [
+      {
+       "damage_type": {
+        "index": "slashing",
+        "name": "Slashing",
+        "url": "/api/2024/damage-types/slashing"
+       },
+       "damage_dice": "1d10+8"
+      },
+      {
+       "damage_type": {
+        "index": "fire",
+        "name": "Fire",
+        "url": "/api/2024/damage-types/fire"
+       },
+       "damage_dice": "2d4"
+      }
+     ],
+     "attack_bonus": 14
+    },
+    {
+     "name": "Fire Breath",
+     "desc": "Dexterity Saving Throw: DC 21, each creature in a 60-foot Cone. Failure: 59 (17d6) Fire damage. Success: Half damage.",
+     "damage": [
+      {
+       "damage_type": {
+        "index": "fire",
+        "name": "Fire",
+        "url": "/api/2024/damage-types/fire"
+       },
+       "damage_dice": "17d6"
+      }
+     ],
+     "dc": {
+      "dc_type": {
+       "index": "dex",
+       "name": "DEX",
+       "url": "/api/2024/ability-scores/dex"
+      },
+      "dc_value": 21,
+      "success_type": "half"
+     },
+     "usage": {
+      "type": "recharge on roll",
+      "dice": "1d6",
+      "min_value": 5
+     }
+    },
+    {
+     "name": "Spellcasting",
+     "desc": "The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 20, +12 to hit with spell attacks):",
+     "spellcasting": {
+      "ability": {
+       "index": "cha",
+       "name": "CHA",
+       "url": "/api/2024/ability-scores/cha"
+      },
+      "dc": 20,
+      "modifier": 12,
+      "components_required": [
+       "V",
+       "S"
+      ],
+      "spells": [
+       {
+        "index": "command",
+        "name": "Command",
+        "level": 2,
+        "url": "/api/2024/spells/command",
+        "usage": {
+         "type": "at will"
+        }
+       },
+       {
+        "index": "detect-magic",
+        "name": "Detect Magic",
+        "level": 1,
+        "url": "/api/2024/spells/detect-magic",
+        "usage": {
+         "type": "at will"
+        }
+       },
+       {
+        "index": "scorching-ray",
+        "name": "Scorching Ray",
+        "level": 2,
+        "url": "/api/2024/spells/scorching-ray",
+        "usage": {
+         "type": "at will"
+        }
+       },
+       {
+        "index": "fireball",
+        "name": "Fireball",
+        "level": 3,
+        "url": "/api/2024/spells/fireball",
+        "usage": {
+         "type": "per day",
+         "times": 1
+        }
+       }
+      ]
+     }
+    }
+   ],
+   "legendary_actions": [
+    {
+     "name": "Commanding Presence",
+     "desc": "The dragon uses Spellcasting to cast Command (level 2 version). The dragon can’t take this action again until the start of its next turn."
+    },
+    {
+     "name": "Fiery Rays",
+     "desc": "The dragon uses Spellcasting to cast Scorching Ray. The dragon can’t take this action again until the start of its next turn."
+    },
+    {
+     "name": "Pounce",
+     "desc": "The dragon moves up to half its Speed, and it makes one Rend attack."
+    }
+   ],
+   "index": "adult-red-dragon",
+   "hit_points_roll": "19d12 + 133",
+   "proficiencies": [
+    {
+     "value": 6,
+     "proficiency": {
+      "index": "saving-throw-dex",
+      "name": "Saving Throw: DEX",
+      "url": "/api/2024/proficiencies/saving-throw-dex"
+     }
+    },
+    {
+     "value": 7,
+     "proficiency": {
+      "index": "saving-throw-wis",
+      "name": "Saving Throw: WIS",
+      "url": "/api/2024/proficiencies/saving-throw-wis"
+     }
+    },
+    {
+     "value": 13,
+     "proficiency": {
+      "index": "skill-perception",
+      "name": "Skill: Perception",
+      "url": "/api/2024/proficiencies/skill-perception"
+     }
+    },
+    {
+     "value": 6,
+     "proficiency": {
+      "index": "skill-stealth",
+      "name": "Skill: Stealth",
+      "url": "/api/2024/proficiencies/skill-stealth"
+     }
+    }
+   ],
+   "proficiency_bonus": 6,
+   "xp": 18000,
+   "xp_in_lair": 20000
+  },
+  {
+   "name": "Werewolf, Hybrid Form",
+   "size": "Large",
+   "type": "monstrosity",
+   "alignment": "chaotic evil",
+   "armor_class": [
+    {
+     "value": 15
+    }
+   ],
+   "hit_points": 71,
+   "hit_dice": "11d8",
+   "speed": {
+    "walk": "30 ft."
+   },
+   "strength": 16,
+   "dexterity": 14,
+   "constitution": 14,
+   "intelligence": 10,
+   "wisdom": 11,
+   "charisma": 10,
+   "damage_resistances": [],
+   "damage_vulnerabilities": [],
+   "damage_immunities": [],
+   "condition_immunities": [],
+   "senses": {
+    "darkvision": "60 ft.",
+    "passive_perception": 14
+   },
+   "languages": "Common (can’t speak in wolf form)",
+   "challenge_rating": 3,
+   "special_abilities": [
+    {
+     "name": "Pack Tactics",
+     "desc": "The werewolf has Advantage on an attack roll against a creature if at least one of the werewolf’s allies is within 5 feet of the creature and the ally doesn’t have the Incapacitated condition."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Multiattack",
+     "desc": "The werewolf makes two attacks, using Scratch or Longbow in any combination. It can replace one attack with a Bite attack.",
+     "multiattack_type": "action_options",
+     "action_options": {
+      "desc": "Any combination",
+      "choose": 2,
+      "type": "action",
+      "from": {
+       "option_set_type": "options_array",
+       "options": [
+        {
+         "option_type": "action",
+         "action_name": "Scratch",
+         "count": "2",
+         "type": "melee"
+        },
+        {
+         "option_type": "action",
+         "action_name": "Longbow",
+         "count": "2",
+         "type": "ranged"
+        },
+        {
+         "option_type": "action",
+         "action_name": "Bite",
+         "count": "1",
+         "type": "melee"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "Bite",
+     "desc": "Melee Attack Roll: +5, reach 5 ft. Hit: 12 (2d8 + 3) Piercing damage. If the target is a Humanoid, it is subjected to the following effect. Constitution Saving Throw: DC 12. Failure: The target is cursed. If the cursed target drops to 0 Hit Points, it instead becomes a Werewolf under the GM’s control and has 10 Hit Points. Success: The target is immune to this werewolf’s curse for 24 hours.",
+     "damage": [
+      {
+       "damage_type": {
+        "index": "piercing",
+        "name": "Piercing",
+        "url": "/api/2024/damage-types/piercing"
+       },
+       "damage_dice": "2d8+3"
+      }
+     ],
+     "dc": {
+      "dc_type": {
+       "index": "con",
+       "name": "CON",
+       "url": "/api/2024/ability-scores/con"
+      },
+      "dc_value": 12,
+      "success_type": "none"
+     },
+     "attack_bonus": 5
+    },
+    {
+     "name": "Scratch",
+     "desc": "Melee Attack Roll: +5, reach 5 ft. Hit: 10 (2d6 + 3) Slashing damage.",
+     "damage": [
+      {
+       "damage_type": {
+        "index": "slashing",
+        "name": "Slashing",
+        "url": "/api/2024/damage-types/slashing"
+       },
+       "damage_dice": "2d6+3"
+      }
+     ],
+     "attack_bonus": 5
+    },
+    {
+     "name": "Longbow",
+     "desc": "Ranged Attack Roll: +4, range 150/600 ft. Hit: 11 (2d8 + 2) Piercing damage.",
+     "damage": [
+      {
+       "damage_type": {
+        "index": "piercing",
+        "name": "Piercing",
+        "url": "/api/2024/damage-types/piercing"
+       },
+       "damage_dice": "2d8+2"
+      }
+     ],
+     "attack_bonus": 4
+    }
+   ],
+   "bonus_actions": [
+    {
+     "name": "Shape-Shift",
+     "desc": "The werewolf shape-shifts into a Large wolf-humanoid hybrid or a Medium wolf, or it returns to its true humanoid form. Its game statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn’t transformed."
+    }
+   ],
+   "index": "werewolf-hybrid",
+   "hit_points_roll": "11d8 + 22",
+   "proficiencies": [
+    {
+     "value": 4,
+     "proficiency": {
+      "index": "skill-perception",
+      "name": "Skill: Perception",
+      "url": "/api/2024/proficiencies/skill-perception"
+     }
+    },
+    {
+     "value": 4,
+     "proficiency": {
+      "index": "skill-stealth",
+      "name": "Skill: Stealth",
+      "url": "/api/2024/proficiencies/skill-stealth"
+     }
+    }
+   ],
+   "gear": "Longbow",
+   "proficiency_bonus": 2,
+   "xp": 700,
+   "forms": [
+    {
+     "index": "werewolf-human",
+     "name": "Werewolf, Human Form",
+     "url": "/api/2024/monsters/werewolf-human"
+    },
+    {
+     "index": "werewolf-wolf",
+     "name": "Werewolf, Wolf Form",
+     "url": "/api/2024/monsters/werewolf-wolf"
+    }
+   ]
+  }
+ ],
+ "note": "Real records from the pinned sources, for converter tests: 5e-bits 5e-database v7.8.0 (2014 and 2024) and Open5e (2024 creatures, initiative only). SRD 5.1 and SRD 5.2.1 by Wizards of the Coast LLC, CC BY 4.0.",
+ "open5e": [
+  {
+   "fields": {
+    "name": "Adult Red Dragon",
+    "initiative_bonus": 12
+   }
+  },
+  {
+   "fields": {
+    "name": "Goblin Warrior",
+    "initiative_bonus": 2
+   }
+  },
+  {
+   "fields": {
+    "name": "Mage",
+    "initiative_bonus": 2
+   }
+  },
+  {
+   "fields": {
+    "name": "Werewolf",
+    "initiative_bonus": 4
+   }
+  }
+ ],
+ "spellLevels": {
+  "cone-of-cold": 5,
+  "detect-magic": 1,
+  "fireball": 3,
+  "fly": 3,
+  "invisibility": 2,
+  "light": 0,
+  "mage-armor": 1,
+  "mage-hand": 0,
+  "prestidigitation": 0
+ }
+}

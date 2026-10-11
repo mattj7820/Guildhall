@@ -140,4 +140,13 @@ describe("PreparedEncounters", () => {
     await expect(store().create()).rejects.toThrow(DataFileError);
     expect(await readFile(filePath, "utf8")).toBe('{"version": 1, "encounters": [{"name": 3}]}');
   });
+
+  it("keeps an SRD monster in a prepared encounter through a restart", async () => {
+    const wolves = encounter([
+      monster("Wolf 1", { statblock: { entityId: "wolf", name: "Wolf", source: "srd-5.1" } }),
+    ]);
+    const { id } = await store().create({ name: "Wolves", encounter: wolves });
+    const loaded = await PreparedEncounters.inFolder(folder).get(id);
+    expect(loaded?.encounter).toEqual(wolves);
+  });
 });

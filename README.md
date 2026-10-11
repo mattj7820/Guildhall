@@ -25,22 +25,28 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
     shortest-path resolution), `![[image]]` embeds with sizes, GitHub-flavoured markdown.
   - Audio embeds (`![[voice.m4a]]`, e.g. from Obsidian's recorder) play inline.
   - Monster statblocks written for the Fantasy Statblocks plugin (` ```statblock ` blocks),
-    laid out like the 5e books.
+    laid out like the 5e books, in the 2014 or 2024 style (with `initiative` and `gear`).
   - Folder-tree navigation and full-text search (prefix and fuzzy, boosted by title and aliases).
   - Picks up edits made in Obsidian on the next page load.
 - **Combat tracker**, made for a second screen next to the VTT and voice chat, or run from a
   battle map:
-  - Builds an encounter from the vault: monsters from any statblock (numbered "Goblin 1",
-    "Goblin 2"…, with hit points rolled from their hit dice), the party from PC notes, and
-    companions assigned to a player for the battle.
-  - Initiative: monsters roll d20 + DEX, and players' physical rolls are typed in. Ties are broken
+  - Builds an encounter from the vault and the SRD: monsters from any statblock (numbered
+    "Goblin 1", "Goblin 2"…, with hit points rolled from their hit dice), the party from PC notes,
+    and companions assigned to a player for the battle.
+  - **Every SRD monster** from both the SRD 5.1 (2014) and SRD 5.2.1 (2024), tagged with which it
+    is, bundled with Guildhall (made from openly licensed data by a script, never fetched while it
+    runs). Found among the DM's own statblocks by name, with chips for Mine / 2024 / 2014, a
+    challenge rating range and a type, and added with a + on the row. The SRD's lore shows where
+    it has some.
+  - Initiative: monsters roll d20 plus their initiative bonus (a 2024 statblock's own, else DEX),
+    and players' physical rolls are typed in. Ties are broken
     by rerolls until they differ: automatically for monsters, with a prompt for players. The order
     can be changed by hand.
   - Turns and rounds, adding and removing combatants mid-fight, and monster HP with damage,
     healing, temporary HP, and bloodied and down states (down monsters are skipped). Condition
     tags and short notes for anyone.
   - The current monster's statblock alongside, in the same book layout as the wiki.
-  - **Click to roll** from the statblock: attacks (`+4 to hit`), damage (`5 (1d6 + 2)`), ability
+  - **Click to roll** from the statblock: attacks (`+4 to hit`, or 2024's `Attack Roll: +4`), damage (`5 (1d6 + 2)`), ability
     checks, saves, skills and recharges, labelled "Goblin 1 · Scimitar attack". A natural 20 arms
     a critical-damage roll with doubled dice, and advantage applies to one roll at a time.
   - A dice roller (`2d6+3`, advantage and disadvantage), and undo.
@@ -217,16 +223,17 @@ player: Sam # on type: pc notes, who plays the character (their sheet, the comba
 
 ## Scripts
 
-| Command             | What it does                                             |
-| ------------------- | -------------------------------------------------------- |
-| `npm run dev`       | Development server with hot reload                       |
-| `npm run build`     | Production build                                         |
-| `npm start`         | Run the production build                                 |
-| `npm run lint`      | ESLint + Prettier check                                  |
-| `npm run typecheck` | Generate route types and run `tsc`                       |
-| `npm test`          | Unit tests (Vitest)                                      |
-| `npm run test:e2e`  | End-to-end tests (Playwright; builds and starts the app) |
-| `npm run check`     | All of the above, as CI runs it                          |
+| Command              | What it does                                                                  |
+| -------------------- | ----------------------------------------------------------------------------- |
+| `npm run dev`        | Development server with hot reload                                            |
+| `npm run build`      | Production build                                                              |
+| `npm start`          | Run the production build                                                      |
+| `npm run lint`       | ESLint + Prettier check                                                       |
+| `npm run typecheck`  | Generate route types and run `tsc`                                            |
+| `npm test`           | Unit tests (Vitest)                                                           |
+| `npm run test:e2e`   | End-to-end tests (Playwright; builds and starts the app)                      |
+| `npm run check`      | All of the above, as CI runs it                                               |
+| `npm run srd:import` | Regenerates the SRD's monsters from the pinned data (`srd:check` checks them) |
 
 Before running the end-to-end tests for the first time: `npx playwright install chromium`.
 
@@ -303,6 +310,21 @@ Dockerfile, docker-compose.yml   The image, and the app beside its Google Drive 
 ## License
 
 [MIT](LICENSE)
+
+The combat tools' SRD monsters are bundled with Guildhall (`app/.server/srd/`, made by
+`scripts/import-srd.ts` from [5e-bits' 5e-database](https://github.com/5e-bits/5e-srd-api), MIT,
+and [Open5e](https://github.com/open5e/open5e-api), MIT, for 2024 monsters' initiative; see
+`app/.server/srd/NOTICE.md`):
+
+> This work includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards
+> of the Coast LLC and available at https://dnd.wizards.com/resources/systems-reference-document.
+> The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License
+> available at https://creativecommons.org/licenses/by/4.0/legalcode.
+
+> This work includes material from the System Reference Document 5.2.1 ("SRD 5.2.1") by Wizards of
+> the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the
+> Creative Commons Attribution 4.0 International License, available at
+> https://creativecommons.org/licenses/by/4.0/legalcode.
 
 Item and token icons are from [game-icons.net](https://game-icons.net) by Lorc, Delapouite,
 Willdabeast, Lucas and Carl Olsen, licensed under

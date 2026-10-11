@@ -10,7 +10,14 @@ export interface Statblock {
   name: string;
   /** "Small humanoid (goblinoid), neutral evil" */
   description?: string;
+  /** The parts of the description finding a monster filters on: "Small", "humanoid". */
+  size?: string;
+  type?: string;
+  /** The challenge rating alone, e.g. "1/4". */
+  challengeRating?: string;
   armorClass?: string;
+  /** "+2 (12)": 2024 statblocks give it, and it can differ from the DEX modifier. */
+  initiative?: string;
   hitPoints?: string;
   speed?: string;
   abilities?: AbilityScore[];
@@ -20,6 +27,8 @@ export interface Statblock {
   damageResistances?: string;
   damageImmunities?: string;
   conditionImmunities?: string;
+  /** 2024 statblocks: "Leather Armor, Scimitar, Shield". */
+  gear?: string;
   senses?: string;
   languages?: string;
   /** "1/4 (50 XP)" */
@@ -41,8 +50,11 @@ export interface StatblockNumbers {
   hitPoints?: number;
   /** Hit dice as a canonical dice expression, e.g. "5d6 − 1". Absent if unreadable. */
   hitDice?: string;
-  /** The DEX modifier, which is also the initiative bonus. 0 without ability scores. */
-  dexterityModifier: number;
+  /**
+   * The initiative bonus: the statblock's own (2024 statblocks give one, which can differ from
+   * DEX), else the DEX modifier. 0 without either.
+   */
+  initiative: number;
   /** Squares across on a battle map, from its size: up to Medium 1, Large 2, Huge 3, Gargantuan 4. */
   squares?: 1 | 2 | 3 | 4;
 }
@@ -56,9 +68,11 @@ const SQUARES_BY_SIZE: Record<string, 1 | 2 | 3 | 4> = {
   gargantuan: 4,
 };
 
+/** A size the token can take; "Medium or Small" (2024's people) takes the larger. */
 function squaresFor(size: unknown): Pick<StatblockNumbers, "squares"> {
-  const squares = SQUARES_BY_SIZE[text(size)?.toLowerCase() ?? ""];
-  return squares ? { squares } : {};
+  const sizes = (text(size)?.toLowerCase() ?? "").split(/\s+or\s+/);
+  const squares = Math.max(0, ...sizes.map((each) => SQUARES_BY_SIZE[each.trim()] ?? 0));
+  return squares ? { squares: squares as 1 | 2 | 3 | 4 } : {};
 }
 
 export interface AbilityScore {
@@ -107,6 +121,15 @@ export function parseStatblock(source: string): StatblockResult {
   } catch (error) {
     return { ok: false, error: `The statblock isn't valid YAML: ${firstLine(error)}` };
   }
+  return statblockFromData(data);
+}
+
+/**
+ * A statblock from the plugin's fields, already read from YAML or JSON. Besides the plugin's own
+ * fields it reads `initiative` (a number) and `gear`, which 2024 statblocks have; the plugin keeps
+ * keys it doesn't know, so notes with them still work in Obsidian.
+ */
+export function statblockFromData(data: unknown): StatblockResult {
   if (!isRecord(data))
     return { ok: false, error: "The statblock is empty or not a list of fields." };
 
@@ -122,12 +145,19 @@ export function parseStatblock(source: string): StatblockResult {
   if (!name) return { ok: false, error: "The statblock has no name." };
 
   const scores = abilities(data.stats);
+  const initiative = wholeNumber(data.initiative);
   return {
     ok: true,
     statblock: {
       name,
       description: describe(data),
+      size: text(data.size),
+      type: text(data.type),
+      challengeRating: text(data.cr),
       armorClass: text(data.ac),
+      ...(initiative !== undefined && {
+        initiative: `${signed(initiative)} (${10 + initiative})`,
+      }),
       hitPoints: hitPoints(data.hp, data.hit_dice),
       speed: text(data.speed),
       abilities: scores,
@@ -140,6 +170,7 @@ export function parseStatblock(source: string): StatblockResult {
       damageResistances: text(data.damage_resistances),
       damageImmunities: text(data.damage_immunities),
       conditionImmunities: text(data.condition_immunities),
+      gear: text(data.gear),
       senses: text(data.senses),
       languages: text(data.languages),
       challenge: challenge(data.cr),
@@ -153,7 +184,7 @@ export function parseStatblock(source: string): StatblockResult {
         armorClass: leadingNumber(data.ac),
         hitPoints: leadingNumber(data.hp),
         hitDice: diceExpression(data.hit_dice),
-        dexterityModifier: scores ? abilityModifier(scores[1].score) : 0,
+        initiative: initiative ?? (scores ? abilityModifier(scores[1].score) : 0),
         ...squaresFor(data.size),
       },
     },
@@ -193,6 +224,11 @@ function hitPoints(hp: unknown, hitDice: unknown): string | undefined {
     .replace(/\s*-\s*(?=\d)/g, " − ");
   if (points && dice) return `${points} (${dice})`;
   return points ?? dice;
+}
+
+function wholeNumber(value: unknown): number | undefined {
+  const number = typeof value === "string" ? Number(value.trim() || NaN) : value;
+  return typeof number === "number" && Number.isInteger(number) ? number : undefined;
 }
 
 function leadingNumber(value: unknown): number | undefined {

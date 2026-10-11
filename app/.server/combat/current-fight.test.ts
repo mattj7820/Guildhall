@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -90,5 +90,28 @@ describe("CurrentFight", () => {
     expect(await fights.get()).toBeUndefined();
     // A new fight starts from the beginning.
     expect(await fights.save(encounter(combatants), 0)).toHaveProperty("fight");
+  });
+
+  it("keeps an SRD monster in the fight through a restart", async () => {
+    const wolf = monster("Wolf 1", {
+      statblock: { entityId: "wolf", name: "Wolf", source: "srd-5.2" },
+    });
+    await CurrentFight.inFolder(folder).save(encounter([wolf]), 0);
+    const loaded = await CurrentFight.inFolder(folder).get();
+    expect(loaded?.encounter.combatants[0]).toEqual(wolf);
+  });
+
+  it("loads a fight.json written before the SRD, unchanged", async () => {
+    const before = {
+      version: 1,
+      fight: {
+        revision: 3,
+        map: "cave",
+        encounter: encounter([monster("Goblin 1", { initiative: 9 })]),
+      },
+    };
+    await writeFile(path.join(folder, "fight.json"), JSON.stringify(before));
+    const loaded = await CurrentFight.inFolder(folder).get();
+    expect(JSON.parse(JSON.stringify(loaded))).toEqual(before.fight);
   });
 });

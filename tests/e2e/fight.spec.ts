@@ -11,3 +11,4 @@ import "./fight/combat-tracker";
 import "./fight/click-to-roll";
 import "./fight/prepared-encounters";
 import "./fight/map-fight";
+import "./fight/srd-monsters";

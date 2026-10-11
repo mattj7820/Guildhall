@@ -23,6 +23,8 @@ describe("findRolls", () => {
     ["damage dice with a minus", "Hit: 1 (1d4 − 1) damage", "1d4 − 1", "damage", "1d4 − 1"],
     ["plain dice", "takes 7 (2d6) fire damage", "2d6", "damage", "2d6"],
     ["a die without a count", "roll a d4", "d4", "damage", "1d4"],
+    ["a 2024 attack roll", "Melee Attack Roll: +4, reach 5 ft.", "+4", "attack", "1d20 + 4"],
+    ["a 2024 negative attack roll", "Ranged Attack Roll: −1, range", "−1", "attack", "1d20 − 1"],
   ])("finds %s", (_label, text, button, kind, expression) => {
     expect(rollsIn(text)).toEqual([{ type: "roll", text: button, kind, expression }]);
   });
@@ -44,12 +46,27 @@ describe("findRolls", () => {
 
   it.each([
     ["a save DC", "DC 13 Dexterity saving throw"],
+    ["a 2024 save DC", "Dexterity Saving Throw: DC 13, each creature"],
+    ["a bonus that isn't an attack roll", "Initiative +2 (12)"],
     ["reach and range", "reach 5 ft., range 80/320 ft."],
     ["dice-like parts of words", "room B2d4x and code 3d6x"],
     ["numbers on their own", "It has 12 hit points"],
     ["a version number", "v1.2d6"],
   ])("leaves %s as text", (_label, text) => {
     expect(rollsIn(text)).toEqual([]);
+  });
+
+  it("finds a leading attack bonus in text after a split-off 2024 label", () => {
+    const text = " +4, reach 5 ft. ";
+    expect(rollsIn(text)).toEqual([]);
+    const tokens = findRolls(text, { afterAttackRoll: true });
+    expect(tokens.map((token) => token.text).join("")).toBe(text);
+    expect(tokens).toContainEqual({
+      type: "roll",
+      text: "+4",
+      kind: "attack",
+      expression: "1d20 + 4",
+    });
   });
 
   it("doesn't swallow a following dice term into a modifier", () => {

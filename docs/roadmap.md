@@ -9,7 +9,7 @@ locations, maps, characters, sessions).
 - **Hub shell:** a home page linking to Guildhall's own modules.
 - **Campaign wiki (read-only):** browse and search the Obsidian vault, with DM/player preview.
   Shared notes can keep DM-only parts: a `## DM` section or a `> [!dm]` callout.
-- **Combat tracker:** encounters built from vault statblocks and PC notes, initiative with
+- **Combat tracker:** encounters built from vault statblocks (and the SRD's, below) and PC notes, initiative with
   reroll tie-breaks, turns and rounds, monster HP and conditions, the statblock alongside, a dice
   roller and undo. One fight for the table, kept on the server and pushed live: players follow
   the turn order, see their own characters (hit points from their sheets) and end their own turn.
@@ -74,6 +74,12 @@ locations, maps, characters, sessions).
   in Prepare mode, against a typed "Spells to prepare" (over it warns, never blocks). Day to day
   only what's ready is shown, on the sheet and beside the map; cantrips and a feat's free spell are
   always ready. A long rest offers to change them.
+- **SRD monsters:** every monster from the SRD 5.1 (2014) and SRD 5.2.1 (2024), tagged with
+  which it is, in the tracker, prepared encounters and fights on maps, beside the vault's own
+  statblocks: their statblocks (2024's with their own initiative), click-to-roll, token sizes and
+  the SRD's lore where it has some. Found by name, with chips for Mine / 2024 / 2014, a challenge
+  rating range and a type, and added with a + on the row. Bundled from openly licensed data by a
+  script and credited.
 - **Sign-in and hosting:** everyone signs in with Discord; newcomers wait for the DM, who lets
   them in and says which player they are. A Docker image with a Google Drive companion container
   that copies the vault read-only, ready for a Dokploy server (see `docs/deployment.md`).
@@ -95,7 +101,7 @@ locations, maps, characters, sessions).
   moving mid-scene; undo for the DM's moves; touch dragging for tablets and phones.
   - **NPCs, more:** a link to a shown NPC's wiki note for players, when they may read it and the
     token goes by the note's own name; a tokens folder in the vault for custom art; monsters from
-    statblocks as tokens outside a fight; dragging a token from the Tokens tab onto the map.
+    statblocks (the vault's or the SRD's) as tokens outside a fight; dragging a token from the Tokens tab onto the map.
   - **Handouts:** the DM showing a note or image to the players as a pop-up on the map page, kept
     for them to re-read, in a Handouts tab beside Tokens.
 - **Live, more:** the same hub for shared dice rolls (with the DM's hidden rolls), from the
@@ -107,13 +113,10 @@ locations, maps, characters, sessions).
 - **Wiki, next steps:** backlinks, note transclusion (`![[Note]]`), Obsidian callouts,
   browsing by entity type, and perhaps Obsidian plugins later.
 - **Character sheets, next steps:**
-  - **SRD monsters** (next): creatures for the combat tracker's catalogue from the SRD, in both
-    5.1 (2014) and 5.2 (2024), each tagged with its version. Bundled as data made by a script
-    (like `scripts/import-icons.mjs`), never fetched while the app runs, and credited on
-    `/credits` (CC BY 4.0).
-  - **An SRD spell picker** (after that): add a spell by searching the SRD (both versions,
-    tagged), with its details filled in, or a class's whole list to prepare from. Spells that
-    aren't in the SRD come from the DM's own vault spell notes, never the repo.
+  - **An SRD spell picker** (next): add a spell by searching the SRD (both versions, tagged),
+    with its details filled in, or a class's whole list to prepare from. Spells that aren't in the
+    SRD come from the DM's own vault spell notes, never the repo. The same source and script as
+    the monsters (5e-bits has both versions' spells), and the same kind of picker.
   - **Always-prepared spells** from a subclass or feature, which don't count towards the number
     (one more case in `alwaysReady`).
   - **The DM's view of the party beside the map:** each PC's hit points, concentration, and slots
@@ -138,6 +141,16 @@ locations, maps, characters, sessions).
     was found, a party loot view, weight and containers, and an Actions tab.
   - Creating a character in the app from scratch (D&D Beyond style), once rules exist.
 - **Dice:** shared dice rolling, including DM hidden rolls. Complements physical dice on camera.
+- **Monsters, more:**
+  - A filter by home region or theme (forest, underdark, coast…), which the SRD data doesn't
+    have; perhaps tags the DM gives.
+  - Bestiary references in notes (`monster: Goblin`, perhaps with the note's own changes on top,
+    as the plugin does) resolved against the SRD (the plugin's bestiary is 2014's).
+  - "Make this my own": an SRD monster's statblock as YAML to copy into a vault note and
+    reflavour (the vault is read-only, so only ever something to copy).
+  - SRD monsters in the wiki, for reading outside a fight.
+  - Gaps in the data: 2024's Octopus and Giant Fly, legendary actions' uses, and 2024 saving
+    throws in the ability table.
 - **Combat tracker, next steps:**
   - **Target and apply:** after a hit, click the target to apply the rolled damage.
   - Click-to-roll in wiki statblocks, and in the prepared-encounter editor.

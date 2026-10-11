@@ -47,16 +47,27 @@ export class Tracker {
     await expect(this.page.getByText("Saving…")).toHaveCount(0);
   }
 
-  async addMonsters(statblock: string, quantity: number) {
-    const form = this.page.getByRole("form", { name: "Add monsters" });
-    await form.getByLabel("Statblock", { exact: true }).selectOption({ label: statblock });
-    await form.getByLabel("How many").fill(String(quantity));
-    await form.getByRole("button", { name: "Add monsters" }).click();
+  /** The monster picker: the vault's statblocks and the SRD's. */
+  get monsterPicker() {
+    return this.page.getByRole("region", { name: "Monsters and NPCs" });
+  }
+
+  /** Finds a monster by name and adds `quantity` of them with the + on its row. */
+  async addMonsters(statblock: string, quantity: number, from: "Mine" | "2024" | "2014" = "Mine") {
+    await this.findMonster(statblock);
+    await this.monsterPicker.getByLabel("How many").fill(String(quantity));
+    await this.monsterPicker
+      .getByRole("button", { name: `Add ${statblock} (${from})`, exact: true })
+      .click();
+  }
+
+  async findMonster(search: string) {
+    await this.monsterPicker.getByRole("searchbox", { name: "Find a monster" }).fill(search);
   }
 
   /** Adds a party member (or the shared companion) with its one-click button. */
   async addPartyMember(name: string) {
-    await this.page.getByRole("button", { name: `Add ${name}` }).click();
+    await this.page.getByRole("button", { name: `Add ${name}`, exact: true }).click();
     await expect(this.combatant(name)).toBeVisible();
   }
 

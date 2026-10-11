@@ -10,8 +10,9 @@ campaign model (NPCs, locations, maps, characters, sessions). See `docs/roadmap.
 Built so far: hub home page, read-only Obsidian wiki with a DM preview of the players' view, a
 combat tracker (one fight for the table, kept in the data folder and pushed live; players follow it
 and end their own turn; run beside a map, with monsters' tokens and quick damage for picked
-monsters; prepared encounters, which can start on a map), the DM's stunts and sounds on maps (played
-live for everyone, only when the DM plays them), DM-only interactive maps (vault images with
+monsters; prepared encounters, which can start on a map; every SRD monster from both the 2014 and
+2024 SRDs beside the vault's statblocks), the DM's stunts and sounds on maps (played live for
+everyone, only when the DM plays them), DM-only interactive maps (vault images with
 outlined areas leading to deeper maps and notes; kept in the data folder), fog of war and tokens on
 maps (the party's, NPCs from their notes and the DM's markers, moved live over websockets and
 managed from the DM's Tokens tab; kept in the data folder),
@@ -73,6 +74,7 @@ npm run typecheck    # react-router typegen && tsc -b
 npm test             # vitest unit/integration
 npm run test:e2e     # playwright: builds, serves on :4173 with the fixture vault
 npm run check        # everything CI runs (CI also builds and checks the Docker image)
+npm run srd:import   # regenerate the SRD's monsters from the pinned data (srd:check: CI's check)
 ```
 
 Locally, `DEV_LOGIN=true` in `.env` gives one-click sign-in as the DM or a player (see
@@ -111,7 +113,10 @@ First e2e run needs `npx playwright install chromium`.
 - `app/combat/`: the combat tracker's model (isomorphic): `types.ts`, `encounter.ts` (reducer,
   action creators, `perform`), `initiative.ts` (ordering, reroll tie-breaks), `turns.ts`, `hp.ts`,
   `visibility.ts` (`encounterForViewer`), `schema.ts` (zod),
-  `storage.ts` (localStorage: only a fight left from before, to bring over), `prepared.ts`
+  `storage.ts` (localStorage: only a fight left from before, to bring over), `statblocks.ts`
+  (statblocks loaded when shown: `loadStatblock`, kept with their catalogue; `useStatblock`,
+  `usePrefetchStatblocks`), `find-creatures.ts` (finding a monster: the search's order, Mine /
+  2024 / 2014 tags, challenge rating and type), `prepared.ts`
   (`startPrepared`, `startPreparedOnMap`, `toPrepared`, `preparedStartUrl`, `summarise`), and the
   `useEncounter` hook. The shared fight: `fight.ts` (`Fight`, `fightForViewer`, `isTheirTurn`,
   `fightAllowsMove`), `fight-saver.ts` (`FightSaver`: whole-encounter saves after a revision,
@@ -182,9 +187,10 @@ First e2e run needs `npx playwright install chromium`.
     the DM.
   - `remark-wikilinks.ts` + `render.ts`: markdown → sanitised HTML.
   - `search.ts`: MiniSearch, one index per role, built from role-appropriate text.
-  - `statblock/`: parses ` ```statblock ` YAML (Fantasy Statblocks plugin format), including the
-    numbers the tracker uses, and renders it book-style, after sanitising, with vault values
-    inserted only as text nodes. `extract-statblocks.ts` finds them in a note. With
+  - `statblock/`: parses ` ```statblock ` YAML (Fantasy Statblocks plugin format), or the same
+    fields as data (`statblockFromData`, for the SRD), including the numbers the tracker uses and
+    2024 statblocks' `initiative` and `gear`, and renders it book-style, after sanitising, with
+    vault values inserted only as text nodes. `extract-statblocks.ts` finds them in a note. With
     `{ rollable: true }` (the combat catalogue only), `rolls.ts` finds attack bonuses, dice,
     saves, skills and recharges, which are rendered as `button.statblock-roll` with `data-roll*`
     attributes.
@@ -194,9 +200,10 @@ First e2e run needs `npx playwright install chromium`.
     `serve-image.ts` streams a vault image the caller has already allowed (maps, portraits);
     `stream-file.ts` streams any allowed vault file with byte ranges (attachments, sounds).
     `soundsIn(folder)` lists the sound board.
-- `app/.server/combat/catalogue.ts`: vault statblocks (with their size in squares), PCs and
-  companions as browser-safe shapes, with statblocks pre-rendered. `prepared-encounters.ts`: the
-  prepared-encounter repository. `current-fight.ts`: `CurrentFight`, the fight over `fight.json`
+- `app/.server/combat/catalogue.ts`: the vault's statblocks and the SRD's monsters (with their
+  size in squares, challenge rating and type), PCs and companions as browser-safe shapes, without
+  the statblocks themselves; `statblockView` renders one when it's shown.
+  `prepared-encounters.ts`: the prepared-encounter repository. `current-fight.ts`: `CurrentFight`, the fight over `fight.json`
   (saves after a revision, a player's end of turn, free movement, ending). `fight-view.ts`:
   `fightView`, the fight for one viewer with party hit points from their sheets.
 - `app/.server/maps/`: `campaign-maps.ts` (the map repository over `maps.json`; tree rules checked
@@ -216,6 +223,10 @@ First e2e run needs `npx playwright install chromium`.
   `map-rooms.ts` (a map's state and tokens for one viewer), `holds.ts` (who's moving which token),
   `live.ts` (`Live`, in the services: `mapChanged`, `memberChanged`, `fightChanged`, `stunt`,
   drags).
+- `app/.server/srd/`: the SRD's monsters, generated by `scripts/import-srd.ts` (with
+  `scripts/srd/convert.ts`, the pure conversion) and never edited by hand: `monsters-5.1.json`,
+  `monsters-5.2.json`, `NOTICE.md` (the licences), and `monsters.ts` (`srdMonsters`, parsed once;
+  `srdStatblockView`, rendered once).
 - `app/.server/data/json-store.ts`: `JsonFile`, a validated, queued, atomically written JSON file.
   `file-cache.ts`: `FileCache`, disposable generated files in `DATA_PATH/cache`, one folder per key
   and version, made one set at a time. `when-free.ts`: retries a read or rename while Windows holds
@@ -228,7 +239,8 @@ First e2e run needs `npx playwright install chromium`.
   `wiki-note` (`/wiki/*`), `combat` (the DM's tracker, or a player's view of the fight; a hydrating
   `clientLoader` adds a fight left in the browser from before; `?start=<id>` starts a prepared
   encounter), `combat-fight` (JSON: GET the fight as the viewer may see it; POST the DM's saves,
-  free movement and ending, and a player's end of turn), `combat-prepared` (list; create, duplicate
+  free movement and ending, and a player's end of turn), `combat-statblock` (JSON: one statblock
+  for the DM, by key), `combat-prepared` (list; create, duplicate
   and delete actions), `combat-prepared-edit` (editor; autosave action), `maps` (tree of maps: every
   map for the DM, only shared ones for players; create action), `map-view` (`/maps/:id`: the table
   view for the DM, with Combat and `?start=<id>` for a prepared fight there; the fogged view for
@@ -251,7 +263,9 @@ First e2e run needs `npx playwright install chromium`.
 - `app/components/combat/`: the tracker's UI (`CombatTracker` lays it out), and the prepared
   encounter editor (`PreparedEditor`). `TurnStrip` (the turn order as round faces, over a map or
   in a page), `PlayerFight` (a player's Combat page, and `EndMyTurn`), `FightStatus` (saving,
-  offline, replaced). `CombatantRow` and `AddCombatants` have a `"prep"` mode.
+  offline, replaced). `CombatantRow` and `AddCombatants` have a `"prep"` mode; `AddCombatants`
+  opens with `MonsterPicker` (search, tags and filters, + on each row). `StatblockPanel` loads the
+  statblock it shows.
 - `app/components/characters/`: `CharacterSheet` (the layout, edit mode, click-to-roll and the
   docked bag; its parts are `SheetHeader`, `SheetSections` and `SheetTabs`, built by
   `useSheetParts`), `CompanionSheet`, `PartyCard`, `SheetBag` (a bag saved through the editor),
@@ -305,7 +319,12 @@ First e2e run needs `npx playwright install chromium`.
   Dice are rolled in action creators (or `perform`) and carried in the action. All randomness goes
   through an injected `Rng`; never call `Math.random` directly. IDs come from `newId()`
   (`app/shared/ids.ts`).
-  Combatants reference vault statblocks by `StatblockRef` (entity ID plus statblock name).
+  Combatants reference statblocks by `StatblockRef`: a vault note's entity ID plus the
+  statblock's name, or with `source` ("srd-5.1", "srd-5.2") an SRD monster's ID; refs without a
+  source are the vault's (everything stored before the SRD). Pages carry the catalogue without
+  statblocks; a statblock is loaded when shown (`combat-statblock`), never sent with a page. The
+  SRD's data changes only by re-running `npm run srd:import` (pinned sources; never hand-edited,
+  and its text is never rewritten), and its notices stay on Credits.
 - Maps: outlines are stored as fractions of the image (0..1), never pixels; the map records the
   pixel size they were drawn against. Maps and areas reference notes by entity ID and images by
   vault path. A map's parent is derived from area links, never stored (one parent per map). Map
