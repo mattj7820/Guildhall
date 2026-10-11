@@ -4,15 +4,10 @@ import { Link, NavLink } from "react-router";
 export function CombatNav() {
   const tab = ({ isActive }: { isActive: boolean }) =>
     `rounded-t-md border-b-2 px-3 py-1.5 text-sm font-semibold ${
-      isActive
-        ? "border-amber-700 text-stone-900 dark:border-amber-500 dark:text-stone-50"
-        : "border-transparent text-stone-500 hover:text-stone-900 dark:hover:text-stone-100"
+      isActive ? "border-accent text-ink" : "border-transparent text-muted hover:text-ink"
     }`;
   return (
-    <nav
-      aria-label="Combat"
-      className="mb-4 flex gap-2 border-b border-stone-200 dark:border-stone-800"
-    >
+    <nav aria-label="Combat" className="mb-4 flex gap-2 border-b border-line">
       <NavLink to="/combat" end className={tab}>
         Live fight
       </NavLink>
@@ -30,7 +25,7 @@ export function DmOnlyNotice() {
       <h1 className="font-serif text-3xl font-bold">Prepared encounters</h1>
       <p className="mt-2">
         Prepared encounters are the DM's. The fight you're in is on{" "}
-        <Link to="/combat" className="text-amber-800 underline dark:text-amber-400">
+        <Link to="/combat" className="text-link underline">
           Combat
         </Link>
         .

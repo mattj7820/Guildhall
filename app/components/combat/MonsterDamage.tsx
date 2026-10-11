@@ -37,16 +37,16 @@ export function MonsterDamage({
     <form
       aria-label="Damage the picked monsters"
       onSubmit={submit}
-      className={`${panelClass} flex flex-col gap-2 border-2 border-sky-500 text-sm`}
+      className={`${panelClass} flex flex-col gap-2 border-2 border-info text-sm`}
     >
       <div className="flex items-baseline gap-2">
         <span className="mr-auto font-semibold">{names}</span>
-        <button type="button" className="text-xs text-stone-500 hover:underline" onClick={onClear}>
+        <button type="button" className="text-xs text-muted hover:underline" onClick={onClear}>
           Clear
         </button>
       </div>
       {monsters.length === 1 && (
-        <span className="text-xs text-stone-500 tabular-nums">
+        <span className="text-xs text-muted tabular-nums">
           HP {monsters[0].hp.current}/{monsters[0].hp.max}
         </span>
       )}
@@ -80,7 +80,7 @@ export function MonsterDamage({
           Heal
         </button>
       </div>
-      <p className="text-xs text-stone-500">Shift-click tokens to pick more.</p>
+      <p className="text-xs text-muted">Shift-click tokens to pick more.</p>
     </form>
   );
 }

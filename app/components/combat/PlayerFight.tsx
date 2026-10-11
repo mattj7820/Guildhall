@@ -14,14 +14,14 @@ export function PlayerFight({ fight: fromPage }: { fight: PlayerFightView | null
     <main className="mx-auto max-w-3xl px-4 py-6">
       <h1 className="mb-4 font-serif text-3xl font-bold">Combat</h1>
       {!fight || !fight.view.started ? (
-        <p className="text-stone-500">No fight right now.</p>
+        <p className="text-muted">No fight right now.</p>
       ) : (
         <div className="flex flex-col gap-4">
           <TurnStrip round={fight.view.round} turnOrder={fight.view.turnOrder}>
             <EndMyTurn fight={fight} onEnd={endTurn} ending={ending} />
           </TurnStrip>
           {error && (
-            <p role="alert" className="text-sm text-rose-700 dark:text-rose-400">
+            <p role="alert" className="text-sm text-danger">
               {error}
             </p>
           )}
@@ -45,9 +45,9 @@ export function PlayerFight({ fight: fromPage }: { fight: PlayerFightView | null
                         </span>
                       )}
                       {details.conditions.length > 0 && (
-                        <span className="ml-2 text-stone-500">{details.conditions.join(", ")}</span>
+                        <span className="ml-2 text-muted">{details.conditions.join(", ")}</span>
                       )}
-                      {details.note && <p className="text-stone-500">{details.note}</p>}
+                      {details.note && <p className="text-muted">{details.note}</p>}
                     </li>
                   );
                 })}

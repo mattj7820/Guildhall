@@ -52,7 +52,7 @@ export function SaveAsPrepared({
           Save as prepared
         </button>
       </form>
-      <p className="mt-2 text-xs text-stone-500">
+      <p className="mt-2 text-xs text-muted">
         Keeps the monsters (with their HP) and companions
         {placement && ", and where the monsters stand on this map"}. The party and initiative are
         chosen each time it starts.
@@ -60,16 +60,13 @@ export function SaveAsPrepared({
       {result && "created" in result && result.created && (
         <p role="status" className="mt-2 text-sm">
           Saved as “{result.created.name}”.{" "}
-          <Link
-            to={`/combat/prepared/${result.created.id}`}
-            className="text-amber-800 underline dark:text-amber-400"
-          >
+          <Link to={`/combat/prepared/${result.created.id}`} className="text-link underline">
             Edit it
           </Link>
         </p>
       )}
       {result && "error" in result && (
-        <p role="alert" className="mt-2 text-sm text-rose-700">
+        <p role="alert" className="mt-2 text-sm text-danger">
           {result.error}
         </p>
       )}

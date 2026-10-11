@@ -56,7 +56,7 @@ export function StartPrepared({
   return (
     <section
       aria-labelledby="start-heading"
-      className="mb-4 rounded-lg border-2 border-amber-500 bg-amber-50 p-4 dark:bg-amber-950/40"
+      className="mb-4 rounded-lg border-2 border-accent bg-accent-surface p-4"
     >
       <h2 id="start-heading" className="font-serif text-2xl font-bold">
         Start “{prepared.name}”
@@ -69,7 +69,7 @@ export function StartPrepared({
         <fieldset>
           <legend className="text-sm font-semibold">Who's playing?</legend>
           {party.length === 0 && (
-            <p className="text-sm text-stone-500">
+            <p className="text-sm text-muted">
               No player characters in the vault yet; add them to the tracker by hand.
             </p>
           )}
@@ -84,7 +84,7 @@ export function StartPrepared({
                     onChange={() => toggle(member.entityId)}
                   />
                   {member.name}
-                  <span className="text-stone-500">
+                  <span className="text-muted">
                     {member.player ? `(${member.player.name})` : "(needs player: in its note)"}
                   </span>
                 </label>
@@ -92,7 +92,7 @@ export function StartPrepared({
             ))}
           </ul>
         </fieldset>
-        <p className="text-sm text-stone-600 dark:text-stone-400">
+        <p className="text-sm text-muted">
           Monsters roll initiative now; you'll type in the players' rolls.
           {replacesFight && " This replaces the fight in the tracker; Undo brings it back."}
         </p>

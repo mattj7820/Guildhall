@@ -46,7 +46,7 @@ export function HydrateFallback() {
   return (
     <main className="mx-auto max-w-7xl px-4 py-6">
       <h1 className="font-serif text-3xl font-bold">Combat tracker</h1>
-      <p className="mt-4 text-stone-500">Loading the encounter…</p>
+      <p className="mt-4 text-muted">Loading the encounter…</p>
     </main>
   );
 }

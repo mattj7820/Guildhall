@@ -128,7 +128,7 @@ export function AreaForm({
           <>
             <button
               type="button"
-              className="rounded-md bg-danger px-2.5 py-1 text-sm font-semibold text-on-danger hover:bg-danger"
+              className="rounded-md bg-danger px-2.5 py-1 text-sm font-semibold text-on-danger hover:opacity-90"
               onClick={() => dispatch({ type: "deleteArea", id: area.id })}
             >
               Delete {area.name || "this area"}

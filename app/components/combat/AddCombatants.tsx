@@ -99,7 +99,7 @@ function AddMonsters({
 
   if (creatures.length === 0) {
     return (
-      <p className="text-sm text-stone-500">
+      <p className="text-sm text-muted">
         No statblocks found in the vault. Write ```statblock blocks (Fantasy Statblocks plugin
         format) into notes to add monsters here.
       </p>
@@ -170,7 +170,7 @@ function AddMonsters({
           Add monsters
         </button>
       </div>
-      <p className="text-xs text-stone-500">
+      <p className="text-xs text-muted">
         {mode === "live"
           ? "Each rolls initiative (d20 + DEX) and hit points."
           : "Each rolls hit points now, and initiative when the fight starts."}{" "}
@@ -198,12 +198,12 @@ function AddParty({
     <div className="flex flex-col gap-2">
       <h3 className={labelClass}>Party</h3>
       {catalogue.party.length === 0 ? (
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-muted">
           No player characters found. Give PC notes <code>type: pc</code> and{" "}
           <code>player: Name</code> in their frontmatter.
         </p>
       ) : available.length === 0 ? (
-        <p className="text-sm text-stone-500">The whole party is in the encounter.</p>
+        <p className="text-sm text-muted">The whole party is in the encounter.</p>
       ) : (
         <ul className="flex flex-col gap-1">
           {available.map((member) => (
@@ -226,7 +226,7 @@ function AddParty({
               >
                 Add {member.name}
               </button>
-              <span className="text-stone-500">
+              <span className="text-muted">
                 {isWholeParty(member.player)
                   ? "the whole party's"
                   : member.player

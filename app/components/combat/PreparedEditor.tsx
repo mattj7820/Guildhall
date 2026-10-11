@@ -88,11 +88,7 @@ export function PreparedEditor({
     <main className="mx-auto max-w-7xl px-4 py-6">
       <CombatNav />
       <p className="mb-3 text-sm">
-        <Link
-          to="/combat/prepared"
-          onClick={saveNow}
-          className="text-amber-800 hover:underline dark:text-amber-400"
-        >
+        <Link to="/combat/prepared" onClick={saveNow} className="text-link hover:underline">
           ← All prepared encounters
         </Link>
       </p>
@@ -124,14 +120,11 @@ export function PreparedEditor({
           </label>
         </div>
         <div className="flex flex-col items-end justify-between gap-3">
-          <p aria-live="polite" className="text-sm text-stone-500">
+          <p aria-live="polite" className="text-sm text-muted">
             {status && (status === "All changes saved" ? `✓ ${status}` : status)}
           </p>
           {error && (
-            <p
-              role="alert"
-              className="max-w-xs text-right text-sm text-rose-700 dark:text-rose-400"
-            >
+            <p role="alert" className="max-w-xs text-right text-sm text-danger">
               Couldn't save: {error}
             </p>
           )}
@@ -155,7 +148,7 @@ export function PreparedEditor({
                 type="submit"
                 name="intent"
                 value="delete"
-                className="rounded-md bg-rose-700 px-2.5 py-1 text-sm font-semibold text-white hover:bg-rose-800"
+                className="rounded-md bg-danger px-2.5 py-1 text-sm font-semibold text-on-danger hover:opacity-90"
               >
                 Delete encounter
               </button>
@@ -170,7 +163,7 @@ export function PreparedEditor({
           ) : (
             <button
               type="button"
-              className="text-sm text-rose-700 hover:underline dark:text-rose-400"
+              className="text-sm text-danger hover:underline"
               onClick={() => setConfirmingDelete(true)}
             >
               Delete…
@@ -185,18 +178,13 @@ export function PreparedEditor({
             <h2 id="prepared-combatants-heading" className="mb-1 font-serif text-xl font-bold">
               Monsters and companions
             </h2>
-            <p className="mb-2 text-sm text-stone-500">
+            <p className="mb-2 text-sm text-muted">
               Initiative is rolled when the fight starts, and you'll pick who's playing then.
             </p>
             {encounter.combatants.length === 0 ? (
-              <p className="text-sm text-stone-500">
-                No one yet. Add monsters from the vault below.
-              </p>
+              <p className="text-sm text-muted">No one yet. Add monsters from the vault below.</p>
             ) : (
-              <ul
-                aria-label="Monsters and companions"
-                className="divide-y divide-stone-200 dark:divide-stone-800"
-              >
+              <ul aria-label="Monsters and companions" className="divide-y divide-line">
                 {encounter.combatants.map((combatant) => {
                   const creature = combatant.statblock
                     ? creatures.get(statblockKey(combatant.statblock))

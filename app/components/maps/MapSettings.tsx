@@ -55,7 +55,7 @@ export function MapSettings({ doc, notes, dispatch, onBlur }: Props) {
               type="submit"
               name="intent"
               value="delete"
-              className="rounded-md bg-danger px-2.5 py-1 font-semibold text-on-danger hover:bg-danger"
+              className="rounded-md bg-danger px-2.5 py-1 font-semibold text-on-danger hover:opacity-90"
             >
               Delete {doc.name}
             </button>
