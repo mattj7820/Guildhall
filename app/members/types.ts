@@ -3,6 +3,7 @@
  * the Members page.
  */
 import type { PlayerId } from "~/campaign/types";
+import type { Theme } from "~/theme/themes";
 
 /** A Discord user's ID ("snowflake"): a long number, kept as a string. */
 export type DiscordId = string;
@@ -24,6 +25,8 @@ export interface Member {
   requestedAt: string;
   approvedAt?: string;
   lastSignInAt: string;
+  /** The look they picked; without one, Guildhall follows their device's light or dark mode. */
+  theme?: Theme;
 }
 
 /** Who someone is on Discord, as read when they sign in. */
