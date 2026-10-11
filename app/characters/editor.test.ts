@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { applyActions, type CharacterAction } from "./actions";
 import { CharacterEditor } from "./editor";
-import { aCharacter, anItem } from "./test-builders";
+import { prepareAction } from "./preparing";
+import { aCharacter, anItem, aSheet, aSpell } from "./test-builders";
 import type { Character, PlayerCharacter } from "./types";
 
 /**
@@ -270,6 +271,25 @@ describe("CharacterEditor", () => {
       expect(await editor.give({ item: "arrows", amount: 1, to: "dog" })).toBeUndefined();
       expect(server.gifts).toHaveLength(1);
     });
+  });
+
+  it("keeps a spell prepared in another tab when it prepares a different one, and undoes only its own", async () => {
+    const ward = aSpell({ id: "ward", prepared: false });
+    const gift = aSpell({ id: "gift", prepared: false });
+    const { server, editor } = setUp(
+      aCharacter({ sheet: aSheet({ spellsToPrepare: 2, spells: [ward, gift] }) }),
+    );
+    server.elsewhere(prepareAction(gift, true));
+    editor.dispatch(prepareAction(ward, true));
+    await vi.advanceTimersByTimeAsync(300);
+    const prepared = (character: Character) =>
+      (character as PlayerCharacter).sheet.spells.map((spell) => spell.prepared);
+    expect(prepared(editor.getSnapshot().character)).toEqual([true, true]);
+    expect(prepared(server.stored)).toEqual([true, true]);
+
+    editor.undo();
+    await vi.advanceTimersByTimeAsync(300);
+    expect(prepared(server.stored)).toEqual([false, true]);
   });
 
   it("saves straight away when flushed", async () => {

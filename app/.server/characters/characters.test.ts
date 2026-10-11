@@ -3,8 +3,9 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { CharacterAction } from "~/characters/actions";
+import { prepareAction, preparedCount } from "~/characters/preparing";
 import { ITEMS_MAX } from "~/characters/schema";
-import { aFeature, anItem } from "~/characters/test-builders";
+import { aFeature, anItem, aSpell } from "~/characters/test-builders";
 import type { PlayerCharacter } from "~/characters/types";
 import { idSequence } from "~/combat/test-builders";
 import { DataFileError } from "../data/json-store";
@@ -373,5 +374,86 @@ describe("Characters, tracking what gets used up", () => {
       sheet: { ...before.characters[0].sheet, hp: { current: 12, max: 15, temp: 0 } },
     });
     expect(kit.sheet).toMatchObject({ spells: [], features: [], attacks: [], concentrating: "" });
+  });
+});
+
+describe("Characters, preparing spells", () => {
+  /** A PC who prepares two of three 1st-level spells, with one of them prepared. */
+  async function preparer(characters: Characters) {
+    const { id } = await created(characters);
+    await characters.apply(
+      id,
+      [
+        { type: "spellsToPrepare", value: 2 },
+        ...[
+          aSpell({ id: "ward", prepared: true }),
+          aSpell({ id: "gift", prepared: false }),
+          aSpell({ id: "spark", prepared: false }),
+        ].map((item): CharacterAction => ({ type: "spells", change: { type: "add", item } })),
+      ],
+      0,
+    );
+    return id;
+  }
+
+  it("keeps two tabs' choices when they prepare different spells at the same moment", async () => {
+    const characters = store();
+    const id = await preparer(characters);
+    const spells = (await characters.get(id)) as PlayerCharacter;
+    const [ward, gift] = spells.sheet.spells;
+    await Promise.all([
+      characters.apply(id, [prepareAction(ward, false)], 1),
+      characters.apply(id, [prepareAction(gift, true)], 1),
+    ]);
+    const { sheet, revision } = (await characters.get(id)) as PlayerCharacter;
+    expect(sheet.spells.map((spell) => [spell.id, spell.prepared])).toEqual([
+      ["ward", false],
+      ["gift", true],
+      ["spark", false],
+    ]);
+    expect(revision).toBe(3);
+  });
+
+  it("keeps spells prepared in one tab while the number is typed in another", async () => {
+    const characters = store();
+    const id = await preparer(characters);
+    const [, , spark] = ((await characters.get(id)) as PlayerCharacter).sheet.spells;
+    await Promise.all([
+      characters.apply(id, [prepareAction(spark, true)], 1),
+      characters.apply(id, [{ type: "spellsToPrepare", value: 3, from: 2 }], 1),
+    ]);
+    const { sheet } = (await characters.get(id)) as PlayerCharacter;
+    expect(sheet.spellsToPrepare).toBe(3);
+    expect(preparedCount(sheet)).toBe(2);
+  });
+
+  it("loads spells saved before preparing existed as prepared, and saving keeps them so", async () => {
+    const file = path.join(folder, "characters.json");
+    const spell = { id: "ward", name: "Fixture Ward", level: 1, castingTime: "1 action" };
+    await writeFile(
+      file,
+      JSON.stringify({
+        version: 1,
+        characters: [
+          {
+            kind: "pc",
+            id: "kit",
+            note: "Party/Fixture PC One",
+            revision: 4,
+            createdAt: "2026-09-29T10:00:00.000Z",
+            updatedAt: "2026-09-30T10:00:00.000Z",
+            inventory: { items: [], purse: {} },
+            sheet: { name: "Kit", spells: [spell] },
+          },
+        ],
+      }),
+    );
+
+    const characters = store();
+    await characters.apply("kit", [{ type: "heal", amount: 1 }], 4);
+
+    const [kit] = JSON.parse(await readFile(file, "utf8")).characters;
+    expect(kit.sheet.spells).toEqual([expect.objectContaining({ ...spell, prepared: true })]);
+    expect(kit.sheet).not.toHaveProperty("spellsToPrepare");
   });
 });
