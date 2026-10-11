@@ -84,16 +84,14 @@ export default function Login({ loaderData }: Route.ComponentProps) {
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-6 px-4 py-12">
-      <h1 className="font-serif text-3xl font-bold">Sign in to Guildhall</h1>
+      <h1 className="font-display text-title text-4xl">Sign in to Guildhall</h1>
       {problem && (
-        <p role="alert" className="rounded-md bg-amber-100 px-3 py-2 text-sm text-amber-950">
+        <p role="alert" className="bg-warn-surface text-warn rounded-md px-3 py-2 text-sm">
           {problem}
         </p>
       )}
       {!loaderData.devLogin && !loaderData.discord && (
-        <p className="text-stone-600 dark:text-stone-400">
-          Signing in isn't set up on this server yet.
-        </p>
+        <p className="text-muted">Signing in isn't set up on this server yet.</p>
       )}
 
       {loaderData.discord && (
@@ -105,7 +103,7 @@ export default function Login({ loaderData }: Route.ComponentProps) {
           >
             Sign in with Discord
           </button>
-          <p className="text-center text-xs text-stone-500">
+          <p className="text-muted text-center text-xs">
             Guildhall only learns your Discord name. New here? The DM lets you in after you sign in.
           </p>
         </Form>
@@ -117,7 +115,7 @@ export default function Login({ loaderData }: Route.ComponentProps) {
             <h2 id="dev-login" className="font-semibold">
               Dev sign-in
             </h2>
-            <p className="text-sm text-stone-500">
+            <p className="text-muted text-sm">
               For development on this computer only; pretend accounts, no Discord.
             </p>
           </div>
@@ -155,7 +153,7 @@ export default function Login({ loaderData }: Route.ComponentProps) {
       )}
 
       {actionData && "error" in actionData && (
-        <p role="alert" className="text-sm text-rose-700 dark:text-rose-400">
+        <p role="alert" className="text-danger text-sm">
           {actionData.error}
         </p>
       )}

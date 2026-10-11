@@ -125,6 +125,28 @@ describe("Members", () => {
     const members = store();
     expect(await members.approve("100000000000000999")).toBeUndefined();
     expect(await members.assignPlayer("100000000000000999", "x")).toBeUndefined();
+    expect(await members.setTheme("100000000000000999", "gem")).toBeUndefined();
+  });
+
+  it("saves the look someone picks, and keeps it when they sign in again", async () => {
+    const members = store();
+    const { discordId } = await signedIn(members, profile(1), { approve: true });
+    expect((await members.get(discordId))?.theme).toBeUndefined();
+    await members.setTheme(discordId, "gem");
+    await members.setTheme(discordId, "ember");
+    await signedIn(members, profile(1, "Renamed"));
+    expect(await members.get(discordId)).toMatchObject({ name: "Renamed", theme: "ember" });
+  });
+
+  it("reads a look it doesn't know as none picked, rather than refusing the file", async () => {
+    const { discordId } = await signedIn(store(), profile(1), { approve: true });
+    const filePath = path.join(folder, "members.json");
+    const onDisk = JSON.parse(await readFile(filePath, "utf8"));
+    onDisk.members[0].theme = "a look from the future";
+    await writeFile(filePath, JSON.stringify(onDisk));
+    const member = await store().get(discordId);
+    expect(member).toMatchObject({ discordId, status: "approved" });
+    expect(member?.theme).toBeUndefined();
   });
 
   it("keeps members in the data folder, so they survive a restart", async () => {

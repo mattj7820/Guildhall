@@ -9,11 +9,13 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
   useRouteLoaderData,
 } from "react-router";
 import { authMiddleware } from "~/.server/auth/middleware";
 import { ViewToggle } from "~/components/ViewToggle";
 import { accountContext, viewerContext } from "~/context";
+import { moduleOf } from "~/theme/modules";
 import type { Route } from "./+types/root";
 import "./app.css";
 
@@ -25,6 +27,8 @@ export function loader({ context }: Route.LoaderArgs) {
   return {
     role: context.get(viewerContext).role,
     user: account.kind === "member" ? { name: account.member.name, isDm: account.isDm } : undefined,
+    // Without a pick (or signed out), the device's light or dark mode decides.
+    theme: account.kind === "member" ? account.member.theme : undefined,
   };
 }
 
@@ -34,6 +38,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const user = data?.user;
   const role = user && data.role;
   const previewing = user?.isDm && role === "player";
+  const { pathname } = useLocation();
 
   // Says the page now answers clicks: tests wait for it rather than for time to pass. Parents'
   // effects run after their children's, so the whole page has hydrated by now.
@@ -42,20 +47,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <html lang="en">
+    <html lang="en" data-theme={data?.theme}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
       </head>
-      <body className="min-h-screen bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100">
-        <header className="border-b border-stone-200 bg-white/80 dark:border-stone-800 dark:bg-stone-900/80">
+      <body data-module={moduleOf(pathname)} className="gh-page bg-page text-ink min-h-screen">
+        <header className="gh-bar bg-bar text-on-bar border-line border-b">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-            <Link
-              to="/"
-              className="font-serif text-xl font-bold tracking-wide text-amber-800 dark:text-amber-400"
-            >
+            <Link to="/" className="gh-brand font-display text-brand text-2xl leading-none">
               Guildhall
             </Link>
             {user && (
@@ -90,10 +92,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             )}
           </div>
           {previewing && (
-            <p
-              role="status"
-              className="bg-sky-100 px-4 py-1.5 text-center text-sm text-sky-900 dark:bg-sky-950 dark:text-sky-200"
-            >
+            <p role="status" className="bg-info-surface text-info px-4 py-1.5 text-center text-sm">
               Previewing as a player: showing only what players can see.
             </p>
           )}
@@ -109,10 +108,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 function SignedIn({ name }: { name: string }) {
   return (
     <Form method="post" action="/logout" className="flex items-center gap-2 text-sm">
-      <span className="text-stone-600 dark:text-stone-400">{name}</span>
+      <Link to="/settings" title="Settings" className="hover:text-on-bar-strong">
+        {name}
+      </Link>
       <button
         type="submit"
-        className="rounded-md px-2 py-1 text-stone-600 hover:bg-stone-100 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-100"
+        className="hover:text-on-bar-strong rounded-md px-2 py-1 hover:bg-white/10"
       >
         Sign out
       </button>
@@ -121,9 +122,7 @@ function SignedIn({ name }: { name: string }) {
 }
 
 function navLinkClass({ isActive }: { isActive: boolean }) {
-  return isActive
-    ? "font-semibold text-stone-900 dark:text-stone-50"
-    : "text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100";
+  return isActive ? "gh-nav-on font-semibold text-on-bar-strong" : "hover:text-on-bar-strong";
 }
 
 export default function App() {
@@ -146,10 +145,10 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-16">
-      <h1 className="font-serif text-3xl font-bold">{message}</h1>
+      <h1 className="font-display text-title text-4xl">{message}</h1>
       <p className="mt-2">{details}</p>
       {stack && (
-        <pre className="mt-4 overflow-x-auto rounded bg-stone-200 p-4 text-xs dark:bg-stone-800">
+        <pre className="bg-raised mt-4 overflow-x-auto rounded p-4 text-xs">
           <code>{stack}</code>
         </pre>
       )}

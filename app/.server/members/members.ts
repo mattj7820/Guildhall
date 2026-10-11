@@ -4,6 +4,7 @@ import type { PlayerId } from "~/campaign/types";
 import { memberSchema } from "~/members/schema";
 import type { DiscordId, DiscordProfile, Member } from "~/members/types";
 import { newId } from "~/shared/ids";
+import type { Theme } from "~/theme/themes";
 import { JsonFile } from "../data/json-store";
 
 const fileSchema = z.object({
@@ -116,6 +117,11 @@ export class Members {
       delete changed.playerId;
       return { ...changed, ...withPlayer(playerId) };
     });
+  }
+
+  /** Saves the look someone picked. */
+  setTheme(discordId: DiscordId, theme: Theme): Promise<Member | undefined> {
+    return this.change(discordId, (member) => ({ ...member, theme }));
   }
 
   /**

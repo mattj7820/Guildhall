@@ -1,14 +1,430 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-@theme {
-  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+/* Self-hosted theme fonts. A browser only downloads a face it uses, so each person loads only
+   their own theme's. */
+@import "@fontsource/fondamento/400.css";
+@import "@fontsource/crimson-pro/400.css";
+@import "@fontsource/crimson-pro/400-italic.css";
+@import "@fontsource/crimson-pro/600.css";
+@import "@fontsource/crimson-pro/700.css";
+@import "@fontsource/grenze-gotisch/500.css";
+@import "@fontsource/grenze-gotisch/700.css";
+@import "@fontsource/spectral/400.css";
+@import "@fontsource/spectral/400-italic.css";
+@import "@fontsource/spectral/600.css";
+@import "@fontsource/spectral/700.css";
+@import "@fontsource/marcellus-sc/400.css";
+@import "@fontsource/cormorant-garamond/500.css";
+@import "@fontsource/cormorant-garamond/500-italic.css";
+@import "@fontsource/cormorant-garamond/700.css";
+@import "@fontsource/jost/400.css";
+@import "@fontsource/jost/500.css";
+@import "@fontsource/jost/600.css";
+@import "@fontsource/jost/700.css";
+
+/*
+ * Themes (app/theme/themes.ts). Components use these names, never raw palette colours; each
+ * theme only sets the variables behind them. <html data-theme> is the member's pick; with none,
+ * the device decides between Storybook (light) and Iron and Ember (dark).
+ */
+@theme inline {
+  --font-sans: var(--gh-font-ui);
+  --font-ui: var(--gh-font-ui);
+  --font-serif: var(--gh-font-display);
+  --font-display: var(--gh-font-display);
+  --font-prose: var(--gh-font-prose);
+
+  --color-page: var(--gh-page);
+  --color-surface: var(--gh-surface);
+  --color-raised: var(--gh-raised);
+  --color-field: var(--gh-field);
+  --color-line: var(--gh-line);
+  --color-line-strong: var(--gh-line-strong);
+  --color-ink: var(--gh-ink);
+  --color-muted: var(--gh-muted);
+  --color-faint: var(--gh-faint);
+  --color-title: var(--gh-title);
+  --color-accent: var(--gh-accent);
+  --color-accent-strong: var(--gh-accent-strong);
+  --color-on-accent: var(--gh-on-accent);
+  --color-link: var(--gh-link);
+  --color-trim: var(--gh-trim);
+  --color-bar: var(--gh-bar);
+  --color-on-bar: var(--gh-on-bar);
+  --color-on-bar-strong: var(--gh-on-bar-strong);
+  --color-brand: var(--gh-brand);
+  --color-dm: var(--gh-dm);
+  --color-dm-surface: var(--gh-dm-surface);
+  --color-info: var(--gh-info);
+  --color-info-surface: var(--gh-info-surface);
+  --color-good: var(--gh-good);
+  --color-good-surface: var(--gh-good-surface);
+  --color-warn: var(--gh-warn);
+  --color-warn-surface: var(--gh-warn-surface);
+  --color-danger: var(--gh-danger);
+  --color-danger-surface: var(--gh-danger-surface);
+  --color-module: var(--gh-module);
+}
+
+/* Storybook and Iron and Ember share one block: light-dark(Storybook, Iron and Ember), picked by
+   color-scheme, which follows the device until someone chooses. */
+:root {
+  color-scheme: light dark;
+  --gh-page: light-dark(#f3f1e7, #0f0e0e);
+  --gh-surface: light-dark(#ffffff, #161414);
+  --gh-raised: light-dark(#eef4f2, #1d1a19);
+  --gh-field: light-dark(#ffffff, #0a0909);
+  --gh-line: light-dark(#c9d9d5, #2f2a27);
+  --gh-line-strong: light-dark(#9fb9b4, #4a403b);
+  --gh-ink: light-dark(#1f3437, #dcd2c3);
+  --gh-muted: light-dark(#4f6668, #9a9085);
+  --gh-faint: light-dark(#7d9293, #6d655d);
+  --gh-title: light-dark(#1e4a4e, #efe5d6);
+  --gh-accent: light-dark(#1e5a5e, #b23d16);
+  --gh-accent-strong: light-dark(#164448, #c94a1c);
+  --gh-on-accent: light-dark(#fdf3d4, #fbe9d6);
+  --gh-link: light-dark(#8a2f5c, #ef7a45);
+  --gh-trim: light-dark(#d9b450, #ff8a3d);
+  --gh-bar: light-dark(#1e4a4e, #080707);
+  --gh-on-bar: light-dark(#b9d6cf, #9a9085);
+  --gh-on-bar-strong: light-dark(#f4d784, #ff8a3d);
+  --gh-brand: light-dark(#f0cd6d, #efe5d6);
+  --gh-dm: light-dark(#a8322a, #e86a50);
+  --gh-dm-surface: light-dark(#fbeeea, #241210);
+  --gh-info: light-dark(#1d5a7a, #9cc0e0);
+  --gh-info-surface: light-dark(#e3eff5, #121c26);
+  --gh-good: light-dark(#3f6f3a, #9cc070);
+  --gh-good-surface: light-dark(#e8f1e3, #151d10);
+  --gh-warn: light-dark(#8a5d0c, #e8b450);
+  --gh-warn-surface: light-dark(#fbf1d9, #241c0c);
+  --gh-danger: light-dark(#ad2e22, #ff7050);
+  --gh-danger-surface: light-dark(#fbe8e5, #2a1210);
+
+  /* Each part of the app has its own colour (data-module on <body>). */
+  --gh-module-hub: light-dark(#1e5a5e, #c94a1c);
+  --gh-module-wiki: light-dark(#1e5a5e, #c94a1c);
+  --gh-module-characters: light-dark(#a3366a, #c94a1c);
+  --gh-module-maps: light-dark(#3f6f3a, #c94a1c);
+  --gh-module-combat: light-dark(#9b3b23, #c94a1c);
+
+  --gh-font-display: "Fondamento", Georgia, serif;
+  --gh-font-prose: "Crimson Pro", Georgia, serif;
+  --gh-font-ui: "Crimson Pro", Georgia, serif;
 }
 
 @media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+  :root:not([data-theme]) {
+    --gh-font-display: "Grenze Gotisch", Georgia, serif;
+    --gh-font-prose: "Spectral", Georgia, serif;
+    --gh-font-ui: "Spectral", Georgia, serif;
+  }
+}
+
+[data-theme="storybook"] {
+  color-scheme: light;
+}
+
+[data-theme="ember"] {
+  color-scheme: dark;
+  --gh-font-display: "Grenze Gotisch", Georgia, serif;
+  --gh-font-prose: "Spectral", Georgia, serif;
+  --gh-font-ui: "Spectral", Georgia, serif;
+}
+
+[data-theme="gem"] {
+  color-scheme: dark;
+  --gh-page: #0a1322;
+  --gh-surface: #101c30;
+  --gh-raised: #16253d;
+  --gh-field: #0b1526;
+  --gh-line: #263a5a;
+  --gh-line-strong: #3a5580;
+  --gh-ink: #e1ebf8;
+  --gh-muted: #9fb2cc;
+  --gh-faint: #6f819b;
+  --gh-title: #f2f8ff;
+  --gh-accent: #8fd3ff;
+  --gh-accent-strong: #b5e3ff;
+  --gh-on-accent: #071120;
+  --gh-link: #9fdcff;
+  --gh-trim: #8fd3ff;
+  --gh-bar: #0c1729;
+  --gh-on-bar: #93a6c2;
+  --gh-on-bar-strong: #ffffff;
+  --gh-brand: #bfe6ff;
+  --gh-dm: #ff8fa3;
+  --gh-dm-surface: #2a1424;
+  --gh-info: #8fd3ff;
+  --gh-info-surface: #0f2236;
+  --gh-good: #6fe3a4;
+  --gh-good-surface: #0f2a20;
+  --gh-warn: #ffd17a;
+  --gh-warn-surface: #2a2210;
+  --gh-danger: #ff7c8f;
+  --gh-danger-surface: #2c1220;
+  --gh-module-hub: #c3a2ff;
+  --gh-module-wiki: #7cc8ff;
+  --gh-module-characters: #6fe3a4;
+  --gh-module-maps: #ffd17a;
+  --gh-module-combat: #ff7c8f;
+  --gh-font-display: "Marcellus SC", Georgia, serif;
+  --gh-font-prose: "Cormorant Garamond", Georgia, serif;
+  --gh-font-ui: "Jost", system-ui, sans-serif;
+}
+
+body {
+  --gh-module: var(--gh-module-hub);
+}
+[data-module="wiki"] {
+  --gh-module: var(--gh-module-wiki);
+}
+[data-module="characters"] {
+  --gh-module: var(--gh-module-characters);
+}
+[data-module="maps"] {
+  --gh-module: var(--gh-module-maps);
+}
+[data-module="combat"] {
+  --gh-module: var(--gh-module-combat);
+}
+
+/* `dark:` means a dark theme: one picked, or none picked on a dark device. */
+@custom-variant dark {
+  &:where([data-theme="ember"] *, [data-theme="gem"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme]) *) {
+      @slot;
+    }
+  }
+}
+
+/* Variants for each theme's dressing below; with no pick, the device picks Storybook or Ember. */
+@custom-variant storybook {
+  &:where([data-theme="storybook"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: light) {
+    &:where(:root:not([data-theme]) *) {
+      @slot;
+    }
+  }
+}
+@custom-variant ember {
+  &:where([data-theme="ember"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme]) *) {
+      @slot;
+    }
+  }
+}
+@custom-variant gem {
+  &:where([data-theme="gem"] *) {
+    @slot;
+  }
+}
+
+/*
+ * Each theme's dressing, on the shared hooks only (gh-page, gh-bar, gh-brand, gh-nav-on, gh-card,
+ * gh-card-icon, gh-panel, gh-button, gh-primary, gh-field, gh-hub-title). Components never style
+ * for a theme themselves.
+ */
+body {
+  /* The theme fonts differ in x-height; this keeps small text equally readable in each. */
+  font-size-adjust: 0.5;
+}
+
+.gh-page {
+  @variant storybook {
+    background-image: linear-gradient(#e6f0ef, transparent 28rem);
+  }
+  @variant ember {
+    background-image: radial-gradient(90% 40rem at 50% 120%, rgb(196 71 28 / 0.16), transparent);
+    background-attachment: fixed;
+  }
+  @variant gem {
+    background-image:
+      radial-gradient(40rem 30rem at 90% 0%, rgb(120 200 255 / 0.13), transparent),
+      radial-gradient(40rem 30rem at 0% 100%, rgb(160 120 255 / 0.11), transparent);
+    background-attachment: fixed;
+  }
+}
+
+.gh-bar {
+  position: relative;
+  @variant storybook {
+    border-bottom: 3px solid var(--gh-trim);
+  }
+  @variant ember {
+    &::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 -1px;
+      height: 1px;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        #c4471c 30%,
+        #ff8a3d 50%,
+        #c4471c 70%,
+        transparent
+      );
+    }
+    & nav {
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.75rem;
+    }
+  }
+}
+
+.gh-brand {
+  @variant ember {
+    font-weight: 700;
+    font-size: 1.75rem;
+  }
+  @variant gem {
+    letter-spacing: 0.24em;
+    font-size: 1.25rem;
+    background: linear-gradient(90deg, #8fd3ff, #c6a8ff, #ffd58f);
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+.gh-nav-on {
+  @variant storybook {
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--gh-on-bar-strong) 18%, transparent);
+    box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--gh-on-bar-strong) 18%, transparent);
+  }
+  @variant gem {
+    text-shadow: 0 0 0.6rem rgb(143 211 255 / 0.8);
+  }
+}
+
+.gh-hub-title {
+  @variant ember {
+    font-weight: 700;
+    font-size: 3.5rem;
+  }
+  @variant gem {
+    letter-spacing: 0.1em;
+    text-shadow: 0 0 1.75rem rgb(143 211 255 / 0.45);
+  }
+}
+
+.gh-card,
+.gh-panel {
+  @variant storybook {
+    border-radius: 1rem;
+    box-shadow: 0 0.5rem 1.25rem -1rem color-mix(in srgb, var(--gh-title) 70%, transparent);
+  }
+  @variant ember {
+    border-radius: 0;
+    border-top: 2px solid var(--gh-line-strong);
+    clip-path: polygon(
+      0 0,
+      calc(100% - 12px) 0,
+      100% 12px,
+      100% 100%,
+      12px 100%,
+      0 calc(100% - 12px)
+    );
+  }
+  @variant gem {
+    position: relative;
+    border-radius: 0.4rem;
+    &::before {
+      content: "";
+      position: absolute;
+      inset: -1px 12% auto;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gh-module), transparent);
+      box-shadow: 0 0 0.6rem var(--gh-module);
+      pointer-events: none;
+    }
+  }
+}
+
+/* A chosen card (aria-pressed): the clipped corners hide a ring, so Ember lights its edge. */
+.gh-card[aria-pressed="true"] {
+  @variant ember {
+    border-color: var(--gh-trim);
+  }
+}
+
+.gh-card:hover {
+  @variant storybook {
+    transform: translateY(-2px);
+  }
+  @variant ember {
+    border-top-color: var(--gh-trim);
+    background-image: linear-gradient(180deg, transparent, rgb(196 71 28 / 0.12));
+  }
+  @variant gem {
+    box-shadow: 0 0 1.6rem -0.5rem var(--gh-module);
+  }
+}
+
+.gh-card-icon {
+  @variant storybook {
+    border-radius: 0.6rem;
+    background: var(--gh-module);
+    color: var(--gh-on-accent);
+    box-shadow: inset 0 0 0 2px var(--gh-trim);
+  }
+  @variant ember {
+    border: 1px solid var(--gh-line-strong);
+    transform: rotate(45deg) scale(0.85);
+    & > svg {
+      transform: rotate(-45deg);
+    }
+  }
+  @variant gem {
+    position: relative;
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 4px;
+      border: 1px solid currentColor;
+      transform: rotate(45deg);
+      opacity: 0.55;
+      box-shadow: 0 0 0.75rem -0.1rem currentColor;
+    }
+  }
+}
+
+.gh-button,
+.gh-primary {
+  @variant storybook {
+    border-radius: 999px;
+  }
+  @variant ember {
+    border-radius: 2px;
+  }
+}
+
+.gh-field {
+  @variant ember {
+    border-radius: 2px;
+  }
+}
+
+.gh-primary {
+  @variant storybook {
+    box-shadow: inset 0 0 0 2px var(--gh-trim);
+  }
+  @variant ember {
+    background-image: linear-gradient(#c4471c, #8a2c10);
+    box-shadow: 0 0 1rem -0.3rem rgb(255 110 40 / 0.55);
+  }
+  @variant gem {
+    box-shadow: 0 0 1rem -0.25rem var(--gh-accent);
   }
 }
 

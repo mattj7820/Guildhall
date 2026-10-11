@@ -8,17 +8,14 @@ export function ViewToggle({ role }: { role: Role }) {
 
   return (
     <Form method="post" action="/view-mode" className="flex items-center gap-2 text-sm">
-      <span className="text-stone-500 dark:text-stone-400">
-        Viewing as{" "}
-        <strong className="text-stone-900 dark:text-stone-100">
-          {role === "dm" ? "DM" : "Player"}
-        </strong>
+      <span>
+        Viewing as <strong className="text-on-bar-strong">{role === "dm" ? "DM" : "Player"}</strong>
       </span>
       <input type="hidden" name="role" value={next} />
       <input type="hidden" name="redirectTo" value={location.pathname + location.search} />
       <button
         type="submit"
-        className="rounded-md border border-stone-300 px-2.5 py-1 font-medium hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800"
+        className="hover:text-on-bar-strong rounded-md border border-current/40 px-2.5 py-1 font-medium hover:bg-white/10"
       >
         {role === "dm" ? "Preview as player" : "Back to DM view"}
       </button>
