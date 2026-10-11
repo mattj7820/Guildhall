@@ -1316,3 +1316,67 @@ once, but nothing is blocked, and casting never checks it (decision 55): rituals
 are left to the table. A new spell starts prepared without a number, or while there's room under
 it, so typing in a whole class list doesn't leave every spell prepared. A long rest's toast offers
 "Change prepared spells" to a character who prepares. Others' summaries still show no spells.
+
+## 73. The SRD's monsters: bundled from openly licensed data, in the plugin's format
+
+**Date:** 2026-10-11
+
+**Context.** Every monster the tracker could use had to be typed into the vault as statblock YAML
+first: slow when prepping, and impossible mid-session when the party wanders somewhere unplanned.
+The SRD 5.1 (2014 rules) and SRD 5.2.1 (2024) are both CC BY 4.0, so their monsters can ship with
+Guildhall, credited. The table mainly plays 2024 rules but wants 2014's on hand.
+
+**Options considered.**
+
+- **The source.** Wizards publish the SRDs only as PDFs. Open5e's data has both versions and the
+  2024 initiative, but split over several tables, with damage bonuses missing on most 2014
+  attacks. The Fantasy Statblocks plugin's own bestiary is 2014 only, and already has slips.
+  5e-bits' 5e-database (MIT) has both versions in one well-structured shape, actively maintained,
+  with the SRD's spells beside them for the spell picker to come.
+- **The format.** Generated `Statblock` objects, or YAML text to parse, or the plugin's fields as
+  JSON.
+- **Pointing at one.** A made-up entity ID ("srd-2024/goblin") keeps stored refs' shape but gives
+  an ID a hidden meaning that a note's `id:` could clash with; a union of two ref kinds is the
+  cleanest type but changes every stored ref; an optional `source` changes nothing stored.
+
+**Decision.** `scripts/import-srd.ts` converts 5e-bits' monsters, pinned to a release, into the
+plugin's statblock fields (`monsters-5.1.json`, `monsters-5.2.json`, committed): the format the
+vault already uses, so they go through the same parser, renderer and click-to-roll, and a "make
+this my own" copy can later be plain YAML. 2024 monsters' initiative, which 5e-bits lacks and
+which differs from DEX for 106 of them, comes from Open5e at a pinned commit, by name. The
+conversion only lays monsters out as each book prints them; the SRD's words are never changed,
+and the SRD's own descriptions come as lore (45 monsters in 5.1, none in 5.2.1). `npm run
+srd:check` in CI fails if the committed files differ from what the pinned data makes, and the
+script refuses to drop a monster stored fights may point at.
+
+The parser learns the 2024 statblock: `initiative` (which wins over DEX) and `gear`, keys the
+plugin doesn't define but keeps, and "Attack Roll: +4" rolls like "+4 to hit". A ref to an SRD
+monster is `{ entityId: "<its ID>", name, source: "srd-5.1" | "srd-5.2" }`; without `source` it's
+the vault's, so everything stored before loads unchanged, and a source this version doesn't know
+is read as the vault's rather than refused (the combatant keeps its copied numbers).
+
+Known gaps, from the data: 2024's Octopus and Giant Fly aren't in 5e-bits; neither version says
+how many legendary actions a monster has; 2024 saving throws show as a line, not in the ability
+table. Bestiary references (`monster: Goblin`) still don't resolve.
+
+## 74. Statblocks loaded when shown, and finding a monster among hundreds
+
+**Date:** 2026-10-11
+
+**Context.** Decision 17 sent every statblock pre-rendered with the combat tools' pages. With the
+SRD that would be 3.1 MB (239 KB compressed) on every tracker and map page the DM opens, rendered
+on each request.
+
+**Decision.** The catalogue carries only what's needed to find and add a creature (17 KB
+compressed for all 682 with the fixture vault, held to a budget in a test), and the statblock
+panel loads the one it shows from a DM-only route, `/combat/statblock?key=` (players get the same
+404 as for one that isn't there). The SRD's are rendered once; the vault's each time, so edits
+show. The browser keeps what it loads with the catalogue it came with, so a page that loads again
+sees vault edits, and fetches everyone in the fight ahead so a turn's statblock shows at once.
+
+The picker was tried as a prototype first. One search (exact names, then prefixes, a word's
+start, anywhere), chips for Mine / 2024 / 2014, a challenge rating range and a type, and a + on
+each row that adds How many at once. Browsing lists everything by name, tagged: the DM found that
+easier than their own first. While searching, within a match the DM's own come first, then 2024,
+then 2014. Size and environment filters were left out (the data has no environments); the DM would
+like one by home region or theme one day.
