@@ -9,11 +9,13 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
   useRouteLoaderData,
 } from "react-router";
 import { authMiddleware } from "~/.server/auth/middleware";
 import { ViewToggle } from "~/components/ViewToggle";
 import { accountContext, viewerContext } from "~/context";
+import { moduleOf } from "~/theme/modules";
 import type { Route } from "./+types/root";
 import "./app.css";
 
@@ -25,6 +27,8 @@ export function loader({ context }: Route.LoaderArgs) {
   return {
     role: context.get(viewerContext).role,
     user: account.kind === "member" ? { name: account.member.name, isDm: account.isDm } : undefined,
+    // Without a pick (or signed out), the device's light or dark mode decides.
+    theme: account.kind === "member" ? account.member.theme : undefined,
   };
 }
 
@@ -34,6 +38,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const user = data?.user;
   const role = user && data.role;
   const previewing = user?.isDm && role === "player";
+  const { pathname } = useLocation();
 
   // Says the page now answers clicks: tests wait for it rather than for time to pass. Parents'
   // effects run after their children's, so the whole page has hydrated by now.
@@ -42,14 +47,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <html lang="en">
+    <html lang="en" data-theme={data?.theme}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
       </head>
-      <body className="min-h-screen bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100">
+      <body
+        data-module={moduleOf(pathname)}
+        className="min-h-screen bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100"
+      >
         <header className="border-b border-stone-200 bg-white/80 dark:border-stone-800 dark:bg-stone-900/80">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
             <Link
