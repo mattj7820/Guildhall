@@ -176,16 +176,16 @@
 body {
   --gh-module: var(--gh-module-hub);
 }
-body[data-module="wiki"] {
+[data-module="wiki"] {
   --gh-module: var(--gh-module-wiki);
 }
-body[data-module="characters"] {
+[data-module="characters"] {
   --gh-module: var(--gh-module-characters);
 }
-body[data-module="maps"] {
+[data-module="maps"] {
   --gh-module: var(--gh-module-maps);
 }
-body[data-module="combat"] {
+[data-module="combat"] {
   --gh-module: var(--gh-module-combat);
 }
 
@@ -198,6 +198,233 @@ body[data-module="combat"] {
     &:where(:root:not([data-theme]) *) {
       @slot;
     }
+  }
+}
+
+/* Variants for each theme's dressing below; with no pick, the device picks Storybook or Ember. */
+@custom-variant storybook {
+  &:where([data-theme="storybook"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: light) {
+    &:where(:root:not([data-theme]) *) {
+      @slot;
+    }
+  }
+}
+@custom-variant ember {
+  &:where([data-theme="ember"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme]) *) {
+      @slot;
+    }
+  }
+}
+@custom-variant gem {
+  &:where([data-theme="gem"] *) {
+    @slot;
+  }
+}
+
+/*
+ * Each theme's dressing, on the shared hooks only (gh-page, gh-bar, gh-brand, gh-nav-on, gh-card,
+ * gh-card-icon, gh-panel, gh-button, gh-primary, gh-field, gh-hub-title). Components never style
+ * for a theme themselves.
+ */
+body {
+  /* The theme fonts differ in x-height; this keeps small text equally readable in each. */
+  font-size-adjust: 0.5;
+}
+
+.gh-page {
+  @variant storybook {
+    background-image: linear-gradient(#e6f0ef, transparent 28rem);
+  }
+  @variant ember {
+    background-image: radial-gradient(90% 40rem at 50% 120%, rgb(196 71 28 / 0.16), transparent);
+    background-attachment: fixed;
+  }
+  @variant gem {
+    background-image:
+      radial-gradient(40rem 30rem at 90% 0%, rgb(120 200 255 / 0.13), transparent),
+      radial-gradient(40rem 30rem at 0% 100%, rgb(160 120 255 / 0.11), transparent);
+    background-attachment: fixed;
+  }
+}
+
+.gh-bar {
+  position: relative;
+  @variant storybook {
+    border-bottom: 3px solid var(--gh-trim);
+  }
+  @variant ember {
+    &::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 -1px;
+      height: 1px;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        #c4471c 30%,
+        #ff8a3d 50%,
+        #c4471c 70%,
+        transparent
+      );
+    }
+    & nav {
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.75rem;
+    }
+  }
+}
+
+.gh-brand {
+  @variant ember {
+    font-weight: 700;
+    font-size: 1.75rem;
+  }
+  @variant gem {
+    letter-spacing: 0.24em;
+    font-size: 1.25rem;
+    background: linear-gradient(90deg, #8fd3ff, #c6a8ff, #ffd58f);
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+.gh-nav-on {
+  @variant storybook {
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--gh-on-bar-strong) 18%, transparent);
+    box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--gh-on-bar-strong) 18%, transparent);
+  }
+  @variant gem {
+    text-shadow: 0 0 0.6rem rgb(143 211 255 / 0.8);
+  }
+}
+
+.gh-hub-title {
+  @variant ember {
+    font-weight: 700;
+    font-size: 3.5rem;
+  }
+  @variant gem {
+    letter-spacing: 0.1em;
+    text-shadow: 0 0 1.75rem rgb(143 211 255 / 0.45);
+  }
+}
+
+.gh-card,
+.gh-panel {
+  @variant storybook {
+    border-radius: 1rem;
+    box-shadow: 0 0.5rem 1.25rem -1rem color-mix(in srgb, var(--gh-title) 70%, transparent);
+  }
+  @variant ember {
+    border-radius: 0;
+    border-top: 2px solid var(--gh-line-strong);
+    clip-path: polygon(
+      0 0,
+      calc(100% - 12px) 0,
+      100% 12px,
+      100% 100%,
+      12px 100%,
+      0 calc(100% - 12px)
+    );
+  }
+  @variant gem {
+    position: relative;
+    border-radius: 0.4rem;
+    &::before {
+      content: "";
+      position: absolute;
+      inset: -1px 12% auto;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gh-module), transparent);
+      box-shadow: 0 0 0.6rem var(--gh-module);
+      pointer-events: none;
+    }
+  }
+}
+
+/* A chosen card (aria-pressed): the clipped corners hide a ring, so Ember lights its edge. */
+.gh-card[aria-pressed="true"] {
+  @variant ember {
+    border-color: var(--gh-trim);
+  }
+}
+
+.gh-card:hover {
+  @variant storybook {
+    transform: translateY(-2px);
+  }
+  @variant ember {
+    border-top-color: var(--gh-trim);
+    background-image: linear-gradient(180deg, transparent, rgb(196 71 28 / 0.12));
+  }
+  @variant gem {
+    box-shadow: 0 0 1.6rem -0.5rem var(--gh-module);
+  }
+}
+
+.gh-card-icon {
+  @variant storybook {
+    border-radius: 0.6rem;
+    background: var(--gh-module);
+    color: var(--gh-on-accent);
+    box-shadow: inset 0 0 0 2px var(--gh-trim);
+  }
+  @variant ember {
+    border: 1px solid var(--gh-line-strong);
+    transform: rotate(45deg) scale(0.85);
+    & > svg {
+      transform: rotate(-45deg);
+    }
+  }
+  @variant gem {
+    position: relative;
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 4px;
+      border: 1px solid currentColor;
+      transform: rotate(45deg);
+      opacity: 0.55;
+      box-shadow: 0 0 0.75rem -0.1rem currentColor;
+    }
+  }
+}
+
+.gh-button,
+.gh-primary {
+  @variant storybook {
+    border-radius: 999px;
+  }
+  @variant ember {
+    border-radius: 2px;
+  }
+}
+
+.gh-field {
+  @variant ember {
+    border-radius: 2px;
+  }
+}
+
+.gh-primary {
+  @variant storybook {
+    box-shadow: inset 0 0 0 2px var(--gh-trim);
+  }
+  @variant ember {
+    background-image: linear-gradient(#c4471c, #8a2c10);
+    box-shadow: 0 0 1rem -0.3rem rgb(255 110 40 / 0.55);
+  }
+  @variant gem {
+    box-shadow: 0 0 1rem -0.25rem var(--gh-accent);
   }
 }
 

@@ -67,8 +67,8 @@ function ThemeChoice({ theme, chosen }: { theme: Theme; chosen: boolean }) {
       name="theme"
       value={theme}
       aria-pressed={chosen}
-      className={`gh-card border-line bg-surface hover:border-accent flex flex-col gap-2 rounded-lg border p-4 text-left ${
-        chosen ? "ring-accent ring-2" : ""
+      className={`gh-card bg-surface hover:border-accent flex flex-col gap-2 rounded-lg border p-4 text-left ${
+        chosen ? "border-accent ring-accent ring-2" : "border-line"
       }`}
     >
       <span className="flex gap-1" aria-hidden="true">
@@ -82,9 +82,7 @@ function ThemeChoice({ theme, chosen }: { theme: Theme; chosen: boolean }) {
       </span>
       <span className="text-title text-lg font-semibold">{info.label}</span>
       <span className="text-muted text-sm">{info.description}</span>
-      <span className="text-accent text-sm font-semibold">
-        {chosen ? "Your theme" : "Use this"}
-      </span>
+      <span className="text-link text-sm font-semibold">{chosen ? "Your theme" : "Use this"}</span>
     </button>
   );
 }
