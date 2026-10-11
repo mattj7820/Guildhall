@@ -12,6 +12,7 @@ import {
   numbersFor,
   type CastOption,
 } from "~/characters/spells";
+import { startsPrepared } from "~/characters/preparing";
 import { SPELL_LEVELS, type Spell, type SpellLevel } from "~/characters/types";
 import type { CatalogueItem, LinkedNote } from "~/characters/view";
 import { SPELL_SHAPES, type SpellShape } from "~/maps/grid/shapes";
@@ -159,6 +160,7 @@ export function SpellsTab({
                   concentration: false,
                   ritual: false,
                   attack: false,
+                  prepared: startsPrepared(sheet),
                 },
               },
             })
