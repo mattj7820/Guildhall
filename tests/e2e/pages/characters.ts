@@ -184,6 +184,37 @@ export class CharacterSheet extends AppPage {
     return row;
   }
 
+  /** The Spells tab's contents on the full sheet; beside the map, pass the panel instead. */
+  get spells() {
+    return this.page.getByRole("tabpanel");
+  }
+
+  /** A ready spell, listed day to day (outside Prepare mode). */
+  readySpell(name: string, within: Locator = this.spells) {
+    return within.getByRole("button", { name: `${name}: details`, exact: true });
+  }
+
+  /** Opens Prepare mode from the Spells tab. */
+  async openPrepare(within: Locator = this.spells) {
+    await within.getByRole("button", { name: "Prepare spells" }).first().click();
+    await expect(within.getByRole("heading", { name: "Prepare spells" })).toBeVisible();
+  }
+
+  /** A spell's checkbox in Prepare mode: checked while it's prepared. */
+  prepareBox(name: string, within: Locator = this.spells) {
+    return within.getByRole("checkbox", { name: `Prepare ${name}`, exact: true });
+  }
+
+  /** Prepare mode's count, "3 / 3 prepared" or "3 prepared", and anything said after it. */
+  preparedCount(within: Locator = this.spells) {
+    return within.getByText(/^\d+( \/ \d+)? prepared/);
+  }
+
+  /** How many count as prepared now, read from Prepare mode's count. */
+  async prepared(within: Locator = this.spells): Promise<number> {
+    return Number(/^(\d+)/.exec((await this.preparedCount(within).textContent()) ?? "")?.[1]);
+  }
+
   /** While editing, adds a feature from the open tab and fills it in. */
   async addFeature({
     name,
