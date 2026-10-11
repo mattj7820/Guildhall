@@ -177,8 +177,15 @@ describe("Vault", () => {
         squares: 1,
         hitPoints: 7,
         hitDice: "2d6",
-        dexterityModifier: 2,
+        initiative: 2,
       });
+    });
+
+    it("takes a 2024 statblock's own initiative over its DEX modifier", () => {
+      const modern = vault
+        .statblocks(DM_VIEWER)
+        .find((s) => s.statblock.name === "Fixture 2024 Statblock");
+      expect(modern?.statblock.numbers.initiative).toBe(3);
     });
 
     it("skips the unreadable statblock in a note that also has a readable one", () => {

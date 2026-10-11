@@ -56,7 +56,7 @@ function toCreature(
     hitPoints: statblock.numbers.hitPoints,
     hitDice: statblock.numbers.hitDice,
     speed: statblock.speed,
-    initiative: statblock.numbers.dexterityModifier,
+    initiative: statblock.numbers.initiative,
     html: toHtml(renderStatblock(statblock, { rollable: true })),
     ...extra,
   };

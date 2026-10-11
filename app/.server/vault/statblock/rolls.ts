@@ -14,12 +14,23 @@ export type RollToken =
       rechargeOn?: number;
     };
 
-// Attack bonuses ("+4 to hit"), recharge ("Recharge 5–6", "Recharge 6"), and dice ("1d6 + 2").
+// Attack bonuses ("+4 to hit", or 2024's "Attack Roll: +4"), recharge ("Recharge 5–6",
+// "Recharge 6"), and dice ("1d6 + 2").
 const ROLLS =
-  /([+−-]\d+)(?= to hit)|Recharge (\d)(?:\s*[–-]\s*6)?|(?<![\w.])\d*d\d+(?:\s*[+−-]\s*\d+(?!\s*d\d))?(?![\w.])/g;
+  /([+−-]\d+)(?= to hit)|(?<=Attack Roll:\s*)([+−-]\d+)|Recharge (\d)(?:\s*[–-]\s*6)?|(?<![\w.])\d*d\d+(?:\s*[+−-]\s*\d+(?!\s*d\d))?(?![\w.])/g;
 
-/** Splits text into plain text and rolls, keeping every character in order. */
-export function findRolls(text: string): RollToken[] {
+/**
+ * Splits text into plain text and rolls, keeping every character in order. With `afterAttackRoll`
+ * the text follows a 2024 "Attack Roll:" label that was split off, so a leading bonus is the attack.
+ */
+export function findRolls(
+  text: string,
+  { afterAttackRoll = false }: { afterAttackRoll?: boolean } = {},
+): RollToken[] {
+  if (afterAttackRoll) {
+    const prefix = "Attack Roll:";
+    return trimStart(findRolls(prefix + text), prefix.length);
+  }
   const tokens: RollToken[] = [];
   let last = 0;
   for (const match of text.matchAll(ROLLS)) {
@@ -33,8 +44,17 @@ export function findRolls(text: string): RollToken[] {
   return tokens;
 }
 
+/** Drops the first `length` characters, which are always plain text. */
+function trimStart(tokens: RollToken[], length: number): RollToken[] {
+  const [first, ...rest] = tokens;
+  if (first?.type !== "text") return tokens;
+  const text = first.text.slice(length);
+  return text ? [{ type: "text", text }, ...rest] : rest;
+}
+
 function toRoll(match: RegExpExecArray | RegExpMatchArray): RollToken | undefined {
-  const [text, bonus, recharge] = match;
+  const [text, toHit, attackRoll, recharge] = match;
+  const bonus = toHit ?? attackRoll;
   if (recharge) {
     return {
       type: "roll",

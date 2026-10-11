@@ -36,6 +36,7 @@ describe("combatCatalogue", () => {
 
   it("sorts creatures by name", () => {
     expect(catalogue.creatures.map((c) => c.name)).toEqual([
+      "Fixture 2024 Statblock",
       "Fixture Bare",
       "Fixture Companion",
       "Fixture Informant Disguise",
@@ -43,6 +44,10 @@ describe("combatCatalogue", () => {
       "Fixture Secret Form",
       "Test Creature",
     ]);
+  });
+
+  it("takes a 2024 statblock's own initiative bonus", () => {
+    expect(creature("Fixture 2024 Statblock")?.initiativeBonus).toBe(3);
   });
 
   it("sends each statblock pre-rendered in the book layout", () => {

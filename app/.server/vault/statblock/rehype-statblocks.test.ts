@@ -10,6 +10,12 @@ const render = (markdown: string) =>
 
 const statblock = (...lines: string[]) => ["```statblock", ...lines, "```"].join("\n");
 
+function statblockFrom(...lines: string[]) {
+  const result = parseStatblock(lines.join("\n"));
+  if (!result.ok) throw new Error(result.error);
+  return result.statblock;
+}
+
 describe("statblocks in rendered notes", () => {
   const html = render(
     statblock(
@@ -160,6 +166,58 @@ describe("rollable statblocks (combat tracker)", () => {
     // Quotes in the label are escaped, so it can't break out of its attribute.
     const html = toHtml(tree);
     expect(html).toContain('x&#x22; onmouseover=&#x22;alert(1) damage"');
+  });
+
+  describe("2024 statblocks", () => {
+    const html = toHtml(
+      renderStatblock(
+        statblockFrom(
+          "name: Fixture 2024 Creature",
+          "ac: 15",
+          "initiative: 4",
+          "stats: [10, 14, 10, 10, 10, 10]",
+          "gear: Fixture Spear",
+          "actions:",
+          "  - name: Fixture Jab",
+          '    desc: "Melee Attack Roll: +4, reach 5 ft. Hit: 5 (1d6 + 2) Piercing damage."',
+          "  - name: Fixture Burst",
+          '    desc: "Dexterity Saving Throw: DC 12, each creature. Failure: 7 (2d6) Fire damage. Success: Half damage."',
+          "reactions:",
+          "  - name: Fixture Parry",
+          '    desc: "Trigger: A creature hits it. Response: It adds 2 to its AC."',
+        ),
+        { rollable: true },
+      ),
+    );
+
+    it("shows initiative after Armor Class, with the bonus to roll", () => {
+      expect(html).toContain(
+        '<strong>Initiative</strong> <button class="statblock-roll" type="button" data-roll="1d20 + 4" data-roll-kind="check" data-roll-label="Initiative" aria-label="Roll Initiative: 1d20 + 4">+4</button> (14)',
+      );
+      expect(html.indexOf("Armor Class")).toBeLessThan(html.indexOf("Initiative"));
+    });
+
+    it("shows gear", () => {
+      expect(html).toContain("<strong>Gear</strong> Fixture Spear");
+    });
+
+    it("makes a 2024 attack roll clickable", () => {
+      expect(html).toContain('data-roll="1d20 + 4" data-roll-kind="attack"');
+    });
+
+    it("italicises the 2024 labels", () => {
+      for (const label of [
+        "Melee Attack Roll:",
+        "Hit:",
+        "Dexterity Saving Throw:",
+        "Failure:",
+        "Success:",
+        "Trigger:",
+        "Response:",
+      ]) {
+        expect(html).toContain(`<em>${label}</em>`);
+      }
+    });
   });
 
   it("leaves wiki statblocks without roll buttons", () => {

@@ -55,11 +55,14 @@ export function renderStatblock(
         ]),
       );
 
-  const basics = properties([
-    ["Armor Class", statblock.armorClass],
-    ["Hit Points", statblock.hitPoints],
-    ["Speed", statblock.speed],
-  ]);
+  const basics = [
+    ...properties([["Armor Class", statblock.armorClass]]),
+    ...(statblock.initiative ? [initiativeLine(statblock, rollable)] : []),
+    ...properties([
+      ["Hit Points", statblock.hitPoints],
+      ["Speed", statblock.speed],
+    ]),
+  ];
 
   const details = properties([
     ["Saving Throws", statblock.savingThrows, "save"],
@@ -68,6 +71,7 @@ export function renderStatblock(
     ["Damage Resistances", statblock.damageResistances],
     ["Damage Immunities", statblock.damageImmunities],
     ["Condition Immunities", statblock.conditionImmunities],
+    ["Gear", statblock.gear],
     ["Senses", statblock.senses],
     ["Languages", statblock.languages],
     ["Challenge", statblock.challenge],
@@ -98,6 +102,27 @@ export function renderStatblock(
       ]),
   ]);
 }
+
+/** "Initiative +2 (12)", with the bonus as a check to roll. */
+function initiativeLine(statblock: Statblock, rollable: boolean): Element {
+  const text = statblock.initiative ?? "";
+  const expression = rollable
+    ? dice(`1d20 ${signedBonus(statblock.numbers.initiative)}`)
+    : undefined;
+  const [bonus, ...rest] = text.split(" ");
+  return h("p.statblock-property", [
+    h("strong", "Initiative"),
+    " ",
+    ...(expression
+      ? [
+          rollButton(bonus, expression, "check", "Initiative"),
+          rest.length ? ` ${rest.join(" ")}` : "",
+        ]
+      : [text]),
+  ]);
+}
+
+const signedBonus = (bonus: number) => (bonus < 0 ? `- ${-bonus}` : `+ ${bonus}`);
 
 function abilityTable(statblock: Statblock, rollable: boolean): Element {
   const abilities = statblock.abilities ?? [];
@@ -152,9 +177,12 @@ function renderFeature({ name, description }: Feature, rollable: boolean): Eleme
   ]);
 }
 
-/** Italicises attack labels as the books do: "*Melee Weapon Attack:* +4 to hit… *Hit:* 5 (1d6 + 2)". */
+/**
+ * Italicises attack labels as the books do: "*Melee Weapon Attack:* +4 to hit… *Hit:* 5 (1d6 + 2)",
+ * and the 2024 books' "*Melee Attack Roll:* +4… *Dexterity Saving Throw:* DC 13".
+ */
 const ATTACK_LABEL =
-  /((?:Melee or Ranged|Melee|Ranged) (?:Weapon|Spell) Attack:|Hit:|Miss:|Failure:|Success:)/;
+  /((?:Melee or Ranged|Melee|Ranged) (?:Weapon |Spell )?Attack(?: Roll)?:|(?:Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) Saving Throw:|Hit or Miss:|Hit:|Miss:|Failure or Success:|Failure:|Success:|Trigger:|Response:)/;
 
 function formatDescription(
   description: string,
@@ -166,16 +194,23 @@ function formatDescription(
     ...line
       .split(ATTACK_LABEL)
       .filter(Boolean)
-      .flatMap((part): ElementContent[] =>
-        ATTACK_LABEL.test(part) ? [h("em", part)] : withRolls(part, rollable, featureName),
+      .flatMap((part, index, parts): ElementContent[] =>
+        ATTACK_LABEL.test(part)
+          ? [h("em", part)]
+          : withRolls(part, rollable, featureName, parts[index - 1]?.endsWith("Attack Roll:")),
       ),
   ]);
 }
 
 /** Text, with any rolls in it as buttons when the statblock is rollable. */
-function withRolls(text: string, rollable: boolean, featureName: string): ElementContent[] {
+function withRolls(
+  text: string,
+  rollable: boolean,
+  featureName: string,
+  afterAttackRoll = false,
+): ElementContent[] {
   if (!rollable) return [{ type: "text", value: text }];
-  return findRolls(text).map((token) =>
+  return findRolls(text, { afterAttackRoll }).map((token) =>
     token.type === "text"
       ? { type: "text", value: token.text }
       : rollButton(
