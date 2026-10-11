@@ -194,6 +194,14 @@ export class CharacterSheet extends AppPage {
     return within.getByRole("button", { name: `${name}: details`, exact: true });
   }
 
+  /** Opens the spell picker from the Spells tab; beside the map, pass the panel. */
+  async openSpellPicker(within: Locator = this.spells) {
+    await within.getByRole("button", { name: "Add spells" }).click();
+    const picker = new SpellPicker(within.getByRole("region", { name: "Add spells" }));
+    await expect(picker.found.getByRole("listitem").first()).toBeVisible();
+    return picker;
+  }
+
   /** Opens Prepare mode from the Spells tab. */
   async openPrepare(within: Locator = this.spells) {
     await within.getByRole("button", { name: "Prepare spells" }).first().click();
@@ -350,5 +358,48 @@ export class Bag {
     }
     await this.page.keyboard.press("Space");
     await expect(this.announced(`Dropped ${name}.`)).toBeAttached();
+  }
+}
+
+/** The spell picker on the Spells tab: the SRD's spells and the DM's spell notes. */
+export class SpellPicker {
+  constructor(readonly region: Locator) {}
+
+  get found() {
+    return this.region.getByRole("list", { name: "Spells found" });
+  }
+
+  get status() {
+    return this.region.getByRole("status");
+  }
+
+  async search(text: string) {
+    await this.region.getByRole("searchbox", { name: "Find a spell" }).fill(text);
+  }
+
+  chip(name: string) {
+    return this.region.getByRole("button", { name, exact: true });
+  }
+
+  /** A spell's row, by its name and tag ("Mine", "2024", "2014"). */
+  row(name: string, tag: string) {
+    // The inner locator is matched within each row, so it starts from the page.
+    const details = this.region
+      .page()
+      .getByRole("button", { name: `${name} (${tag}): details`, exact: true });
+    return this.found.getByRole("listitem").filter({ has: details });
+  }
+
+  details(name: string, tag: string) {
+    return this.region.getByRole("button", { name: `${name} (${tag}): details`, exact: true });
+  }
+
+  async add(name: string, tag: string) {
+    await this.region.getByRole("button", { name: `Add ${name} (${tag})`, exact: true }).click();
+    await expect(this.status).toContainText(`Added ${name} (${tag})`);
+  }
+
+  async done() {
+    await this.region.getByRole("button", { name: "Done", exact: true }).click();
   }
 }

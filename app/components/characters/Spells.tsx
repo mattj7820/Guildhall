@@ -133,12 +133,12 @@ export function SpellsTab({
             <span className="ml-auto flex flex-wrap gap-2">
               {!picking && (
                 <button type="button" className={buttonClass} onClick={() => setPicking(true)}>
-                  {compact ? "+ Add" : "Add spells"}
+                  Add spells
                 </button>
               )}
               {canPrepare(sheet) && (
                 <button type="button" className={buttonClass} onClick={openPrepare}>
-                  {compact ? "Prepare" : "Prepare spells"}
+                  Prepare spells
                 </button>
               )}
             </span>
