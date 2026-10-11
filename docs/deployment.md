@@ -132,7 +132,8 @@ Each backup is a tar of the volume, with the JSON files at the top and the `cach
    `docker volume ls`):
 
    ```sh
-   docker run --rm -v <project>_data:/data -v "$PWD":/backup alpine      sh -c 'rm -rf /data/* && tar -xf /backup/<backup>.tar -C /data'
+   docker run --rm -v <project>_data:/data -v "$PWD":/backup alpine \
+     sh -c 'rm -rf /data/* && tar -xf /backup/<backup>.tar -C /data'
    ```
 
 3. Start `app` again. Anything changed since the backup is lost, so restore from just before
