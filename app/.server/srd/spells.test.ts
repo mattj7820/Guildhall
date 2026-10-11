@@ -1,10 +1,14 @@
+import { isDeepStrictEqual } from "node:util";
 import { describe, expect, it } from "vitest";
 import { ABILITIES } from "~/characters/abilities";
-import { AREA_FEET_MAX } from "~/characters/schema";
+import { AREA_FEET_MAX, spellSchema } from "~/characters/schema";
+import { pickedSpell } from "~/characters/spell-options";
+import { aSheet } from "~/characters/test-builders";
 import { parseDice } from "~/dice/parse";
 import { SPELL_SHAPES } from "~/maps/grid/shapes";
 import srd51 from "./spells-5.1.json";
 import srd52 from "./spells-5.2.json";
+import { srdSpells, srdSpellText } from "./spells";
 
 const CLASSES = ["Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Warlock", "Wizard"];
 
@@ -68,5 +72,28 @@ describe.each([
     expect(spells.filter(({ save }) => save).length).toBeGreaterThan(80);
     expect(spells.filter(({ roll }) => roll).length).toBeGreaterThan(60);
     expect(spells.filter(({ area }) => area).length).toBeGreaterThan(60);
+  });
+});
+
+describe("every SRD spell", () => {
+  const all = [...srdSpells().values()];
+
+  it("picks into a spell the sheet stores as it is", () => {
+    const changed = all.filter(({ option }) => {
+      const spell = pickedSpell(option, "new-id", aSheet());
+      return !isDeepStrictEqual(spellSchema.parse(spell), spell);
+    });
+    expect(changed.map(({ option }) => option.key)).toEqual([]);
+  });
+
+  it("keeps every word of its text when rendered", () => {
+    const words = (text: string) => text.match(/[A-Za-z0-9]+/g) ?? [];
+    const lost = all.filter(({ option, stored }) => {
+      const html = srdSpellText(option.key)!.html.replace(/<[^>]+>/g, " ");
+      // Entities (&#x27;) split words just as the apostrophes they stand for do.
+      const rendered = words(html.replace(/&#?w+;/g, " ")).join(" ");
+      return !rendered.includes(words(stored.text).join(" "));
+    });
+    expect(lost.map(({ option }) => option.key)).toEqual([]);
   });
 });

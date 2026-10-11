@@ -40,5 +40,7 @@ export default [
   route("characters/:id/changes", "routes/character-changes.ts"),
   route("characters/:id/sheet", "routes/character-sheet-data.ts"),
   route("characters/:id/give", "routes/character-give.ts"),
+  route("spells", "routes/spells.ts"),
+  route("spells/text", "routes/spell-text.ts"),
   route("credits", "routes/credits.tsx"),
 ] satisfies RouteConfig;

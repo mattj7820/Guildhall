@@ -103,8 +103,19 @@ export interface CharacterPage {
   spellCatalogue?: CatalogueItem[];
   /** Those notes as this viewer may read them, by entity ID, for spells' details. */
   spellNotes?: Record<EntityId, LinkedNote>;
+  /** The text of the SRD spells this sheet's spells link to, by `srdSpellKey`. */
+  spellTexts?: Record<string, SpellText>;
   /** Who this viewer gives items as ("the DM"); none when it's their own bag. */
   givingAs?: string;
   /** Other party members with a bag, whom items can be given to. */
   recipients: GiftRecipient[];
+}
+
+/** A spell's text as a viewer may read it: an SRD spell's, or a vault note's without DM parts. */
+export interface SpellText {
+  html: string;
+  /** Where it's from: the SRD ("SRD 5.2.1"), or the note's title. */
+  source: string;
+  /** A note's page in the wiki. */
+  url?: string;
 }

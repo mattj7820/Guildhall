@@ -125,7 +125,10 @@ describe("characterPage", () => {
 describe("spellCatalogue", () => {
   it("offers players only shared spell notes, without their DM parts", () => {
     const { spellCatalogue: catalogue, spellNotes } = spellCatalogue(vault, playerOne);
-    expect(catalogue.map((spell) => spell.title)).toEqual(["Fixture Spark"]);
+    expect(catalogue.map((spell) => spell.title)).toEqual([
+      "Fixture Artificer Spell",
+      "Fixture Spark",
+    ]);
     const spark = spellNotes["Spells/Fixture Spark"].html;
     expect(spark).toContain("Players see this paragraph");
     expect(spark).not.toContain("sparksecretcallout");
@@ -135,13 +138,14 @@ describe("spellCatalogue", () => {
   it("offers the DM every spell note, saying which players can't read", () => {
     const { spellCatalogue: catalogue } = spellCatalogue(vault, DM_VIEWER);
     expect(catalogue).toEqual([
+      { id: "Spells/Fixture Artificer Spell", title: "Fixture Artificer Spell" },
       { id: "Spells/Fixture Secret Spell", title: "Fixture Secret Spell", hiddenFromPlayers: true },
       { id: "Spells/Fixture Spark", title: "Fixture Spark" },
     ]);
   });
 
   it("comes with a PC's sheet, not a companion's", () => {
-    expect(characterPage(vault, pcOne, playerOne).spellCatalogue).toHaveLength(1);
+    expect(characterPage(vault, pcOne, playerOne).spellCatalogue).toHaveLength(2);
     expect(characterPage(vault, aCompanion(), playerOne).spellCatalogue).toBeUndefined();
   });
 });

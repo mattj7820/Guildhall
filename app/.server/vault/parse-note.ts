@@ -1,7 +1,9 @@
 import matter from "gray-matter";
 import { parseVisibility } from "~/campaign/visibility";
 import type { EntityId, Visibility } from "~/campaign/types";
+import { nonEmptyString, stringList } from "./frontmatter";
 import { basename, stripMarkdownExtension } from "./paths";
+import { spellFields, type SpellFields } from "./spell-fields";
 
 /** A markdown note from the vault, parsed but not yet rendered. */
 export interface Note {
@@ -20,6 +22,8 @@ export interface Note {
   tags: string[];
   /** For `type: pc` notes: the name of the player who controls the character. */
   player?: string;
+  /** For `type: spell` notes: what the frontmatter says about the spell (see the README). */
+  spell?: SpellFields;
   /** Markdown body with frontmatter removed. */
   body: string;
   /** Set when the frontmatter could not be parsed; the note is then treated as DM-only. */
@@ -43,38 +47,21 @@ export function parseNote(path: string, source: string): Note {
     body = stripFrontmatterBlock(source);
   }
 
+  const type = nonEmptyString(data.type)?.toLowerCase();
   return {
     id: nonEmptyString(data.id) ?? slug,
     path,
     slug,
     title,
     visibility: parseVisibility(data.visibility),
-    type: nonEmptyString(data.type)?.toLowerCase(),
+    type,
     aliases: stringList(data.aliases ?? data.alias),
     tags: stringList(data.tags ?? data.tag).map((tag) => tag.replace(/^#/, "")),
     player: nonEmptyString(data.player),
+    ...(type === "spell" && { spell: spellFields(data) }),
     body,
     frontmatterError,
   };
-}
-
-function nonEmptyString(value: unknown): string | undefined {
-  if (typeof value === "number") return String(value);
-  return typeof value === "string" && value.trim() ? value.trim() : undefined;
-}
-
-/** Obsidian accepts both YAML lists and single/comma-separated strings for aliases and tags. */
-function stringList(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value.map(nonEmptyString).filter((item): item is string => item !== undefined);
-  }
-  const single = nonEmptyString(value);
-  return single
-    ? single
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean)
-    : [];
 }
 
 /** Removes a leading `---` … `---` block without interpreting it. */

@@ -221,6 +221,36 @@ player: Sam # on type: pc notes, who plays the character (their sheet, the comba
 ---
 ```
 
+#### Spell notes
+
+Spells that aren't in the SRD go in the vault as `type: spell` notes. The spell picker on a sheet
+lists them (tagged "Mine") beside the SRD's, and picking one fills in a new spell from its
+frontmatter and links it to the note, whose text (without its DM parts) shows with the spell.
+Every field is optional: a note fills in what it gives, the player types the rest, and a value
+Guildhall can't read is left out rather than refusing the note. Players only ever see notes they
+may read.
+
+```yaml
+---
+type: spell
+visibility: players # as for any note: DM-only unless it says players
+level: 1 # 0 to 9, or cantrip
+school: Evocation
+classes: [Artificer, Wizard] # for the picker's class filter (the SRD has no Artificer)
+casting_time: 1 action
+range: 60 feet
+components: V, S, M
+duration: Concentration, up to 1 minute
+concentration: true # true or false (yes or no)
+ritual: false
+attack: true # rolls a spell attack
+save: dex # str, dex, con, int, wis or cha (or the full name)
+roll: 3d8 # damage or healing dice
+effect: bludgeoning # what the roll is: a damage type, or healing
+area: 20 ft cube # a size in feet and a shape: sphere (or radius), cube, cone or line
+---
+```
+
 ## Scripts
 
 | Command              | What it does                                                                  |
