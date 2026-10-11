@@ -1,6 +1,7 @@
 import type { MouseEvent } from "react";
 import { Link } from "react-router";
-import type { CreatureOption } from "~/combat/types";
+import { useStatblock } from "~/combat/statblocks";
+import type { CombatCatalogue, CreatureOption } from "~/combat/types";
 import type { RollKind, RollRequest } from "~/dice/roll-log";
 import { panelClass } from "~/components/styles";
 
@@ -12,16 +13,20 @@ const ROLL_KINDS: RollKind[] = ["attack", "damage", "check", "recharge"];
  * without, the rolls are inert.
  */
 export function StatblockPanel({
+  catalogue,
   combatantName,
   creature,
   hasStatblock,
   onRoll,
 }: {
+  catalogue: CombatCatalogue;
   combatantName?: string;
   creature?: CreatureOption;
   hasStatblock: boolean;
   onRoll?: (request: RollRequest) => void;
 }) {
+  const statblock = useStatblock(catalogue, creature?.key);
+
   /** The statblock arrives as HTML, so its roll buttons are handled here, in one place. */
   function handleClick(event: MouseEvent<HTMLDivElement>) {
     const button = (event.target as Element).closest<HTMLButtonElement>("button.statblock-roll");
@@ -44,12 +49,22 @@ export function StatblockPanel({
     >
       {creature ? (
         <>
-          {/* Rendered on the server from the vault, with vault text as text nodes only. */}
-          <div
-            onClick={handleClick}
-            inert={!onRoll}
-            dangerouslySetInnerHTML={{ __html: creature.html }}
-          />
+          {statblock.status === "ready" ? (
+            // Rendered on the server from the vault, with vault text as text nodes only.
+            <div
+              onClick={handleClick}
+              inert={!onRoll}
+              dangerouslySetInnerHTML={{ __html: statblock.view.html }}
+            />
+          ) : (
+            <p className="text-sm text-muted" role="status">
+              {statblock.status === "failed"
+                ? `Couldn't load ${creature.name}'s statblock. It'll try again when shown next.`
+                : statblock.status === "missing"
+                  ? `${creature.name}'s statblock isn't in the vault any more.`
+                  : `Loading ${creature.name}'s statblock…`}
+            </p>
+          )}
           <p className="mt-3 text-sm">
             <Link to={creature.noteUrl} className="text-link underline">
               Open {creature.noteTitle} in the wiki

@@ -1,9 +1,9 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { DM_VIEWER } from "~/campaign/types";
+import { DM_VIEWER, PLAYER_VIEWER } from "~/campaign/types";
 import { WHOLE_PARTY, type CombatCatalogue } from "~/combat/types";
 import { FIXTURE_VAULT } from "../../../tests/support/fixture-vault";
 import { Vault } from "../vault/vault";
-import { combatCatalogue } from "./catalogue";
+import { combatCatalogue, statblockView } from "./catalogue";
 
 /** Integration tests over the fixture vault. */
 let catalogue: CombatCatalogue;
@@ -50,16 +50,8 @@ describe("combatCatalogue", () => {
     expect(creature("Fixture 2024 Statblock")?.initiativeBonus).toBe(3);
   });
 
-  it("sends each statblock pre-rendered in the book layout", () => {
-    const html = creature("Fixture Minion")?.html ?? "";
-    expect(html).toContain('aria-label="Statblock: Fixture Minion"');
-    expect(html).toContain("Fixture Jab");
-  });
-
-  it("makes the tracker's statblocks clickable to roll", () => {
-    expect(creature("Fixture Minion")?.html).toContain(
-      'data-roll="1d20 + 4" data-roll-kind="attack" data-roll-label="Fixture Jab attack"',
-    );
+  it("sends no statblocks with the page: they're loaded when shown", () => {
+    expect(JSON.stringify(catalogue)).not.toContain("statblock-roll");
   });
 
   it("lists the party with the player who controls each character, then the shared companion", () => {
@@ -87,5 +79,33 @@ describe("combatCatalogue", () => {
         statblock: { entityId: "Bestiary/Fixture Companion", name: expect.any(String) },
       },
     ]);
+  });
+});
+
+describe("statblockView", () => {
+  let vault: Vault;
+  beforeAll(async () => {
+    vault = await Vault.load(FIXTURE_VAULT);
+  });
+  const minion = "Bestiary/Fixture Minion#Fixture Minion";
+
+  it("renders a statblock in the book layout", () => {
+    const html = statblockView(vault, DM_VIEWER, minion)?.html ?? "";
+    expect(html).toContain('aria-label="Statblock: Fixture Minion"');
+    expect(html).toContain("Fixture Jab");
+  });
+
+  it("marks its rolls, for the tracker to roll", () => {
+    expect(statblockView(vault, DM_VIEWER, minion)?.html).toContain(
+      'data-roll="1d20 + 4" data-roll-kind="attack" data-roll-label="Fixture Jab attack"',
+    );
+  });
+
+  it("has nothing for a key that isn't a statblock", () => {
+    expect(statblockView(vault, DM_VIEWER, "Bestiary/Fixture Minion#Nobody")).toBeUndefined();
+  });
+
+  it("gives players nothing from a note they can't read", () => {
+    expect(statblockView(vault, PLAYER_VIEWER, minion)).toBeUndefined();
   });
 });

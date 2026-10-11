@@ -9,6 +9,7 @@ export default [
   ]),
   route("combat", "routes/combat.tsx"),
   route("combat/fight", "routes/combat-fight.ts"),
+  route("combat/statblock", "routes/combat-statblock.ts"),
   route("combat/prepared", "routes/combat-prepared.tsx"),
   route("combat/prepared/:id", "routes/combat-prepared-edit.tsx"),
   // PROTOTYPE (removed before the PR).

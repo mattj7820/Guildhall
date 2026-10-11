@@ -30,7 +30,11 @@ export interface CreatureOption {
   /** Rollable, e.g. "2d6 + 2". */
   hitDice?: string;
   initiativeBonus: number;
-  /** The book-style statblock, rendered and sanitised on the server. */
+}
+
+/** A statblock to show, loaded when it's needed (`statblockUrl`) rather than with the page. */
+export interface StatblockView {
+  /** The book-style statblock, rendered and sanitised on the server, with its rolls marked. */
   html: string;
 }
 

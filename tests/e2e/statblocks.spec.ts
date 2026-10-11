@@ -18,4 +18,14 @@ test.describe("Statblocks", () => {
     await expect(wiki.noteBody).toContainText("Couldn't show this statblock.");
     await expect(wiki.noteBody.locator("code.language-statblock")).toContainText("ac: 12");
   });
+
+  test("the combat tools' statblocks reach the DM and no one else", async ({ api, openAs }) => {
+    const url = `/combat/statblock?key=${encodeURIComponent("Bestiary/Fixture Minion#Fixture Minion")}`;
+    const forDm = await api.request.get(url);
+    expect(forDm.status()).toBe(200);
+    expect((await forDm.json()).html).toContain("Fixture Jab");
+
+    const player = await openAs("playerOne");
+    expect((await player.api.request.get(url)).status()).toBe(404);
+  });
 });

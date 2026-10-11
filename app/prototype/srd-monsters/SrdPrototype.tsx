@@ -2,7 +2,6 @@
 // Nothing here is saved; the "fight" is a scratch list in the page.
 import { useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
 import { DiceRoller } from "~/components/combat/DiceRoller";
-import { StatblockPanel } from "~/components/combat/StatblockPanel";
 import { buttonClass, inputClass, labelClass, panelClass } from "~/components/styles";
 import { parseDice, formatDice } from "~/dice/parse";
 import { defaultRng } from "~/dice/rng";
@@ -187,22 +186,28 @@ export function SrdPrototype({ creatures }: { creatures: PrototypeCreature[] }) 
             )}
           </section>
           <DiceRoller rolls={rolls} />
-          <StatblockPanel
-            combatantName={preview ? undefined : shown?.name}
-            creature={
-              panelCreature && {
-                key: panelCreature.key,
-                ref: { entityId: panelCreature.key, name: panelCreature.name },
-                name: panelCreature.name,
-                noteTitle: panelCreature.noteTitle ?? "",
-                noteUrl: panelCreature.noteUrl ?? "",
-                initiativeBonus: panelCreature.initiative,
-                html: panelCreature.html,
-              }
-            }
-            hasStatblock
-            onRoll={preview ? undefined : rolls.roll}
-          />
+          {panelCreature && (
+            <section aria-label="Selected statblock" className={panelClass}>
+              {/* The prototype's own copy of the statblock panel; the real one loads it. */}
+              <div
+                inert={Boolean(preview)}
+                onClick={(event) => {
+                  const button = (event.target as Element).closest<HTMLButtonElement>(
+                    "button.statblock-roll",
+                  );
+                  const { roll, rollKind, rollLabel, rechargeOn } = button?.dataset ?? {};
+                  if (!roll || !rollKind) return;
+                  rolls.roll({
+                    expression: roll,
+                    kind: rollKind as "attack" | "damage" | "check" | "recharge",
+                    label: [shown?.name, rollLabel].filter(Boolean).join(" · "),
+                    rechargeOn: rechargeOn ? Number(rechargeOn) : undefined,
+                  });
+                }}
+                dangerouslySetInnerHTML={{ __html: panelCreature.html }}
+              />
+            </section>
+          )}
           {panelCreature?.lore && (
             <section className={panelClass} aria-label="Lore">
               <h3 className={labelClass}>From the SRD</h3>

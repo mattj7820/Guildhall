@@ -6,6 +6,7 @@ import {
   type CombatCatalogue,
   type CreatureOption,
   type PartyMember,
+  type StatblockView,
 } from "~/combat/types";
 import { renderStatblock } from "~/.server/vault/statblock/rehype-statblocks";
 import type { Vault } from "~/.server/vault/vault";
@@ -15,7 +16,8 @@ const byName = new Intl.Collator(undefined, { numeric: true, sensitivity: "base"
 
 /**
  * The statblocks and player characters the combat tracker can use, in shapes the browser can
- * hold. Statblocks go out pre-rendered, so the parser and renderer stay on the server.
+ * hold. Statblocks themselves are loaded when they're shown (`statblockView`), so the page
+ * carries only what's needed to find and add them.
  */
 export function combatCatalogue(vault: Vault, viewer: Viewer): CombatCatalogue {
   const creatures = new Map<string, CreatureOption>();
@@ -35,7 +37,6 @@ export function combatCatalogue(vault: Vault, viewer: Viewer): CombatCatalogue {
       hitDice: statblock.numbers.hitDice,
       ...(statblock.numbers.squares && { squares: statblock.numbers.squares }),
       initiativeBonus: statblock.numbers.initiative,
-      html: toHtml(renderStatblock(statblock, { rollable: true })),
     });
   }
 
@@ -69,4 +70,21 @@ export function combatCatalogue(vault: Vault, viewer: Viewer): CombatCatalogue {
         }),
     ],
   };
+}
+
+/**
+ * One statblock by its key, rendered with its rolls marked, if the viewer may see it. Rendered
+ * each time, so an edit to the note shows the next time it's opened.
+ */
+export function statblockView(
+  vault: Vault,
+  viewer: Viewer,
+  key: string,
+): StatblockView | undefined {
+  const found = vault
+    .statblocks(viewer)
+    .find(
+      ({ note, statblock }) => statblockKey({ entityId: note.id, name: statblock.name }) === key,
+    );
+  return found && { html: toHtml(renderStatblock(found.statblock, { rollable: true })) };
 }

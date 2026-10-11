@@ -23,6 +23,7 @@ import { StatblockPanel } from "~/components/combat/StatblockPanel";
 import { TiePrompts } from "~/components/combat/TiePrompts";
 import { TurnBar } from "~/components/combat/TurnBar";
 import { TurnStrip } from "~/components/combat/TurnStrip";
+import { usePrefetchStatblocks } from "~/combat/statblocks";
 import { useRollLog } from "~/dice/useRollLog";
 import { normalise, offset, toPixels } from "~/maps/geometry";
 import { snapToGrid, toPixels as gridInPixels } from "~/maps/grid/grid";
@@ -70,6 +71,11 @@ export function useMapFight({
   const creatures = useMemo(
     () => new Map(catalogue.creatures.map((creature) => [creature.key, creature])),
     [catalogue.creatures],
+  );
+  // Everyone in the fight, so the statblock shows at once on their turn.
+  usePrefetchStatblocks(
+    catalogue,
+    encounter.combatants.flatMap((c) => (c.statblock ? [statblockKey(c.statblock)] : [])),
   );
   const [open, setOpen] = useState(
     () => starting !== undefined || (!!fight && fight.map === map.id),
@@ -268,6 +274,7 @@ export function useMapFight({
         <SaveAsPrepared encounter={encounter} placement={placement} />
       )}
       <StatblockPanel
+        catalogue={catalogue}
         combatantName={shown?.name}
         creature={shown?.statblock ? creatures.get(statblockKey(shown.statblock)) : undefined}
         hasStatblock={Boolean(shown?.statblock)}

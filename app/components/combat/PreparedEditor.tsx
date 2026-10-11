@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePrefetchStatblocks } from "~/combat/statblocks";
 import { Form, Link, useFetcher } from "react-router";
 import { rerollHp } from "~/combat/encounter";
 import { PREPARED_NAME_MAX, PREPARED_NOTES_MAX } from "~/combat/schema";
@@ -76,6 +77,14 @@ export function PreparedEditor({
   const creatures = useMemo(
     () => new Map(catalogue.creatures.map((creature) => [creature.key, creature])),
     [catalogue.creatures],
+  );
+
+  // Everyone in the fight, so the statblock shows at once on their turn.
+
+  usePrefetchStatblocks(
+    catalogue,
+
+    encounter.combatants.flatMap((c) => (c.statblock ? [statblockKey(c.statblock)] : [])),
   );
   const [pickedId, setPickedId] = useState<CombatantId>();
   const shown =
@@ -218,6 +227,7 @@ export function PreparedEditor({
         </div>
         <div className="lg:sticky lg:top-4 lg:self-start">
           <StatblockPanel
+            catalogue={catalogue}
             combatantName={shown?.name}
             creature={shown?.statblock ? creatures.get(statblockKey(shown.statblock)) : undefined}
             hasStatblock={Boolean(shown?.statblock)}
