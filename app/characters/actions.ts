@@ -57,6 +57,7 @@ import {
   SCORE_MIN,
   SHORT_TEXT_MAX,
   SLOTS_MAX,
+  PREPARE_MAX,
   spellSchema,
   USES_MAX,
 } from "./schema";
@@ -126,6 +127,8 @@ export type CharacterAction =
   | { type: "inventory"; change: InventoryChange }
   /** None: the character doesn't cast spells. */
   | { type: "spellAbility"; value?: Ability; from?: Ability }
+  /** None: the character doesn't prepare spells. */
+  | { type: "spellsToPrepare"; value?: number; from?: number }
   /** Uses `by` more of something (a slot cast, a use ticked off), or gives some back if negative. */
   | { type: "count"; counter: CounterRef; by: number }
   /** How many spell slots of a level, or hit dice of a size, there are. */
@@ -298,6 +301,13 @@ function applyToSheet(
         else next.spellAbility = action.value;
         return next;
       });
+    case "spellsToPrepare":
+      return change(sheet.spellsToPrepare, action.value, action.from, () => {
+        const next = { ...sheet };
+        if (action.value === undefined) delete next.spellsToPrepare;
+        else next.spellsToPrepare = action.value;
+        return next;
+      });
     case "count": {
       const counter = counterOf(sheet, action.counter);
       if (!counter) return { character, outcome: "dropped" };
@@ -465,6 +475,7 @@ const spellEdits = z.object({
   freeUse: itemId.nullable().optional(),
   description: long.nullable().optional(),
   note: z.string().min(1).max(1024).nullable().optional(),
+  prepared: z.boolean().optional(),
 }) satisfies z.ZodType<Edits<Spell>>;
 
 const attackEdits = z.object({
@@ -510,6 +521,11 @@ const sheetTrackingActions = [
     type: z.literal("spellAbility"),
     value: z.enum(ABILITIES).optional(),
     from: z.enum(ABILITIES).optional(),
+  }),
+  z.object({
+    type: z.literal("spellsToPrepare"),
+    value: whole(0, PREPARE_MAX).optional(),
+    from: z.number().optional(),
   }),
   z.object({
     type: z.literal("count"),

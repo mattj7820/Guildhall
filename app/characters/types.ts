@@ -171,6 +171,11 @@ export interface Spell {
   description?: string;
   /** The vault spell note this is, if any. */
   note?: EntityId;
+  /**
+   * Ready today, chosen by the player. Ignored for spells that are always ready (cantrips and free
+   * spells; see `preparing.ts`). Spells stored before preparing existed load as prepared.
+   */
+  prepared: boolean;
 }
 
 export const HIT_DICE = ["d6", "d8", "d10", "d12"] as const;
@@ -209,6 +214,8 @@ export interface Sheet {
   notes: string;
   /** The ability the character casts spells with; none for a character without spells. */
   spellAbility?: Ability;
+  /** How many spells the character prepares, as typed; none for a character who doesn't. */
+  spellsToPrepare?: number;
   /** In the order the player put them; shown by level. */
   spells: Spell[];
   /** Index 0 is 1st level, up to 9th. */

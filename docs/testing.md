@@ -277,6 +277,12 @@ Dice decide initiative, tie-breaks and monster HP, so tests must control them.
   casting with a slot or a free use, what each rest gives back (`tracking.test.ts`), and stored
   sheets from before tracking loading unchanged and reading back as written (`schema.test.ts`).
   The repository is checked in temporary folders for a rest and a tick from two tabs at once.
+- **Preparing spells** is unit-tested in `preparing.test.ts` (what's always ready, what counts,
+  a new spell's starting value), with old sheets loading every spell as prepared
+  (`schema.test.ts`) and two tabs preparing different spells both kept, in the repository and the
+  editor. `spell-preparing.spec.ts` is the only spec that adds spells to Fixture PC One (as Player
+  One, never resting): it reads the prepared count first and sets the number from it, so a repeat
+  run against one server still passes.
 - **The fog tools' saving** (batching, retrying, refusals, undo that leaves others' reveals alone)
   is unit-tested in `app/maps/fog/editor.test.ts` against a stand-in fog endpoint, with fake timers.
 - **The open sheet's saving** (batching, retrying, rebasing, undo, gifts) is unit-tested in

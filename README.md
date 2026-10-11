@@ -80,6 +80,10 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
     (`type: spell`, DM parts left out) and be cast for free through a feat's once a day.
   - Cast spends the lowest slot left in one click (or a higher slot, the free use, or as a ritual)
     and takes over concentration. Rolling stays a click of its own.
+  - **Preparing spells:** keep a class's whole list on the sheet and tick which are ready today in
+    Prepare mode, against a typed "Spells to prepare" (going over warns, never blocks). Day to day
+    the Spells tab shows only what's ready: prepared spells, cantrips and a feat's free spell, which
+    are always ready. A long rest offers to change them.
   - Filters, as on D&D Beyond's sheet: actions by attack, action, bonus action, reaction or limited
     use; spells by level, concentration or ritual; features by where they come from.
   - Short rest (spend hit dice, rolled there or rolled at the table and typed in) and Long rest
@@ -261,7 +265,7 @@ app/
     tokens/        Tokens: who may move and see what, moves as actions, drags (isomorphic)
     grid/          Battle grids: squares and snapping, distances, spell areas (isomorphic)
   live/            The browser's live connection, and the messages both ends send
-  characters/      Sheets and bags: the model, spells, uses and rests, changes as actions,
+  characters/      Sheets and bags: the model, spells and preparing, uses and rests, changes as actions,
                    undo, saving (isomorphic)
   members/         Who can sign in: member shapes shared with the browser
   .server/         Server-only code: config, the DM's preview cookie

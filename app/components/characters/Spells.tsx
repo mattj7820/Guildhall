@@ -12,7 +12,17 @@ import {
   numbersFor,
   type CastOption,
 } from "~/characters/spells";
-import { SPELL_LEVELS, type Spell, type SpellLevel } from "~/characters/types";
+import {
+  alwaysReady,
+  canPrepare,
+  isReady,
+  overPrepared,
+  prepareAction,
+  preparedCount,
+  startsPrepared,
+} from "~/characters/preparing";
+import { PREPARE_MAX } from "~/characters/schema";
+import { SPELL_LEVELS, type Sheet, type Spell, type SpellLevel } from "~/characters/types";
 import type { CatalogueItem, LinkedNote } from "~/characters/view";
 import { SPELL_SHAPES, type SpellShape } from "~/maps/grid/shapes";
 import { newId } from "~/shared/ids";
@@ -20,6 +30,7 @@ import { buttonClass } from "../styles";
 import {
   DiceField,
   NumberField,
+  OptionalNumberField,
   OverrideField,
   SelectField,
   TextAreaField,
@@ -42,21 +53,37 @@ export interface SpellNotes {
  * The character's spells by level (cantrips first), each level with its slots as pips. A spell's
  * attack and damage roll with a click, and Cast spends what it's cast with. Filters narrow it by
  * level, concentration or ritual.
+ *
+ * Day to day it lists only what's ready (prepared spells, cantrips and free spells), with a line
+ * saying how many aren't. Prepare mode lists them all to choose from, and so does editing.
  */
 export function SpellsTab({
   parts,
   spellNotes = { catalogue: [], notes: {} },
   compact = false,
+  preparing,
+  onPreparing,
 }: {
   parts: Parts;
   spellNotes?: SpellNotes;
   compact?: boolean;
+  /** Prepare mode, kept by the sheet so that a long rest can open it. */
+  preparing: boolean;
+  onPreparing: (preparing: boolean) => void;
 }) {
   const [filter, setFilter] = useState<SpellFilter>("all");
   const [notice, setNotice] = useState<string>();
   const { sheet, editing } = parts;
-  const levels = SPELL_LEVELS.filter((level) => sheet.spells.some((s) => s.level === level));
-  const shown = sheet.spells.filter((spell) =>
+  const choosing = preparing && !editing;
+  const ready = sheet.spells.filter(isReady);
+  const listed = editing || choosing ? sheet.spells : ready;
+  const notReady = sheet.spells.length - ready.length;
+  const levels = SPELL_LEVELS.filter((level) => listed.some((s) => s.level === level));
+  const openPrepare = () => {
+    setFilter("all");
+    onPreparing(true);
+  };
+  const shown = listed.filter((spell) =>
     filter === "all"
       ? true
       : filter === "concentration"
@@ -68,8 +95,19 @@ export function SpellsTab({
 
   return (
     <div className="flex flex-col gap-3">
-      <Spellcasting parts={parts} />
-      {sheet.spells.length > 0 && (
+      {choosing ? (
+        <PrepareHeader sheet={sheet} compact={compact} onDone={() => onPreparing(false)} />
+      ) : (
+        <div className="flex flex-wrap items-start gap-2">
+          <Spellcasting parts={parts} />
+          {!editing && canPrepare(sheet) && (
+            <button type="button" className={`${buttonClass} ml-auto`} onClick={openPrepare}>
+              Prepare spells
+            </button>
+          )}
+        </div>
+      )}
+      {listed.length > 0 && (
         <FilterChips<SpellFilter>
           label="Show spells"
           value={filter}
@@ -98,7 +136,12 @@ export function SpellsTab({
             <section key={level} aria-label={levelName(level)}>
               <h3 className="flex items-center gap-3 border-b border-line pb-1 text-xs font-semibold tracking-wide text-muted uppercase">
                 {levelName(level)}
-                {slot && slot.max > 0 && (
+                {choosing && level === 0 && (
+                  <span className="ml-auto font-normal tracking-normal normal-case">
+                    Always ready
+                  </span>
+                )}
+                {!choosing && slot && slot.max > 0 && (
                   <Pips
                     label={`${ORDINALS[level]}-level slot`}
                     counter={slot}
@@ -124,6 +167,8 @@ export function SpellsTab({
                         parts={parts}
                         spellNotes={spellNotes}
                       />
+                    ) : choosing ? (
+                      <PrepareRow key={spell.id} spell={spell} parts={parts} compact={compact} />
                     ) : (
                       <SpellRow
                         key={spell.id}
@@ -139,6 +184,19 @@ export function SpellsTab({
             </section>
           );
         })}
+      {!editing && !choosing && notReady > 0 && (
+        <p className="flex flex-wrap items-center gap-2 border-t border-line pt-2 text-sm text-muted">
+          {notReady} {notReady === 1 ? "spell" : "spells"} not prepared
+          <span aria-hidden>·</span>
+          <button
+            type="button"
+            className="font-semibold text-link hover:underline"
+            onClick={openPrepare}
+          >
+            Prepare spells
+          </button>
+        </p>
+      )}
       {editing && (
         <button
           type="button"
@@ -159,6 +217,7 @@ export function SpellsTab({
                   concentration: false,
                   ritual: false,
                   attack: false,
+                  prepared: startsPrepared(sheet),
                 },
               },
             })
@@ -168,6 +227,116 @@ export function SpellsTab({
         </button>
       )}
     </div>
+  );
+}
+
+/**
+ * Prepare mode's heading: the count against the typed number, which warns when it's over but never
+ * stops anyone (decision 55). Done asks once before leaving with too many prepared.
+ */
+function PrepareHeader({
+  sheet,
+  compact,
+  onDone,
+}: {
+  sheet: Sheet;
+  compact: boolean;
+  onDone: () => void;
+}) {
+  const [asking, setAsking] = useState(false);
+  const count = preparedCount(sheet);
+  const over = overPrepared(sheet);
+  const most = sheet.spellsToPrepare;
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <h3 className="font-semibold text-title">Prepare spells</h3>
+        <span
+          aria-live="polite"
+          className={`ml-auto text-sm font-semibold tabular-nums ${over ? "text-warn" : "text-ink"}`}
+        >
+          {most === undefined ? `${count} prepared` : `${count} / ${most} prepared`}
+          {over > 0 && (
+            <span className="font-normal">
+              {" "}
+              · {compact ? `${over} over` : `${over} more than you prepare`}
+            </span>
+          )}
+        </span>
+        <button
+          type="button"
+          className={buttonClass}
+          onClick={() => (over > 0 ? setAsking(true) : onDone())}
+        >
+          Done
+        </button>
+      </div>
+      {asking && over > 0 ? (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-2 rounded-md border border-warn/40 bg-warn-surface px-3 py-2 text-sm text-warn"
+        >
+          <span className="mr-auto">
+            That&rsquo;s {count} prepared, {over} more than the {most} you prepare.
+          </span>
+          <button type="button" className={buttonClass} onClick={() => setAsking(false)}>
+            Keep choosing
+          </button>
+          <button type="button" className={buttonClass} onClick={onDone}>
+            Keep all {count}
+          </button>
+        </div>
+      ) : (
+        !compact && (
+          <p className="text-xs text-muted">
+            Choose what&rsquo;s ready today. Cantrips and free spells are always ready and
+            don&rsquo;t count.
+          </p>
+        )
+      )}
+    </div>
+  );
+}
+
+/** A spell to prepare or unprepare; a free spell is always ready instead. */
+function PrepareRow({ spell, parts, compact }: { spell: Spell; parts: Parts; compact: boolean }) {
+  const free = spell.freeUse
+    ? parts.sheet.features.find((feature) => feature.id === spell.freeUse)
+    : undefined;
+  const meta = [spell.castingTime, spell.range].filter(Boolean).join(" · ");
+  const name = (
+    <span className="min-w-0">
+      <span className="font-medium">{spell.name}</span>
+      {spell.concentration && <Badge title="Concentration">C</Badge>}
+      {spell.ritual && <Badge title="Ritual">R</Badge>}
+      {!compact && meta && <span className="ml-2 text-xs text-muted">{meta}</span>}
+    </span>
+  );
+  return (
+    <li className="flex items-center gap-2 border-b border-line py-1.5 last:border-0">
+      {alwaysReady(spell) ? (
+        <>
+          <span className="w-4 shrink-0" aria-hidden />
+          <span className="mr-auto">{name}</span>
+          {spell.level > 0 && (
+            <span className="text-right text-xs text-muted">
+              Free{free ? ` (${free.name})` : ""} · Always ready
+            </span>
+          )}
+        </>
+      ) : (
+        <label className="flex flex-1 cursor-pointer items-center gap-2">
+          <input
+            type="checkbox"
+            aria-label={`Prepare ${spell.name}`}
+            className="size-4 shrink-0 accent-accent"
+            checked={spell.prepared}
+            onChange={(event) => parts.dispatch(prepareAction(spell, event.target.checked))}
+          />
+          {name}
+        </label>
+      )}
+    </li>
   );
 }
 
@@ -209,13 +378,31 @@ function Spellcasting({ parts }: { parts: Parts }) {
               />
             </label>
           ))}
+        <OptionalNumberField
+          label="Spells to prepare"
+          showLabel
+          value={sheet.spellsToPrepare}
+          min={0}
+          max={PREPARE_MAX}
+          placeholder="None"
+          className="w-20"
+          onCommit={(value) =>
+            dispatch({ type: "spellsToPrepare", value, from: sheet.spellsToPrepare })
+          }
+        />
       </div>
     );
   }
+  const prepares = sheet.spellsToPrepare !== undefined && (
+    <span>
+      Prepares <strong>{sheet.spellsToPrepare}</strong>
+    </span>
+  );
   if (!numbers) {
     return sheet.spells.length > 0 ? (
-      <p className="text-sm text-muted">
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
         Choose a spellcasting ability while editing to work out the save DC and attack.
+        {prepares}
       </p>
     ) : null;
   }
@@ -243,6 +430,7 @@ function Spellcasting({ parts }: { parts: Parts }) {
           {signed(numbers.attack.value)}
         </DiceChip>
       </span>
+      {prepares}
     </p>
   );
 }
@@ -545,6 +733,16 @@ function SpellForm({
             {label}
           </label>
         ))}
+        {!alwaysReady(spell) && (
+          <label className="flex items-center gap-1.5 pb-1.5">
+            <input
+              type="checkbox"
+              checked={spell.prepared}
+              onChange={(event) => set({ prepared: event.target.checked })}
+            />
+            Prepared
+          </label>
+        )}
         <SelectField<Ability | "">
           label="Save"
           showLabel

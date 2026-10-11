@@ -179,6 +179,11 @@ describe("undoing", () => {
     ["slots for a level", { type: "limit", counter: { slot: 4 }, value: 2 }],
     ["fewer hit dice", { type: "limit", counter: { hitDie: "d8" }, value: 1 }],
     ["choosing a spellcasting ability", { type: "spellAbility", value: "int", from: "wis" }],
+    ["typing how many spells to prepare", { type: "spellsToPrepare", value: 3 }],
+    [
+      "unpreparing a spell",
+      { type: "spells", change: { type: "edit", id: "ward", changes: { prepared: false } } },
+    ],
     ["a short rest", { type: "rest", rest: "short", hitDice: [{ die: "d8", face: 3 }] }],
     ["a spell added", { type: "spells", change: { type: "add", item: aSpell() } }],
     [
@@ -245,6 +250,12 @@ describe("checking actions from the browser", () => {
     ["a short rest", { type: "rest", rest: "short", hitDice: [{ die: "d10", face: 10 }] }],
     ["a long rest", { type: "rest", rest: "long" }],
     ["a spell", { type: "spells", change: { type: "add", item: aSpell({ roll: "2d6+3" }) } }],
+    ["spells to prepare", { type: "spellsToPrepare", value: 3, from: 2 }],
+    ["clearing spells to prepare", { type: "spellsToPrepare", from: 3 }],
+    [
+      "preparing a spell",
+      { type: "spells", change: { type: "edit", id: "s1", changes: { prepared: true } } },
+    ],
     [
       "clearing a spell's save",
       { type: "spells", change: { type: "edit", id: "s1", changes: { save: null } } },
@@ -255,6 +266,12 @@ describe("checking actions from the browser", () => {
 
   it.each<[string, unknown]>([
     ["a cantrip slot", { type: "count", counter: { slot: 0 }, by: 1 }],
+    ["100 spells to prepare", { type: "spellsToPrepare", value: 100 }],
+    ["a negative number to prepare", { type: "spellsToPrepare", value: -1 }],
+    [
+      "clearing whether a spell is prepared",
+      { type: "spells", change: { type: "edit", id: "s1", changes: { prepared: null } } },
+    ],
     ["a d20 hit die", { type: "count", counter: { hitDie: "d20" }, by: 1 }],
     [
       "a face that isn't on the die",

@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { blankSheet, characterSchema, inventorySchema, ITEMS_MAX, sheetSchema } from "./schema";
+import {
+  blankSheet,
+  characterSchema,
+  inventorySchema,
+  ITEMS_MAX,
+  PREPARE_MAX,
+  sheetSchema,
+} from "./schema";
 import { anItem } from "./test-builders";
 
 describe("sheetSchema", () => {
@@ -146,6 +153,54 @@ describe("sheets saved before spells, uses and rests", () => {
   it("reads back exactly what it writes, so saving never changes a sheet", () => {
     const sheet = sheetSchema.parse(savedBefore);
     expect(sheetSchema.parse(JSON.parse(JSON.stringify(sheet)))).toEqual(sheet);
+  });
+});
+
+describe("sheets saved before preparing spells", () => {
+  /** Spells as the tracking slice stored them, before they could be prepared. */
+  const savedBefore = {
+    className: "Fixture class",
+    spellAbility: "wis",
+    spells: [
+      { id: "s0", name: "Fixture Spark", level: 0, castingTime: "1 action" },
+      { id: "s1", name: "Fixture Ward", level: 1, concentration: true },
+      { id: "s2", name: "Fixture Gift", level: 1, freeUse: "f1" },
+    ],
+  };
+
+  it("loads every spell as prepared, with no number to prepare, so nothing is hidden", () => {
+    const sheet = sheetSchema.parse(savedBefore);
+    expect(sheet.spells.map((spell) => spell.prepared)).toEqual([true, true, true]);
+    expect(sheet.spellsToPrepare).toBeUndefined();
+    expect(sheet.spells[1]).toMatchObject(savedBefore.spells[1]);
+  });
+
+  it("reads back exactly what it writes", () => {
+    const sheet = sheetSchema.parse(savedBefore);
+    expect(sheetSchema.parse(JSON.parse(JSON.stringify(sheet)))).toEqual(sheet);
+  });
+
+  it("keeps an unprepared spell unprepared", () => {
+    const [spell] = sheetSchema.parse({
+      spells: [{ id: "s1", name: "Fixture Ward", level: 1, prepared: false }],
+    }).spells;
+    expect(spell.prepared).toBe(false);
+  });
+
+  it.each([
+    ["a number past the limit", 150, PREPARE_MAX],
+    ["a negative number", -1, undefined],
+    ["a fraction", 2.5, undefined],
+    ["text", "three", undefined],
+  ])("reads %s to prepare without refusing the sheet", (_, stored, read) => {
+    expect(sheetSchema.parse({ spellsToPrepare: stored }).spellsToPrepare).toBe(read);
+  });
+
+  it("reads a prepared flag that isn't true or false as prepared", () => {
+    const [spell] = sheetSchema.parse({
+      spells: [{ id: "s1", name: "Fixture Ward", level: 1, prepared: "yes" }],
+    }).spells;
+    expect(spell.prepared).toBe(true);
   });
 });
 

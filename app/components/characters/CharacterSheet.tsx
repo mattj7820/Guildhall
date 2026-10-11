@@ -26,7 +26,7 @@ import {
 } from "./SheetSections";
 import { StatBox } from "./SheetParts";
 import { RestButtons } from "./Rests";
-import { SheetTabs } from "./SheetTabs";
+import { SheetTabs, type Tab } from "./SheetTabs";
 import { Trackers } from "./Trackers";
 import { useSheetParts } from "./useSheetParts";
 
@@ -40,6 +40,15 @@ export function CharacterSheet({ page }: { page: CharacterPage }) {
   const character = editor.character as PlayerCharacter;
   const sheet = character.sheet;
   const [editing, setEditing] = useState(false);
+  const [tab, setTab] = useState<Tab>("actions");
+  const [preparing, setPreparing] = useState(false);
+  const tabsRef = useRef<HTMLDivElement>(null);
+  /** After a long rest: the spells to prepare, brought into view. */
+  const openPrepare = () => {
+    setTab("spells");
+    setPreparing(true);
+    requestAnimationFrame(() => tabsRef.current?.scrollIntoView({ block: "nearest" }));
+  };
   const { open: bagOpen, toggle: toggleBag, button: bagButton } = useBagToggle();
 
   const name = sheet.name.trim() || page.name;
@@ -191,7 +200,7 @@ export function CharacterSheet({ page }: { page: CharacterPage }) {
           </div>
 
           <Trackers parts={parts}>
-            <RestButtons parts={parts} undo={editor.undo} />
+            <RestButtons parts={parts} undo={editor.undo} onPrepare={openPrepare} />
           </Trackers>
 
           {/* The tabs (actions, spells, features…) get the widest column. */}
@@ -218,8 +227,20 @@ export function CharacterSheet({ page }: { page: CharacterPage }) {
               />
             </div>
             {/* Narrower, they come first: they're what's used most in play. */}
-            <div className="order-first @3xl:col-span-2 @6xl:order-none @6xl:col-span-1">
-              <SheetTabs page={page} character={character} parts={parts} text={text} />
+            <div
+              ref={tabsRef}
+              className="order-first @3xl:col-span-2 @6xl:order-none @6xl:col-span-1"
+            >
+              <SheetTabs
+                page={page}
+                character={character}
+                parts={parts}
+                text={text}
+                tab={tab}
+                setTab={setTab}
+                preparing={preparing}
+                onPreparing={setPreparing}
+              />
             </div>
           </div>
         </div>

@@ -106,6 +106,8 @@ export function actionLabel(action: CharacterAction): string {
       return "Bag";
     case "spellAbility":
       return "Spellcasting ability";
+    case "spellsToPrepare":
+      return "Spells to prepare";
     case "count":
     case "limit":
       return counterLabel(action.counter);

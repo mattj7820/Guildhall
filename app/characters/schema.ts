@@ -71,6 +71,8 @@ export const ATTACKS_MAX = 50;
 /** A feature's uses: a pool can be large (healing points), a count small. */
 export const USES_MAX = 999;
 export const SLOTS_MAX = 20;
+/** A typed "Spells to prepare". */
+export const PREPARE_MAX = 99;
 export const HIT_DICE_MAX = LEVEL_MAX;
 export const DICE_MAX = 40;
 export const AREA_FEET_MAX = 1000;
@@ -134,6 +136,8 @@ export const spellSchema: z.ZodType<Spell> = z.object({
   freeUse: id.optional(),
   description: optionalText(LONG_TEXT_MAX),
   note: entityId.optional(),
+  // Spells stored before preparing existed were all ready, so they stay so.
+  prepared: z.boolean().catch(true),
 });
 
 const SLOT_LEVELS = SPELL_LEVELS.length - 1;
@@ -193,6 +197,14 @@ export const sheetSchema: z.ZodType<Sheet> = z.object({
   conditions: longText,
   notes: z.string().max(NOTES_MAX).default(""),
   spellAbility: z.enum(ABILITIES).optional(),
+  // Clamped rather than refused; anything that isn't a number reads as blank.
+  spellsToPrepare: z
+    .number()
+    .int()
+    .min(0)
+    .transform((value) => Math.min(value, PREPARE_MAX))
+    .optional()
+    .catch(undefined),
   spells: z.array(spellSchema).max(SPELLS_MAX).default([]),
   spellSlots,
   hitDice: record<HitDie, Counter>(HIT_DICE, counterOf(HIT_DICE_MAX), { max: 0, used: 0 }),

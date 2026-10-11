@@ -57,6 +57,8 @@ export function inverseOf(before: Character, action: CharacterAction): Character
       return [{ ...action, value: sheet.portrait, from: action.value }];
     case "spellAbility":
       return [{ ...action, value: sheet.spellAbility, from: action.value }];
+    case "spellsToPrepare":
+      return [{ ...action, value: sheet.spellsToPrepare, from: action.value }];
     case "count":
     case "limit":
     case "rest":

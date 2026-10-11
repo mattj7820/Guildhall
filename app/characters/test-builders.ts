@@ -91,6 +91,7 @@ export function aSpell(fields: Partial<Spell> = {}): Spell {
     concentration: false,
     ritual: false,
     attack: false,
+    prepared: true,
     ...fields,
   };
 }
