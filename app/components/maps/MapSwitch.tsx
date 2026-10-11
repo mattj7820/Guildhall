@@ -32,14 +32,14 @@ export function MapSwitch({ mapId, label, on: saved, change }: Props) {
           encType: "application/json",
         })
       }
-      className="flex items-center gap-2 rounded-md px-1.5 py-1 text-sm font-medium hover:bg-stone-100 disabled:opacity-70 dark:hover:bg-stone-800"
+      className="flex items-center gap-2 rounded-md px-1.5 py-1 text-sm font-medium hover:bg-raised disabled:opacity-70"
     >
       <span
         aria-hidden="true"
-        className={`relative inline-block h-5 w-9 rounded-full transition-colors ${on ? "bg-amber-600" : "bg-stone-300 dark:bg-stone-700"}`}
+        className={`relative inline-block h-5 w-9 rounded-full transition-colors ${on ? "bg-accent" : "bg-line-strong"}`}
       >
         <span
-          className={`absolute top-0.5 left-0 h-4 w-4 rounded-full bg-white shadow transition-transform ${on ? "translate-x-4" : "translate-x-0.5"}`}
+          className={`absolute top-0.5 left-0 h-4 w-4 rounded-full bg-surface shadow transition-transform ${on ? "translate-x-4" : "translate-x-0.5"}`}
         />
       </span>
       {label}

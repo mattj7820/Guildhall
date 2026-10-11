@@ -127,7 +127,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
         <h1 className="font-serif text-3xl font-bold">Map not found</h1>
         <p className="mt-2">
           There's no map at this address; it may have been deleted.{" "}
-          <Link to="/maps" className="text-amber-800 underline dark:text-amber-400">
+          <Link to="/maps" className="text-link underline">
             All maps
           </Link>
         </p>

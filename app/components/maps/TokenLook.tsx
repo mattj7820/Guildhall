@@ -77,7 +77,7 @@ export function TokenLook({
         <div
           role="listbox"
           aria-label="Icons"
-          className="grid max-h-40 grid-cols-8 gap-1 overflow-y-auto rounded border border-stone-200 p-1 dark:border-stone-800"
+          className="grid max-h-40 grid-cols-8 gap-1 overflow-y-auto rounded border border-line p-1"
         >
           {TOKEN_ICONS.map((each) => (
             <button
@@ -92,7 +92,7 @@ export function TokenLook({
                 setPicking(false);
               }}
               className={`flex h-8 w-8 items-center justify-center rounded ${MARKER_BACKGROUNDS[look.colour]} ${
-                each.id === look.icon ? "ring-2 ring-sky-500" : "opacity-80 hover:opacity-100"
+                each.id === look.icon ? "ring-2 ring-info" : "opacity-80 hover:opacity-100"
               }`}
             >
               <svg viewBox="0 0 512 512" aria-hidden="true" className="h-5 w-5">
@@ -112,7 +112,7 @@ export function TokenLook({
             aria-pressed={look.colour === colour}
             onClick={() => onChange({ ...look, colour })}
             className={`h-6 w-6 rounded-full ${MARKER_BACKGROUNDS[colour]} ${
-              look.colour === colour ? "ring-2 ring-sky-500 ring-offset-1" : ""
+              look.colour === colour ? "ring-2 ring-info ring-offset-1" : ""
             }`}
           />
         ))}

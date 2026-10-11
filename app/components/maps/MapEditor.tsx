@@ -109,11 +109,11 @@ export function MapEditor(props: MapEditorProps) {
 
   return (
     <main className="flex h-[calc(100dvh-3.5rem)] flex-col">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-stone-200 px-4 py-2 dark:border-stone-800">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line px-4 py-2">
         <MapBreadcrumbs crumbs={view.breadcrumbs} suffix=" · editing" />
         <h1 className="sr-only">Editing {doc.name}</h1>
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <p aria-live="polite" className="text-sm text-stone-500">
+          <p aria-live="polite" className="text-sm text-muted">
             {status && (status === "All changes saved" ? `✓ ${status}` : status)}
           </p>
           <MapSwitch
@@ -154,7 +154,7 @@ export function MapEditor(props: MapEditorProps) {
       </div>
       <ImageHealth map={view} images={props.images} actual={actualSize} />
       {(error || childError) && (
-        <p role="alert" className="bg-rose-100 px-4 py-2 text-sm text-rose-900">
+        <p role="alert" className="bg-danger-surface px-4 py-2 text-sm text-danger">
           {error ? `Couldn't save: ${error}` : `Couldn't make the new map: ${childError}`}
         </p>
       )}
@@ -227,7 +227,7 @@ export function MapEditor(props: MapEditorProps) {
 
         <aside
           aria-label="Editing"
-          className="flex w-full flex-col gap-5 overflow-y-auto border-stone-200 p-4 md:w-96 md:border-l dark:border-stone-800"
+          className="flex w-full flex-col gap-5 overflow-y-auto border-line p-4 md:w-96 md:border-l"
         >
           {selected && (
             <AreaForm
@@ -283,10 +283,10 @@ function DrawingToolbar({
   onFinish: () => void;
 }) {
   return (
-    <div className="absolute top-3 left-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-wrap items-center gap-2 rounded-md bg-white/90 p-2 text-sm shadow dark:bg-stone-900/90">
+    <div className="absolute top-3 left-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-wrap items-center gap-2 rounded-md bg-surface/90 p-2 text-sm shadow">
       {drawing ? (
         <>
-          <p className="basis-full text-stone-600 dark:text-stone-300">
+          <p className="basis-full text-muted">
             Click the map to place points. Enter or the first point finishes, Backspace removes the
             last point, Esc cancels.
           </p>
@@ -374,12 +374,12 @@ function EditorAreaList({
     <section aria-labelledby="editor-areas-heading">
       <h2
         id="editor-areas-heading"
-        className="mb-1 text-xs font-semibold tracking-wide text-stone-500 uppercase"
+        className="mb-1 text-xs font-semibold tracking-wide text-muted uppercase"
       >
         Areas ({areas.length})
       </h2>
       {areas.length === 0 ? (
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-muted">
           None yet. Press Draw area, then click round something on the map.
         </p>
       ) : (
@@ -390,7 +390,7 @@ function EditorAreaList({
                 type="button"
                 aria-pressed={area.id === selectedId}
                 onClick={() => onSelect(area.id)}
-                className="block w-full rounded px-1 py-0.5 text-left hover:bg-stone-100 aria-pressed:bg-sky-100 aria-pressed:font-semibold dark:hover:bg-stone-800 dark:aria-pressed:bg-sky-950"
+                className="block w-full rounded px-1 py-0.5 text-left hover:bg-raised aria-pressed:bg-info-surface aria-pressed:font-semibold"
               >
                 {area.map ? "▸" : "◌"} {area.name || "Unnamed area"}
               </button>

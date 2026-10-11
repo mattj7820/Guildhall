@@ -89,14 +89,14 @@ export function MapCanvas({
   }, [imageUrl, onImageMeasured]);
 
   return (
-    <div className={`relative overflow-hidden bg-stone-200 dark:bg-stone-800 ${className}`}>
+    <div className={`relative overflow-hidden bg-line ${className}`}>
       <div
         ref={containerRef}
         role="region"
         aria-label={`Map: ${name}`}
         aria-roledescription="map"
         tabIndex={0}
-        className="h-full w-full cursor-grab touch-none outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-inset active:cursor-grabbing"
+        className="h-full w-full cursor-grab touch-none outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset active:cursor-grabbing"
         onKeyDown={(event) => {
           onKeyDown?.(event);
           panZoomKeys(event);
@@ -136,7 +136,7 @@ export function MapCanvas({
           {children?.({ scale, clientToImage })}
         </svg>
       </div>
-      <div className="absolute right-3 bottom-3 flex items-center gap-1 rounded-md bg-white/90 p-1 text-sm shadow dark:bg-stone-900/90">
+      <div className="absolute right-3 bottom-3 flex items-center gap-1 rounded-md bg-surface/90 p-1 text-sm shadow">
         <button type="button" onClick={zoomIn} aria-label="Zoom in" className={button}>
           +
         </button>
@@ -154,4 +154,4 @@ export function MapCanvas({
   );
 }
 
-const button = "min-w-8 rounded px-2 py-1 font-semibold hover:bg-stone-200 dark:hover:bg-stone-700";
+const button = "min-w-8 rounded px-2 py-1 font-semibold hover:bg-line";

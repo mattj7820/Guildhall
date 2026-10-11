@@ -90,11 +90,11 @@ export function ImageHealth({ map, images, actual }: Props) {
   return (
     <div
       role="alert"
-      className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-amber-100 px-4 py-2 text-sm text-amber-950 dark:bg-amber-950 dark:text-amber-100"
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-warn-surface px-4 py-2 text-sm text-warn"
     >
       <p>{message}</p>
       {fix}
-      {error && <p className="text-rose-700 dark:text-rose-300">{error}</p>}
+      {error && <p className="text-danger">{error}</p>}
     </div>
   );
 }

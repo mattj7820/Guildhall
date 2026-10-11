@@ -20,7 +20,7 @@ export function MapSettings({ doc, notes, dispatch, onBlur }: Props) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   return (
-    <details className="rounded-md border border-stone-200 p-3 text-sm dark:border-stone-800">
+    <details className="rounded-md border border-line p-3 text-sm">
       <summary className="cursor-pointer font-semibold">Map settings</summary>
       <div className="mt-3 flex flex-col gap-3">
         <label className="flex flex-col gap-1">
@@ -55,7 +55,7 @@ export function MapSettings({ doc, notes, dispatch, onBlur }: Props) {
               type="submit"
               name="intent"
               value="delete"
-              className="rounded-md bg-rose-700 px-2.5 py-1 font-semibold text-white hover:bg-rose-800"
+              className="rounded-md bg-danger px-2.5 py-1 font-semibold text-on-danger hover:bg-danger"
             >
               Delete {doc.name}
             </button>

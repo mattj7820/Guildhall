@@ -39,7 +39,7 @@ export function PartyTokens({
               <TokenThumb token={member} />
               <span className="mr-auto">
                 {member.name}{" "}
-                <span className="text-xs text-stone-500">
+                <span className="text-xs text-muted">
                   {here ? (
                     "here"
                   ) : elsewhere ? (

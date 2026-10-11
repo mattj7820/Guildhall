@@ -21,18 +21,18 @@ export function FogAreaList({ areas, mask, shared, onReveal, onHide }: Props) {
     <section aria-labelledby="fog-areas-heading" className="flex flex-col gap-2">
       <h2
         id="fog-areas-heading"
-        className="text-xs font-semibold tracking-wide text-stone-500 uppercase"
+        className="text-xs font-semibold tracking-wide text-muted uppercase"
       >
         What players see
       </h2>
       {!shared && (
-        <p className="text-sm text-stone-600 dark:text-stone-400">
+        <p className="text-sm text-muted">
           This map isn't shared yet, so players see none of it. You can reveal parts ready for when
           it is.
         </p>
       )}
       {sorted.length === 0 ? (
-        <p className="text-sm text-stone-500">No areas outlined on this map.</p>
+        <p className="text-sm text-muted">No areas outlined on this map.</p>
       ) : (
         <ul aria-label="Areas under the fog" className="flex flex-col text-sm">
           {sorted.map((area) => {
@@ -40,7 +40,7 @@ export function FogAreaList({ areas, mask, shared, onReveal, onHide }: Props) {
             return (
               <li
                 key={area.id}
-                className="flex items-center gap-2 rounded px-1 py-0.5 hover:bg-stone-100 dark:hover:bg-stone-800"
+                className="flex items-center gap-2 rounded px-1 py-0.5 hover:bg-raised"
               >
                 <span aria-hidden="true" className="w-5 text-center">
                   {area.secret ? "🔒" : seen ? "👁" : "▒"}
@@ -48,7 +48,7 @@ export function FogAreaList({ areas, mask, shared, onReveal, onHide }: Props) {
                 <span className="mr-auto">
                   {area.name}
                   <span className="sr-only">: </span>
-                  <span className="block text-xs text-stone-500">
+                  <span className="block text-xs text-muted">
                     {area.secret ? "Secret" : seen ? "Players see it" : "Under the fog"}
                   </span>
                 </span>

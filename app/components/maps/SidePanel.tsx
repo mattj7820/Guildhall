@@ -40,7 +40,7 @@ export function SidePanel<T extends string>({
     return (
       <nav
         aria-label={label}
-        className="flex flex-row gap-1 border-stone-200 p-1 md:flex-col md:border-l dark:border-stone-800"
+        className="flex flex-row gap-1 border-line p-1 md:flex-col md:border-l"
       >
         {tabs.map(({ key, label: name, icon, shortcut }) => (
           <button
@@ -49,7 +49,7 @@ export function SidePanel<T extends string>({
             aria-label={name}
             title={shortcut ? `${name} (${shortcut})` : name}
             onClick={() => onOpen(key)}
-            className="h-10 w-10 rounded text-lg hover:bg-stone-200 dark:hover:bg-stone-800"
+            className="h-10 w-10 rounded text-lg hover:bg-line"
           >
             {icon}
           </button>
@@ -61,9 +61,9 @@ export function SidePanel<T extends string>({
   return (
     <aside
       aria-label={label}
-      className="flex w-full flex-col border-stone-200 md:w-[27rem] md:shrink-0 md:border-l dark:border-stone-800"
+      className="flex w-full flex-col border-line md:w-[27rem] md:shrink-0 md:border-l"
     >
-      <div className="flex items-center gap-1 border-b border-stone-200 px-2 pt-2 dark:border-stone-800">
+      <div className="flex items-center gap-1 border-b border-line px-2 pt-2">
         <div role="tablist" aria-label={label} className="flex gap-1">
           {tabs.map(({ key, label: name, shortcut }) => (
             <button
@@ -75,8 +75,8 @@ export function SidePanel<T extends string>({
               onClick={() => onOpen(key)}
               className={`rounded-t-md px-3 py-1.5 text-sm ${
                 tab === key
-                  ? "-mb-px border border-b-0 border-stone-200 bg-white font-semibold dark:border-stone-800 dark:bg-stone-900"
-                  : "text-stone-500 hover:text-stone-900 dark:hover:text-stone-100"
+                  ? "-mb-px border border-b-0 border-line bg-surface font-semibold"
+                  : "text-muted hover:text-ink"
               }`}
             >
               {name}

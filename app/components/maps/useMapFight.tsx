@@ -198,12 +198,12 @@ export function useMapFight({
         />
       )}
       {starting === null && (
-        <p role="alert" className="rounded-md bg-amber-100 px-3 py-2 text-sm text-amber-900">
+        <p role="alert" className="rounded-md bg-warn-surface px-3 py-2 text-sm text-warn">
           That prepared encounter doesn't exist any more.
         </p>
       )}
       {fight?.map && fight.map !== map.id && encounter.combatants.length > 0 && (
-        <p className="text-sm text-amber-800 dark:text-amber-300">
+        <p className="text-sm text-warn">
           This fight is on another map. Changing it here brings it to this one.
         </p>
       )}
@@ -221,7 +221,7 @@ export function useMapFight({
             onChange={(event) => void changeFreeMovement(event.target.checked)}
           />
           Free movement
-          <span className="text-stone-500">
+          <span className="text-muted">
             {freeMovement ? "players move any time" : "players move on their turn"}
           </span>
         </label>
@@ -234,7 +234,7 @@ export function useMapFight({
       />
       <TiePrompts combatants={encounter.combatants} dispatch={dispatch} />
       {encounter.combatants.length > 0 && (
-        <ol aria-label="Turn order" className="divide-y divide-stone-200 dark:divide-stone-800">
+        <ol aria-label="Turn order" className="divide-y divide-line">
           {encounter.combatants.map((combatant, index) => (
             <CombatantRow
               key={combatant.id}
@@ -295,7 +295,7 @@ export function useMapFight({
       {unplaced.length > 0 && (
         <p
           role="status"
-          className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-lg bg-sky-900 px-3 py-2 text-sm text-white shadow"
+          className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-lg bg-ink px-3 py-2 text-sm text-page shadow"
         >
           Click the map to place {unplaced.map((monster) => monster.name).join(", ")}
         </p>

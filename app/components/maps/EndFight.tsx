@@ -56,7 +56,7 @@ export function EndFight({ onEnded, className = "" }: { onEnded: () => void; cla
         </button>
       </div>
       {error && (
-        <p role="alert" className="text-rose-700 dark:text-rose-400">
+        <p role="alert" className="text-danger">
           {error}
         </p>
       )}

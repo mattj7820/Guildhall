@@ -40,7 +40,7 @@ export function FogToolbar(props: Props) {
     <div
       role="toolbar"
       aria-label="Fog of war"
-      className="flex flex-wrap items-center gap-2 border-b border-stone-200 bg-stone-50 px-4 py-2 text-sm dark:border-stone-800 dark:bg-stone-900"
+      className="flex flex-wrap items-center gap-2 border-b border-line bg-raised px-4 py-2 text-sm"
     >
       {TOOLS.map(({ tool: option, label, key }) => (
         <button
@@ -55,10 +55,7 @@ export function FogToolbar(props: Props) {
           {label}
         </button>
       ))}
-      <span
-        aria-hidden="true"
-        className="mx-1 h-6 border-l border-stone-300 dark:border-stone-700"
-      />
+      <span aria-hidden="true" className="mx-1 h-6 border-l border-line-strong" />
       <button
         type="button"
         role="switch"
@@ -106,14 +103,12 @@ export function FogToolbar(props: Props) {
       >
         Redo
       </button>
-      <span className="ml-auto flex items-center gap-3 text-stone-500">
+      <span className="ml-auto flex items-center gap-3 text-muted">
         <span>{Math.round(props.revealed * 100)}% revealed</span>
         <span role="status" aria-live="polite" className="min-w-28">
           {status.kind === "saved" && "✓ Saved"}
           {status.kind === "saving" && "Saving…"}
-          {status.kind === "error" && (
-            <span className="text-rose-700 dark:text-rose-400">{status.message}</span>
-          )}
+          {status.kind === "error" && <span className="text-danger">{status.message}</span>}
         </span>
       </span>
     </div>

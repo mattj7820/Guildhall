@@ -6,7 +6,7 @@ import { mapUrl } from "~/maps/urls";
 export function MapBreadcrumbs({ crumbs, suffix }: { crumbs: MapLink[]; suffix?: string }) {
   return (
     <nav aria-label="Breadcrumbs" className="text-sm">
-      <ol className="flex flex-wrap items-center gap-x-1.5 text-stone-500">
+      <ol className="flex flex-wrap items-center gap-x-1.5 text-muted">
         <li>
           <Link to="/maps" className="hover:underline">
             Maps
@@ -18,10 +18,7 @@ export function MapBreadcrumbs({ crumbs, suffix }: { crumbs: MapLink[]; suffix?:
             <li key={crumb.id} className="flex items-center gap-x-1.5">
               <span aria-hidden="true">›</span>
               {isCurrent ? (
-                <span
-                  aria-current="page"
-                  className="font-semibold text-stone-900 dark:text-stone-100"
-                >
+                <span aria-current="page" className="font-semibold text-ink">
                   {crumb.name}
                   {suffix}
                 </span>

@@ -117,7 +117,7 @@ export function AreaForm({
         />
         <span>
           <span className="font-medium">Secret</span>
-          <span className="block text-xs text-stone-500">
+          <span className="block text-xs text-muted">
             Players never see this area, even where the map is revealed.
           </span>
         </span>
@@ -128,7 +128,7 @@ export function AreaForm({
           <>
             <button
               type="button"
-              className="rounded-md bg-rose-700 px-2.5 py-1 text-sm font-semibold text-white hover:bg-rose-800"
+              className="rounded-md bg-danger px-2.5 py-1 text-sm font-semibold text-on-danger hover:bg-danger"
               onClick={() => dispatch({ type: "deleteArea", id: area.id })}
             >
               Delete {area.name || "this area"}
@@ -183,7 +183,7 @@ export function AreaNotePicker({
         }}
       />
       {area.note && !linked && (
-        <p className="text-xs text-rose-700 dark:text-rose-400">
+        <p className="text-xs text-danger">
           The linked note (“{area.note}”) is no longer in the vault. Choose another, or clear the
           field.
         </p>
@@ -211,7 +211,7 @@ function NewChildMap({
     <div
       role="group"
       aria-label="New map for this area"
-      className="flex flex-col gap-3 rounded-md border border-stone-200 p-3 dark:border-stone-800"
+      className="flex flex-col gap-3 rounded-md border border-line p-3"
     >
       <p className={labelClass}>New map for this area</p>
       <ImagePicker images={images} compact onChange={(chosen) => setImage(chosen)} />

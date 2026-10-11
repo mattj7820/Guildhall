@@ -62,7 +62,7 @@ export function TokensTab({
   return (
     <>
       {error && (
-        <p role="alert" className="text-sm text-rose-700 dark:text-rose-400">
+        <p role="alert" className="text-sm text-danger">
           {error}
         </p>
       )}
@@ -105,7 +105,7 @@ export function TokensTab({
           />
         )}
         {markers.length === 0 && !adding && (
-          <p className="text-sm text-stone-500">No NPCs or markers here yet.</p>
+          <p className="text-sm text-muted">No NPCs or markers here yet.</p>
         )}
         {markers.length > 0 && (
           <ul aria-label="On this map" className="flex flex-col text-sm">
@@ -174,9 +174,7 @@ function MarkerRow({
   const shown = marker.visibility === "players";
   return (
     <li
-      className={`flex items-center gap-2 rounded px-1 py-0.5 ${
-        chosen ? "bg-sky-100 dark:bg-sky-950" : ""
-      }`}
+      className={`flex items-center gap-2 rounded px-1 py-0.5 ${chosen ? "bg-info-surface" : ""}`}
     >
       <TokenThumb token={marker} />
       <button
@@ -186,7 +184,7 @@ function MarkerRow({
       >
         {marker.name}
         {marker.hidden === "fog" && shown && (
-          <span className="ml-1 text-xs text-stone-500">(under the fog)</span>
+          <span className="ml-1 text-xs text-muted">(under the fog)</span>
         )}
       </button>
       <button
@@ -227,7 +225,7 @@ function ElsewhereList({
           <span className="mr-auto truncate">
             {entry.token.name}{" "}
             {entry.map && (
-              <span className="text-xs text-stone-500">
+              <span className="text-xs text-muted">
                 {entry.aside ? "last on" : "on"} {entry.map.name}
               </span>
             )}

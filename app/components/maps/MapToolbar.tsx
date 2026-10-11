@@ -42,13 +42,10 @@ export function ToolIcon({ d }: { d: string }) {
 
 export const toolButtonClass = (active: boolean) =>
   `flex h-9 min-w-9 items-center justify-center gap-1.5 rounded-md px-2 ${
-    active
-      ? "bg-amber-700 text-white dark:bg-amber-600"
-      : "text-stone-700 hover:bg-stone-200 dark:text-stone-200 dark:hover:bg-stone-700"
+    active ? "bg-accent text-on-accent" : "text-ink hover:bg-line"
   }`;
 
-export const floatingPanelClass =
-  "pointer-events-auto rounded-lg bg-white/95 p-1 shadow-md dark:bg-stone-900/95";
+export const floatingPanelClass = "pointer-events-auto rounded-lg bg-surface/95 p-1 shadow-md";
 
 interface Props {
   /** The tools this map offers. */
