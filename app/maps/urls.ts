@@ -20,6 +20,16 @@ export function mapTileUrl(id: MapId, x: number, y: number, version: string): st
   return `${mapUrl(id)}/tiles/${x}/${y}?v=${encodeURIComponent(version)}`;
 }
 
+/** A small picture of the whole map, as the viewer may see it (`thumbnailVersion`). */
+export function mapThumbnailUrl(id: MapId, version: string): string {
+  return `${mapUrl(id)}/thumbnail?v=${encodeURIComponent(version)}`;
+}
+
+/** The DM's thumbnail changes with the image; players' with the fog too. */
+export function thumbnailVersion(imageVersion: string, fogVersion?: number): string {
+  return fogVersion === undefined ? imageVersion : `${imageVersion}.${fogVersion}`;
+}
+
 /** Where the DM's fog tools save. */
 export function mapFogUrl(id: MapId): string {
   return `${mapUrl(id)}/fog`;

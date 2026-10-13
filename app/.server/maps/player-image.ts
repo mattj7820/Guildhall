@@ -1,9 +1,12 @@
 /**
- * The only way players get a map's pixels: tiles cut from the image, with everything the fog
- * hides taken out on the server. The whole image (`map-image`) is for the DM alone.
+ * The only way players get a map's pixels: tiles cut from the image, and a thumbnail, with
+ * everything the fog hides taken out on the server. The whole image (`map-image`) is for the DM
+ * alone.
  */
 import { createHash } from "node:crypto";
 import sharp from "sharp";
+import { revealedCount } from "~/maps/fog/mask";
+import { cellOverview, maskOverview } from "~/maps/fog/overview";
 import {
   fogField,
   FULL_TILE,
@@ -14,7 +17,7 @@ import {
   TILE_SIZE,
 } from "~/maps/fog/tiles";
 import type { FogField } from "~/maps/fog/tiles";
-import type { FogMask } from "~/maps/fog/types";
+import type { FogGrid, FogMask } from "~/maps/fog/types";
 import type { Size } from "~/maps/types";
 import type { FileCache } from "../data/file-cache";
 
@@ -23,6 +26,12 @@ sharp.cache(false);
 
 /** Enough to keep lettering on a map crisp, at a fraction of a PNG's size. */
 const QUALITY = 82;
+/** The fog's state on one map. */
+export interface MapFog {
+  mask: FogMask;
+  version: number;
+}
+
 /** Masked tiles kept in memory: a session's worth of edges on a few maps. */
 const MASKED_KEPT = 400;
 
@@ -47,7 +56,7 @@ export class PlayerImages {
   ) {}
 
   /** The fog ready for masking, worked out once per map and version rather than per tile. */
-  playerFog(mapId: string, { mask, version }: { mask: FogMask; version: number }): FogField {
+  playerFog(mapId: string, { mask, version }: MapFog): FogField {
     const kept = this.fogs.get(mapId);
     if (kept?.version === version && kept.fog.mask.cells.length === mask.cells.length) {
       return kept.fog;
@@ -110,6 +119,60 @@ export class PlayerImages {
   /** Cuts the image's tiles now, so no player waits for it. */
   async prepare(source: SourceImage): Promise<void> {
     await this.cut(source);
+  }
+
+  /** The DM's thumbnail of the whole map: its overview on the fog's grid (see `cellOverview`). */
+  async thumbnail(source: SourceImage, grid: FogGrid): Promise<Buffer> {
+    return this.readOverview(source, grid, "overview.webp");
+  }
+
+  /**
+   * The thumbnail as players may see it, from the fog as it is now, or undefined if the fog hides
+   * all of it. Masked from an exact copy of the overview, cell by cell.
+   */
+  async playerThumbnail(
+    source: SourceImage,
+    mapId: string,
+    fog: MapFog,
+  ): Promise<Buffer | undefined> {
+    const { mask, version } = fog;
+    if (revealedCount(mask) === 0) return undefined;
+    const grid = `${mask.cols}x${mask.rows}`;
+    return this.remember(`overview/${mapId}/${source.version}/${grid}/${version}`, async () => {
+      const exact = await this.readOverview(source, mask, "overview.png");
+      const { data, info } = await sharp(exact).raw().toBuffer({ resolveWithObject: true });
+      const overview = { width: info.width, height: info.height, channels: 4 as const, data };
+      const masked = maskOverview(overview, mask, await this.size(source));
+      return sharp(masked.data, {
+        raw: { width: masked.width, height: masked.height, channels: 4 },
+      })
+        .webp({ quality: QUALITY, alphaQuality: 100 })
+        .toBuffer();
+    });
+  }
+
+  /** Works out the overview once per image version and grid: compressed, and exact for masking. */
+  private async readOverview(source: SourceImage, grid: FogGrid, name: string): Promise<Buffer> {
+    const key = `${keyOf(source)}-overview`;
+    const version = `${source.version}-${grid.cols}x${grid.rows}`;
+    await this.cache.ensure(key, version, async () => {
+      const { data, info } = await sharp(source.absolute, { limitInputPixels: false })
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      const overview = cellOverview(
+        { width: info.width, height: info.height, channels: 4, data },
+        grid,
+      );
+      const raw = { raw: { width: overview.width, height: overview.height, channels: 4 as const } };
+      return new Map([
+        ["overview.webp", await sharp(overview.data, raw).webp({ quality: QUALITY }).toBuffer()],
+        ["overview.png", await sharp(overview.data, raw).png().toBuffer()],
+      ]);
+    });
+    const file = await this.cache.read(key, version, name);
+    if (!file) throw new Error(`The overview of ${source.path} is missing from the cache`);
+    return file;
   }
 
   /**

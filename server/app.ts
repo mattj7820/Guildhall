@@ -12,6 +12,7 @@ import { createAttemptCookie } from "~/.server/auth/discord-sign-in";
 import { cookieSettings, createSessions } from "~/.server/auth/sessions";
 import { Characters } from "~/.server/characters/characters";
 import { CampaignMaps } from "~/.server/maps/campaign-maps";
+import { prepareThumbnails } from "~/.server/maps/load";
 import { MapFogs } from "~/.server/maps/map-fogs";
 import { MapTokens } from "~/.server/maps/map-tokens";
 import { PlayerImages } from "~/.server/maps/player-image";
@@ -62,7 +63,11 @@ async function createServices(): Promise<Services> {
   };
   const live = new Live(services);
   // A map's notes and image come from the vault, so any open map may look different now.
-  vault.onReload(() => void live.allMapsChanged());
+  vault.onReload(() => {
+    void live.allMapsChanged();
+    void prepareThumbnails(services);
+  });
+  void prepareThumbnails(services);
   return { ...services, live };
 }
 
