@@ -56,6 +56,12 @@ export class MapFogs {
     return toMapFog((await this.file.read()).fogs[mapId], image);
   }
 
+  /** Several maps' fog from one read of the file, by map. */
+  async getMany(maps: readonly { id: MapId; image: Size }[]): Promise<Map<MapId, MapFog>> {
+    const { fogs } = await this.file.read();
+    return new Map(maps.map((map) => [map.id, toMapFog(fogs[map.id], map.image)]));
+  }
+
   /**
    * Applies the changes in order to the fog as stored now (decision 30: whoever else changed it
    * meanwhile keeps their change). The version goes up only if a cell actually changed.

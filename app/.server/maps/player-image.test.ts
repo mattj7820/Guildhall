@@ -165,3 +165,65 @@ describe("PlayerImages", () => {
     expect(await player.tile(source(), everything, x, y)).toBeUndefined();
   });
 });
+
+describe("thumbnails", () => {
+  const GRID = fogGrid(IMAGE);
+  const isMagenta = (data: Buffer, i: number) =>
+    data[i] > 180 && data[i + 1] < 90 && data[i + 2] > 180 && data[i + 3] > 0;
+
+  it("gives the DM the whole map, one pixel per fog cell", async () => {
+    const { data, width, height } = await pixels(await images().thumbnail(source(), GRID));
+    expect([width, height]).toEqual([512, 256]);
+    // The magenta corner (x 960 on, y 448 on) is cells 480 on, 224 on.
+    expect(isMagenta(data, (240 * width + 500) * 4)).toBe(true);
+  });
+
+  it("gives players nothing of a fully fogged map", async () => {
+    expect(await images().playerThumbnail(source(), "m", { mask: fog(), version: 1 })).toBe(
+      undefined,
+    );
+  });
+
+  it("never lets a pixel from under the fog into a player's thumbnail", async () => {
+    const mask = ALL_BUT_THE_CORNER();
+    const thumbnail = await images().playerThumbnail(source(), "m", { mask, version: 1 });
+    const { data, width } = await pixels(thumbnail!);
+    for (let i = 0; i < data.length; i += 4) {
+      if (isMagenta(data, i)) throw new Error(`Pixel ${i / 4} is magenta`);
+    }
+    // Hidden cells (x from 448, y from 208) are transparent; what's revealed is shown.
+    expect(data[(220 * width + 460) * 4 + 3]).toBe(0);
+    expect(data[(100 * width + 100) * 4 + 3]).toBe(255);
+  });
+
+  it("sends exactly the same bytes, whatever is under the fog", async () => {
+    const { data, info } = await sharp(FIXTURE).raw().toBuffer({ resolveWithObject: true });
+    for (let y = 440; y < info.height; y++) {
+      for (let x = 900; x < info.width; x++) data.set([255, 255, 0], (y * info.width + x) * 3);
+    }
+    const altered = path.join(folder, "altered.png");
+    await writeFile(altered, await sharp(data, { raw: info }).png().toBuffer());
+
+    const player = images();
+    const mask = ALL_BUT_THE_CORNER();
+    const original = await player.playerThumbnail(source(), "one", { mask, version: 1 });
+    const changed = await player.playerThumbnail(source(altered, "Maps/Other.png"), "two", {
+      mask,
+      version: 1,
+    });
+    expect(changed!.equals(original!)).toBe(true);
+  });
+
+  it("follows the fog as it is now", async () => {
+    const player = images();
+    const half = await player.playerThumbnail(source(), "m", { mask: LEFT_HALF(), version: 1 });
+    const { data, width } = await pixels(half!);
+    expect(data[(100 * width + 400) * 4 + 3]).toBe(0);
+    const all = await player.playerThumbnail(source(), "m", {
+      mask: fog(paint("reveal")),
+      version: 2,
+    });
+    const after = await pixels(all!);
+    expect(after.data[(100 * width + 400) * 4 + 3]).toBe(255);
+  });
+});

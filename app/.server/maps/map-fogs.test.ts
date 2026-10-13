@@ -43,6 +43,17 @@ describe("MapFogs", () => {
     expect(version).toBe(0);
   });
 
+  it("gives several maps' fog at once, each as get would", async () => {
+    const fogs = store();
+    await fogs.apply("world", WORLD, [revealAll]);
+    const many = await fogs.getMany([
+      { id: "world", image: WORLD },
+      { id: "town", image: { width: 200, height: 200 } },
+    ]);
+    expect(many.get("world")).toEqual(await fogs.get("world", WORLD));
+    expect(many.get("town")).toEqual(await fogs.get("town", { width: 200, height: 200 }));
+  });
+
   it("keeps reveals in the data folder, so they survive a restart", async () => {
     await store().apply("world", WORLD, [reveal(half(0, 0.5))]);
     const { mask, version } = await MapFogs.inFolder(folder).get("world", WORLD);

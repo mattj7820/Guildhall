@@ -1,19 +1,20 @@
 import { useState } from "react";
-import { data, Form, Link, redirect, useActionData, useNavigation } from "react-router";
+import { data, Form, redirect, useActionData, useNavigation } from "react-router";
 import { requireDm } from "~/.server/not-found";
 import { DataFileError } from "~/.server/data/json-store";
+import { facesByMap, listMaps } from "~/.server/maps/maps-page";
 import { whereabouts } from "~/.server/maps/tokens";
 import { ImagePicker } from "~/components/maps/ImagePicker";
+import { MapsBrowser } from "~/components/maps/MapsBrowser";
 import { NotePicker } from "~/components/maps/NotePicker";
 import { inputClass, panelClass, primaryButtonClass, buttonClass } from "~/components/styles";
 import type { Viewer } from "~/campaign/types";
-import { canView } from "~/campaign/visibility";
 import { servicesContext, viewerContext, type Services } from "~/context";
 import { mapImageSchema, MAP_NAME_MAX } from "~/maps/schema";
-import { mapTree, type MapTreeNode } from "~/maps/tree";
+import { mapTree } from "~/maps/tree";
 import type { MapImage } from "~/maps/types";
 import type { Whereabouts } from "~/maps/tokens/types";
-import { mapEditUrl, mapUrl } from "~/maps/urls";
+import { mapEditUrl } from "~/maps/urls";
 import type { Route } from "./+types/maps";
 
 export function meta(_: Route.MetaArgs) {
@@ -24,26 +25,22 @@ export async function loader({ context }: Route.LoaderArgs) {
   const viewer = context.get(viewerContext);
   const services = context.get(servicesContext);
   const party = await partyWhereabouts(services, viewer);
-  if (viewer.role !== "dm") return { ...(await playersMaps(services, viewer)), party };
-  const { maps, vault } = context.get(servicesContext);
-  const current = vault.current;
-  const picker = {
-    images: current.mapImages(),
-    notes: current.notes(viewer).map(({ id, slug, title }) => ({ id, slug, title })),
-  };
+  const forDm = viewer.role === "dm";
+  const current = services.vault.current;
+  const picker = forDm
+    ? {
+        images: current.mapImages(),
+        notes: current.notes(viewer).map(({ id, slug, title }) => ({ id, slug, title })),
+      }
+    : undefined;
   try {
-    const list = (await maps.list()).map(({ id, name, areas, image }) => ({
-      id,
-      name,
-      areas: areas.map(({ id, name, map }) => ({ id, name, map })),
-      imageMissing: !current.findImage(image.path),
-    }));
-    return { forDm: true as const, tree: mapTree(list), party, ...picker };
+    const maps = await listMaps(services, viewer);
+    return { forDm, tree: mapTree(maps), party, faces: facesByMap(party, maps), picker };
   } catch (error) {
-    if (error instanceof DataFileError) {
-      return { forDm: true as const, tree: [], error: error.message, party, ...picker };
-    }
-    throw error;
+    if (!(error instanceof DataFileError)) throw error;
+    // The DM is told what's wrong with the file; players aren't told where it is.
+    const message = forDm ? error.message : "The maps can't be shown just now.";
+    return { forDm, tree: [], party, faces: {}, picker, error: message };
   }
 }
 
@@ -53,32 +50,6 @@ async function partyWhereabouts(services: Services, viewer: Viewer): Promise<Whe
     return await whereabouts(services, viewer);
   } catch (error) {
     if (error instanceof DataFileError) return [];
-    throw error;
-  }
-}
-
-/**
- * The maps shared with players, nested as they lead to each other. Only the links between shared
- * maps are sent: area names, image files and everything else stay on the server.
- */
-async function playersMaps({ maps }: Services, viewer: Viewer) {
-  try {
-    const shared = (await maps.list()).filter((map) => canView(viewer, map.visibility));
-    const isShared = (id: string) => shared.some((map) => map.id === id);
-    const list = shared.map(({ id, name, areas }) => ({
-      id,
-      name,
-      areas: areas.flatMap((area) =>
-        area.map && isShared(area.map) ? [{ id: area.id, name: "", map: area.map }] : [],
-      ),
-      imageMissing: false,
-    }));
-    return { forDm: false as const, tree: mapTree(list) };
-  } catch (error) {
-    // The DM is told what's wrong with the file; players aren't told where it is.
-    if (error instanceof DataFileError) {
-      return { forDm: false as const, tree: [], error: "The maps can't be shown just now." };
-    }
     throw error;
   }
 }
@@ -110,33 +81,30 @@ export async function action({ request, context }: Route.ActionArgs) {
   return redirect(mapEditUrl(created.id));
 }
 
-type Loaded = Extract<Route.ComponentProps["loaderData"], { forDm: true }>;
-type ListedMap = Route.ComponentProps["loaderData"]["tree"][number]["map"];
+type Picker = NonNullable<Route.ComponentProps["loaderData"]["picker"]>;
 
 export default function Maps({ loaderData }: Route.ComponentProps) {
   const [creating, setCreating] = useState(false);
-  const forDm = loaderData.forDm;
+  const { forDm, tree, party, faces, picker } = loaderData;
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-6">
+    <main className="mx-auto max-w-6xl px-4 py-6">
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <h1 className="mr-auto font-serif text-3xl font-bold">Maps</h1>
-        {forDm && !creating && (
+        {picker && !creating && (
           <button type="button" className={primaryButtonClass} onClick={() => setCreating(true)}>
             New map
           </button>
         )}
       </div>
 
-      {forDm && creating && <NewMapForm loaded={loaderData} onCancel={() => setCreating(false)} />}
-
-      <PartyWhereabouts party={loaderData.party} forDm={forDm} />
+      {picker && creating && <NewMapForm picker={picker} onCancel={() => setCreating(false)} />}
 
       {"error" in loaderData && loaderData.error ? (
         <p role="alert" className="rounded-md bg-danger-surface px-3 py-2 text-sm text-danger">
           {loaderData.error}
         </p>
-      ) : loaderData.tree.length === 0 ? (
+      ) : tree.length === 0 ? (
         !creating &&
         (forDm ? (
           <div className={`${panelClass} text-center`}>
@@ -155,77 +123,13 @@ export default function Maps({ loaderData }: Route.ComponentProps) {
           </div>
         ))
       ) : (
-        <nav aria-label="All maps" className={panelClass}>
-          <MapList nodes={loaderData.tree} forDm={forDm} />
-        </nav>
+        <MapsBrowser tree={tree} party={party} faces={faces} forDm={forDm} />
       )}
     </main>
   );
 }
 
-/** Where each party member is (for a player, their own), with a way to their map. */
-function PartyWhereabouts({ party, forDm }: { party: Whereabouts[]; forDm: boolean }) {
-  if (party.length === 0) return null;
-  const heading = forDm ? "Where the party is" : "Where you are";
-  return (
-    <section aria-label={heading} className={`${panelClass} mb-4`}>
-      <h2 className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">{heading}</h2>
-      <ul className="flex flex-col gap-1 text-sm">
-        {party.map((member) => (
-          <li key={member.name}>
-            <span className="font-semibold">{member.name}</span>{" "}
-            {member.map ? (
-              <>
-                is on{" "}
-                <Link to={mapUrl(member.map.id)} className="text-link underline">
-                  {member.map.name}
-                </Link>
-              </>
-            ) : (
-              <span className="text-muted">isn't on a map yet</span>
-            )}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function MapList({ nodes, forDm }: { nodes: MapTreeNode<ListedMap>[]; forDm: boolean }) {
-  return (
-    <ul className="flex flex-col gap-1 [&_ul]:mt-1 [&_ul]:ml-5 [&_ul]:border-l [&_ul]:border-line [&_ul]:pl-3">
-      {nodes.map(({ map, children }) => (
-        <li key={map.id}>
-          <div className="flex flex-wrap items-baseline gap-x-3">
-            <Link to={mapUrl(map.id)} className="font-serif text-lg font-semibold hover:underline">
-              {map.name}
-            </Link>
-            {forDm && (
-              <>
-                <span className="text-xs text-muted">
-                  {map.areas.length === 1 ? "1 area" : `${map.areas.length} areas`}
-                </span>
-                <Link
-                  to={mapEditUrl(map.id)}
-                  aria-label={`Edit ${map.name}`}
-                  className="text-xs text-muted hover:underline"
-                >
-                  Edit
-                </Link>
-              </>
-            )}
-            {map.imageMissing && (
-              <span className="text-xs font-semibold text-danger">Image not found</span>
-            )}
-          </div>
-          {children.length > 0 && <MapList nodes={children} forDm={forDm} />}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function NewMapForm({ loaded, onCancel }: { loaded: Loaded; onCancel: () => void }) {
+function NewMapForm({ picker, onCancel }: { picker: Picker; onCancel: () => void }) {
   const actionData = useActionData<typeof action>();
   const busy = useNavigation().state !== "idle";
   const [image, setImage] = useState<MapImage>();
@@ -237,7 +141,7 @@ function NewMapForm({ loaded, onCancel }: { loaded: Loaded; onCancel: () => void
     <Form method="post" aria-label="New map" className={`${panelClass} mb-6 flex flex-col gap-4`}>
       <h2 className="font-serif text-xl font-bold">New map</h2>
       <ImagePicker
-        images={loaded.images}
+        images={picker.images}
         onChange={(chosen, path) => {
           setImage(chosen);
           if (!nameEdited) setName(nameFromPath(path));
@@ -264,7 +168,7 @@ function NewMapForm({ loaded, onCancel }: { loaded: Loaded; onCancel: () => void
         <NotePicker
           label="Wiki note (optional)"
           name="note"
-          notes={loaded.notes}
+          notes={picker.notes}
           value={note}
           onChange={setNote}
         />

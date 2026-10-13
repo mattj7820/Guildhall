@@ -620,6 +620,13 @@ body {
   text-decoration: none;
 }
 
+/* The Maps page's preview: each map fades in as it's pointed at. */
+@keyframes preview-in {
+  from {
+    opacity: 0;
+  }
+}
+
 /* The latest roll on a character sheet: shown, then fading away. */
 @keyframes fade {
   0%,

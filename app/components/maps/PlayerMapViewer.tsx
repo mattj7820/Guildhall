@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { fogMask } from "~/maps/fog/editor";
-import type { AreaView, MapView, NoteLink, Size, TileLayer } from "~/maps/types";
+import type { AreaId, AreaView, MapView, NoteLink, Size, TileLayer } from "~/maps/types";
 import { mapUrl, mapVersionUrl } from "~/maps/urls";
 import { useMapUpdates } from "~/maps/useMapUpdates";
 import { LiveStatus } from "../LiveStatus";
@@ -10,6 +10,7 @@ import type { InsideBadge, TokenView } from "~/maps/tokens/types";
 import { useMapTokens } from "~/maps/tokens/useMapTokens";
 import { AreaShape } from "./AreaShape";
 import { useFogImage } from "./FogLayer";
+import { PlacesButton, usePlaces } from "./Places";
 import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
 import { GridLayer } from "./GridLayer";
@@ -76,6 +77,7 @@ export function PlayerMapViewer({
   const status = useMapUpdates(map.id, mapVersionUrl(map.id), version, mapTokens.pushed);
   const [selectedId, setSelectedId] = useState<string>();
   const selected = map.areas.find((area) => area.id === selectedId);
+  const places = usePlaces();
   const mask = useMemo(() => fogMask(map.fog), [map.fog]);
   const revealed = useFogImage(mask, "revealed");
   const tiles = map.image.tiles;
@@ -105,6 +107,7 @@ export function PlayerMapViewer({
             size={map.size}
             className="flex-1"
             backdrop={<Tiles size={map.size} layer={tiles} />}
+            controls={map.areas.length > 0 ? <PlacesButton places={places} /> : undefined}
             focus={focus}
           >
             {(canvas) => (
@@ -134,8 +137,10 @@ export function PlayerMapViewer({
                       size={map.size}
                       scale={canvas.scale}
                       selected={area.id === selectedId}
+                      occupied={mapTokens.inside.some((badge) => badge.area === area.id)}
                       onSelect={(chosen) => setSelectedId(chosen.id)}
                       plain
+                      {...places.areaProps(area)}
                     />
                   ))}
                 </g>
@@ -179,7 +184,11 @@ export function PlayerMapViewer({
                 map.note && hasContent(map.note) && <NotePanel note={map.note} />
               )}
               <PartyHere tokens={mapTokens.tokens} onFind={find} grid={map.grid} size={map.size} />
-              <AreaList areas={map.areas} onSelect={(area) => setSelectedId(area.id)} />
+              <AreaList
+                areas={map.areas}
+                onSelect={(area) => setSelectedId(area.id)}
+                onHighlight={places.highlight}
+              />
             </>
           }
         />
@@ -291,9 +300,24 @@ function SelectedArea({ area, onClose }: { area: AreaView; onClose: () => void }
   );
 }
 
-function AreaList({ areas, onSelect }: { areas: AreaView[]; onSelect: (area: AreaView) => void }) {
+function AreaList({
+  areas,
+  onSelect,
+  onHighlight,
+}: {
+  areas: AreaView[];
+  onSelect: (area: AreaView) => void;
+  /** Picks the area out on the map while it's pointed at or focused in the list. */
+  onHighlight: (area: AreaId | undefined) => void;
+}) {
   if (areas.length === 0) return null;
   const sorted = [...areas].sort((a, b) => a.name.localeCompare(b.name));
+  const highlighting = (area: AreaView) => ({
+    onPointerEnter: () => onHighlight(area.id),
+    onPointerLeave: () => onHighlight(undefined),
+    onFocus: () => onHighlight(area.id),
+    onBlur: () => onHighlight(undefined),
+  });
   return (
     <section aria-labelledby="map-areas-heading">
       <h2
@@ -306,7 +330,11 @@ function AreaList({ areas, onSelect }: { areas: AreaView[]; onSelect: (area: Are
         {sorted.map((area) => (
           <li key={area.id}>
             {area.map ? (
-              <Link to={mapUrl(area.map.id)} className="block rounded px-1 py-0.5 hover:bg-raised">
+              <Link
+                to={mapUrl(area.map.id)}
+                className="block rounded px-1 py-0.5 hover:bg-raised"
+                {...highlighting(area)}
+              >
                 ▸ {area.name}
               </Link>
             ) : (
@@ -314,6 +342,7 @@ function AreaList({ areas, onSelect }: { areas: AreaView[]; onSelect: (area: Are
                 type="button"
                 onClick={() => onSelect(area)}
                 className="block w-full rounded px-1 py-0.5 text-left hover:bg-raised"
+                {...highlighting(area)}
               >
                 {area.name}
               </button>

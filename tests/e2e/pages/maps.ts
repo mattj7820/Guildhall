@@ -2,7 +2,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import type { FixtureImage, MapRef, Point } from "../support/test-data";
 import { AppPage, dragBetween, middleOf, settled } from "./app-page";
 
-/** The Maps page: the tree of maps, and the DM's "New map" form. */
+/** The Maps page: the list of maps, the preview of one, and the DM's "New map" form. */
 export class Maps extends AppPage {
   get tree() {
     return this.page.getByRole("navigation", { name: "All maps" });
@@ -10,6 +10,29 @@ export class Maps extends AppPage {
 
   open() {
     return this.goto("/maps");
+  }
+
+  /** Previews a map from the list, as tabbing to its name does. */
+  async previewMap(name: string) {
+    await this.tree.getByRole("link", { name, exact: true }).focus();
+    await expect(this.preview(name)).toBeVisible();
+    return this.preview(name);
+  }
+
+  /** Points at the edge of a map's row in the list, away from its name. */
+  async pointAtRow(name: string) {
+    const row = this.tree.getByRole("link", { name, exact: true }).locator("..");
+    await row.hover({ position: { x: 2, y: 4 } });
+  }
+
+  /** The preview of a map: its thumbnail, breadcrumbs, a pin for each map inside it. */
+  preview(name: string) {
+    return this.page.getByRole("region", { name: `Preview: ${name}`, exact: true });
+  }
+
+  /** The pin in a preview for a map inside it. */
+  pin(preview: Locator, name: string) {
+    return preview.getByRole("button", { name: `${name}: look inside`, exact: true });
   }
 
   /**
@@ -163,6 +186,19 @@ export class MapView extends MapCanvasPage {
 
   get areas() {
     return this.page.getByRole("group", { name: "Map areas" });
+  }
+
+  /**
+   * An area's name on the map, there all along but shown only on hover, focus or with Places
+   * (so look at its opacity, not whether it's visible).
+   */
+  areaName(name: string) {
+    return this.areas.locator("text").filter({ hasText: name });
+  }
+
+  /** Shows every place's outline and name, or stops. */
+  get placesButton() {
+    return this.page.getByRole("button", { name: "Places", exact: true });
   }
 
   /** The tiles of the image a player has been given. */

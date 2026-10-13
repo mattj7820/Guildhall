@@ -269,6 +269,37 @@ test.describe("Viewing maps", () => {
     return editor.done();
   }
 
+  test("previews maps on the Maps page, and looks inside one by its pin", async ({
+    api,
+    maps,
+    page,
+  }) => {
+    const world = (await worldWithTown(api, maps)).map;
+    await maps.open();
+    const preview = await maps.previewMap(world.name);
+    const thumbnail = preview.locator("img").first();
+    await expect(thumbnail).toHaveAttribute("src", /^\/maps\/[^/]+\/thumbnail\?v=/);
+    await expect(preview).toContainText("1 map inside");
+
+    // The pin for the map inside previews it, with where it is in the world.
+    await maps.pin(preview, "Riverside").click();
+    const riverside = maps.preview("Riverside");
+    await expect(riverside.getByRole("navigation", { name: "Where it is" })).toContainText(
+      world.name,
+    );
+    await riverside.getByRole("button", { name: `In ${world.name}: preview it` }).click();
+    await expect(maps.preview(world.name)).toBeVisible();
+
+    // Pointing anywhere on a row previews it, not only at its name.
+    await maps.pin(maps.preview(world.name), "Riverside").click();
+    await expect(maps.preview("Riverside")).toBeVisible();
+    await maps.pointAtRow(world.name);
+    await expect(maps.preview(world.name)).toBeVisible();
+
+    await maps.preview(world.name).getByRole("link", { name: "Open map" }).click();
+    await expect(canvasOf(page, world.name)).toBeVisible();
+  });
+
   test("dives into an area's map from the keyboard", async ({ api, maps, page }) => {
     const view = await worldWithTown(api, maps);
     await view.canvas.focus();
@@ -276,6 +307,36 @@ test.describe("Viewing maps", () => {
     await expect(view.canvas.getByRole("link", { name: "Riverside" })).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(canvasOf(page, "Riverside")).toBeVisible();
+  });
+
+  test("shows areas as pins, with their outlines and names on hover, from the list, or with Places", async ({
+    api,
+    maps,
+    page,
+  }) => {
+    const view = await worldWithTown(api, maps);
+    const name = view.areaName("Riverside");
+    await expect(name).toHaveCSS("opacity", "0");
+
+    await view.canvas.getByRole("link", { name: "Riverside" }).hover();
+    await expect(name).toHaveCSS("opacity", "1");
+    await page.mouse.move(0, 0);
+    await expect(name).toHaveCSS("opacity", "0");
+
+    await page
+      .getByRole("list", { name: "Areas" })
+      .getByRole("link", { name: "Riverside" })
+      .hover();
+    await expect(name).toHaveCSS("opacity", "1");
+    await page.mouse.move(0, 0);
+    await expect(name).toHaveCSS("opacity", "0");
+
+    await view.placesButton.click();
+    await expect(view.placesButton).toHaveAttribute("aria-pressed", "true");
+    await expect(name).toHaveCSS("opacity", "1");
+    await view.canvas.press("p");
+    await expect(view.placesButton).toHaveAttribute("aria-pressed", "false");
+    await expect(name).toHaveCSS("opacity", "0");
   });
 
   test("opens an area that isn't mapped yet in the side panel, with a way to attach a map", async ({
@@ -329,5 +390,27 @@ test.describe("Viewing maps", () => {
 
     await page.getByRole("button", { name: "Stop presenting" }).click();
     await expect(page.getByRole("complementary", { name: "Map details" })).toBeVisible();
+  });
+});
+
+test.describe("Areas on a touch screen", () => {
+  test.use({ hasTouch: true });
+
+  test("shows an area on the first tap, and opens its map on the second", async ({
+    api,
+    maps,
+    page,
+  }) => {
+    const editor = await maps.edit(await api.createMap({ image: IMAGES.world }));
+    await editor.drawArea(HARBOUR, "Riverside");
+    await editor.linkNewMap(IMAGES.town.file);
+    const view = await editor.done();
+
+    const area = view.canvas.getByRole("link", { name: "Riverside" });
+    await area.tap();
+    await expect(view.areaName("Riverside")).toHaveCSS("opacity", "1");
+    await expect(view.canvas).toBeVisible();
+    await area.tap();
+    await expect(canvasOf(page, "Riverside")).toBeVisible();
   });
 });

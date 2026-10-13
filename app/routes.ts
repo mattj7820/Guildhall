@@ -18,6 +18,7 @@ export default [
   route("maps/:id/image", "routes/map-image.ts"),
   route("maps/:id/fog", "routes/map-fog.ts"),
   route("maps/:id/tiles/:x/:y", "routes/map-tile.ts"),
+  route("maps/:id/thumbnail", "routes/map-thumbnail.ts"),
   route("maps/:id/version", "routes/map-version.ts"),
   route("maps/:id/tokens", "routes/map-tokens.ts"),
   route("maps/:id/tokens/:token/picture", "routes/map-token-picture.ts"),

@@ -123,8 +123,14 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
     and reshape it by dragging its points, or with the keyboard. Undo and redo, and every change
     saves itself.
   - An area can lead to a more detailed map, a wiki note, or both. Maps nest to any depth (world,
-    region, town, building), with breadcrumbs back up. An area with no map yet is shown dashed,
-    with its note and a one-click way to attach a map, never a dead end.
+    region, town, building), with breadcrumbs back up. An area with no map yet opens its note and
+    a one-click way to attach a map, never a dead end.
+  - Areas stay off the art: a small pin each, with the outline and name on hover or keyboard
+    focus, from the side panel's list, or for every place at once with Places (P). The DM's pins
+    are hollow for areas not mapped yet. On a touch screen the first tap shows an area.
+  - The Maps page lists every map, nested, beside a preview of the one you point at: its
+    thumbnail, a pin for each map inside it, where it sits in its parent, and the party's faces
+    where they are.
   - Large images (a 4K, 15 MB export) fit the screen, then pan and zoom smoothly and stay sharp.
     Present mode shows just the map, for sharing on a call.
   - Outlines are stored relative to the image, so re-exporting a map at a new resolution keeps
@@ -140,8 +146,8 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
     once half of them is revealed, leading to deeper maps the DM has shared; a secret area never
     appears.
   - Hidden parts never leave the server: players get the image as tiles with the fogged pixels
-    taken out, never the image itself, and tests prove a player's tiles are byte-for-byte the same
-    whatever is under the fog. The fog's edge is soft and only ever eats into what's revealed.
+    taken out, never the image itself, and a thumbnail made the same way, and tests prove a
+    player's tiles and thumbnail are byte-for-byte the same whatever is under the fog. The fog's edge is soft and only ever eats into what's revealed.
 - **Tokens, shared live**, like a game's map screen showing where the party is.
   - A token for each PC and the party's companion, with their portrait (or an initial), and the
     DM's own: NPCs from their vault notes, drawn with the note's picture under a name of the DM's

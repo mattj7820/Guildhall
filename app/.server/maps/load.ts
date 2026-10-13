@@ -108,3 +108,24 @@ export async function mapVersion(
   ]);
   return [map.updatedAt, fog.version, source?.version ?? "missing", vaultNumber].join(".");
 }
+
+/**
+ * Makes every map's thumbnail ahead of time (one image at a time, and only images that changed),
+ * so the Maps page doesn't wait for them.
+ */
+export async function prepareThumbnails(
+  services: Pick<Services, "config" | "vault" | "maps" | "fogs" | "playerImages">,
+): Promise<void> {
+  try {
+    for (const map of await services.maps.list()) {
+      const source = await mapSource(services, map);
+      if (!source) continue;
+      const { mask } = await services.fogs.get(map.id, map.image);
+      await services.playerImages.thumbnail(source, mask).catch((error: unknown) => {
+        console.warn(`[maps] Couldn't make the thumbnail of map ${map.id}:`, error);
+      });
+    }
+  } catch (error) {
+    console.warn("[maps] Couldn't make the maps' thumbnails:", error);
+  }
+}

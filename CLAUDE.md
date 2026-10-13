@@ -12,8 +12,9 @@ combat tracker (one fight for the table, kept in the data folder and pushed live
 and end their own turn; run beside a map, with monsters' tokens and quick damage for picked
 monsters; prepared encounters, which can start on a map; every SRD monster from both the 2014 and
 2024 SRDs beside the vault's statblocks), the DM's stunts and sounds on maps (played live for
-everyone, only when the DM plays them), DM-only interactive maps (vault images with
-outlined areas leading to deeper maps and notes; kept in the data folder), fog of war and tokens on
+everyone, only when the DM plays them), interactive maps (vault images with
+areas, shown as pins, leading to deeper maps and notes; found on a Maps page with a preview of
+each; kept in the data folder), fog of war and tokens on
 maps (the party's, NPCs from their notes and the DM's markers, moved live over websockets and
 managed from the DM's Tokens tab; kept in the data folder),
 character sheets with a game-style bag (players edit their own, the DM gives items; spells, slots,
@@ -134,7 +135,8 @@ First e2e run needs `npx playwright install chromium`.
   grid, run-length text form, cell ranges), `shapes.ts` (the cells a stroke or polygon covers),
   `changes.ts` (`applyFogChange`, `inverseOf`), `coverage.ts` (`areaRevealed`: at least half),
   `tiles.ts` (`cellAlpha`, `pixelAlpha`: a pixel in a hidden cell is always transparent; which
-  tiles players may have, and their keys), `schema.ts` (zod for requests), `editor.ts`
+  tiles players may have, and their keys), `overview.ts` (`cellOverview`: the image one pixel per
+  fog cell, for thumbnails; `maskOverview`, players' copy), `schema.ts` (zod for requests), `editor.ts`
   (`FogEditor`: the DM's changes shown at once, saved in batches, undone with inverses) and its
   `useFogEditor` hook.
 - `app/maps/tokens/`: tokens (isomorphic): `types.ts` (`Token` is a party member by note, a DM
@@ -218,9 +220,12 @@ First e2e run needs `npx playwright install chromium`.
 - `app/.server/maps/`: `campaign-maps.ts` (the map repository over `maps.json`; tree rules checked
   inside the write; sharing), `map-fogs.ts` (each map's fog over `fog.json`),
   `player-image.ts` (`PlayerImages`: cuts an image into tiles with sharp, and masks the partly
-  revealed ones from exact copies: the only way players get a map's pixels), `view.ts` (`mapView`:
-  a map for a `Viewer`, with hidden things and fogged areas left out), and `load.ts` (finds the
-  image, versions its URL, renders linked notes, reads the fog).
+  revealed ones from exact copies; makes thumbnails from the overview, masked for players: the
+  only way players get a map's pixels), `maps-page.ts` (`listMaps`: the Maps page's maps as a
+  viewer may see them, with thumbnails and pins; `facesByMap`), `view.ts` (`mapView`: a map for a
+  `Viewer`, with hidden things and fogged areas left out), and `load.ts` (finds the image,
+  versions its URL, renders linked notes, reads the fog; `prepareThumbnails`, at start and when
+  the vault changes).
 - `app/.server/maps/`, for tokens: `map-tokens.ts` (the repository over `tokens.json`, applying only
   allowed actions; `removeCombatants` when monsters leave the fight), `tokens.ts` (`loadMapTokens`:
   a viewer's tokens and who's inside which area; `whereabouts`; `partyPlacements`, the DM's party
@@ -251,12 +256,13 @@ First e2e run needs `npx playwright install chromium`.
   encounter), `combat-fight` (JSON: GET the fight as the viewer may see it; POST the DM's saves,
   free movement and ending, and a player's end of turn), `combat-statblock` (JSON: one statblock
   for the DM, by key), `combat-prepared` (list; create, duplicate
-  and delete actions), `combat-prepared-edit` (editor; autosave action), `maps` (tree of maps: every
-  map for the DM, only shared ones for players; create action), `map-view` (`/maps/:id`: the table
+  and delete actions), `combat-prepared-edit` (editor; autosave action), `maps` (the nested list of maps with a
+  preview: every map for the DM, only shared ones for players; create action), `map-view` (`/maps/:id`: the table
   view for the DM, with Combat and `?start=<id>` for a prepared fight there; the fogged view for
   players, with the fight's turn strip), `map-edit` (editor; save, createChild, setImage,
   setVisibility and delete actions; `?area=` preselects an area), `map-fog` (JSON: the DM's fog
   changes), `map-tile` (resource route: one tile of a map's image as players may see it),
+  `map-thumbnail` (resource route: a map's thumbnail, the DM's whole or players' masked),
   `map-version` (JSON: what an open player map polls while its live connection is down: the version
   and its tokens), `map-tokens` (JSON: POST token actions), `map-token-picture` (resource route:
   an NPC token's picture, only to those who may see the token),
@@ -295,7 +301,9 @@ First e2e run needs `npx playwright install chromium`.
 - `app/components/maps/`: `MapCanvas` (the SVG canvas; `focus` centres it), `MapViewer` and
   `MapEditor` (the two pages; the viewer's bar is `MapViewerBar`, placing tokens
   `useTokenPlacing`, its smaller parts `MapViewerParts`, and `ClickCatcher` takes the next click on
-  the map), `AreaShape`, `VertexHandles`, `DraftOutline`, `AreaForm`,
+  the map), `AreaShape` (an area as a pin, its outline and name on hover, focus or Places; the
+  first tap on touch), `Places` (`usePlaces`: the Places switch and P, the list's highlight),
+  `MapsBrowser` (the Maps page's list and preview), `VertexHandles`, `DraftOutline`, `AreaForm`,
   `MapSettings`, `ImageHealth`, `ImagePicker`, `NotePicker`, `NotePanel`, `MapBreadcrumbs`, and for
   fog of war `FogLayer` (the fog drawn from the cell opacities), `FogPainter` (brush, rectangle and
   area tools), `FogToolbar`, `FogAreaList` (what players see of each area) and `useFogTools` (tool
@@ -343,7 +351,8 @@ First e2e run needs `npx playwright install chromium`.
 - Maps: outlines are stored as fractions of the image (0..1), never pixels; the map records the
   pixel size they were drawn against. Maps and areas reference notes by entity ID and images by
   vault path. A map's parent is derived from area links, never stored (one parent per map). Map
-  images are served by map ID through `map-image`, not `vault-asset`, and only ever to the DM.
+  images are served by map ID through `map-image`, not `vault-asset`, and only ever to the DM;
+  players' pixels come only from `PlayerImages` (tiles and thumbnails, masked by the fog now).
   Map changes go through `editorReducer`; the image and sharing change only through their own
   actions. An area's `visibility` is `players` (seen once at least half revealed on a shared map)
   or `dm` (secret). A battle grid is also in fractions (a square's side as a fraction of the

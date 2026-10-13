@@ -95,6 +95,71 @@ test("a map that isn't shared gives players nothing at all", async ({ api, openA
   expect((await player.api.changeFogRequest(map, REVEAL_ALL)).status()).toBe(404);
 });
 
+/** Counted in a plain loop: an assertion per pixel would be far too slow in Playwright. */
+async function magentaIn(image: Buffer) {
+  const { data } = await sharp(image).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  let magenta = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i] > 180 && data[i + 1] < 90 && data[i + 2] > 180 && data[i + 3] > 0) magenta++;
+  }
+  return magenta;
+}
+
+test("players' thumbnails have nothing from under the fog; the DM's have it all", async ({
+  api,
+  openAs,
+}) => {
+  const map = await api.createMap({ shared: true, fog: [REVEAL_ALL, HIDE_CORNER] });
+  const fogged = await api.createMap({ shared: true });
+  const unshared = await api.createMap({ fog: [REVEAL_ALL] });
+
+  const dm = await api.request.get(`${map.url}/thumbnail`);
+  expect(dm.status()).toBe(200);
+  expect(await magentaIn(await dm.body())).toBeGreaterThan(0);
+
+  const player = await openAs("playerOne");
+  const theirs = await player.api.request.get(`${map.url}/thumbnail`);
+  expect(theirs.status()).toBe(200);
+  expect(theirs.headers()["content-type"]).toBe("image/webp");
+  expect(await magentaIn(await theirs.body())).toBe(0);
+  // Nothing seen yet, not shared and missing are all the same 404.
+  for (const other of [fogged.url, unshared.url, "/maps/no-such-map"]) {
+    expect((await player.api.request.get(`${other}/thumbnail`)).status()).toBe(404);
+  }
+});
+
+test("the Maps page shows players shared maps, with pins only where they've explored", async ({
+  api,
+  explored,
+  openAs,
+}) => {
+  const keep = await api.createMap({ name: uniqueName("Keep"), shared: true });
+  const cellar = await api.createMap({ name: uniqueName("Cellar"), shared: true });
+  const secret = await api.createMap({ name: uniqueName("Secret") });
+  await api.saveMap(explored, {
+    areas: [
+      { ...KEEP, map: keep.id },
+      { ...CELLAR, map: cellar.id },
+    ],
+  });
+
+  const player = await openAs("playerOne");
+  await player.maps.open();
+  await expect(player.maps.tree.getByRole("link", { name: secret.name })).toHaveCount(0);
+  const preview = await player.maps.previewMap(explored.name);
+  await expect(preview.locator("img").first()).toHaveAttribute("src", /\/thumbnail\?v=/);
+  await expect(player.maps.pin(preview, keep.name)).toBeVisible();
+  // Cellar is still under the fog: listed, as it's shared, but with no pin on the map.
+  await expect(player.maps.pin(preview, cellar.name)).toHaveCount(0);
+  await expect(preview.getByText(cellar.name)).toHaveCount(0);
+
+  await player.maps.pin(preview, keep.name).click();
+  const inside = player.maps.preview(keep.name);
+  await expect(inside).toContainText("Not explored yet");
+  await inside.getByRole("link", { name: "Open map" }).click();
+  await expect(player.page).toHaveURL(new RegExp(`${keep.url}$`));
+});
+
 test.describe("The DM's fog tools", () => {
   test("shares a map from the editor, and keeps it shared", async ({ api, maps }) => {
     const editor = await maps.edit(await api.createMap());

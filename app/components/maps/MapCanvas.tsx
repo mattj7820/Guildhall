@@ -29,6 +29,8 @@ interface Props {
   /** Centres the view on this image point (image pixels) whenever `key` changes: "Find". */
   focus?: { at: [number, number]; key: number };
   className?: string;
+  /** More controls beside the zoom buttons. */
+  controls?: ReactNode;
 }
 
 /**
@@ -47,6 +49,7 @@ export function MapCanvas({
   onKeyDown,
   focus,
   className = "",
+  controls,
 }: Props) {
   const {
     containerRef,
@@ -133,6 +136,7 @@ export function MapCanvas({
         </svg>
       </div>
       <div className="absolute right-3 bottom-3 flex items-center gap-1 rounded-md bg-surface/90 p-1 text-sm shadow">
+        {controls}
         <button type="button" onClick={zoomIn} aria-label="Zoom in" className={button}>
           +
         </button>

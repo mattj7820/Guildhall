@@ -1,7 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
+import type { Api } from "./support/api";
 import { expect, test } from "./support/fixtures";
-import { uniqueName } from "./support/test-data";
+import { IMAGES, rectangle, REVEAL_ALL, uniqueName } from "./support/test-data";
 
 /**
  * The three themes on each part of the app, with text readable against its background (axe's
@@ -17,6 +18,24 @@ const PAGE_COLOUR = {
   ember: "rgb(15, 14, 14)",
   gem: "rgb(10, 19, 34)",
 };
+
+/** A shared, explored map with an area leading to another: its page, with pins and the legend. */
+async function mapPage(api: Api) {
+  const inner = await api.createMap({ image: IMAGES.town, shared: true });
+  const map = await api.createMap({ image: IMAGES.world, shared: true, fog: [REVEAL_ALL] });
+  await api.saveMap(map, {
+    areas: [
+      {
+        id: "inner",
+        name: "Inner",
+        outline: rectangle([0.2, 0.2], [0.5, 0.6]),
+        visibility: "players",
+        map: inner.id,
+      },
+    ],
+  });
+  return map.url;
+}
 
 async function expectReadable(page: Page, path: string) {
   const results = await new AxeBuilder({ page }).withRules(["color-contrast"]).analyze();
@@ -34,10 +53,11 @@ for (const [scheme, theme] of [
     test.use({ colorScheme: scheme });
 
     test(`every part of the app is shown in ${theme === "ember" ? "Iron and Ember" : "Storybook"}`, async ({
+      api,
       app,
     }) => {
-      for (const path of DM_PAGES) {
-        await app.goto(path);
+      for (const path of [...DM_PAGES, await mapPage(api)]) {
+        expect((await app.goto(path))?.status(), path).toBe(200);
         await expect(app.page.locator("html")).not.toHaveAttribute("data-theme");
         await expect(app.page.locator("body")).toHaveCSS("background-color", PAGE_COLOUR[theme]);
         await expectReadable(app.page, path);
@@ -46,7 +66,7 @@ for (const [scheme, theme] of [
   });
 }
 
-test("Gemlight, once picked, is on every part of the app", async ({ members, openAs }) => {
+test("Gemlight, once picked, is on every part of the app", async ({ api, members, openAs }) => {
   const them = await openAs("signedOut");
   const name = uniqueName("Gemlight player");
   await them.signIn.asNewcomer(name);
@@ -55,8 +75,8 @@ test("Gemlight, once picked, is on every part of the app", async ({ members, ope
   await them.settings.open();
   await them.settings.pick("Gemlight", "gem");
 
-  for (const path of PLAYER_PAGES) {
-    await them.goto(path);
+  for (const path of [...PLAYER_PAGES, await mapPage(api)]) {
+    expect((await them.goto(path))?.status(), path).toBe(200);
     await expect(them.page.locator("html")).toHaveAttribute("data-theme", "gem");
     await expect(them.page.locator("body")).toHaveCSS("background-color", PAGE_COLOUR.gem);
     await expectReadable(them.page, path);
