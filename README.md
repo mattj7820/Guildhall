@@ -83,9 +83,13 @@ one shared model of the campaign (NPCs, locations, sessions…). See [the roadma
   - Attacks with to-hit and damage, and spells by level with their casting time, range,
     components, duration, save or attack and dice, all rolled with a click. The spell save DC and
     attack bonus are worked out, and can be typed over. A spell can link to the vault's spell note
-    (`type: spell`, DM parts left out) and be cast for free through a feat's once a day.
-  - Cast spends the lowest slot left in one click (or a higher slot, the free use, or as a ritual)
-    and takes over concentration. Rolling stays a click of its own.
+    (`type: spell`, DM parts left out). Editing lists each spell as one row that opens to its
+    form; typing one in asks its name and level first, so it lands where it belongs.
+  - **Free spells** (Magic Initiate's once a day): link a spell to a feature with uses, from the
+    spell or the feature. The spell is always prepared and doesn't count towards the number, shows
+    the feature's use beside it, and the feature says which spell it casts.
+  - Cast spends the free use while one is left, otherwise the lowest slot left, in one click (or a
+    higher slot, or as a ritual), and takes over concentration. Rolling stays a click of its own.
   - **Spells from the SRD:** Add spells opens a picker with every spell from the SRD 5.1 (2014)
     and SRD 5.2.1 (2024), tagged, and the DM's own spell notes ("Mine"; see Spell notes below), found
     by name, level, class, concentration or ritual. Open one to read it; + adds it filled in

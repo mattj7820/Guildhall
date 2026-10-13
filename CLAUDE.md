@@ -283,8 +283,10 @@ First e2e run needs `npx playwright install chromium`.
   `EditorBar`, `HitPointsPanel`, `Fields`, `SheetParts`, `Portrait`. What gets used up: `Trackers`
   (slots, uses, hit dice and concentration at a glance; their maximums while editing), `Pips`,
   `Rests` (Short and Long rest), and the tabs `ActionsTab` (attacks, then features by how they're
-  used), `SpellsTab` (by level, Cast; only what's ready day to day, Prepare mode, and Add spells opening
-  `SpellPicker`, whose `SpellTextBox` also shows a linked spell's SRD text) and `FeaturesTab`, with `FilterChips` and `SheetLists`.
+  used), `SpellsTab` (by level, Cast; only what's ready day to day, Prepare mode, editing as rows
+  that open one at a time, a feat's free spell with its uses, and Add spells opening
+  `SpellPicker`, whose `SpellTextBox` also shows a linked spell's SRD text) and `FeaturesTab`
+  (a feature with uses can choose its free spell), with `FilterChips` and `SheetLists`.
   `CharacterPanel` is a character beside the map: a compact sheet, the companion, or the bag.
   `app/components/inventory/`: `Bag`, `InventoryBoard` (the drag-and-drop grid; the drag's state
   and rules are `useInventoryDrag`, its other drop targets `DropZones`, with `SortableTile`,
