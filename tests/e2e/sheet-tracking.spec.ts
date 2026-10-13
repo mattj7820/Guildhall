@@ -107,10 +107,11 @@ test("adds a spell with its wiki note, casts it with a slot and for free, and ke
   await expect(spells).toContainText("Players see this paragraph");
   await expect(page.locator("body")).not.toContainText("sparksecret");
 
-  // For free first, from the other ways to cast it, while a slot is left too.
+  // For free first while it can be, saving a slot that's left too.
   const slots = await sheet.left("1st-level slot");
-  await spells.getByRole("button", { name: `Other ways to cast ${spell}` }).click();
-  await page.getByRole("button", { name: `Free (${spell} (free), 1 left)` }).click();
+  await spells
+    .getByRole("button", { name: `Cast ${spell}: free (${spell} (free), 1 left)` })
+    .click();
   await expect(spells.getByRole("status")).toContainText(`Cast ${spell} for free`);
   await expect(sheet.counter(`${spell} (free)`, sheet.trackers)).toHaveAccessibleName(
     `${spell} (free): 0 of 1 left`,
