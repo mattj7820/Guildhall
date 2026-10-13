@@ -1469,3 +1469,40 @@ new spell where it's listed and scrolls to it. A free spell shows its feature an
 uses beside it, the feature says "Casts …", and a feature with uses can choose its spell while
 editing (one step that unlinks any other). Cast's one click spends the free use while one is
 left, saving a slot; slots stay in ▾. Nothing is stored differently: it's still `freeUse`.
+
+## 78. The Maps page as a list with a preview; thumbnails one pixel per fog cell; areas as pins
+
+**Date:** 2026-10-13
+
+**Context.** The Maps page was a list of names: fine with three maps, hard to find one among
+thirty. On the map itself, areas were amber and grey fills over the art, sitting on the lettering
+the DM's Wonderdraft maps already have. A thumbnail is also a new way for players to get a map's
+pixels, so it has to keep decision 30's promise that nothing under the fog leaves the server. A
+prototype tried three Maps page layouts in the real themes (and eight more in a mock-up), and five
+styles of area.
+
+**Decision.** The Maps page is a nested list of names beside a preview (a tree of thumbnails felt
+cluttered, and a grid of cards lost the nesting). Pointing at a name (after a moment, so sweeping
+down the list doesn't flick through every map) or tabbing to it previews it: the whole map in a
+frame that keeps its height from map to map, fading in; a pin for each map inside it, named on
+hover, where the party's faces stand in for the pin; breadcrumbs; and a small copy of its parent,
+ringed where it is. It opens on the party's map, and "Where the party is" is one line. On touch,
+the first tap on a name previews it while the preview is beside the list. Players see shared maps
+only, pins only over areas they can see, and "Where you are" for their own.
+
+Thumbnails are made from an overview with one pixel per fog cell (512 along the longer side),
+each the average of the image pixels whose centres are in that cell, the same rule the tiles'
+masking uses. The DM gets the overview as it is; players get it masked from an exact copy, cell by
+cell, from the fog as it is now, so a hidden cell's pixel is transparent with nothing of the image
+in it (a test checks the bytes are the same whatever is under the fog). A shared map with nothing
+revealed, a map that isn't shared and a missing one are the same 404. The overview is made once
+per image version and fog grid, in the tile cache (one image decoded at a time), and ahead of time
+when the server starts and when the vault changes. A minimap or a preview for slow connections can
+use the same overview at more pixels per cell.
+
+Areas are quiet by default: a small pin where the name goes (for the DM, hollow while it isn't
+mapped yet, with a dashed outline), the party's faces in place of the pin. The outline (white over
+a dark halo) and the name show on hover, on keyboard focus, when the area is pointed at in the
+side panel's list, and for every place at once with the Places switch beside the zoom (or P). The
+whole area still takes the pointer. On touch, the first tap shows an area and the second opens it.
+The editor still draws outlines as before.

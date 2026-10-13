@@ -34,6 +34,11 @@ locations, maps, characters, sessions).
   an area, the Maps page says where you are, and Find takes you to your token. Tokens under the fog
   never reach players (except their own, "in the dark"). Fog reveals arrive the same way, live,
   over websockets on the same server, with polling when the connection drops.
+- **A Maps page to find maps on, and areas that respect the art:** a nested list of maps beside a
+  preview of the one pointed at, with pins for the maps inside it and the party's faces where they
+  are; thumbnails one pixel per fog cell, masked for players so nothing under the fog leaks. On a
+  map, areas are small pins, with their outlines and names on hover, focus, from the list or all
+  at once with Places (P); the first tap shows an area on a touch screen.
 - **NPC tokens and the Tokens tab:** NPCs on maps from their vault notes, drawn with the note's
   picture under a name of the DM's own (a hooded figure stays hooded), and markers with built-in
   icons. Added and placed in a couple of clicks, several at a time numbered, shown or hidden in
@@ -169,14 +174,15 @@ locations, maps, characters, sessions).
 - **Interactive maps, next steps:**
   - **Fog, next steps:** exploration memory ("seen before" dimmed rather than black, a second
     mask); per-player fog when the party splits (a mask per player beside the party's); revealing
-    an area's note with it; a minimap (needs an overview shrunk cell by cell, so pixels from under
-    the fog can't blend in); a fog texture instead of plain black (tiles are already transparent
+    an area's note with it; a minimap (from the thumbnails' overview, one pixel per fog cell, at a
+    few pixels per cell); a fog texture instead of plain black (tiles are already transparent
     outside the reveal).
   - Phones: pinch zoom, a bottom sheet for the side panel, and a lower-resolution level of tiles
     for small screens; touch-friendly handles, for a tablet at the table.
-  - A downscaled preview of very large images, for playing over a slow connection.
+  - A downscaled preview of very large images, for playing over a slow connection (the same
+    overview as the thumbnails, at more pixels per cell).
   - Reading Wonderdraft or Dungeondraft files directly (their labels could suggest areas).
-  - Pins and labels as well as outlines; searching areas; an area's own short description.
+  - Searching areas; an area's own short description; a pin's own icon (a town, a cave).
 - **Map generation:** quick generated maps for inspiration or speed (dwellings, one-page dungeons,
   encounter terrain), in the spirit of watabou's generators. Ideally exportable to
   Dungeondraft/Wonderdraft for editing. Possibly AI-assisted, with style rules for continuity. The
