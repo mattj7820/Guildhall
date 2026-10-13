@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { FeatureEdits } from "~/characters/actions";
 import { ACTIVATION_NAMES, RESET_NAMES, SOURCE_NAMES } from "~/characters/describe";
 import { LONG_TEXT_MAX, SHORT_TEXT_MAX, USES_MAX } from "~/characters/schema";
+import { chooseFreeSpell, freeSpellsOf } from "~/characters/spells";
 import {
   ACTIVATIONS,
   FEATURE_SOURCES,
@@ -36,6 +37,7 @@ export function FeatureRow({
   const [open, setOpen] = useState(false);
   if (parts.editing) return <FeatureForm feature={feature} parts={parts} />;
   const { uses } = feature;
+  const spells = uses ? freeSpellsOf(parts.sheet, feature.id) : [];
   return (
     <li className={`border-b border-line last:border-0 ${compact ? "py-1" : "py-1.5"}`}>
       <div className="flex flex-wrap items-center gap-2">
@@ -53,6 +55,11 @@ export function FeatureRow({
           {showActivation && (
             <span className="ml-2 text-[11px] text-faint">
               {ACTIVATION_NAMES[feature.activation]}
+            </span>
+          )}
+          {spells.length > 0 && (
+            <span className="ml-2 text-xs text-muted">
+              Casts {spells.map((spell) => spell.name).join(", ")}
             </span>
           )}
         </button>
@@ -91,6 +98,8 @@ function FeatureForm({ feature, parts }: { feature: Feature; parts: Parts }) {
   const edit = (changes: FeatureEdits) =>
     parts.dispatch({ type: "features", change: { type: "edit", id: feature.id, changes } });
   const list = parts.sheet.features;
+  // A feat's spell (Magic Initiate's) can be chosen here as well as on the spell.
+  const levelled = parts.sheet.spells.filter((spell) => spell.level > 0);
   return (
     <li
       aria-label={feature.name}
@@ -181,6 +190,20 @@ function FeatureForm({ feature, parts }: { feature: Feature; parts: Parts }) {
               options={RESETS.map((reset) => [reset, RESET_NAMES[reset]] as const)}
               onCommit={(reset) => edit({ uses: { max: feature.uses!.max, reset } })}
             />
+            {levelled.length > 0 && (
+              <SelectField
+                label={`${feature.name}: casts for free`}
+                value={freeSpellsOf(parts.sheet, feature.id)[0]?.id ?? ""}
+                options={[
+                  ["", "Casts no spell"],
+                  ...levelled.map((spell) => [spell.id, `Casts ${spell.name}`] as const),
+                ]}
+                onCommit={(spell) => {
+                  const actions = chooseFreeSpell(parts.sheet, feature.id, spell || null);
+                  if (actions.length > 0) parts.dispatch(...actions);
+                }}
+              />
+            )}
           </>
         )}
       </div>

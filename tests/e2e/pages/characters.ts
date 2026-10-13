@@ -150,10 +150,16 @@ export class CharacterSheet extends AppPage {
     await commit(row.getByLabel("Damage"), damage);
   }
 
-  /**
-   * While editing, adds a spell from the Spells tab and fills it in. A wiki note is linked first,
-   * since a new spell takes its note's name, and then the spell is given its own.
-   */
+  /** While editing, opens a spell's form (the last of that name) and returns its row. */
+  async openSpellForm(name: string) {
+    const row = this.spells.getByRole("listitem", { name, exact: true }).last();
+    const toggle = row.getByRole("button", { name: `Edit ${name}`, exact: true });
+    if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+    await expect(row.getByLabel("Name")).toBeVisible();
+    return row;
+  }
+
+  /** While editing, types a spell in on the Spells tab, by name and level, and fills it in. */
   async addSpell({
     name,
     level,
@@ -169,15 +175,15 @@ export class CharacterSheet extends AppPage {
     attack?: boolean;
     roll?: string;
   }) {
-    await this.page.getByRole("button", { name: "Add spell" }).click();
-    let row = this.page.getByRole("listitem", { name: "New spell" }).last();
-    if (note) {
-      await row.getByLabel("Wiki note").selectOption({ label: note });
-      row = this.page.getByRole("listitem", { name: note, exact: true }).last();
-    }
-    await commit(row.getByLabel("Name"), name);
-    row = this.page.getByRole("listitem", { name, exact: true });
-    await row.getByLabel("Level").selectOption({ label: level });
+    await this.spells.getByRole("button", { name: "Add spell", exact: true }).click();
+    const form = this.spells.getByRole("form", { name: "Add a spell" });
+    await form.getByLabel("Spell name").fill(name);
+    await form.getByLabel("Level").selectOption({ label: level });
+    await form.getByRole("button", { name: "Add", exact: true }).click();
+    // It opens where it's listed, ready to fill in.
+    const row = this.spells.getByRole("listitem", { name, exact: true });
+    await expect(row.getByLabel("Name")).toHaveValue(name);
+    if (note) await row.getByLabel("Wiki note").selectOption({ label: note });
     if (concentration) await row.getByLabel("Concentration").check();
     if (attack) await row.getByLabel("Spell attack").check();
     if (roll) await commit(row.getByLabel("Roll"), roll);

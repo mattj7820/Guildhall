@@ -6,7 +6,7 @@
 import type { CharacterAction } from "./actions";
 import { ORDINALS } from "./describe";
 import { spellNumbers, type DerivedSheet, type SpellNumbers } from "./derive";
-import type { Sheet, Spell, SpellLevel } from "./types";
+import type { Feature, FeatureId, Sheet, Spell, SpellId, SpellLevel } from "./types";
 
 export type CastOption =
   /** With a slot of this level, which may be higher than the spell's own. */
@@ -17,9 +17,9 @@ export type CastOption =
   | { kind: "ritual" };
 
 /**
- * Every way a levelled spell can be cast now, most usual first: the lowest slot that's left at its
- * level or above, then higher slots, then for free, then as a ritual. Cantrips aren't cast with
- * anything, so they have none.
+ * Every way a levelled spell can be cast now, most usual first: for free while a use is left (it
+ * saves a slot), then the lowest slot that's left at its level or above, then higher slots, then
+ * as a ritual. Cantrips aren't cast with anything, so they have none.
  */
 export function castOptions(sheet: Sheet, spell: Spell): CastOption[] {
   if (spell.level === 0) return [];
@@ -28,16 +28,48 @@ export function castOptions(sheet: Sheet, spell: Spell): CastOption[] {
     const left = slot.max - slot.used;
     return level >= spell.level && left > 0 ? [{ kind: "slot", level, left }] : [];
   });
-  const feature = spell.freeUse
-    ? sheet.features.find((each) => each.id === spell.freeUse)
-    : undefined;
+  const feature = freeUseOf(sheet, spell);
   const freeLeft = feature?.uses ? feature.uses.max - feature.uses.used : 0;
   return [
-    ...slots,
     ...(feature && freeLeft > 0
       ? [{ kind: "free", feature: feature.id, name: feature.name, left: freeLeft } as const]
       : []),
+    ...slots,
     ...(spell.ritual ? [{ kind: "ritual" } as const] : []),
+  ];
+}
+
+/** The feature whose uses cast a spell for free, if it's still there and has uses. */
+export function freeUseOf(sheet: Sheet, spell: Spell): Feature | undefined {
+  if (!spell.freeUse || spell.level === 0) return undefined;
+  return sheet.features.find((feature) => feature.id === spell.freeUse && feature.uses);
+}
+
+/** The spells a feature's uses cast for free (Magic Initiate's one spell). */
+export function freeSpellsOf(sheet: Sheet, feature: FeatureId): Spell[] {
+  return sheet.spells.filter((spell) => spell.level > 0 && spell.freeUse === feature);
+}
+
+/**
+ * Choosing, from the feature, the spell its uses cast: that spell's link set, and any other
+ * spell's link to the feature cleared, as one step. Each is an edit of one field, so it merges.
+ */
+export function chooseFreeSpell(
+  sheet: Sheet,
+  feature: FeatureId,
+  spell: SpellId | null,
+): CharacterAction[] {
+  const edit = (id: SpellId, freeUse: FeatureId | null): CharacterAction => ({
+    type: "spells",
+    change: { type: "edit", id, changes: { freeUse } },
+  });
+  return [
+    ...freeSpellsOf(sheet, feature)
+      .filter((each) => each.id !== spell)
+      .map((each) => edit(each.id, null)),
+    ...(spell && sheet.spells.find((each) => each.id === spell)?.freeUse !== feature
+      ? [edit(spell, feature)]
+      : []),
   ];
 }
 

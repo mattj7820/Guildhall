@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { applyActions } from "./actions";
 import { deriveSheet } from "./derive";
-import { castActions, castNotice, castOptionLabel, castOptions, numbersFor } from "./spells";
+import {
+  castActions,
+  castNotice,
+  castOptionLabel,
+  castOptions,
+  chooseFreeSpell,
+  freeSpellsOf,
+  freeUseOf,
+  numbersFor,
+} from "./spells";
 import { aCharacter, aFeature, aSheet, aSpell, withSlots } from "./test-builders";
 import type { PlayerCharacter, Sheet } from "./types";
 
@@ -36,6 +45,11 @@ describe("castOptions", () => {
     expect(castOptions(spent, spell).some((option) => option.kind === "free")).toBe(false);
   });
 
+  it("offers the free use before any slot, so Cast saves a slot while it can", () => {
+    const options = castOptions(sheet, aSpell({ level: 1, freeUse: "free" }));
+    expect(options.map((option) => option.kind)).toEqual(["free", "slot", "slot"]);
+  });
+
   it("offers a ritual without any slot", () => {
     const noSlots = aSheet();
     expect(castOptions(noSlots, aSpell({ level: 1, ritual: true }))).toEqual([{ kind: "ritual" }]);
@@ -48,6 +62,35 @@ describe("castOptions", () => {
 
   it("finds nothing for a free use whose feature has gone", () => {
     expect(castOptions(aSheet(), aSpell({ level: 1, freeUse: "gone" }))).toEqual([]);
+  });
+});
+
+describe("free spells", () => {
+  const cureWounds = aSpell({ id: "cure", level: 1, freeUse: "free" });
+  const shield = aSpell({ id: "shield", level: 1 });
+  const withFree = { ...sheet, spells: [cureWounds, shield] };
+
+  it("finds the feature a spell is cast with for free, only while it has uses", () => {
+    expect(freeUseOf(withFree, cureWounds)?.name).toBe("Fixture feat");
+    expect(freeUseOf(withFree, shield)).toBeUndefined();
+    const noUses = { ...withFree, features: [aFeature({ id: "free" })] };
+    expect(freeUseOf(noUses, cureWounds)).toBeUndefined();
+  });
+
+  it("finds a feature's free spells, never a cantrip", () => {
+    const cantrip = aSpell({ id: "light", level: 0, freeUse: "free" });
+    expect(freeSpellsOf({ ...withFree, spells: [cureWounds, cantrip] }, "free")).toEqual([
+      cureWounds,
+    ]);
+  });
+
+  it("chooses a feature's spell from the feature, unlinking the one it had", () => {
+    const after = (actions: ReturnType<typeof chooseFreeSpell>) =>
+      (applyActions(aCharacter({ sheet: withFree }), actions).character as PlayerCharacter).sheet;
+    const switched = after(chooseFreeSpell(withFree, "free", "shield"));
+    expect(freeSpellsOf(switched, "free").map((spell) => spell.id)).toEqual(["shield"]);
+    expect(freeSpellsOf(after(chooseFreeSpell(withFree, "free", null)), "free")).toEqual([]);
+    expect(chooseFreeSpell(withFree, "free", "cure")).toEqual([]);
   });
 });
 
@@ -64,7 +107,7 @@ describe("casting", () => {
 
   it("spends a free use instead of a slot", () => {
     const spell = aSpell({ level: 1, freeUse: "free" });
-    const { sheet: after } = cast(sheet, spell, 2);
+    const { sheet: after } = cast(sheet, spell, 0);
     expect(after.features[0].uses?.used).toBe(1);
     expect(after.spellSlots.map((slot) => slot.used)).toEqual(sheet.spellSlots.map((s) => s.used));
   });

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { ABILITIES, ABILITY_NAMES, signed, type Ability } from "~/characters/abilities";
 import { SRD_DOCUMENTS } from "~/campaign/srd";
@@ -10,6 +10,7 @@ import {
   castNotice,
   castOptionLabel,
   castOptions,
+  freeUseOf,
   numbersFor,
   type CastOption,
 } from "~/characters/spells";
@@ -24,11 +25,18 @@ import {
 } from "~/characters/preparing";
 import { PREPARE_MAX } from "~/characters/schema";
 import { srdSpellKey } from "~/characters/spell-options";
-import { SPELL_LEVELS, type Sheet, type Spell, type SpellLevel } from "~/characters/types";
+import {
+  SPELL_LEVELS,
+  type Feature,
+  type Sheet,
+  type Spell,
+  type SpellId,
+  type SpellLevel,
+} from "~/characters/types";
 import type { CatalogueItem, LinkedNote, SpellText } from "~/characters/view";
 import { SPELL_SHAPES, type SpellShape } from "~/maps/grid/shapes";
 import { newId } from "~/shared/ids";
-import { buttonClass } from "../styles";
+import { buttonClass, inputClass, labelClass, primaryButtonClass } from "../styles";
 import {
   DiceField,
   NumberField,
@@ -59,8 +67,9 @@ export interface SpellNotes {
  * level, concentration or ritual.
  *
  * Day to day it lists only what's ready (prepared spells, cantrips and free spells), with a line
- * saying how many aren't. Prepare mode lists them all to choose from, and so does editing. Add
- * spells opens the picker (the SRD's and the DM's spell notes); editing can also type one in.
+ * saying how many aren't. Prepare mode lists them all to choose from, and so does editing, as one
+ * row each with one spell's form open at a time. Add spells opens the picker (the SRD's and the
+ * DM's spell notes); editing can also type one in, named first so it's never lost in the list.
  */
 export function SpellsTab({
   parts,
@@ -82,6 +91,9 @@ export function SpellsTab({
   const [filter, setFilter] = useState<SpellFilter>("all");
   const [picking, setPicking] = useState(false);
   const [notice, setNotice] = useState<string>();
+  /** While editing: the spell whose form is open, and whether it was just added (to scroll to). */
+  const [open, setOpen] = useState<{ id: SpellId; added?: boolean }>();
+  const [typing, setTyping] = useState(false);
   const { sheet, editing } = parts;
   const choosing = preparing && !editing;
   const ready = sheet.spells.filter(isReady);
@@ -101,15 +113,16 @@ export function SpellsTab({
           ? spell.ritual
           : spell.level === filter,
   );
-  const typeOne = () =>
+  const typeOne = (name: string, level: SpellLevel) => {
+    const id = newId();
     parts.dispatch({
       type: "spells",
       change: {
         type: "add",
         item: {
-          id: newId(),
-          name: "New spell",
-          level: typeof filter === "number" ? filter : 0,
+          id,
+          name,
+          level,
           castingTime: "1 action",
           range: "",
           components: "",
@@ -121,6 +134,14 @@ export function SpellsTab({
         },
       },
     });
+    setTyping(false);
+    setFilter("all");
+    setOpen({ id, added: true });
+  };
+  const startTyping = () => {
+    setPicking(false);
+    setTyping(true);
+  };
 
   return (
     <div className="flex flex-col gap-3">
@@ -129,7 +150,25 @@ export function SpellsTab({
       ) : (
         <div className="flex flex-wrap items-start gap-2">
           <Spellcasting parts={parts} />
-          {!editing && (
+          {editing ? (
+            <span className="ml-auto flex flex-wrap gap-2">
+              <button type="button" className={buttonClass} onClick={startTyping}>
+                Add spell
+              </button>
+              {!picking && (
+                <button
+                  type="button"
+                  className={buttonClass}
+                  onClick={() => {
+                    setTyping(false);
+                    setPicking(true);
+                  }}
+                >
+                  Find a spell
+                </button>
+              )}
+            </span>
+          ) : (
             <span className="ml-auto flex flex-wrap gap-2">
               {!picking && (
                 <button type="button" className={buttonClass} onClick={() => setPicking(true)}>
@@ -150,8 +189,15 @@ export function SpellsTab({
           parts={parts}
           compact={compact}
           undo={undo}
-          onType={editing ? typeOne : undefined}
+          onType={editing ? startTyping : undefined}
           onDone={() => setPicking(false)}
+        />
+      )}
+      {editing && typing && (
+        <AddSpellForm
+          level={typeof filter === "number" ? filter : 1}
+          onAdd={typeOne}
+          onCancel={() => setTyping(false)}
         />
       )}
       {listed.length > 0 && (
@@ -208,11 +254,14 @@ export function SpellsTab({
                   .filter((spell) => spell.level === level)
                   .map((spell) =>
                     editing ? (
-                      <SpellForm
+                      <EditRow
                         key={spell.id}
                         spell={spell}
                         parts={parts}
                         spellNotes={spellNotes}
+                        open={open?.id === spell.id}
+                        added={open?.id === spell.id && open.added === true}
+                        onOpen={(isOpen) => setOpen(isOpen ? { id: spell.id } : undefined)}
                       />
                     ) : choosing ? (
                       <PrepareRow key={spell.id} spell={spell} parts={parts} compact={compact} />
@@ -245,19 +294,143 @@ export function SpellsTab({
           </button>
         </p>
       )}
-      {editing && (
-        <span className="flex flex-wrap gap-2">
-          <button type="button" className={buttonClass} onClick={typeOne}>
-            Add spell
-          </button>
-          {!picking && (
-            <button type="button" className={buttonClass} onClick={() => setPicking(true)}>
-              Find a spell
-            </button>
-          )}
-        </span>
-      )}
     </div>
+  );
+}
+
+/** Typing a spell in: its name and level first, so it goes straight to its place in the list. */
+function AddSpellForm({
+  level: startLevel,
+  onAdd,
+  onCancel,
+}: {
+  level: SpellLevel;
+  onAdd: (name: string, level: SpellLevel) => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [level, setLevel] = useState(startLevel);
+  return (
+    <form
+      aria-label="Add a spell"
+      className="flex flex-wrap items-end gap-2 rounded-md border border-line bg-raised p-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (name.trim()) onAdd(name.trim(), level);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") onCancel();
+      }}
+    >
+      <label className="flex flex-col gap-0.5">
+        <span className={labelClass}>Spell name</span>
+        <input
+          // The form only opens to be typed in.
+          autoFocus
+          value={name}
+          maxLength={SHORT_TEXT_MAX}
+          onChange={(event) => setName(event.target.value)}
+          className={`${inputClass} w-48`}
+        />
+      </label>
+      <label className="flex flex-col gap-0.5">
+        <span className={labelClass}>Level</span>
+        <select
+          value={level}
+          onChange={(event) => setLevel(Number(event.target.value) as SpellLevel)}
+          className={inputClass}
+        >
+          {SPELL_LEVELS.map((each) => (
+            <option key={each} value={each}>
+              {each === 0 ? "Cantrip" : ORDINALS[each]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button type="submit" className={primaryButtonClass} disabled={!name.trim()}>
+        Add
+      </button>
+      <button type="button" className={buttonClass} onClick={onCancel}>
+        Cancel
+      </button>
+    </form>
+  );
+}
+
+/**
+ * A spell while editing: one row (prepared, moved within its level, removed) that opens to its
+ * whole form. A spell just added opens scrolled into view.
+ */
+function EditRow({
+  spell,
+  parts,
+  spellNotes,
+  open,
+  added,
+  onOpen,
+}: {
+  spell: Spell;
+  parts: Parts;
+  spellNotes: SpellNotes;
+  open: boolean;
+  added: boolean;
+  onOpen: (open: boolean) => void;
+}) {
+  const { sheet, dispatch } = parts;
+  const row = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    if (added) row.current?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+  }, [added]);
+  // Moving stays within the level: the only order the tab shows.
+  const sameLevel = sheet.spells.filter((each) => each.level === spell.level);
+  const meta = [spell.castingTime, spell.range].filter(Boolean).join(" · ");
+  const free = freeUseOf(sheet, spell);
+  return (
+    <li ref={row} aria-label={spell.name} className="border-b border-line py-1.5 last:border-0">
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-label={`Edit ${spell.name}`}
+          onClick={() => onOpen(!open)}
+          className="mr-auto flex min-w-0 items-baseline gap-1 text-left"
+        >
+          <span aria-hidden className="w-3 shrink-0 text-xs text-muted">
+            {open ? "▾" : "▸"}
+          </span>
+          <span>
+            <span className="font-medium">{spell.name}</span>
+            {spell.concentration && <Badge title="Concentration">C</Badge>}
+            {spell.ritual && <Badge title="Ritual">R</Badge>}
+            {meta && <span className="ml-2 text-xs text-muted">{meta}</span>}
+          </span>
+        </button>
+        {free && <span className="text-xs text-muted">Free: {free.name} · always prepared</span>}
+        {!alwaysReady(spell) && (
+          <label className="flex items-center gap-1.5 text-sm">
+            <input
+              type="checkbox"
+              checked={spell.prepared}
+              onChange={(event) => dispatch(prepareAction(spell, event.target.checked))}
+            />
+            Prepared
+          </label>
+        )}
+        <ListControls
+          name={spell.name}
+          index={sameLevel.indexOf(spell)}
+          length={sameLevel.length}
+          onMove={(to) =>
+            dispatch({
+              type: "spells",
+              change: { type: "move", id: spell.id, index: sheet.spells.indexOf(sameLevel[to]) },
+            })
+          }
+          onRemove={() => dispatch({ type: "spells", change: { type: "remove", id: spell.id } })}
+        />
+      </div>
+      {open && <SpellForm spell={spell} parts={parts} spellNotes={spellNotes} />}
+    </li>
   );
 }
 
@@ -484,6 +657,7 @@ function SpellRow({
 }) {
   const [open, setOpen] = useState(false);
   const numbers = numbersFor(parts.sheet, parts.derived, spell);
+  const free = freeUseOf(parts.sheet, spell);
   const meta = [spell.castingTime, spell.range, spell.components, spell.duration]
     .filter(Boolean)
     .join(" · ");
@@ -502,6 +676,7 @@ function SpellRow({
           {spell.ritual && <Badge title="Ritual">R</Badge>}
           {!compact && meta && <span className="ml-2 text-xs text-muted">{meta}</span>}
         </button>
+        {free && <FreeUses feature={free} parts={parts} compact={compact} />}
         {spell.attack && numbers && (
           <DiceChip
             strong
@@ -571,6 +746,35 @@ function SpellRow({
   );
 }
 
+/**
+ * A free spell's feature (Magic Initiate) and its uses, beside the spell they cast: ticked off
+ * here as on the feature. The spell can still be cast with a slot.
+ */
+function FreeUses({
+  feature,
+  parts,
+  compact,
+}: {
+  feature: Feature;
+  parts: Parts;
+  compact: boolean;
+}) {
+  return (
+    <span
+      title={`Free with ${feature.name}, and always prepared; a slot casts it too`}
+      className="inline-flex items-center gap-1.5 rounded-full border border-line px-2 py-0.5 text-xs text-muted"
+    >
+      {!compact && <span>Free: {feature.name}</span>}
+      <Pips
+        label={feature.name}
+        counter={feature.uses!}
+        size="sm"
+        onCount={(by) => parts.dispatch({ type: "count", counter: { feature: feature.id }, by })}
+      />
+    </span>
+  );
+}
+
 /** Cast: the usual way in one click; ▾ for a higher slot, for free, or as a ritual. */
 function CastButton({
   spell,
@@ -603,9 +807,7 @@ function CastButton({
     >
       <button
         type="button"
-        aria-label={
-          first ? `Cast ${spell.name}: ${castOptionLabel(first).toLowerCase()}` : undefined
-        }
+        aria-label={first ? `Cast ${spell.name}: ${lowerFirst(castOptionLabel(first))}` : undefined}
         disabled={!first}
         onClick={() => first && cast(first)}
         className="rounded-l-md bg-accent px-2 py-0.5 text-sm font-semibold text-on-accent hover:bg-accent-strong disabled:bg-line disabled:text-muted"
@@ -646,7 +848,7 @@ function CastButton({
 
 const NEW_FREE_USE = "new";
 
-/** A spell while editing: its details, what it rolls, and what casts it for free. */
+/** An open spell while editing: its details, what it rolls, and what casts it for free. */
 function SpellForm({
   spell,
   parts,
@@ -660,7 +862,6 @@ function SpellForm({
   const set = (changes: Edits<Spell>) =>
     dispatch({ type: "spells", change: { type: "edit", id: spell.id, changes } });
   const withUses = sheet.features.filter((feature) => feature.uses);
-  const index = sheet.spells.findIndex((each) => each.id === spell.id);
   const text = (
     field: "castingTime" | "range" | "components" | "duration",
     label: string,
@@ -704,10 +905,7 @@ function SpellForm({
   }
 
   return (
-    <li
-      aria-label={spell.name}
-      className="flex flex-col gap-2 border-b border-line py-2 last:border-0"
-    >
+    <div className="mt-2 mb-1 ml-4 flex flex-col gap-2 rounded-md border border-line p-2">
       <div className="flex flex-wrap items-end gap-2">
         <TextField
           label="Name"
@@ -730,15 +928,6 @@ function SpellForm({
         {text("range", "Range", "60 ft.", "w-20")}
         {text("components", "Components", "V, S, M", "w-24")}
         {text("duration", "Duration", "1 minute")}
-        <ListControls
-          name={spell.name}
-          index={index}
-          length={sheet.spells.length}
-          onMove={(to) =>
-            dispatch({ type: "spells", change: { type: "move", id: spell.id, index: to } })
-          }
-          onRemove={() => dispatch({ type: "spells", change: { type: "remove", id: spell.id } })}
-        />
       </div>
       <div className="flex flex-wrap items-end gap-x-3 gap-y-2 text-sm">
         {(
@@ -757,16 +946,6 @@ function SpellForm({
             {label}
           </label>
         ))}
-        {!alwaysReady(spell) && (
-          <label className="flex items-center gap-1.5 pb-1.5">
-            <input
-              type="checkbox"
-              checked={spell.prepared}
-              onChange={(event) => set({ prepared: event.target.checked })}
-            />
-            Prepared
-          </label>
-        )}
         <SelectField<Ability | "">
           label="Save"
           showLabel
@@ -851,14 +1030,7 @@ function SpellForm({
                   ] as const,
               ),
             ]}
-            onCommit={(note) => {
-              const title = spellNotes.catalogue.find((each) => each.id === note)?.title;
-              set({
-                note: note || null,
-                // A new spell takes its note's name.
-                ...(title && spell.name === "New spell" && { name: title }),
-              });
-            }}
+            onCommit={(note) => set({ note: note || null })}
           />
         )}
       </div>
@@ -883,6 +1055,11 @@ function SpellForm({
         placeholder="What it does, in your own words"
         onCommit={(description) => set({ description: description || null })}
       />
-    </li>
+    </div>
   );
+}
+
+/** "With a 1st-level slot" → "with a 1st-level slot", keeping a feature's name as it is. */
+function lowerFirst(text: string): string {
+  return text.charAt(0).toLowerCase() + text.slice(1);
 }

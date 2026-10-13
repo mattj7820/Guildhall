@@ -41,7 +41,7 @@ test("a player adds an SRD spell filled in, edits it and casts it", async ({ ope
   // An ordinary spell: renamed while editing, still linked to its text.
   const name = uniqueName("Identify");
   await sheet.edit();
-  const form = sheet.spells.getByRole("listitem", { name: "Identify", exact: true }).last();
+  const form = await sheet.openSpellForm("Identify");
   await expect(form.getByLabel("Range")).toHaveValue("Touch");
   await form.getByLabel("Name").fill(name);
   await form.getByLabel("Name").press("Enter");
@@ -91,9 +91,7 @@ test("a player's vault spell notes are theirs, filled in from their frontmatter"
 
   const name = uniqueName("Artificer Spell");
   await sheet.edit();
-  const form = sheet.spells
-    .getByRole("listitem", { name: "Fixture Artificer Spell", exact: true })
-    .last();
+  const form = await sheet.openSpellForm("Fixture Artificer Spell");
   await form.getByLabel("Name").fill(name);
   await form.getByLabel("Name").press("Enter");
   await sheet.doneEditing();

@@ -1453,3 +1453,19 @@ says which, with Undo. A class's whole list at once waits for class lists.
 The SRD has no Artificer, and some of the table's spells aren't in it, so vault spell notes can
 say what they are in frontmatter (level, classes, casting time and the rest, all optional, read
 leniently and documented in the README); picking one fills in what it gives and links the note.
+
+## 77. Editing spells one at a time, and a feat's free spell shown where it's cast
+
+**Date:** 2026-10-13
+
+**Context.** Filling in Percy's sheet (eighteen spells) made editing a wall of forms, and a
+typed-in spell arrived as "New spell" somewhere in the middle. Magic Initiate's spell (always
+prepared, once a day for free, or with a slot) already worked through a spell's "Free cast" link,
+but nothing on the sheet said so.
+
+**Decision.** While editing, each spell is one row (prepared, moved within its level, removed)
+that opens to its form, one at a time. Add spell asks for the name and level first, then opens the
+new spell where it's listed and scrolls to it. A free spell shows its feature and that feature's
+uses beside it, the feature says "Casts …", and a feature with uses can choose its spell while
+editing (one step that unlinks any other). Cast's one click spends the free use while one is
+left, saving a slot; slots stay in ▾. Nothing is stored differently: it's still `freeUse`.

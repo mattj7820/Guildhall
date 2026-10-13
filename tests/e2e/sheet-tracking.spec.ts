@@ -107,10 +107,11 @@ test("adds a spell with its wiki note, casts it with a slot and for free, and ke
   await expect(spells).toContainText("Players see this paragraph");
   await expect(page.locator("body")).not.toContainText("sparksecret");
 
-  // For free first, from the other ways to cast it, while a slot is left too.
+  // For free first while it can be, saving a slot that's left too.
   const slots = await sheet.left("1st-level slot");
-  await spells.getByRole("button", { name: `Other ways to cast ${spell}` }).click();
-  await page.getByRole("button", { name: `Free (${spell} (free), 1 left)` }).click();
+  await spells
+    .getByRole("button", { name: `Cast ${spell}: free (${spell} (free), 1 left)` })
+    .click();
   await expect(spells.getByRole("status")).toContainText(`Cast ${spell} for free`);
   await expect(sheet.counter(`${spell} (free)`, sheet.trackers)).toHaveAccessibleName(
     `${spell} (free): 0 of 1 left`,
@@ -134,6 +135,42 @@ test("adds a spell with its wiki note, casts it with a slot and for free, and ke
   await expect(sheet.counter(`${spell} (free)`, sheet.trackers)).toHaveAccessibleName(
     `${spell} (free): 0 of 1 left`,
   );
+});
+
+test("chooses a feat's free spell from the feature, and shows it on both", async ({
+  characters,
+  page,
+}) => {
+  const feat = uniqueName("Initiate");
+  const spell = uniqueName("Mend");
+  const sheet = await characters.openSheet("Fixture PC Two");
+  await sheet.openTab("Spells");
+  await sheet.edit();
+  await sheet.addSpell({ name: spell, level: "1st" });
+  await sheet.openTab("Features");
+  await sheet.addFeature({
+    name: feat,
+    usedAs: "Other",
+    uses: { max: 1, comesBackOn: "Long rest" },
+  });
+  await page.getByLabel(`${feat}: casts for free`).selectOption({ label: `Casts ${spell}` });
+  await sheet.doneEditing();
+  await sheet.saved();
+
+  await expect(page.getByRole("tabpanel")).toContainText(`Casts ${spell}`);
+
+  // On the spell: the feat's use beside it, always ready, and Cast spends that use first.
+  await sheet.openTab("Spells");
+  const row = sheet.spells
+    .getByRole("listitem")
+    .filter({ has: page.getByRole("button", { name: `${spell}: details`, exact: true }) })
+    .first();
+  await expect(row).toContainText(`Free: ${feat}`);
+  await expect(sheet.counter(feat, row)).toHaveAccessibleName(`${feat}: 1 of 1 left`);
+  await row.getByRole("button", { name: `Cast ${spell}: free (${feat}, 1 left)` }).click();
+  await expect(sheet.counter(feat, row)).toHaveAccessibleName(`${feat}: 0 of 1 left`);
+  await expect(sheet.counter(feat, sheet.trackers)).toHaveAccessibleName(`${feat}: 0 of 1 left`);
+  await sheet.saved();
 });
 
 test("takes a short rest and a long rest, each giving back what it should, and undoes one", async ({
