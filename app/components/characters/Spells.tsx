@@ -10,6 +10,7 @@ import {
   castNotice,
   castOptionLabel,
   castOptions,
+  freeUseOf,
   numbersFor,
   type CastOption,
 } from "~/characters/spells";
@@ -26,6 +27,7 @@ import { PREPARE_MAX } from "~/characters/schema";
 import { srdSpellKey } from "~/characters/spell-options";
 import {
   SPELL_LEVELS,
+  type Feature,
   type Sheet,
   type Spell,
   type SpellId,
@@ -382,6 +384,7 @@ function EditRow({
   // Moving stays within the level: the only order the tab shows.
   const sameLevel = sheet.spells.filter((each) => each.level === spell.level);
   const meta = [spell.castingTime, spell.range].filter(Boolean).join(" · ");
+  const free = freeUseOf(sheet, spell);
   return (
     <li ref={row} aria-label={spell.name} className="border-b border-line py-1.5 last:border-0">
       <div className="flex flex-wrap items-center gap-2">
@@ -402,6 +405,7 @@ function EditRow({
             {meta && <span className="ml-2 text-xs text-muted">{meta}</span>}
           </span>
         </button>
+        {free && <span className="text-xs text-muted">Free: {free.name} · always prepared</span>}
         {!alwaysReady(spell) && (
           <label className="flex items-center gap-1.5 text-sm">
             <input
@@ -653,6 +657,7 @@ function SpellRow({
 }) {
   const [open, setOpen] = useState(false);
   const numbers = numbersFor(parts.sheet, parts.derived, spell);
+  const free = freeUseOf(parts.sheet, spell);
   const meta = [spell.castingTime, spell.range, spell.components, spell.duration]
     .filter(Boolean)
     .join(" · ");
@@ -671,6 +676,7 @@ function SpellRow({
           {spell.ritual && <Badge title="Ritual">R</Badge>}
           {!compact && meta && <span className="ml-2 text-xs text-muted">{meta}</span>}
         </button>
+        {free && <FreeUses feature={free} parts={parts} compact={compact} />}
         {spell.attack && numbers && (
           <DiceChip
             strong
@@ -737,6 +743,35 @@ function SpellRow({
         </div>
       )}
     </li>
+  );
+}
+
+/**
+ * A free spell's feature (Magic Initiate) and its uses, beside the spell they cast: ticked off
+ * here as on the feature. The spell can still be cast with a slot.
+ */
+function FreeUses({
+  feature,
+  parts,
+  compact,
+}: {
+  feature: Feature;
+  parts: Parts;
+  compact: boolean;
+}) {
+  return (
+    <span
+      title={`Free with ${feature.name}, and always prepared; a slot casts it too`}
+      className="inline-flex items-center gap-1.5 rounded-full border border-line px-2 py-0.5 text-xs text-muted"
+    >
+      {!compact && <span>Free: {feature.name}</span>}
+      <Pips
+        label={feature.name}
+        counter={feature.uses!}
+        size="sm"
+        onCount={(by) => parts.dispatch({ type: "count", counter: { feature: feature.id }, by })}
+      />
+    </span>
   );
 }
 
