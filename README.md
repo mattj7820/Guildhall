@@ -13,9 +13,18 @@ with Discord, and it's built to be hosted, with the vault copied read-only from 
 The long-term goal is interconnection: wiki, maps, characters, combat and dice all linking through
 one shared model of the campaign (NPCs, locations, sessions…). See [the roadmap](docs/roadmap.md).
 
-> **Screenshots:** _placeholder, coming soon._
->
-> <!-- ![Hub home page](docs/screenshots/home.png) ![Wiki note in player view](docs/screenshots/wiki-player.png) -->
+![A fight on a battle map, as the DM sees it: tokens, the turn order and the combat tracker](docs/screenshots/map-fight-dm.webp)
+_A fight on a battle map, as the DM runs it: the turn order over the map, the tracker beside it._
+
+![The same fight as a player sees it: only what the fog reveals](docs/screenshots/map-fight-player.webp)
+_The same fight as a player sees it: only what the DM has revealed, with their sheet and bag a tab away._
+
+|                                                                                                            |                                                                                        |
+| ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| ![A character sheet with its bag open](docs/screenshots/character-sheet.webp)                              | ![A wiki note read from the Obsidian vault](docs/screenshots/wiki-note.webp)           |
+| A character sheet, with the bag open: rolls, rests and uses tracked, items dragged and given.              | The wiki, read straight from the Obsidian vault.                                       |
+| ![A world map with the party's token and a place leading to a deeper map](docs/screenshots/world-map.webp) | ![The three themes: Storybook, Iron and Ember, Gemlight](docs/screenshots/themes.webp) |
+| A world map: places lead to deeper maps, and the party's tokens show where they are.                       | Three themes, each person's pick saved on their account.                               |
 
 ## Features
 

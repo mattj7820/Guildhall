@@ -55,7 +55,8 @@ export function DiceRoller({
           </button>
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-          <fieldset className="flex gap-3">
+          {/* Wraps in narrow places, such as the dice box over a map. */}
+          <fieldset className="flex flex-wrap gap-x-3 gap-y-1">
             <legend className="sr-only">Next d20 roll</legend>
             {MODES.map(({ value, label }) => (
               <label key={value} className="flex items-center gap-1">
