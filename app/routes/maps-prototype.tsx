@@ -68,11 +68,17 @@ type Data = Route.ComponentProps["loaderData"];
 type Listed = Data["tree"][number]["map"];
 type Node = MapTreeNode<Listed>;
 
-const LAYOUTS = { tree: "Tree with thumbnails", cards: "Card grid", atlas: "Atlas" } as const;
+const LAYOUTS = {
+  nested: "Nested boxes",
+  sections: "Sections",
+  explorer: "Explorer",
+  tree: "Tree (even rows)",
+  cards: "Card grid",
+} as const;
 type Layout = keyof typeof LAYOUTS;
 
 export default function MapsPrototype({ loaderData }: Route.ComponentProps) {
-  const [layout, setLayout] = useState<Layout>("tree");
+  const [layout, setLayout] = useState<Layout>("nested");
   const [style, setStyle] = useState<AreaStyle>("pins");
   const [player, setPlayer] = useState(false);
   const [theme, setTheme] = useState<Theme | "">("");
@@ -167,9 +173,11 @@ function MapsPage({ data, layout, player }: { data: Data; layout: Layout; player
         )}
       </div>
       <PartyLine data={data} />
+      {layout === "nested" && <NestedLayout {...props} />}
+      {layout === "sections" && <SectionsLayout {...props} />}
+      {layout === "explorer" && <ExplorerLayout {...props} />}
       {layout === "tree" && <TreeLayout {...props} />}
       {layout === "cards" && <CardsLayout {...props} />}
-      {layout === "atlas" && <AtlasLayout {...props} />}
     </section>
   );
 }
@@ -217,7 +225,7 @@ function Face({ face, size = 24 }: { face: PartyFace; size?: number }) {
   ) : (
     <span
       title={face.name}
-      className="flex items-center justify-center rounded-full border border-line bg-raised text-xs font-bold"
+      className="flex items-center justify-center rounded-full border border-line bg-raised text-xs font-bold text-ink"
       style={{ width: size, height: size }}
     >
       {face.name.slice(0, 1)}
@@ -225,29 +233,27 @@ function Face({ face, size = 24 }: { face: PartyFace; size?: number }) {
   );
 }
 
-function Faces({ faces }: { faces: PartyFace[] }) {
+function Faces({ faces, size = 22 }: { faces: PartyFace[]; size?: number }) {
   if (faces.length === 0) return null;
   return (
     <span className="flex -space-x-1.5" aria-label={`Here: ${faces.map((f) => f.name).join(", ")}`}>
       {faces.map((face) => (
-        <Face key={face.name} face={face} size={22} />
+        <Face key={face.name} face={face} size={size} />
       ))}
     </span>
   );
 }
 
-function Thumb({ map, className }: { map: Listed; className: string }) {
+function Thumb({ map, className = "" }: { map: Listed; className?: string }) {
   return map.thumbnail ? (
     <img
       src={map.thumbnail}
       alt=""
       loading="lazy"
-      className={`rounded-md border border-line bg-raised object-cover ${className}`}
+      className={`block bg-raised object-cover ${className}`}
     />
   ) : (
-    <span
-      className={`flex items-center justify-center rounded-md border border-dashed border-line bg-raised text-xs text-muted ${className}`}
-    >
+    <span className={`flex items-center justify-center bg-raised text-xs text-muted ${className}`}>
       No image
     </span>
   );
@@ -259,7 +265,7 @@ function EditLink({ map, player }: { map: Listed; player: boolean }) {
     <Link
       to={mapEditUrl(map.id)}
       aria-label={`Edit ${map.name}`}
-      className="text-xs text-muted hover:underline"
+      className="rounded px-1 text-xs text-muted hover:bg-raised hover:text-ink"
     >
       Edit
     </Link>
@@ -270,67 +276,295 @@ function countMaps(nodes: Node[]): number {
   return nodes.reduce((sum, node) => sum + 1 + countMaps(node.children), 0);
 }
 
-/** B: top-level maps with maps inside as big cards over their tree; maps on their own in a grid. */
-function TreeLayout({ tree, faces, player }: LayoutProps) {
-  const worlds = tree.filter((node) => node.children.length > 0);
-  const alone = tree.filter((node) => node.children.length === 0);
+function insideText(node: Node) {
+  const count = countMaps(node.children);
+  return count === 0 ? "" : count === 1 ? "1 map inside" : `${count} maps inside`;
+}
+
+/**
+ * A map as a card: the thumbnail edge to edge, faces over its corner, the name and Edit under it.
+ * A map with maps inside shows a stack of sheets behind it.
+ */
+function Card({
+  node,
+  faces,
+  player,
+  path,
+  footer,
+}: {
+  node: Node;
+  faces: (id: string) => PartyFace[];
+  player: boolean;
+  path?: string;
+  footer?: React.ReactNode;
+}) {
+  const { map } = node;
+  const stacked = node.children.length > 0;
+  return (
+    <div className="relative">
+      {stacked && (
+        <>
+          <span
+            aria-hidden
+            className="absolute inset-x-3 -top-2 h-4 rounded-t-lg border border-line bg-raised"
+          />
+          <span
+            aria-hidden
+            className="absolute inset-x-1.5 -top-1 h-4 rounded-t-lg border border-line bg-surface"
+          />
+        </>
+      )}
+      <div className="gh-card relative flex h-full flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-sm transition">
+        <Link to={mapUrl(map.id)} tabIndex={-1} aria-hidden className="relative">
+          <Thumb map={map} className="aspect-[3/2] w-full" />
+          <span className="absolute top-2 right-2">
+            <Faces faces={faces(map.id)} />
+          </span>
+        </Link>
+        <div className="flex flex-col gap-0.5 px-3 py-2">
+          {path && <span className="truncate text-xs text-muted">{path}</span>}
+          <div className="flex items-baseline gap-2">
+            <Link to={mapUrl(map.id)} className="mr-auto font-serif font-semibold hover:underline">
+              {map.name}
+            </Link>
+            <EditLink map={map} player={player} />
+          </div>
+          {footer ?? (stacked && <span className="text-xs text-muted">{insideText(node)}</span>)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const GRID = "grid grid-cols-[repeat(auto-fill,minmax(12rem,15rem))] gap-4";
+
+/**
+ * Nested: maps on their own as cards; a map with maps inside is a card beside the box of what's
+ * inside it, boxes inside boxes, each folding away.
+ */
+function NestedLayout({ tree, faces, player }: LayoutProps) {
   return (
     <nav aria-label="All maps" className="flex flex-col gap-4">
-      {worlds.map((node) => (
-        <div key={node.map.id} className={`${panelClass} flex flex-col gap-3`}>
-          <div className="flex flex-wrap items-start gap-4">
-            <Link to={mapUrl(node.map.id)} className="shrink-0">
-              <Thumb map={node.map} className="aspect-video w-72" />
-            </Link>
-            <div className="flex flex-col gap-1">
-              <Link
-                to={mapUrl(node.map.id)}
-                className="font-serif text-2xl font-bold hover:underline"
-              >
-                {node.map.name}
-              </Link>
-              <span className="text-xs text-muted">
-                {countMaps(node.children)} maps inside
-                {!player && ` · ${node.map.areas.length} areas`}
-              </span>
-              <Faces faces={faces(node.map.id)} />
-              <EditLink map={node.map} player={player} />
-            </div>
-          </div>
-          <TreeRows nodes={node.children} faces={faces} player={player} />
-        </div>
+      <NestedLevel nodes={tree} faces={faces} player={player} />
+    </nav>
+  );
+}
+
+function NestedLevel({ nodes, faces, player }: Omit<LayoutProps, "tree"> & { nodes: Node[] }) {
+  const leaves = nodes.filter((node) => node.children.length === 0);
+  const groups = nodes.filter((node) => node.children.length > 0);
+  return (
+    <>
+      {groups.map((node) => (
+        <NestedGroup key={node.map.id} node={node} faces={faces} player={player} />
       ))}
-      {alone.length > 0 && (
-        <section aria-label="Maps on their own" className="flex flex-col gap-2">
-          {worlds.length > 0 && <h2 className={labelClass}>Maps on their own</h2>}
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(12rem,1fr))] gap-3">
-            {alone.map((node) => (
-              <Card key={node.map.id} map={node.map} faces={faces} player={player} />
+      {leaves.length > 0 && (
+        <div className={GRID}>
+          {leaves.map((node) => (
+            <Card key={node.map.id} node={node} faces={faces} player={player} />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+function NestedGroup({ node, faces, player }: Omit<LayoutProps, "tree"> & { node: Node }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <div className="grid items-start gap-4 md:grid-cols-[13rem_1fr]">
+      <Card
+        node={node}
+        faces={faces}
+        player={player}
+        footer={
+          <button
+            type="button"
+            aria-expanded={open}
+            className="self-start text-xs text-link hover:underline"
+            onClick={() => setOpen(!open)}
+          >
+            {open ? "▾" : "▸"} {insideText(node)}
+          </button>
+        }
+      />
+      {open && (
+        <div
+          aria-label={`Inside ${node.map.name}`}
+          role="group"
+          className="flex flex-col gap-4 rounded-lg border border-dashed border-line bg-raised/50 p-3"
+        >
+          <NestedLevel nodes={node.children} faces={faces} player={player} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Sections: a heading for each map with maps inside, naming where it is, over its maps' cards. */
+function SectionsLayout({ tree, faces, player }: LayoutProps) {
+  const sections: { path: Listed[]; nodes: Node[] }[] = [{ path: [], nodes: tree }];
+  const walk = (nodes: Node[], path: Listed[]) => {
+    for (const node of nodes) {
+      if (node.children.length === 0) continue;
+      sections.push({ path: [...path, node.map], nodes: node.children });
+      walk(node.children, [...path, node.map]);
+    }
+  };
+  walk(tree, []);
+  return (
+    <nav aria-label="All maps" className="flex flex-col gap-6">
+      {sections.map(({ path, nodes }) => (
+        <section
+          key={path.at(-1)?.id ?? "top"}
+          id={`inside-${path.at(-1)?.id ?? "top"}`}
+          className="flex flex-col gap-3"
+        >
+          <h2 className="flex flex-wrap items-baseline gap-1.5 border-b border-line pb-1 font-serif text-lg font-semibold">
+            {path.length === 0
+              ? "Top level"
+              : path.map((map, index) => (
+                  <span key={map.id} className={index < path.length - 1 ? "text-muted" : ""}>
+                    {index > 0 && <span className="mr-1.5 text-muted">›</span>}
+                    {index === path.length - 1 ? `Inside ${map.name}` : map.name}
+                  </span>
+                ))}
+          </h2>
+          <div className={GRID}>
+            {nodes.map((node) => (
+              <Card
+                key={node.map.id}
+                node={node}
+                faces={faces}
+                player={player}
+                footer={
+                  node.children.length > 0 && (
+                    <a
+                      href={`#inside-${node.map.id}`}
+                      className="text-xs text-link hover:underline"
+                    >
+                      ↓ {insideText(node)}
+                    </a>
+                  )
+                }
+              />
             ))}
           </div>
         </section>
+      ))}
+    </nav>
+  );
+}
+
+/** Explorer: a slim tree to the side, and the chosen map with what's inside it. */
+function ExplorerLayout({ tree, faces, player }: LayoutProps) {
+  const [chosen, setChosen] = useState<Node | undefined>(tree[0]);
+  return (
+    <div className="grid gap-4 md:grid-cols-[16rem_1fr]">
+      <nav aria-label="All maps" className={`${panelClass} p-2`}>
+        <ExplorerTree nodes={tree} chosen={chosen} onChoose={setChosen} faces={faces} />
+      </nav>
+      {chosen && (
+        <div className="flex flex-col gap-4">
+          <div className="gh-panel grid overflow-hidden rounded-lg border border-line bg-surface shadow-sm md:grid-cols-[1fr_16rem]">
+            <Link to={mapUrl(chosen.map.id)} tabIndex={-1} aria-hidden>
+              <Thumb map={chosen.map} className="aspect-[3/2] w-full" />
+            </Link>
+            <div className="flex flex-col gap-2 p-4">
+              <h2 className="font-serif text-2xl font-bold">{chosen.map.name}</h2>
+              <Faces faces={faces(chosen.map.id)} size={28} />
+              <span className="text-sm text-muted">{insideText(chosen)}</span>
+              <div className="mt-auto flex gap-2">
+                <Link to={mapUrl(chosen.map.id)} className={primaryButtonClass}>
+                  Open map
+                </Link>
+                {!player && (
+                  <Link to={mapEditUrl(chosen.map.id)} className={buttonClass}>
+                    Edit
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+          {chosen.children.length > 0 && (
+            <>
+              <h3 className={labelClass}>Inside {chosen.map.name}</h3>
+              <div className={GRID}>
+                {chosen.children.map((node) => (
+                  <Card key={node.map.id} node={node} faces={faces} player={player} />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       )}
+    </div>
+  );
+}
+
+function ExplorerTree({
+  nodes,
+  chosen,
+  onChoose,
+  faces,
+}: {
+  nodes: Node[];
+  chosen?: Node;
+  onChoose: (node: Node) => void;
+  faces: (id: string) => PartyFace[];
+}) {
+  return (
+    <ul className="flex flex-col [&_ul]:ml-3 [&_ul]:border-l [&_ul]:border-line [&_ul]:pl-1">
+      {nodes.map((node) => (
+        <li key={node.map.id}>
+          <button
+            type="button"
+            aria-pressed={chosen?.map.id === node.map.id}
+            onClick={() => onChoose(node)}
+            className="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left text-sm hover:bg-raised aria-pressed:bg-accent aria-pressed:text-on-accent"
+          >
+            <Thumb map={node.map} className="aspect-[3/2] w-9 shrink-0 rounded-sm" />
+            <span className="mr-auto truncate">{node.map.name}</span>
+            <Faces faces={faces(node.map.id)} size={16} />
+          </button>
+          {node.children.length > 0 && (
+            <ExplorerTree nodes={node.children} chosen={chosen} onChoose={onChoose} faces={faces} />
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Tree: every map the same, a row with a small thumbnail, nested with lines. */
+function TreeLayout({ tree, faces, player }: LayoutProps) {
+  return (
+    <nav aria-label="All maps" className={`${panelClass} p-2`}>
+      <TreeRows nodes={tree} faces={faces} player={player} />
     </nav>
   );
 }
 
 function TreeRows({ nodes, faces, player }: Omit<LayoutProps, "tree"> & { nodes: Node[] }) {
   return (
-    <ul className="flex flex-col gap-1 [&_ul]:mt-1 [&_ul]:ml-8 [&_ul]:border-l [&_ul]:border-line [&_ul]:pl-3">
+    <ul className="flex flex-col [&_ul]:ml-10 [&_ul]:border-l-2 [&_ul]:border-line [&_ul]:pl-2">
       {nodes.map((node) => (
         <li key={node.map.id}>
-          <div className="flex items-center gap-3 rounded-md px-1 py-1 hover:bg-raised">
-            <Link to={mapUrl(node.map.id)} className="shrink-0" tabIndex={-1} aria-hidden>
-              <Thumb map={node.map} className="aspect-video w-24" />
+          <div className="group flex items-center gap-3 rounded-md p-1.5 hover:bg-raised">
+            <Link to={mapUrl(node.map.id)} tabIndex={-1} aria-hidden className="shrink-0">
+              <Thumb map={node.map} className="aspect-[3/2] w-20 rounded-md" />
             </Link>
-            <Link
-              to={mapUrl(node.map.id)}
-              className="font-serif text-lg font-semibold hover:underline"
-            >
-              {node.map.name}
-            </Link>
-            <Faces faces={faces(node.map.id)} />
-            <span className="ml-auto">
+            <div className="flex min-w-0 flex-col">
+              <Link
+                to={mapUrl(node.map.id)}
+                className="font-serif text-lg font-semibold hover:underline"
+              >
+                {node.map.name}
+              </Link>
+              <span className="text-xs text-muted">{insideText(node)}</span>
+            </div>
+            <span className="ml-auto flex items-center gap-3">
+              <Faces faces={faces(node.map.id)} />
               <EditLink map={node.map} player={player} />
             </span>
           </div>
@@ -343,116 +577,21 @@ function TreeRows({ nodes, faces, player }: Omit<LayoutProps, "tree"> & { nodes:
   );
 }
 
-function Card({
-  map,
-  faces,
-  player,
-  path,
-}: {
-  map: Listed;
-  faces: (id: string) => PartyFace[];
-  player: boolean;
-  path?: string;
-}) {
-  return (
-    <div className={`${panelClass} flex flex-col gap-2 p-2`}>
-      <Link to={mapUrl(map.id)} tabIndex={-1} aria-hidden>
-        <Thumb map={map} className="aspect-video w-full" />
-      </Link>
-      <div className="flex items-center gap-2 px-1">
-        <Link to={mapUrl(map.id)} className="mr-auto font-serif font-semibold hover:underline">
-          {map.name}
-        </Link>
-        <Faces faces={faces(map.id)} />
-      </div>
-      <div className="flex items-center gap-2 px-1 text-xs text-muted">
-        <span className="mr-auto">{path}</span>
-        <EditLink map={map} player={player} />
-      </div>
-    </div>
-  );
-}
-
-/** A: every map as a card, depth first, with where it is written underneath. */
+/** Cards: every map, depth first, with where it is written above its name. */
 function CardsLayout({ tree, faces, player }: LayoutProps) {
-  const flat: { map: Listed; path: string }[] = [];
+  const flat: { node: Node; path: string }[] = [];
   const walk = (nodes: Node[], path: string[]) => {
     for (const node of nodes) {
-      flat.push({ map: node.map, path: path.join(" › ") });
+      flat.push({ node, path: path.join(" › ") });
       walk(node.children, [...path, node.map.name]);
     }
   };
   walk(tree, []);
   return (
-    <nav
-      aria-label="All maps"
-      className="grid grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-3"
-    >
-      {flat.map(({ map, path }) => (
-        <Card key={map.id} map={map} faces={faces} player={player} path={path} />
+    <nav aria-label="All maps" className={GRID}>
+      {flat.map(({ node, path }) => (
+        <Card key={node.map.id} node={node} faces={faces} player={player} path={path || " "} />
       ))}
-    </nav>
-  );
-}
-
-/** C: one level at a time, world first. */
-function AtlasLayout({ tree, faces, player }: LayoutProps) {
-  const [trail, setTrail] = useState<Node[]>([]);
-  const here = trail.at(-1);
-  const shown = here ? here.children : tree;
-  return (
-    <nav aria-label="All maps" className="flex flex-col gap-3">
-      <p className="flex flex-wrap gap-1 text-sm">
-        <button type="button" className="text-link hover:underline" onClick={() => setTrail([])}>
-          All maps
-        </button>
-        {trail.map((node, index) => (
-          <span key={node.map.id}>
-            ›{" "}
-            <button
-              type="button"
-              className="text-link hover:underline"
-              onClick={() => setTrail(trail.slice(0, index + 1))}
-            >
-              {node.map.name}
-            </button>
-          </span>
-        ))}
-      </p>
-      {here && (
-        <div className={`${panelClass} flex flex-wrap items-start gap-4`}>
-          <Link to={mapUrl(here.map.id)}>
-            <Thumb map={here.map} className="aspect-video w-96" />
-          </Link>
-          <div className="flex flex-col gap-1">
-            <Link
-              to={mapUrl(here.map.id)}
-              className="font-serif text-2xl font-bold hover:underline"
-            >
-              Open {here.map.name}
-            </Link>
-            <Faces faces={faces(here.map.id)} />
-            <EditLink map={here.map} player={player} />
-          </div>
-        </div>
-      )}
-      {here && <h2 className={labelClass}>Inside</h2>}
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-3">
-        {shown.map((node) => (
-          <div key={node.map.id} className="flex flex-col">
-            <Card map={node.map} faces={faces} player={player} />
-            {node.children.length > 0 && (
-              <button
-                type="button"
-                className="mt-1 self-start text-sm text-link hover:underline"
-                onClick={() => setTrail([...trail, node])}
-              >
-                {countMaps(node.children)} maps inside ›
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
     </nav>
   );
 }
