@@ -110,16 +110,22 @@ function usePreload({ node, path }: Entry) {
 /** How the last press on a link began, and whether its map was previewed then (before focus). */
 let press = { touch: false, previewed: false };
 
-/**
- * Props for a link that previews its map: pointing at it, focusing it, or on touch (which has no
- * pointing) a first tap, when the preview is beside the list; the next tap opens it.
- */
-function previewing(id: MapId, previewed: boolean, preview: PreviewControl) {
+/** Props for something that previews a map while it's pointed at (a link, or a list's whole row). */
+function pointing(id: MapId, preview: PreviewControl) {
   return {
     onPointerEnter: (event: React.PointerEvent) => {
       if (event.pointerType !== "touch") preview.soon(id);
     },
     onPointerLeave: () => preview.cancel(),
+  };
+}
+
+/**
+ * Props for a link that previews its map: focusing it, or on touch (which has no pointing) a
+ * first tap, when the preview is beside the list; the next tap opens it.
+ */
+function previewing(id: MapId, previewed: boolean, preview: PreviewControl) {
+  return {
     onPointerDown: (event: React.PointerEvent) => {
       press = { touch: event.pointerType === "touch", previewed };
     },
@@ -158,6 +164,7 @@ function PartyLine({
                 <Link
                   to={mapUrl(member.map.id)}
                   className="text-link hover:underline"
+                  {...pointing(member.map.id, preview)}
                   {...previewing(member.map.id, preview.id === member.map.id, preview)}
                 >
                   {member.map.name}
@@ -192,15 +199,17 @@ function MapList({
         const previewed = map.id === shownId;
         return (
           <li key={map.id}>
+            {/* The whole row previews when pointed at, as its highlight suggests. */}
             <div
               className={`group flex items-center gap-2 rounded-md px-2 py-1 ${
                 previewed ? "bg-raised" : "hover:bg-raised"
               }`}
+              {...pointing(map.id, preview)}
             >
               <Link
                 to={mapUrl(map.id)}
                 aria-current={previewed ? "true" : undefined}
-                className={`mr-auto truncate ${previewed ? "font-semibold text-title" : ""}`}
+                className={`min-w-0 flex-1 truncate ${previewed ? "font-semibold text-title" : ""}`}
                 {...previewing(map.id, previewed, preview)}
               >
                 {map.name}

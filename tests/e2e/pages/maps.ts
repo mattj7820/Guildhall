@@ -19,6 +19,12 @@ export class Maps extends AppPage {
     return this.preview(name);
   }
 
+  /** Points at the edge of a map's row in the list, away from its name. */
+  async pointAtRow(name: string) {
+    const row = this.tree.getByRole("link", { name, exact: true }).locator("..");
+    await row.hover({ position: { x: 2, y: 4 } });
+  }
+
   /** The preview of a map: its thumbnail, breadcrumbs, a pin for each map inside it. */
   preview(name: string) {
     return this.page.getByRole("region", { name: `Preview: ${name}`, exact: true });

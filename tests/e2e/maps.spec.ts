@@ -290,6 +290,12 @@ test.describe("Viewing maps", () => {
     await riverside.getByRole("button", { name: `In ${world.name}: preview it` }).click();
     await expect(maps.preview(world.name)).toBeVisible();
 
+    // Pointing anywhere on a row previews it, not only at its name.
+    await maps.pin(maps.preview(world.name), "Riverside").click();
+    await expect(maps.preview("Riverside")).toBeVisible();
+    await maps.pointAtRow(world.name);
+    await expect(maps.preview(world.name)).toBeVisible();
+
     await maps.preview(world.name).getByRole("link", { name: "Open map" }).click();
     await expect(canvasOf(page, world.name)).toBeVisible();
   });
