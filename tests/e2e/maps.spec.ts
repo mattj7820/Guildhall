@@ -269,6 +269,31 @@ test.describe("Viewing maps", () => {
     return editor.done();
   }
 
+  test("previews maps on the Maps page, and looks inside one by its pin", async ({
+    api,
+    maps,
+    page,
+  }) => {
+    const world = (await worldWithTown(api, maps)).map;
+    await maps.open();
+    const preview = await maps.previewMap(world.name);
+    const thumbnail = preview.locator("img").first();
+    await expect(thumbnail).toHaveAttribute("src", /^\/maps\/[^/]+\/thumbnail\?v=/);
+    await expect(preview).toContainText("1 map inside");
+
+    // The pin for the map inside previews it, with where it is in the world.
+    await maps.pin(preview, "Riverside").click();
+    const riverside = maps.preview("Riverside");
+    await expect(riverside.getByRole("navigation", { name: "Where it is" })).toContainText(
+      world.name,
+    );
+    await riverside.getByRole("button", { name: `In ${world.name}: preview it` }).click();
+    await expect(maps.preview(world.name)).toBeVisible();
+
+    await maps.preview(world.name).getByRole("link", { name: "Open map" }).click();
+    await expect(canvasOf(page, world.name)).toBeVisible();
+  });
+
   test("dives into an area's map from the keyboard", async ({ api, maps, page }) => {
     const view = await worldWithTown(api, maps);
     await view.canvas.focus();

@@ -144,3 +144,20 @@ export interface MapView {
   /** DM only: whether players can see this map. */
   shared?: boolean;
 }
+
+/** A map on the Maps page, as one viewer may see it. */
+export interface ListedMap {
+  id: MapId;
+  name: string;
+  /** Its areas' links, for nesting the list: players' lead only to shared maps, and are unnamed. */
+  areas: { id: AreaId; name: string; map?: MapId }[];
+  size: Size;
+  /** The thumbnail's URL; none if the image is missing, or players haven't seen any of it yet. */
+  thumbnail?: string;
+  /** Where the maps inside it are, as fractions of the image: only those the viewer sees. */
+  pins: { map: MapId; at: Point }[];
+  /** DM only. */
+  shared?: boolean;
+  /** DM only. */
+  imageMissing?: boolean;
+}

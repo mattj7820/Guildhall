@@ -2,7 +2,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import type { FixtureImage, MapRef, Point } from "../support/test-data";
 import { AppPage, dragBetween, middleOf, settled } from "./app-page";
 
-/** The Maps page: the tree of maps, and the DM's "New map" form. */
+/** The Maps page: the list of maps, the preview of one, and the DM's "New map" form. */
 export class Maps extends AppPage {
   get tree() {
     return this.page.getByRole("navigation", { name: "All maps" });
@@ -10,6 +10,23 @@ export class Maps extends AppPage {
 
   open() {
     return this.goto("/maps");
+  }
+
+  /** Previews a map from the list, as tabbing to its name does. */
+  async previewMap(name: string) {
+    await this.tree.getByRole("link", { name, exact: true }).focus();
+    await expect(this.preview(name)).toBeVisible();
+    return this.preview(name);
+  }
+
+  /** The preview of a map: its thumbnail, breadcrumbs, a pin for each map inside it. */
+  preview(name: string) {
+    return this.page.getByRole("region", { name: `Preview: ${name}`, exact: true });
+  }
+
+  /** The pin in a preview for a map inside it. */
+  pin(preview: Locator, name: string) {
+    return preview.getByRole("button", { name: `${name}: look inside`, exact: true });
   }
 
   /**

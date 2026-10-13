@@ -39,13 +39,14 @@ const NO_PALETTE_CLASSES = ["Literal", "TemplateElement"].map((node) => ({
 }));
 
 // Content drawn over map art keeps the same colours in every theme: fog, grids, outlines, tokens,
-// measuring, spell areas and stunts.
+// measuring, spell areas and stunts, and the pins on the Maps page's previews.
 const CONTENT_COLOUR_FILES = [
   "app/components/maps/AreaShape.tsx",
   "app/components/maps/DraftOutline.tsx",
   "app/components/maps/FogPainter.tsx",
   "app/components/maps/GridLayer.tsx",
   "app/components/maps/InsideBadges.tsx",
+  "app/components/maps/MapsBrowser.tsx",
   "app/components/maps/MeasureLayer.tsx",
   "app/components/maps/SpellAreaLayer.tsx",
   "app/components/maps/Stunts.tsx",
