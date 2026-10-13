@@ -47,6 +47,7 @@ const CONTENT_COLOUR_FILES = [
   "app/components/maps/GridLayer.tsx",
   "app/components/maps/InsideBadges.tsx",
   "app/components/maps/MeasureLayer.tsx",
+  "app/components/maps/prototype/PrototypeAreas.tsx",
   "app/components/maps/SpellAreaLayer.tsx",
   "app/components/maps/Stunts.tsx",
   "app/components/maps/TokenLayer.tsx",
