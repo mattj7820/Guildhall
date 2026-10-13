@@ -24,6 +24,7 @@ import { MapBreadcrumbs } from "./MapBreadcrumbs";
 import { MapCanvas } from "./MapCanvas";
 import { MapViewerBar } from "./MapViewerBar";
 import { AreaList, Legend, SelectedArea, usePresenting } from "./MapViewerParts";
+import { PlacesButton, usePlaces } from "./Places";
 import { NotePanel } from "./NotePanel";
 import {
   FlashOverlay,
@@ -86,6 +87,7 @@ export function MapViewer({
 }) {
   const [selectedId, setSelectedId] = useState<string>();
   const selected = map.areas.find((area) => area.id === selectedId);
+  const places = usePlaces();
   const [actualSize, setActualSize] = useState<Size>();
   const { stage, presenting, togglePresenting } = usePresenting();
   const [fogMode, setFogMode] = useState(false);
@@ -228,6 +230,9 @@ export function MapViewer({
             size={map.size}
             imageUrl={map.image.url}
             className="flex-1"
+            controls={
+              map.areas.length > 0 && !fogMode ? <PlacesButton places={places} /> : undefined
+            }
             onImageMeasured={setActualSize}
             onKeyDown={(event) => {
               if (event.key === "Escape" && placing) setPlacing(undefined);
@@ -267,7 +272,9 @@ export function MapViewer({
                             size={map.size}
                             scale={canvas.scale}
                             selected={area.id === selectedId}
+                            occupied={inside.some((badge) => badge.area === area.id)}
                             onSelect={(chosen) => setSelectedId(chosen.id)}
+                            {...places.areaProps(area)}
                           />
                         ),
                       )}
@@ -399,7 +406,11 @@ export function MapViewer({
                     </p>
                   )
                 )}
-                <AreaList areas={map.areas} onSelect={(area) => setSelectedId(area.id)} />
+                <AreaList
+                  areas={map.areas}
+                  onSelect={(area) => setSelectedId(area.id)}
+                  onHighlight={places.highlight}
+                />
               </>
             }
             tokens={

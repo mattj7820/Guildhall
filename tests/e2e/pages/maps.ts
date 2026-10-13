@@ -182,6 +182,19 @@ export class MapView extends MapCanvasPage {
     return this.page.getByRole("group", { name: "Map areas" });
   }
 
+  /**
+   * An area's name on the map, there all along but shown only on hover, focus or with Places
+   * (so look at its opacity, not whether it's visible).
+   */
+  areaName(name: string) {
+    return this.areas.locator("text").filter({ hasText: name });
+  }
+
+  /** Shows every place's outline and name, or stops. */
+  get placesButton() {
+    return this.page.getByRole("button", { name: "Places", exact: true });
+  }
+
   /** The tiles of the image a player has been given. */
   get tiles() {
     return this.page.locator('svg image[href*="/tiles/"]');

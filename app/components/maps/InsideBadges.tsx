@@ -8,8 +8,8 @@ const FACE = 11;
 const MOST_FACES = 3;
 
 /**
- * Who's inside the areas that lead to deeper maps: a small badge on each, with their faces, like
- * a game's map screen showing where the party is. Only what the server worked out this viewer may
+ * Who's inside the areas that lead to deeper maps: a small badge on each, with their faces, in
+ * place of its pin, like a game's map screen showing where the party is. Only what the server worked out this viewer may
  * see.
  */
 export function InsideBadges({
@@ -33,8 +33,8 @@ export function InsideBadges({
         const faces = badge.members.slice(0, MOST_FACES);
         const more = badge.members.length - faces.length;
         const width = (faces.length + (more > 0 ? 1 : 0)) * r * 1.6 + r * 0.8;
-        // Above the area's name, which sits on its label point.
-        const top = y - r * 3.2;
+        // In place of the area's pin, on its label point; its name shows below.
+        const top = y;
         return (
           <g
             key={badge.area}

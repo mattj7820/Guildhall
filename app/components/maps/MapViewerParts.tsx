@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { buttonClass } from "~/components/styles";
-import type { AreaView } from "~/maps/types";
+import type { AreaId, AreaView } from "~/maps/types";
 import { mapEditUrl, mapUrl } from "~/maps/urls";
 import { NotePanel } from "./NotePanel";
 
@@ -64,12 +64,21 @@ export function SelectedArea({
 export function AreaList({
   areas,
   onSelect,
+  onHighlight,
 }: {
   areas: AreaView[];
   onSelect: (area: AreaView) => void;
+  /** Picks the area out on the map while it's pointed at or focused in the list. */
+  onHighlight: (area: AreaId | undefined) => void;
 }) {
   if (areas.length === 0) return null;
   const sorted = [...areas].sort((a, b) => a.name.localeCompare(b.name));
+  const highlighting = (area: AreaView) => ({
+    onPointerEnter: () => onHighlight(area.id),
+    onPointerLeave: () => onHighlight(undefined),
+    onFocus: () => onHighlight(area.id),
+    onBlur: () => onHighlight(undefined),
+  });
   return (
     <section aria-labelledby="map-areas-heading">
       <h2
@@ -82,7 +91,11 @@ export function AreaList({
         {sorted.map((area) => (
           <li key={area.id}>
             {area.map ? (
-              <Link to={mapUrl(area.map.id)} className="block rounded px-1 py-0.5 hover:bg-raised">
+              <Link
+                to={mapUrl(area.map.id)}
+                className="block rounded px-1 py-0.5 hover:bg-raised"
+                {...highlighting(area)}
+              >
                 ▸ {area.name}
               </Link>
             ) : (
@@ -90,6 +103,7 @@ export function AreaList({
                 type="button"
                 onClick={() => onSelect(area)}
                 className="block w-full rounded px-1 py-0.5 text-left text-muted hover:bg-raised"
+                {...highlighting(area)}
               >
                 ◌ {area.name} <span className="text-xs">(not mapped yet)</span>
               </button>
@@ -101,32 +115,28 @@ export function AreaList({
   );
 }
 
-/** What the two outline styles mean. */
+/** What the pins mean, and how to see every place at once. */
 export function Legend() {
-  const swatch = (dashed: boolean, className: string) => (
-    <svg width="22" height="12" aria-hidden="true">
-      <rect
-        x="1"
-        y="1"
-        width="20"
-        height="10"
-        strokeWidth="2"
-        strokeDasharray={dashed ? "4 3" : undefined}
-        className={className}
-      />
+  // Each pin on a patch of mid-tone, as it looks over a map, so it reads in every theme.
+  const pin = (className: string) => (
+    <svg width="16" height="16" viewBox="-8 -8 16 16" aria-hidden="true">
+      {/* eslint-disable-next-line no-restricted-syntax */}
+      <rect x="-8" y="-8" width="16" height="16" rx="3" className="fill-stone-500" />
+      <path d="M 0 -5 L 5 0 L 0 5 L -5 0 Z" strokeWidth="1.5" className={className} />
     </svg>
   );
   return (
     <div className="pointer-events-none absolute bottom-3 left-3 flex flex-col gap-1 rounded-md bg-surface/90 px-2 py-1.5 text-xs shadow">
       <span className="flex items-center gap-2">
-        {/* The key matches the outlines on the map, which are the same in every theme. */}
+        {/* The key matches the pins on the map, which are the same in every theme. */}
         {/* eslint-disable-next-line no-restricted-syntax */}
-        {swatch(false, "fill-amber-400/30 stroke-amber-700")} Leads to a map
+        {pin("fill-stone-50 stroke-stone-900")} Leads to a map
       </span>
       <span className="flex items-center gap-2">
         {/* eslint-disable-next-line no-restricted-syntax */}
-        {swatch(true, "fill-stone-300/30 stroke-stone-700")} Not mapped yet
+        {pin("fill-stone-900/50 stroke-stone-50")} Not mapped yet
       </span>
+      <span className="text-muted">P shows every place</span>
     </div>
   );
 }

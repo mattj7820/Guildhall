@@ -303,6 +303,36 @@ test.describe("Viewing maps", () => {
     await expect(canvasOf(page, "Riverside")).toBeVisible();
   });
 
+  test("shows areas as pins, with their outlines and names on hover, from the list, or with Places", async ({
+    api,
+    maps,
+    page,
+  }) => {
+    const view = await worldWithTown(api, maps);
+    const name = view.areaName("Riverside");
+    await expect(name).toHaveCSS("opacity", "0");
+
+    await view.canvas.getByRole("link", { name: "Riverside" }).hover();
+    await expect(name).toHaveCSS("opacity", "1");
+    await page.mouse.move(0, 0);
+    await expect(name).toHaveCSS("opacity", "0");
+
+    await page
+      .getByRole("list", { name: "Areas" })
+      .getByRole("link", { name: "Riverside" })
+      .hover();
+    await expect(name).toHaveCSS("opacity", "1");
+    await page.mouse.move(0, 0);
+    await expect(name).toHaveCSS("opacity", "0");
+
+    await view.placesButton.click();
+    await expect(view.placesButton).toHaveAttribute("aria-pressed", "true");
+    await expect(name).toHaveCSS("opacity", "1");
+    await view.canvas.press("p");
+    await expect(view.placesButton).toHaveAttribute("aria-pressed", "false");
+    await expect(name).toHaveCSS("opacity", "0");
+  });
+
   test("opens an area that isn't mapped yet in the side panel, with a way to attach a map", async ({
     api,
     maps,
@@ -354,5 +384,27 @@ test.describe("Viewing maps", () => {
 
     await page.getByRole("button", { name: "Stop presenting" }).click();
     await expect(page.getByRole("complementary", { name: "Map details" })).toBeVisible();
+  });
+});
+
+test.describe("Areas on a touch screen", () => {
+  test.use({ hasTouch: true });
+
+  test("shows an area on the first tap, and opens its map on the second", async ({
+    api,
+    maps,
+    page,
+  }) => {
+    const editor = await maps.edit(await api.createMap({ image: IMAGES.world }));
+    await editor.drawArea(HARBOUR, "Riverside");
+    await editor.linkNewMap(IMAGES.town.file);
+    const view = await editor.done();
+
+    const area = view.canvas.getByRole("link", { name: "Riverside" });
+    await area.tap();
+    await expect(view.areaName("Riverside")).toHaveCSS("opacity", "1");
+    await expect(view.canvas).toBeVisible();
+    await area.tap();
+    await expect(canvasOf(page, "Riverside")).toBeVisible();
   });
 });
