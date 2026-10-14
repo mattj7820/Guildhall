@@ -26,13 +26,17 @@ It's built to be hosted: a Docker image, with the vault copied read-only from Go
 
 ## Hard constraints
 
-- **Never write to, move or delete anything in the vault.** Read-only access only. An ESLint rule
-  allows only fs's reading APIs in `app/`, `server/` and `server.js` (no writes, no default or
-  namespace `fs` imports); don't work around it.
+- **Guildhall never writes to, moves or deletes anything in the vault.** Read-only access only.
+  An ESLint rule allows only fs's reading APIs in `app/`, `server/` and `server.js` (no writes,
+  no default or namespace `fs` imports); don't work around it.
   The two exceptions are `app/.server/data/json-store.ts` and `app/.server/data/file-cache.ts`
   (generated files such as map tiles), which write only inside `DATA_PATH` (config refuses a data
   folder that overlaps the vault). New persistent data goes through the JSON store. sharp may only
   make buffers (`toFile` is banned too).
+  The one way anything goes into the vault is the authoring skills (`/add-monster`, `/add-spell`,
+  `/add-item`): Claude adding new notes on the DM's request, following `docs/vault-authoring.md`.
+  They never edit, move or delete an existing note unless asked for exactly that, and the DM
+  confirms first. Don't otherwise write to the vault.
 - **Keep the repo shareable:** it's private on GitHub (so its code and CI can't be read without
   signing in), but it may be shown as a portfolio piece: never commit real vault content, personal
   file paths or secrets. Config lives in a gitignored `.env`; keep `.env.example` in sync when
@@ -75,6 +79,8 @@ npm run typecheck    # react-router typegen && tsc -b
 npm test             # vitest unit/integration
 npm run test:e2e     # playwright: builds, serves on :4173 with the fixture vault
 npm run check        # everything CI runs (CI also builds and checks the Docker image)
+npm run note:check -- <file> [monster|spell|item]   # what Guildhall makes of a note
+npm run srd:note -- spell Fireball --srd 2024        # an SRD monster or spell as a vault note
 npm run srd:import   # regenerate the SRD's monsters and spells from the pinned data (srd:check: CI's check)
 ```
 
@@ -241,7 +247,11 @@ First e2e run needs `npx playwright install chromium`.
   `scripts/srd/convert.ts` and `scripts/srd/spells.ts`, the pure conversions) and never edited by
   hand: `monsters-5.1.json`, `monsters-5.2.json`, `spells-5.1.json`, `spells-5.2.json`,
   `NOTICE.md` (the licences), `monsters.ts` (`srdMonsters`, parsed once; `srdStatblockView`,
-  rendered once) and `spells.ts` (`srdSpells`, as picker options; `srdSpellText`, rendered once).
+  rendered once), `spells.ts` (`srdSpells`, as picker options; `srdSpellText`, rendered once) and
+  `vault-notes.ts` (`lookUp`: an SRD monster or spell as a vault note, for the authoring skills).
+- Authoring skills' scripts: `scripts/check-note.ts` (over `app/.server/vault/check-note.ts`:
+  what Guildhall makes of a note, and what it would drop) and `scripts/srd-lookup.ts`, both loading
+  app modules through Vite (`scripts/app-module.ts`).
 - `app/.server/data/json-store.ts`: `JsonFile`, a validated, queued, atomically written JSON file.
   `file-cache.ts`: `FileCache`, disposable generated files in `DATA_PATH/cache`, one folder per key
   and version, made one set at a time. `when-free.ts`: retries a read or rename while Windows holds

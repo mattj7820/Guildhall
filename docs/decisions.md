@@ -1506,3 +1506,30 @@ a dark halo) and the name show on hover, on keyboard focus, when the area is poi
 side panel's list, and for every place at once with the Places switch beside the zoom (or P). The
 whole area still takes the pointer. On touch, the first tap shows an area and the second opens it.
 The editor still draws outlines as before.
+
+## 79. Skills that add monsters, spells and items to the vault, with nothing made up
+
+**Date:** 2026-10-14
+
+**Context.** The DM finds it easiest to have Claude add statblocks, spells and items from the
+books (or tweaked versions of them) to the vault, but each kind has a shape Guildhall reads (a
+Fantasy Statblocks block, a spell note's frontmatter, an item note), and Guildhall's rule was
+never to write to the vault.
+
+**Decision.** Three Claude Code skills, `/add-monster`, `/add-spell` and `/add-item`, committed in
+`.claude/skills/`, with their shared rules in `docs/vault-authoring.md`. They're Claude writing
+into the vault on the DM's request, not Guildhall: the app stays read-only, and the rule in
+`CLAUDE.md` now says so. The skills only add notes; anything else needs the DM's say-so for exactly
+that.
+
+Nothing is made up: every word comes from the bundled SRDs, from what the DM pastes or photographs
+(copied verbatim, flavour text included), or from the DM's own tweak with the numbers they gave.
+Not from memory, and no invented flavour. The edition is asked when not given, never picked, and a
+tweak's knock-on numbers are asked about rather than changed or left inconsistent.
+
+Two scripts back them. `srd-lookup` prints an SRD monster or spell as a note (and asks which SRD
+when both have the name). `check-note` reports what Guildhall makes of a note (statblocks the
+tracker can't use, spell fields the picker would drop), so mistakes show before the table finds
+them. Both load the app's own modules through Vite, so they read notes exactly as the app does.
+The vault's path is `VAULT_PATH` from the gitignored `.env`, so nothing personal is committed.
+Guildhall bundles no SRD items, so items always come from the DM.

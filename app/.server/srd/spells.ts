@@ -8,7 +8,7 @@ import srd51 from "./spells-5.1.json";
 import srd52 from "./spells-5.2.json";
 
 /** One spell as scripts/import-srd.ts writes it (scripts/srd/spells.ts). */
-interface StoredSpell {
+export interface StoredSpell {
   id: string;
   name: string;
   level: number;
