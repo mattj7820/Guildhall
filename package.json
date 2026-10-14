@@ -20,7 +20,9 @@
     "test:e2e": "playwright test",
     "srd:import": "node scripts/import-srd.ts",
     "srd:check": "node scripts/import-srd.ts --check",
-    "check": "npm run lint && npm run typecheck && npm test && npm run test:e2e"
+    "check": "npm run lint && npm run typecheck && npm test && npm run test:e2e",
+    "note:check": "node scripts/check-note.ts",
+    "srd:note": "node scripts/srd-lookup.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
