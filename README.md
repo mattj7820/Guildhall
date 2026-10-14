@@ -266,6 +266,14 @@ area: 20 ft cube # a size in feet and a shape: sphere (or radius), cube, cone or
 ---
 ```
 
+## Adding to the vault
+
+Three Claude Code skills add monsters, spells and items to the vault on request: `/add-monster`,
+`/add-spell` and `/add-item`. They copy from the bundled SRDs or from text the DM gives, word for
+word, apply only the tweaks asked for, ask rather than fill a gap, check that Guildhall reads the
+note as meant, and only ever add notes (see [docs/vault-authoring.md](docs/vault-authoring.md)).
+Guildhall itself only ever reads the vault.
+
 ## Scripts
 
 | Command              | What it does                                                                             |
@@ -279,6 +287,8 @@ area: 20 ft cube # a size in feet and a shape: sphere (or radius), cube, cone or
 | `npm run test:e2e`   | End-to-end tests (Playwright; builds and starts the app)                                 |
 | `npm run check`      | All of the above, as CI runs it                                                          |
 | `npm run srd:import` | Regenerates the SRD's monsters and spells from the pinned data (`srd:check` checks them) |
+| `npm run note:check` | What Guildhall makes of a note: `-- <file> [monster\|spell\|item]`                       |
+| `npm run srd:note`   | An SRD monster or spell as a vault note: `-- spell Fireball --srd 2024`                  |
 
 Before running the end-to-end tests for the first time: `npx playwright install chromium`.
 
