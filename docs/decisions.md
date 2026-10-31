@@ -1561,3 +1561,30 @@ tokens by earlier versions are still read.
 The links are saved before the fight changes, so the answer to them can't arrive after the
 fight's own live update and undo it in the browser. Prepared encounters keep working for now, to
 be retired once this has been used at the table.
+
+## 81. Players take their own tokens between maps, through what they can see
+
+**Date:** 2026-10-31
+
+**Context.** Only the DM moved tokens between maps (decisions 45 and 67), since entering
+somewhere is a story beat. At the table that meant the DM doing every "we go into the inn" by
+hand, when the place was already revealed and shared and the players knew it was there.
+
+**Decision.** Players take their own party members (their PC, and the companion the party shares)
+to another map, with buttons: **Go in** beside an area in the map's Places list, and **Back to**
+the map above beside the breadcrumbs. Dragging onto an area stays an ordinary move, so standing on
+a building doesn't send you inside it. The ways are worked out on the server from the explicit
+`Viewer` (`travelWays`): into a map an area leads to, if the area is seen (not secret, at least
+half revealed) and the map is shared; up to the map above, if it's shared and the area there that
+leads here is seen. A way they don't have is the same 404 as a map that doesn't exist, so nothing
+about hidden maps gets out.
+
+It's its own route (`/maps/:id/travel`, `{ token, to }`), not a token action: the server decides
+where the token lands, from things the browser doesn't have (the map above's areas). Going up, it
+lands inside the area it came out of; going in, beside a party member already there whom the
+player would see, else in the middle; on a battle map that snaps, on a square. The token route
+still refuses players' moves with a `map`.
+
+The DM gets no lock: keeping a place shut is keeping it fogged, secret or unshared, and the DM sees
+tokens go live and can bring them back. Fights stop it: no one walks into a map with a fight on it,
+and no one in the fight walks out of its map; the DM still moves them as the story needs.
