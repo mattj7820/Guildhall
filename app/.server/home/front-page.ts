@@ -5,6 +5,7 @@ import { partyCards } from "~/.server/characters/load";
 import { DataFileError } from "~/.server/data/json-store";
 import { listMaps } from "~/.server/maps/maps-page";
 import { loadTokens, whereabouts } from "~/.server/maps/tokens";
+import { presenceFor } from "./presence";
 import {
   bannerMap,
   fightSummary,
@@ -23,7 +24,7 @@ import { noteUrl } from "~/wiki/urls";
  */
 export async function frontPage(services: Services, viewer: Viewer): Promise<FrontPage> {
   const vault = services.vault.current;
-  const [banner, characters, fight, nextSession] = await Promise.all([
+  const [banner, characters, fight, nextSession, online] = await Promise.all([
     // A data file that can't be read just leaves the banner out; its own page says why.
     loadBanner(services, viewer).catch((error: unknown) => {
       if (error instanceof DataFileError) return undefined;
@@ -32,6 +33,7 @@ export async function frontPage(services: Services, viewer: Viewer): Promise<Fro
     services.characters.list(),
     services.fight.get(),
     services.nextSession.get(),
+    presenceFor(services, viewer, services.live.online()),
   ]);
   const party = partyCards(vault, characters, viewer).cards.map((card): PartyMember => ({
     name: card.name,
@@ -45,6 +47,7 @@ export async function frontPage(services: Services, viewer: Viewer): Promise<Fro
   return {
     ...(banner && { banner }),
     party,
+    online,
     ...(session && { latestSession: { title: session.title, url: noteUrl(session.slug) } }),
     ...(nextSession && { nextSession }),
     fight: fight ? fightSummary(await fightView(services, fight, viewer)) : null,

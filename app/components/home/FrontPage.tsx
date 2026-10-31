@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { fightSummary, type FightSummary, type FrontPage as Data } from "~/home/front-page";
 import type { HubLink } from "~/hub/links";
-import { FIGHT_ROOM } from "~/live/messages";
+import { FIGHT_ROOM, PARTY_ROOM } from "~/live/messages";
 import { useLiveMap } from "~/live/useLive";
 import { mapUrl } from "~/maps/urls";
 import { BannerMap } from "./BannerMap";
@@ -26,6 +26,10 @@ export function FrontPage({
   const [fight, setFight] = useState(data.fight);
   useLiveMap(FIGHT_ROOM, (message) => {
     if (message.type === "fight") setFight(fightSummary(message.fight));
+  });
+  const [online, setOnline] = useState(data.online);
+  useLiveMap(PARTY_ROOM, (message) => {
+    if (message.type === "presence") setOnline(message.online);
   });
   const { banner } = data;
 
@@ -68,7 +72,7 @@ export function FrontPage({
         </div>
       </section>
 
-      <PartyStrip party={data.party} />
+      <PartyStrip party={data.party} online={online} />
 
       <section aria-labelledby="front-modules" className="mt-10">
         <h2

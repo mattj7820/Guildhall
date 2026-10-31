@@ -41,4 +41,16 @@ test.describe("Hub home page", () => {
     const response = await player.api.postForm("/?index", { at: "2099-01-01T00:00:00.000Z" });
     expect(response.status()).toBe(404);
   });
+
+  test("shows who's here now, as they arrive", async ({ page, openAs }) => {
+    const party = page.getByRole("region", { name: "The party" });
+    await expect(party.getByRole("listitem", { name: "DM, here now" })).toBeVisible();
+    // Other specs may have Player One open too: only arriving is certain.
+    const player = await openAs("playerOne");
+    await player.goto("/");
+    await expect(party.getByRole("listitem", { name: "Fixture PC One, here now" })).toBeVisible();
+    await expect(
+      player.page.getByRole("listitem", { name: "Fixture PC One, here now" }),
+    ).toBeVisible();
+  });
 });

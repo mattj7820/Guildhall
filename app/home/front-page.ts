@@ -3,6 +3,7 @@
  * the pure choices behind them.
  */
 import type { FightView } from "~/combat/fight";
+import type { Presence } from "~/live/messages";
 import type { PartyFace, Whereabouts } from "~/maps/tokens/types";
 import type { MapId, Point } from "~/maps/types";
 
@@ -10,6 +11,8 @@ export interface FrontPage {
   /** The map where the party is, as the viewer may see it. */
   banner?: Banner;
   party: PartyMember[];
+  /** Who's here now, when the page was made; the live connection keeps it up to date. */
+  online: Presence;
   latestSession?: { title: string; url: string };
   /** When the table next meets: an instant (ISO 8601), shown in each browser's time zone. */
   nextSession?: string;

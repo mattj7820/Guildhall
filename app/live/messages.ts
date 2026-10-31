@@ -14,6 +14,15 @@ export const LIVE_PATH = "/live";
 /** The room for the fight the table is in (rooms are otherwise maps, by ID). */
 export const FIGHT_ROOM = "fight";
 
+/** The room for who's here now: the front page's party. */
+export const PARTY_ROOM = "party";
+
+/** Who has Guildhall open now: the DM, and party members (by name) whose player does. */
+export interface Presence {
+  dm: boolean;
+  party: string[];
+}
+
 const mapId = z.string().min(1).max(100);
 const tokenId = z.string().min(1).max(100);
 const coordinate = z.number().min(0).max(1);
@@ -50,6 +59,8 @@ export type ServerMessage =
   | { type: "held"; map: MapId; token: TokenId; by: string }
   /** The fight as this viewer may see it, or none, whenever that changes. */
   | { type: "fight"; map: typeof FIGHT_ROOM; fight: FightView | null }
+  /** Who's here now, as this viewer knows the party, whenever that changes. */
+  | { type: "presence"; map: typeof PARTY_ROOM; online: Presence }
   /** The DM played a stunt or a sound on the map: play it now (it isn't kept). */
   | { type: "stunt"; map: MapId; stunt: StuntEvent };
 
@@ -67,6 +78,8 @@ export function stateKey(message: ServerMessage): string | undefined {
       return `tokens:${message.map}`;
     case "fight":
       return "fight";
+    case "presence":
+      return "presence";
     default:
       return undefined;
   }
