@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { seededRng } from "../rng";
 import type { DieRoll } from "../roll";
-import { MOST_DICE_THROWN, planThrow, quaternionAt } from "./plan";
+import { planThrow, quaternionAt } from "./plan";
 import { dieShape, faceUp } from "./shapes";
-import { TRAY_SIDES, throwsAny } from "./thrown";
+import { MOST_DICE_THROWN, TRAY_SIDES, throwsAny } from "./thrown";
 
 const TRAY = { halfX: 9, halfZ: 6 };
 const die = (sides: number, value: number, kept = true): DieRoll => ({ sides, value, kept });
@@ -69,7 +69,7 @@ describe("planThrow", () => {
     expect(plan.dice.every((planned) => planned.sides === 6)).toBe(true);
   });
 
-  it("ends within three and a half seconds, with a sound for each knock in the throw", () => {
+  it("ends within three and a half seconds, with a sound for each knock, by the die that knocked", () => {
     const plan = planThrow([die(20, 1), die(8, 8), die(4, 4)], seededRng(6), TRAY);
     expect(plan.frames.length).toBeLessThanOrEqual(210);
     expect(plan.rolling).toHaveLength(plan.frames.length);
@@ -78,6 +78,7 @@ describe("planThrow", () => {
       expect(knock.frame).toBeLessThan(plan.frames.length);
       expect(knock.strength).toBeGreaterThan(0);
       expect(knock.strength).toBeLessThanOrEqual(1);
+      expect([0, 1, 2]).toContain(knock.die);
     }
   });
 });

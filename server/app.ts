@@ -19,6 +19,7 @@ import { MapTokens } from "~/.server/maps/map-tokens";
 import { PlayerImages } from "~/.server/maps/player-image";
 import { FileCache } from "~/.server/data/file-cache";
 import { Live } from "~/.server/live/live";
+import { DiceCollections } from "~/.server/dice/collections";
 import { Members } from "~/.server/members/members";
 import { LiveVault } from "~/.server/vault/live-vault";
 import { clientAddressContext, servicesContext, type Services } from "~/context";
@@ -54,6 +55,7 @@ async function createServices(): Promise<Services> {
     playerImages: new PlayerImages(new FileCache(path.join(config.dataPath, "cache", "map-tiles"))),
     characters: Characters.inFolder(config.dataPath),
     members: Members.inFolder(config.dataPath),
+    dice: DiceCollections.inFolder(config.dataPath),
     sessions: createSessions(cookies),
     signInAttempts: createAttemptCookie(cookies),
     ...(config.discord && {

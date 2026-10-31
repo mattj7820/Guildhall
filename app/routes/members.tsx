@@ -1,13 +1,17 @@
-import { useState } from "react";
-import { data, Form } from "react-router";
+import { useEffect, useRef, useState } from "react";
+import { data, Form, useFetcher, useLoaderData } from "react-router";
 import { notFound } from "~/.server/not-found";
 import { dmDiscordIds } from "~/.server/auth/identify";
 import { DataFileError } from "~/.server/data/json-store";
+import { DICE_STYLES, diceStyle } from "~/.server/dice/catalogue";
+import { usableDice } from "~/.server/dice/collections";
+import { ownedView } from "~/.server/dice/view";
 import { partyPlayers } from "~/.server/members/players";
 import type { Player } from "~/campaign/types";
 import { buttonClass, inputClass, panelClass, primaryButtonClass } from "~/components/styles";
 import { accountContext, servicesContext } from "~/context";
-import { DICE_SET_INFO, DICE_SETS, isDiceSet } from "~/dice/sets";
+import { EMPTY_COLLECTION } from "~/dice/collection";
+import { DIE_TYPES, isDieType, RARITY_INFO, type DieType, type Rarity } from "~/dice/styles";
 import type { Member } from "~/members/types";
 import type { Route } from "./+types/members";
 
@@ -15,28 +19,66 @@ export function meta(_: Route.MetaArgs) {
   return [{ title: "Members · Guildhall" }];
 }
 
+/** What the DM sees of someone's dice. */
+interface MemberDiceSummary {
+  packs: number;
+  owned: { label: string; rarity: Rarity; sides: DieType; count: number }[];
+}
+
 export async function loader({ context }: Route.LoaderArgs) {
   const account = context.get(accountContext);
   if (account.kind !== "member" || !account.isDm) notFound();
   const services = context.get(servicesContext);
   const players = partyPlayers(services.vault.current);
-  const page = { you: account.member.discordId, dms: [...dmDiscordIds(services)], players };
+  const page = {
+    you: account.member.discordId,
+    dms: [...dmDiscordIds(services)],
+    players,
+    styles: DICE_STYLES.map(({ id, label, rarity }) => ({ id, label, rarity })),
+  };
   try {
-    return { ...page, members: await services.members.list() };
+    const members = await services.members.list();
+    const collections = await services.dice.all();
+    const dice: Record<string, MemberDiceSummary> = Object.fromEntries(
+      members.map((member) => {
+        const collection = collections.get(member.discordId) ?? EMPTY_COLLECTION;
+        const owned = ownedView(usableDice(collection, member.dice?.given, false));
+        return [
+          member.discordId,
+          {
+            packs: collection.packs.length,
+            owned: owned.map(({ style, sides, count }) => ({
+              label: style.label,
+              rarity: style.rarity,
+              sides,
+              count,
+            })),
+          },
+        ];
+      }),
+    );
+    return { ...page, members, dice };
   } catch (error) {
-    if (error instanceof DataFileError) return { ...page, members: [], error: error.message };
+    if (error instanceof DataFileError) {
+      return {
+        ...page,
+        members: [],
+        dice: {} as Record<string, MemberDiceSummary>,
+        error: error.message,
+      };
+    }
     throw error;
   }
 }
 
 /**
- * Forms post `intent` = approve | assign | remove | dice, with the member's `discordId`; dice also
- * posts the `diceSet` and whether to `give` it ("yes") or take it back.
+ * Forms post `intent` = approve | assign | remove | pack | die, with the member's `discordId`; a
+ * pack also posts why (`reason`), and a die its `style` and `sides`.
  */
 export async function action({ request, context }: Route.ActionArgs) {
   const account = context.get(accountContext);
   if (account.kind !== "member" || !account.isDm) notFound();
-  const { members, vault, live } = context.get(servicesContext);
+  const { members, dice, vault, live } = context.get(servicesContext);
   const form = await request.formData();
   const discordId = String(form.get("discordId") ?? "");
   const playerId = String(form.get("playerId") ?? "") || undefined;
@@ -52,11 +94,20 @@ export async function action({ request, context }: Route.ActionArgs) {
     case "assign":
       await members.assignPlayer(discordId, playerId);
       break;
-    case "dice": {
-      const set = form.get("diceSet");
-      if (!isDiceSet(set)) return data({ error: "That isn't one of the dice sets." }, 400);
-      await members.giveDiceSet(discordId, set, form.get("give") === "yes");
-      // Dice are only ever drawn for their owner: nothing live to tell anyone.
+    // Dice are only ever drawn for their owner, and packs wait for them: nothing live to tell.
+    case "pack": {
+      if (!(await members.get(discordId))) return data({ error: "They aren't a member." }, 400);
+      await dice.givePack(discordId, String(form.get("reason") ?? ""));
+      return { ok: true };
+    }
+    case "die": {
+      if (!(await members.get(discordId))) return data({ error: "They aren't a member." }, 400);
+      const style = diceStyle(String(form.get("style") ?? ""));
+      const sides = Number(form.get("sides"));
+      if (!style || !isDieType(sides)) return data({ error: "That isn't one of the dice." }, 400);
+      if (!(await dice.giveDie(discordId, style.id, sides))) {
+        return data({ error: "They already have as many of that die as a roll could use." }, 400);
+      }
       return { ok: true };
     }
     case "remove":
@@ -222,7 +273,7 @@ function MemberRow({
           </button>
         </Form>
       )}
-      {!isDm && <DiceSets member={member} />}
+      {!isDm && <MemberDice member={member} />}
       {isYou ? (
         <span className="text-xs text-muted">That's you</span>
       ) : confirmingRemove ? (
@@ -250,38 +301,114 @@ function MemberRow({
   );
 }
 
-/** The dice sets the DM has given someone: each a switch, saved at once. */
-function DiceSets({ member }: { member: Member }) {
-  const given = member.dice?.given ?? [];
+/**
+ * Someone's dice: what they have, and packs (with why) or particular dice for the DM to give.
+ * Each gift is saved at once; a pack waits for them to open it.
+ */
+function MemberDice({ member }: { member: Member }) {
+  const { styles, dice } = useLoaderData<typeof loader>();
+  const theirs = dice[member.discordId] ?? { packs: 0, owned: [] };
+  const total = theirs.owned.reduce((sum, die) => sum + die.count, 0);
   return (
     <div
       role="group"
-      aria-label={`${member.name}'s dice sets`}
-      className="flex basis-full flex-wrap items-center gap-2 text-sm"
+      aria-label={`${member.name}'s dice`}
+      className="flex basis-full flex-col gap-2 border-t border-line pt-2 text-sm"
     >
-      <span className="text-xs font-medium text-muted">Dice sets</span>
-      {DICE_SETS.map((set) => {
-        const has = given.includes(set);
-        return (
-          <Form key={set} method="post">
-            <input type="hidden" name="intent" value="dice" />
-            <input type="hidden" name="discordId" value={member.discordId} />
-            <input type="hidden" name="diceSet" value={set} />
-            <input type="hidden" name="give" value={has ? "no" : "yes"} />
-            <button
-              type="submit"
-              aria-pressed={has}
-              className={`rounded-full border px-2.5 py-0.5 ${
-                has
-                  ? "border-accent bg-accent-surface font-semibold text-title"
-                  : "border-line text-muted"
-              }`}
-            >
-              {DICE_SET_INFO[set].label}
-            </button>
-          </Form>
-        );
-      })}
+      <details>
+        <summary className="cursor-pointer text-xs font-medium text-muted">
+          {total === 1 ? "1 die" : `${total} dice`}
+          {theirs.packs > 0 &&
+            `, ${theirs.packs === 1 ? "1 pack" : `${theirs.packs} packs`} unopened`}
+        </summary>
+        {theirs.owned.length === 0 ? (
+          <p className="mt-1 text-muted">None yet.</p>
+        ) : (
+          <ul aria-label={`${member.name}'s dice`} className="mt-1 flex flex-wrap gap-1.5">
+            {theirs.owned.map((die) => (
+              <li
+                key={`${die.label} d${die.sides}`}
+                className="rounded-full border border-line px-2 py-0.5"
+              >
+                {die.label} d{die.sides}
+                {die.count > 1 && ` ×${die.count}`}{" "}
+                <span className="text-muted">({RARITY_INFO[die.rarity].label})</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </details>
+      <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+        <GiveForm member={member} intent="pack" label="Give a pack">
+          <label className="flex flex-col gap-0.5 text-xs font-medium text-muted">
+            Why (they'll see it)
+            <input
+              name="reason"
+              maxLength={200}
+              placeholder="For the session recap"
+              className={`${inputClass} w-56`}
+            />
+          </label>
+        </GiveForm>
+        <GiveForm member={member} intent="die" label="Give this die">
+          <label className="flex flex-col gap-0.5 text-xs font-medium text-muted">
+            Style
+            <select name="style" className={inputClass}>
+              {styles.map((style) => (
+                <option key={style.id} value={style.id}>
+                  {style.label} ({RARITY_INFO[style.rarity].label})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-0.5 text-xs font-medium text-muted">
+            Die
+            <select name="sides" defaultValue={20} className={inputClass}>
+              {DIE_TYPES.map((sides) => (
+                <option key={sides} value={sides}>
+                  d{sides}
+                </option>
+              ))}
+            </select>
+          </label>
+        </GiveForm>
+      </div>
     </div>
+  );
+}
+
+/** A gift to someone, cleared once it's given. */
+function GiveForm({
+  member,
+  intent,
+  label,
+  children,
+}: {
+  member: Member;
+  intent: "pack" | "die";
+  label: string;
+  children: React.ReactNode;
+}) {
+  const fetcher = useFetcher<typeof action>();
+  const form = useRef<HTMLFormElement>(null);
+  const given = fetcher.state === "idle" && fetcher.data && "ok" in fetcher.data;
+  useEffect(() => {
+    if (given && intent === "pack") form.current?.reset();
+  }, [given, intent]);
+  const error = fetcher.data && "error" in fetcher.data ? fetcher.data.error : undefined;
+  return (
+    <fetcher.Form ref={form} method="post" className="flex flex-wrap items-end gap-2">
+      <input type="hidden" name="intent" value={intent} />
+      <input type="hidden" name="discordId" value={member.discordId} />
+      {children}
+      <button type="submit" className={buttonClass} disabled={fetcher.state !== "idle"}>
+        {label}
+      </button>
+      {error && (
+        <p role="alert" className="basis-full text-xs text-danger">
+          {error}
+        </p>
+      )}
+    </fetcher.Form>
   );
 }

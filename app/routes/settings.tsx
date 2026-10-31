@@ -1,8 +1,11 @@
-import { data, Form } from "react-router";
+import { data, Form, Link } from "react-router";
 import { z } from "zod";
+import { DataFileError } from "~/.server/data/json-store";
+import { usableDice } from "~/.server/dice/collections";
 import { notFound } from "~/.server/not-found";
+import { DieIcon } from "~/components/dice/DieIcon";
 import { accountContext, servicesContext } from "~/context";
-import { chosenSet, DICE_SET_INFO, DICE_SETS, setsFor, type DiceSetId } from "~/dice/sets";
+import { EMPTY_COLLECTION } from "~/dice/collection";
 import { THEME_INFO, THEMES, type Theme } from "~/theme/themes";
 import type { Route } from "./+types/settings";
 
@@ -11,17 +14,24 @@ export function meta(_: Route.MetaArgs) {
 }
 
 /** Each person's own settings: their theme and their dice. */
-export function loader({ context }: Route.LoaderArgs) {
+export async function loader({ context }: Route.LoaderArgs) {
   const account = context.get(accountContext);
   if (account.kind !== "member") notFound();
   const { dice } = account.member;
+  let collection = EMPTY_COLLECTION;
+  try {
+    collection = await context.get(servicesContext).dice.get(account.member.discordId);
+  } catch (error) {
+    if (!(error instanceof DataFileError)) throw error;
+  }
+  const owned = usableDice(collection, dice?.given, account.isDm);
   return {
     theme: account.member.theme,
     dice: {
       on: !dice?.off,
       sound: !dice?.quiet,
-      sets: setsFor(dice, account.isDm),
-      chosen: chosenSet(dice, account.isDm),
+      found: owned.reduce((sum, die) => sum + die.count, 0),
+      packs: account.isDm ? 0 : collection.packs.length,
     },
   };
 }
@@ -30,7 +40,6 @@ const settingsSchema = z.union([
   z.object({ theme: z.enum(THEMES) }),
   z.object({ dice: z.enum(["on", "off"]) }),
   z.object({ diceSound: z.enum(["on", "off"]) }),
-  z.object({ diceSet: z.enum([...DICE_SETS, "theme"]) }),
 ]);
 
 export async function action({ request, context }: Route.ActionArgs) {
@@ -42,15 +51,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   const { discordId } = account.member;
   if ("theme" in parsed.data) await members.setTheme(discordId, parsed.data.theme);
   else if ("dice" in parsed.data) await members.setDiceOn(discordId, parsed.data.dice === "on");
-  else if ("diceSound" in parsed.data) {
-    await members.setDiceSound(discordId, parsed.data.diceSound === "on");
-  } else {
-    const set = parsed.data.diceSet === "theme" ? undefined : parsed.data.diceSet;
-    if (set && !setsFor(account.member.dice, account.isDm).includes(set)) {
-      return data({ error: "That set hasn't been given to you." }, 400);
-    }
-    await members.chooseDiceSet(discordId, set);
-  }
+  else await members.setDiceSound(discordId, parsed.data.diceSound === "on");
   return { ok: true };
 }
 
@@ -115,17 +116,17 @@ function ThemeChoice({ theme, chosen }: { theme: Theme; chosen: boolean }) {
   );
 }
 
-/** Whether rolls are thrown as 3D dice across the screen, or shown only as text. */
+/** Whether rolls are thrown as 3D dice across the screen, and the way to their collection. */
 function DiceSettings({
   on,
   sound,
-  sets,
-  chosen,
+  found,
+  packs,
 }: {
   on: boolean;
   sound: boolean;
-  sets: DiceSetId[];
-  chosen: DiceSetId | undefined;
+  found: number;
+  packs: number;
 }) {
   return (
     <section aria-labelledby="dice-heading" className="flex flex-col gap-3">
@@ -142,58 +143,20 @@ function DiceSettings({
         <SettingSwitch name="dice" on={on} label="Roll with 3D dice" />
         <SettingSwitch name="diceSound" on={sound} label="Dice sounds" />
       </Form>
-      {sets.length > 0 && (
-        <Form method="post" aria-label="Your dice" className="grid gap-3 sm:grid-cols-3">
-          <DiceSetChoice chosen={!chosen} />
-          {sets.map((set) => (
-            <DiceSetChoice key={set} set={set} chosen={set === chosen} />
-          ))}
-        </Form>
-      )}
+      <Link
+        to="/settings/dice"
+        className="gh-card bg-surface border-line hover:border-accent flex items-center gap-3 self-start rounded-lg border p-3"
+      >
+        <DieIcon sides={20} />
+        <span className="flex flex-col">
+          <span className="text-title font-semibold">Your dice</span>
+          <span className="text-muted text-sm">
+            {found === 0 ? "None found yet" : found === 1 ? "1 die found" : `${found} dice found`}
+            {packs > 0 && `, ${packs === 1 ? "1 pack" : `${packs} packs`} to open`}
+          </span>
+        </span>
+      </Link>
     </section>
-  );
-}
-
-/** A dice set to roll with (the theme's dice without one): picking it saves it. */
-function DiceSetChoice({ set, chosen }: { set?: DiceSetId; chosen: boolean }) {
-  const info = set && DICE_SET_INFO[set];
-  return (
-    <button
-      type="submit"
-      name="diceSet"
-      value={set ?? "theme"}
-      aria-pressed={chosen}
-      className={`gh-card bg-surface hover:border-accent flex items-center gap-3 rounded-lg border p-3 text-left ${
-        chosen ? "border-accent ring-accent ring-2" : "border-line"
-      }`}
-    >
-      <DieFace
-        body={info ? info.look.body : "var(--color-accent)"}
-        ink={info ? info.look.ink : "var(--color-on-accent)"}
-        seeThrough={!!info && info.look.opacity < 1}
-      />
-      <span className="flex flex-col">
-        <span className="text-title font-semibold">
-          {info ? info.label : <>The theme&rsquo;s dice</>}
-        </span>
-        <span className="text-muted text-sm">
-          {info ? info.description : <>In your theme&rsquo;s colours.</>}
-        </span>
-      </span>
-    </button>
-  );
-}
-
-/** A die's face in a set's colours, as a sample. */
-function DieFace({ body, ink, seeThrough }: { body: string; ink: string; seeThrough: boolean }) {
-  return (
-    <span
-      aria-hidden="true"
-      className="font-display flex size-10 shrink-0 items-center justify-center rounded-md border border-black/20 text-lg font-bold"
-      style={{ background: body, color: ink, opacity: seeThrough ? 0.75 : 1 }}
-    >
-      20
-    </span>
   );
 }
 

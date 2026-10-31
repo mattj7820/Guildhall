@@ -149,22 +149,15 @@ describe("Members", () => {
     expect(await members.setDiceOn("100000000000000999", false)).toBeUndefined();
   });
 
-  it("keeps the dice sets the DM gives, and the one someone picks", async () => {
+  it("keeps the dice sets given before packs beside their other dice settings", async () => {
     const members = store();
     const { discordId } = await signedIn(members, profile(1), { approve: true });
-    await members.giveDiceSet(discordId, "bone", true);
-    await members.giveDiceSet(discordId, "glass", true);
-    await members.giveDiceSet(discordId, "bone", true);
-    await members.chooseDiceSet(discordId, "glass");
-    expect((await members.get(discordId))?.dice).toEqual({
-      given: ["bone", "glass"],
-      set: "glass",
-    });
-    await members.giveDiceSet(discordId, "glass", false);
-    await members.chooseDiceSet(discordId, undefined);
-    expect((await members.get(discordId))?.dice).toEqual({ given: ["bone"] });
+    const filePath = path.join(folder, "members.json");
+    const onDisk = JSON.parse(await readFile(filePath, "utf8"));
+    onDisk.members[0].dice = { given: ["bone", "glass"] };
+    await writeFile(filePath, JSON.stringify(onDisk));
     await members.setDiceOn(discordId, false);
-    expect((await members.get(discordId))?.dice).toEqual({ given: ["bone"], off: true });
+    expect((await members.get(discordId))?.dice).toEqual({ given: ["bone", "glass"], off: true });
   });
 
   it("keeps someone's dice quiet until they turn the sound back on", async () => {

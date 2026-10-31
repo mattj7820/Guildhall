@@ -8,6 +8,8 @@ export interface DiceLook {
   roughness: number;
   /** Below 1, see-through, like glass or resin. */
   opacity: number;
+  /** A colour the die glows with, faintly in its body and brightly around its numbers. */
+  glow?: string;
 }
 
 /** How a set of dice sounds as it knocks on the table and on other dice. */
@@ -22,6 +24,12 @@ export interface DiceVoice {
   ringFor: number;
   /** How long the knock itself lasts, in seconds. */
   knockFor: number;
+}
+
+/** One die's look and sound, as thrown. */
+export interface DieLookAndVoice {
+  look: DiceLook;
+  voice: DiceVoice;
 }
 
 /** The theme's dice, and resin: a short knock with a low, soft ring. */

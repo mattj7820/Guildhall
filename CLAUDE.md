@@ -22,7 +22,8 @@ sheets with a game-style bag (players edit their own, the DM gives items; spells
 uses, hit dice and rests tracked on them, spells picked from both SRDs and the DM's spell notes, and
 prepared from a longer list; a player's sheet and bag beside the map; kept in the data folder), 3D
 dice (every roll thrown across the roller's own screen, landing on the result already rolled, which
-shows once they land; a switch in Settings, and dice sets the DM gives each member), sign-in with
+shows once they land; a switch in Settings; dice packs the DM gives, opened by the member into a collection of dice by
+rarity, with a favourite for each type), sign-in with
 Discord, where the DM lets players in and says who they play, and three themes (Storybook, Iron and
 Ember, Gemlight), each person's pick saved on their account. It's built to be hosted: a Docker
 image, with the vault copied read-only from Google Drive (see `docs/deployment.md`).
@@ -109,6 +110,12 @@ First e2e run needs `npx playwright install chromium`.
   (OAuth adapter over `fetch`), `discord-sign-in.ts` (the attempt cookie, `checkCallback`),
   `dev-login.ts`, `identify.ts` (who a request is and what they may see: the one reader of the
   session, for pages and websockets). `app/.server/viewer.ts` is the DM's preview-as-player cookie.
+- `app/.server/dice/`: `catalogue.ts` (`DICE_STYLES`: every style, server-only so undiscovered
+  dice never reach a browser; `diceStyle`), `collections.ts` (`DiceCollections`, the repository
+  over `dice.json`: packs, owned dice, favourites, history; `usableDice`, with old sets as kits;
+  `everyDie`, the DM's), `packs.ts` (`drawDie`: a pack's die by the odds, never past the most
+  worth having), `bag.ts` (`diceBag`, `favouriteFor`, `rollingDice`: the root loader's bag and
+  packs to open) and `view.ts` (`ownedView`, `collectionView`).
 - `app/.server/members/`: `members.ts` (repository over `members.json`: waiting list, approval,
   session keys), `players.ts` (`partyPlayers`). Shared shapes in `app/members/`.
 - `app/campaign/`: shared model (isomorphic): `Viewer` (with optional `playerId`), `Player`,
@@ -121,11 +128,16 @@ First e2e run needs `npx playwright install chromium`.
   `name-search.ts` (`matchRank`, `byName`: the pickers' search).
 - `app/dice/`: dice expressions (`parseDice`, `rollText`, `critical`), the `Rng` type (and
   `seededRng`, for what only has to look random), and the roll log (`rollInto`: labelled rolls,
-  one-roll advantage, Critical) with its `useRollLog` hook (isomorphic). `sets.ts` (`DICE_SETS`,
-  `DICE_SET_INFO`, `setsFor`, `chosenSet`) and `looks.ts` (`DiceLook`). `tray/`: 3D dice, loaded
-  only in the browser when first thrown: `shapes.ts` (d4 to d20, `faceUp`), `plan.ts`
-  (`planThrow`: the throw simulated with cannon-es, each die numbered to land on its roll; pure),
-  `scene.ts` (`throwDice`: drawn with three.js) and `sound.ts` (`DiceSound`, Web Audio).
+  one-roll advantage, Critical) with its `useRollLog` hook (isomorphic). `looks.ts` (`DiceLook`,
+  `DiceVoice`), `styles.ts` (`DIE_TYPES`, `RARITIES`, `RARITY_INFO` with the packs' odds, the
+  `DieStyle` shape), `collection.ts` (`DiceCollection`, `MOST_OF_A_DIE`, `CollectionView`,
+  `OpenedDie`), `bag.ts` (`DiceBag`, `stylesForThrow`: each thrown die's style) and
+  `pack-sound.ts` (`PackSound`). `tray/`: 3D dice, loaded only in the browser when first
+  thrown: `thrown.ts` (`thrownDice`, which dice are drawn), `shapes.ts` (d4 to d20, `faceUp`),
+  `plan.ts` (`planThrow`: the throw simulated with cannon-es, each die numbered to land on its
+  roll; pure), `scene.ts` (`throwDice`: drawn with three.js, each die in its own look and voice),
+  `showcase.ts` (`showDie`: one die turning, out of a pack) and `sound.ts` (`DiceSound`, Web
+  Audio).
 - `app/combat/`: the combat tracker's model (isomorphic): `types.ts`, `encounter.ts` (reducer,
   action creators, `perform`), `initiative.ts` (ordering, reroll tie-breaks), `turns.ts`, `hp.ts`,
   `visibility.ts` (`encounterForViewer`), `schema.ts` (zod),
@@ -298,7 +310,9 @@ First e2e run needs `npx playwright install chromium`.
   (resource route: a map's image by map ID), `vault-asset` (resource route), `view-mode` (the DM's
   preview toggle), `login` (sign-in page; dev sign-in action), `logout` (POST), `auth-discord`
   (starts Discord sign-in) and `auth-discord-callback`, `waiting` (for newcomers), `members`
-  (DM-only: approve, assign, remove), `settings` (each member's own: their theme), `characters` (the
+  (DM-only: approve, assign, remove, give packs and dice), `settings` (each member's own: their
+  theme and dice switches), `settings-dice` (`/settings/dice`: their collection, favourites and
+  packs), `dice-open` (JSON: POST opens one of their packs), `characters` (the
   party; start, relink and delete actions), `character` (`/characters/:id`, a sheet or companion),
   `character-changes` (JSON: GET the stored character, POST a batch of actions),
   `character-sheet-data` (JSON: a sheet's page data, for opening it beside the map),
@@ -306,8 +320,10 @@ First e2e run needs `npx playwright install chromium`.
   (JSON: every spell the viewer may pick, for the picker when it opens), `spell-text` (JSON: one
   spell's text as the viewer may read it), `credits` (icon and SRD credits).
 - `app/components/dice/`: `useDiceTray` (a roller's dice: throws each roll and holds it back from
-  what's shown until they land; the tray to place), `useDicePreferences` (on or off and the set,
-  from the root loader) and `looks.ts` (`themeLook`, `setLook`: resolved in the browser).
+  what's shown until they land; the tray to place), `useDicePreferences` (on or off and the bag,
+  from the root loader; `throwStyles`, each die's look and voice), `looks.ts` (`themeLook`,
+  `styleLook`: resolved in the browser), `DieIcon` (a die drawn flat in its colours),
+  `TryDice` and `PackOpening` (a pack opened over the page, and the die it held).
 - `app/components/combat/`: the tracker's UI (`CombatTracker` lays it out), and the prepared
   encounter editor (`PreparedEditor`). `TurnStrip` (the turn order as round faces, over a map or
   in a page), `PlayerFight` (a player's Combat page, and `EndMyTurn`), `FightStatus` (saving,
@@ -374,8 +390,11 @@ First e2e run needs `npx playwright install chromium`.
 - Dice: the `Rng` decides every result; 3D dice only show it (`planThrow` numbers them after the
   simulation), with their motion from `seededRng`, never the roll's `Rng`. Anything showing a roll
   reads the log from `useDiceTray`, so it waits for the dice. Dice are drawn only on the roller's
-  own screen; nothing about them is sent. Sets are the app's, given per member (`dice.given` in
-  `members.json`), never stored in bags.
+  own screen; nothing about them is sent. Dice styles are the app's, server-only, and members own
+  dice one at a time (`dice.json`, decision 84), never in bags. A pack's die is drawn on the server
+  as it's opened (`drawDie` with the injected `Rng`), only by its member's own click. A browser
+  gets only the styles its viewer owns. An ID in `DICE_STYLES` is never reused or renamed; names
+  and descriptions are the DM's to choose, functional, never lore.
 - Combat: every encounter change is an `EncounterAction` through the pure `encounterReducer`.
   Dice are rolled in action creators (or `perform`) and carried in the action. All randomness goes
   through an injected `Rng`; never call `Math.random` directly. IDs come from `newId()`

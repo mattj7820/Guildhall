@@ -5,7 +5,7 @@ import { uniqueName } from "./support/test-data";
 
 /**
  * 3D dice: rolls thrown across the screen, the result shown once they land, each member's switch
- * to turn them off, and the dice sets the DM gives. Rolls on Fixture PC One's sheet as Player One,
+ * to turn them off, and the packs and dice the DM gives. Rolls on Fixture PC One's sheet as Player One,
  * which changes nothing on it. Serial, since Player One's switch is shared by both tests.
  */
 test.describe.configure({ mode: "serial" });
@@ -53,7 +53,7 @@ test.describe("as Player One", () => {
   });
 });
 
-test("the DM gives a dice set, the member rolls with it, and it goes when taken back", async ({
+test("the DM gives packs and particular dice, and sees what each member has", async ({
   members,
   openAs,
 }) => {
@@ -70,16 +70,48 @@ test("the DM gives a dice set, the member rolls with it, and it goes when taken 
   await expect(them.settings.diceSoundSwitch).toHaveAttribute("aria-checked", "false");
   await them.settings.open();
   await expect(them.settings.diceSoundSwitch).toHaveAttribute("aria-checked", "false");
-  // Only the theme's dice until the DM gives a set.
-  await expect(them.settings.diceSets).toHaveCount(0);
 
-  await members.giveDice(name, "Bone");
-  await them.settings.open();
-  await them.settings.diceSet("Bone").click();
-  await expect(them.settings.diceSet("Bone")).toHaveAttribute("aria-pressed", "true");
-  await expect(them.settings.diceSet("The theme")).toHaveAttribute("aria-pressed", "false");
+  const dice = members.dice(name);
+  await expect(dice).toContainText("0 dice");
+  await members.givePack(name, "For the session recap");
+  await expect(dice).toContainText("0 dice, 1 pack unopened");
+  await members.giveDie(name, "Bone (Uncommon)", 20);
+  await members.giveDie(name, "Bone (Uncommon)", 20);
+  await expect(dice).toContainText("2 dice, 1 pack unopened");
+  await dice.getByText("2 dice").click();
+  await expect(dice.getByRole("listitem")).toHaveText(["Bone d20 ×2 (Uncommon)"]);
+  // Never more of one die than a roll could use: three d20s at most.
+  await members.giveDie(name, "Bone (Uncommon)", 20);
+  await members.giveDie(name, "Bone (Uncommon)", 20);
+  await expect(dice.getByRole("alert")).toContainText("as many of that die as a roll could use");
+  await members.giveDie(name, "Glass (Rare)", 6);
+  await expect(dice).toContainText("4 dice, 1 pack unopened");
 
-  await members.giveDice(name, "Bone", false);
+  // They see their dice and the pack, with why, and nothing of dice they haven't found.
   await them.settings.open();
-  await expect(them.settings.diceSets).toHaveCount(0);
+  await expect(them.settings.yourDice).toContainText("4 dice found, 1 pack to open");
+  await expect(them.page.getByRole("link", { name: "1 pack to open", exact: true })).toBeVisible();
+  await them.settings.yourDice.click();
+  await expect(them.diceCollection.collection).toHaveText("Collection (4 dice)");
+  await expect(them.diceCollection.packs).toHaveText(["A dice packFor the session recapOpen"]);
+  await expect(them.diceCollection.die("Bone d20")).toContainText("Bone ×3");
+  await expect(them.diceCollection.die("Glass d6")).toContainText("Rare");
+  expect(await them.page.content()).not.toContain("Gilded");
+
+  // Glass is rarer, so it would go first; Bone can be their favourite instead.
+  await them.diceCollection.rollFirst("Bone d20");
+  await them.diceCollection.open();
+  await expect(
+    them.diceCollection.die("Bone d20").getByRole("button", { name: "Rolled first" }),
+  ).toBeVisible();
+
+  // Opening the pack: its die is drawn on the server, and added to theirs.
+  const opening = await them.diceCollection.openPack();
+  await expect(opening).toContainText("For the session recap");
+  await expect(opening.getByRole("heading")).toHaveText(/^\w+ d(4|6|8|10|12|20)$/);
+  await opening.getByRole("button", { name: "Done" }).click();
+  await expect(opening).toHaveCount(0);
+  await expect(them.diceCollection.collection).toHaveText("Collection (5 dice)");
+  await expect(them.diceCollection.packs).toHaveCount(0);
+  await expect(them.page.getByRole("link", { name: "1 pack to open", exact: true })).toHaveCount(0);
 });

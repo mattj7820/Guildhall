@@ -3,7 +3,7 @@ import type { Rng } from "../rng";
 
 /**
  * The dice's sounds, made on the spot with Web Audio rather than recordings: a knock is a short
- * burst of filtered noise with a ring in the set's voice (resin, metal, glass, bone), and rolling
+ * burst of filtered noise with a ring in the die's voice (resin, metal, glass, bone), and rolling
  * along the table is a patter of tiny knocks, as many as the dice's speed calls for.
  */
 export class DiceSound {
@@ -11,7 +11,7 @@ export class DiceSound {
   private readonly out: GainNode;
   private readonly noise: AudioBuffer;
 
-  /** `rng` varies the noise and the patter; it's only sound, never a result. */
+  /** `rng` varies the noise and the patter; it's only sound, never a result. `voice` is the patter's. */
   constructor(
     volume: number,
     private readonly voice: DiceVoice,
@@ -25,8 +25,9 @@ export class DiceSound {
     for (let i = 0; i < samples.length; i++) samples[i] = rng(2001) / 1000 - 1.001;
   }
 
-  knock(strength: number, knockPitch: number) {
-    const { context, voice } = this;
+  /** A die knocking on the table or another die, in its own voice. */
+  knock(strength: number, knockPitch: number, voice = this.voice) {
+    const { context } = this;
     const pitch = knockPitch * voice.pitch;
     const at = context.currentTime;
     const gain = 0.9 * strength;
