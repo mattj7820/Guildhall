@@ -21,4 +21,24 @@ test.describe("Hub home page", () => {
     await expect(page).toHaveURL("/wiki");
     await expect(wiki.heading("Campaign wiki")).toBeVisible();
   });
+
+  test("the DM sets the next session, and players see it but can't change it", async ({
+    page,
+    openAs,
+  }) => {
+    const next = page.getByRole("heading", { name: "Next session" }).locator("..");
+    await page.getByRole("button", { name: /^(Set|Change) the date$/ }).click();
+    await next.getByLabel("Date and time").fill("2099-06-12T19:30");
+    await next.getByRole("button", { name: "Save" }).click();
+    await expect(next.locator("time")).toContainText(/12/);
+
+    const player = await openAs("playerOne");
+    await player.goto("/");
+    const theirs = player.page.getByRole("heading", { name: "Next session" }).locator("..");
+    await expect(theirs.locator("time")).toContainText(/12/);
+    await expect(theirs).toContainText(/in [\d,]+ days/);
+    await expect(player.page.getByRole("button", { name: /the date$/ })).toHaveCount(0);
+    const response = await player.api.postForm("/?index", { at: "2099-01-01T00:00:00.000Z" });
+    expect(response.status()).toBe(404);
+  });
 });

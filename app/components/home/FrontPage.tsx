@@ -7,13 +7,22 @@ import { useLiveMap } from "~/live/useLive";
 import { mapUrl } from "~/maps/urls";
 import { BannerMap } from "./BannerMap";
 import { HubIcon } from "./HubIcon";
+import { NextSession } from "./NextSession";
 import { PartyStrip } from "./PartyStrip";
 
 /**
  * The campaign as it stands: where the party is, a fight if one is on, the last session, and the
  * party; the modules underneath. The fight follows the live connection.
  */
-export function FrontPage({ data, modules }: { data: Data; modules: HubLink[] }) {
+export function FrontPage({
+  data,
+  modules,
+  forDm,
+}: {
+  data: Data;
+  modules: HubLink[];
+  forDm: boolean;
+}) {
   const [fight, setFight] = useState(data.fight);
   useLiveMap(FIGHT_ROOM, (message) => {
     if (message.type === "fight") setFight(fightSummary(message.fight));
@@ -53,13 +62,7 @@ export function FrontPage({ data, modules }: { data: Data; modules: HubLink[] })
               </p>
             </div>
             {fight && <FightBanner fight={fight} />}
-            {data.latestSession && (
-              <div className="gh-hero-session rounded-lg border border-line bg-surface/80 px-4 py-3">
-                <Link to={data.latestSession.url} className="text-link hover:underline">
-                  Last time: {data.latestSession.title}
-                </Link>
-              </div>
-            )}
+            <NextSession at={data.nextSession} forDm={forDm} latest={data.latestSession} />
           </div>
           {banner && <BannerMap banner={banner} />}
         </div>

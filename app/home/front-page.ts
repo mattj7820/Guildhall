@@ -11,6 +11,8 @@ export interface FrontPage {
   banner?: Banner;
   party: PartyMember[];
   latestSession?: { title: string; url: string };
+  /** When the table next meets: an instant (ISO 8601), shown in each browser's time zone. */
+  nextSession?: string;
   fight: FightSummary | null;
 }
 
