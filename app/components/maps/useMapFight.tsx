@@ -36,6 +36,7 @@ import { joinFromToken, perform } from "~/combat/encounter";
 import { monsterMarker } from "~/maps/tokens/fight-markers";
 import { EndFight } from "./EndFight";
 import { TOKEN_RADIUS } from "./TokenLayer";
+import { useDiceTray } from "~/components/dice/useDiceTray";
 
 interface Options {
   map: MapView;
@@ -74,7 +75,7 @@ export function useMapFight({
 }: Options) {
   const { tracker, status, hp, freeMovement, changeFreeMovement } = useSharedFight(fight, map.id);
   const { encounter } = tracker;
-  const rolls = useRollLog(tracker.rng);
+  const { rolls, tray } = useDiceTray(useRollLog(tracker.rng));
   const creatures = useMemo(
     () => new Map(catalogue.creatures.map((creature) => [creature.key, creature])),
     [catalogue.creatures],
@@ -342,6 +343,7 @@ export function useMapFight({
           Click the map to place {unplaced.map((monster) => monster.name).join(", ")}
         </p>
       )}
+      {tray}
       <div className="absolute bottom-3 left-3 z-10 w-72 opacity-95">
         <DiceRoller rolls={rolls} />
       </div>

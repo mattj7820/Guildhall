@@ -64,6 +64,10 @@ _The same fight as a player sees it: only what the DM has revealed, with their s
     checks, saves, skills and recharges, labelled "Goblin 1 · Scimitar attack". A natural 20 arms
     a critical-damage roll with doubled dice, and advantage applies to one roll at a time.
   - A dice roller (`2d6+3`, advantage and disadvantage), and undo.
+  - **3D dice:** every roll in Guildhall (here, on the map and on character sheets) is thrown
+    across the roller's own screen and lands on the result already rolled, which shows once they
+    land. Each member can turn them off in Settings, and the DM gives out dice sets (Gilded,
+    Glass, Bone, Blood) on the Members page.
   - **One fight for the table**, kept on the server: it survives reloads and restarts, and every
     change reaches everyone at once. Players follow it on their Combat page (or over the map): the
     turn order, their own characters' conditions and hit points (from their sheets), and an "End

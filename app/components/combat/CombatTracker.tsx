@@ -24,6 +24,7 @@ import { StatblockPanel } from "./StatblockPanel";
 import { panelClass } from "~/components/styles";
 import { TiePrompts } from "./TiePrompts";
 import { TurnBar } from "./TurnBar";
+import { useDiceTray } from "~/components/dice/useDiceTray";
 
 export function CombatTracker({
   catalogue,
@@ -52,7 +53,7 @@ export function CombatTracker({
     if (storage) clearEncounter(storage);
     setLeftover(undefined);
   }
-  const rolls = useRollLog(tracker.rng);
+  const { rolls, tray } = useDiceTray(useRollLog(tracker.rng), { fixed: true });
 
   const creatures = useMemo(
     () => new Map(catalogue.creatures.map((creature) => [creature.key, creature])),
@@ -97,6 +98,7 @@ export function CombatTracker({
     <main className="mx-auto max-w-7xl px-4 py-6">
       <CombatNav />
       <h1 className="sr-only">Combat tracker</h1>
+      {tray}
       {starting && (
         <StartPrepared
           key={starting.id}

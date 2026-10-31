@@ -25,6 +25,10 @@ locations, maps, characters, sessions).
   The map is the preparation (decision 80).
 - **Click-to-roll:** attacks, damage, checks, saves, skills and recharges roll straight from the
   tracker's statblocks, labelled, with natural 20s arming a critical-damage roll.
+- **3D dice:** every roll thrown across the roller's own screen (the DM's map and Combat page,
+  players' sheets and the sheet beside the map), landing on the result already rolled, which shows
+  once they land; with sounds, reduced motion, and a switch in Settings. Dice sets (Gilded, Glass,
+  Bone, Blood) the DM gives each member on the Members page (decision 82).
 - **Interactive maps (first slice):** maps from vault images, with outlined areas that lead to
   deeper maps and wiki notes, nesting to any depth with breadcrumbs. Drawn and reshaped in an
   editor with undo; a clean view for the table. Kept in the data folder.
@@ -164,7 +168,10 @@ locations, maps, characters, sessions).
   - **Bag, more:** vault images as item icons, an item's source linked to the map area where it
     was found, a party loot view, weight and containers, and an Actions tab.
   - Creating a character in the app from scratch (D&D Beyond style), once rules exist.
-- **Dice:** shared dice rolling, including DM hidden rolls. Complements physical dice on camera.
+- **Dice:** shared dice rolling, including DM hidden rolls, each thrown in the roller's set for
+  everyone watching (sketched in `docs/spikes/3d-dice.md`). Complements physical dice on camera.
+  More dice sets (patterns, real glass, their own sounds); the throw worked out in a Web Worker;
+  a click to skip to the result; d100 as a percentile pair.
 - **Monsters, more:**
   - A filter by home region or theme (forest, underdark, coast…), which the SRD data doesn't
     have; perhaps tags the DM gives.

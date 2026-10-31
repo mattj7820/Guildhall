@@ -20,6 +20,7 @@ import type { Parts } from "./SheetSections";
 import { SpellsTab } from "./Spells";
 import { Trackers } from "./Trackers";
 import { useSheetParts } from "./useSheetParts";
+import { useDiceTray } from "~/components/dice/useDiceTray";
 
 export type PanelTab = "sheet" | "bag";
 
@@ -58,7 +59,8 @@ const PARTS: [Part, string][] = [
 function CompactSheet({ page, editor }: { page: CharacterPage; editor: CharacterEditorControls }) {
   const { sheet } = editor.character as PlayerCharacter;
   const name = sheet.name.trim() || page.name;
-  const { parts, rolls } = useSheetParts(editor, sheet, name, false);
+  const { parts, rolls: sheetRolls } = useSheetParts(editor, sheet, name, false);
+  const { rolls, tray } = useDiceTray(sheetRolls, { fixed: true });
   const [part, setPart] = useState<Part>("actions");
   const [preparing, setPreparing] = useState(false);
   const portraitPath = sheet.portrait ?? page.notePortrait;
@@ -151,6 +153,7 @@ function CompactSheet({ page, editor }: { page: CharacterPage; editor: Character
       </div>
       <Checks parts={parts} />
       <LastRoll rolls={rolls} />
+      {tray}
     </>
   );
 }
@@ -187,14 +190,18 @@ function LastRoll({ rolls }: { rolls: RollLogControls }) {
   const latest = rolls.log.rolls[0];
   return (
     <p role="status" aria-label="Latest roll" className="text-sm">
-      {latest && (
-        <>
-          {latest.label}: <strong className="text-lg">{latest.result.total}</strong>{" "}
-          <span className="text-xs text-muted">{latest.result.expression}</span>
-          {latest.critical && " · Critical!"}
-          {latest.result.natural === 20 && " · Natural 20!"}
-          {latest.result.natural === 1 && " · Natural 1"}
-        </>
+      {rolls.rolling ? (
+        <span className="text-muted">Rolling&hellip;</span>
+      ) : (
+        latest && (
+          <>
+            {latest.label}: <strong className="text-lg">{latest.result.total}</strong>{" "}
+            <span className="text-xs text-muted">{latest.result.expression}</span>
+            {latest.critical && " · Critical!"}
+            {latest.result.natural === 20 && " · Natural 20!"}
+            {latest.result.natural === 1 && " · Natural 1"}
+          </>
+        )
       )}
     </p>
   );
