@@ -4,7 +4,7 @@
  */
 import type { EntityId, Visibility } from "~/campaign/types";
 import type { CombatantId, StatblockRef } from "~/combat/types";
-import type { AreaId, MapId, Point } from "../types";
+import type { AreaId, MapId, MapLink, Point } from "../types";
 
 export type TokenId = string;
 
@@ -151,6 +151,16 @@ export interface PartyFace {
 export interface InsideBadge {
   area: AreaId;
   members: PartyFace[];
+}
+
+/**
+ * Where a player may take their token from a map: into a deeper map through an area they see on
+ * it, or up to the map above, through the area there that leads here.
+ */
+export interface TravelWay {
+  direction: "in" | "up";
+  map: MapLink;
+  area: AreaId;
 }
 
 /** A map's tokens, and who's inside its areas, as one viewer may see them. */

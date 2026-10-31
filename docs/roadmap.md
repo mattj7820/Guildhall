@@ -49,6 +49,10 @@ locations, maps, characters, sessions).
   one click, set aside off the map to place again later, and sent between maps. All in a Tokens
   tab of the DM's side panel, beside the map's note and areas and the fight. Players see only
   what's shown and revealed, and never the note.
+- **Players travel between maps:** players take their own PC and the companion into a deeper map
+  through an area they can see (shared, not secret, at least half revealed), or back up to the map
+  above, landing inside the area they left or beside the party. Decided on the server; never into
+  a map with a fight on it, or out of the fight they're in.
 - **Battle maps (first slice):** any map becomes a battle map with a grid of 5 ft squares, set up
   in the editor (scaled to fit, offset to line up with a grid in the image, lines faint or
   hidden). Tokens fill their squares, come in sizes from Medium to Gargantuan, and snap to squares

@@ -21,6 +21,7 @@ export default [
   route("maps/:id/thumbnail", "routes/map-thumbnail.ts"),
   route("maps/:id/version", "routes/map-version.ts"),
   route("maps/:id/tokens", "routes/map-tokens.ts"),
+  route("maps/:id/travel", "routes/map-travel.ts"),
   route("maps/:id/tokens/:token/picture", "routes/map-token-picture.ts"),
   route("maps/:id/stunts", "routes/map-stunts.ts"),
   route("vault-asset/*", "routes/vault-asset.ts"),

@@ -109,3 +109,6 @@ export const tokenActionSchema: z.ZodType<TokenAction> = z.discriminatedUnion("t
 ]);
 
 export const tokenActionsSchema = z.array(tokenActionSchema).min(1).max(ACTIONS_MAX);
+
+/** A player taking a party member to another map: which token, and which map. */
+export const travelSchema = z.object({ token: id, to: id });

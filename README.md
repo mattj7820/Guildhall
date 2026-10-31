@@ -169,7 +169,8 @@ _The same fight as a player sees it: only what the DM has revealed, with their s
     they let go, so nobody fights over the blink dog (the DM can always take it).
   - Each party member is in one place: the maps above show who's inside an area, the Maps page says
     where you are, and Find takes you to your token. The DM brings the party into a deeper map
-    with one click.
+    with one click, and players take their own in through an area they can see (Go in, in the
+    map's Places), or back up to the map above, never into a map with a fight on it.
   - Tokens under the fog never reach players, not in the page, its data or the live connection:
     only their own, drawn "in the dark". An NPC's picture is served by its token, only to those
     who may see the token, and its note never reaches players at all. Live updates run over websockets on the same server,

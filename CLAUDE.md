@@ -239,7 +239,8 @@ First e2e run needs `npx playwright install chromium`.
   allowed actions; `removeCombatants` when monsters leave the fight), `tokens.ts` (`loadMapTokens`:
   a viewer's tokens and who's inside which area; `whereabouts`; `partyPlacements`, the DM's party
   panel; `notePicture` and `picturesIn`, NPCs' pictures by token; `tokensElsewhere` and
-  `tokenTools`, the DM's Tokens tab).
+  `tokenTools`, the DM's Tokens tab), `travel.ts` (`travelWays`: where a player may take their
+  token from a map; `fightStopsTravel`, `travelLanding`).
 - `app/.server/live/`: websockets. `sockets.ts` (`LiveSockets`: signs an upgrade in with
   `identify`, and a strict Origin check), `hub.ts` (`LiveHub`: connections, rooms per map,
   `publish` building each viewer's copy, not repeating a state, limits, pings, rechecking members),
@@ -277,7 +278,8 @@ First e2e run needs `npx playwright install chromium`.
   changes), `map-tile` (resource route: one tile of a map's image as players may see it),
   `map-thumbnail` (resource route: a map's thumbnail, the DM's whole or players' masked),
   `map-version` (JSON: what an open player map polls while its live connection is down: the version
-  and its tokens), `map-tokens` (JSON: POST token actions), `map-token-picture` (resource route:
+  and its tokens), `map-tokens` (JSON: POST token actions), `map-travel` (JSON: a player takes their token to
+  another map), `map-token-picture` (resource route:
   an NPC token's picture, only to those who may see the token),
   `map-stunts` (JSON: the DM plays a stunt or sound), `sound` (resource route: audio from the
   sounds folder only, for anyone signed in), `map-image` (resource route: a map's
@@ -330,7 +332,7 @@ First e2e run needs `npx playwright install chromium`.
   `TokenSettings` for the chosen token (with a monster's statblock and kept HP), `TokenLook` for a
   picture and colour, `TokenThumb` for a face in a list, `MonsterField` for a statblock, `PickBox`),
   `useTokenPick` (the DM's pick: Shift-click, a Shift-drag box) and `FightPickBar` (starting a
-  fight with it), `PlacingHint` (what the next click places), `InsideBadges`, `TokenDistances`. For battle maps: `GridLayer`, `GridSettings` (the editor's
+  fight with it), `PlacingHint` (what the next click places), `Travel` (a player's Go in and Back to buttons), `InsideBadges`, `TokenDistances`. For battle maps: `GridLayer`, `GridSettings` (the editor's
   section), and `useBattleTools` (the toolbar over the map and what its tools draw, for the DM and
   players alike), built from `MapToolbar`, `useMapTools` (which tool, the ruler and spell area,
   shortcuts), `MeasureLayer`, `SpellAreaLayer` and `SpellAreaOptions`. `MapSwitch` is a setting
@@ -382,8 +384,9 @@ First e2e run needs `npx playwright install chromium`.
   An NPC is a marker with a note: its name is its own (never read from the note), its picture is
   served by the token through `map-token-picture`, never by path or note, and players get exactly
   what the DM sees on a shown token and nothing of its note. A marker set aside is on no map: sent
-  to no one, listed for the DM. Only the DM moves a token between maps, or brings one here (a
-  move naming this map).
+  to no one, listed for the DM. Only the DM moves a token between maps with a token action, or brings one here (a
+  move naming this map); players take their own between maps only through `map-travel`, along the
+  ways `travelWays` gives them (decision 81).
 - The fight: one at a time, in `fight.json`. The DM's tracker saves the whole encounter with the
   revision it last had (a stale save gets the newer fight back, to take up); players only end
   their own turn, checked on the server. Everyone's copy comes from `fightView`, never the stored

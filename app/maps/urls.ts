@@ -46,6 +46,10 @@ export function mapVersionUrl(id: MapId): string {
 }
 
 /** Where token changes are sent, as JSON. */
+export function mapTravelUrl(id: MapId): string {
+  return `${mapUrl(id)}/travel`;
+}
+
 export function mapTokensUrl(id: MapId): string {
   return `${mapUrl(id)}/tokens`;
 }
