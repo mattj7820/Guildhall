@@ -26,18 +26,31 @@ export class DiceCollection extends AppPage {
     return opening;
   }
 
-  /** A die they've found, by its style and type ("Bone d20"). */
-  die(label: string) {
-    return this.page.getByRole("listitem", { name: label, exact: true });
+  /** A type's slot, which shows the die it rolls first ("d20 Bone"). */
+  type(sides: number) {
+    return this.page.getByRole("tab", { name: new RegExp(`^d${sides} `) });
   }
 
-  /** Makes a die the first its type rolls with, and waits until it's saved. */
+  /** Shows one type's dice. */
+  async showType(sides: number) {
+    await this.type(sides).click();
+    await expect(this.type(sides)).toHaveAttribute("aria-selected", "true");
+  }
+
+  /** The type shown: its dice, by rarity. */
+  get shown() {
+    return this.page.getByRole("tabpanel");
+  }
+
+  /** A die of the type shown, by its style and type ("Bone d20"); pressed when rolled first. */
+  die(label: string) {
+    return this.shown.getByRole("button", { name: label, exact: true });
+  }
+
+  /** Makes a die (of the type shown) the first its type rolls with, and waits until it's saved. */
   async rollFirst(label: string) {
-    const button = this.die(label).getByRole("button", { name: "Roll these first" });
-    await button.click();
-    await expect(this.die(label).getByRole("button", { name: "Rolled first" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    await this.die(label).click();
+    await expect(this.shown.getByRole("button", { name: "Rarest first instead" })).toBeVisible();
+    await expect(this.die(label)).toHaveAttribute("aria-pressed", "true");
   }
 }

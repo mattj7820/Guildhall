@@ -94,16 +94,24 @@ test("the DM gives packs and particular dice, and sees what each member has", as
   await them.settings.yourDice.click();
   await expect(them.diceCollection.collection).toHaveText("Collection (4 dice)");
   await expect(them.diceCollection.packs).toHaveText(["A dice packFor the session recapOpen"]);
+  // Each type's slot shows what it rolls first: their only d20 is Bone, and no d8s at all.
+  await expect(them.diceCollection.type(20)).toHaveAccessibleName("d20 Bone");
+  await expect(them.diceCollection.type(8)).toHaveAccessibleName("d8 Theme's dice");
   await expect(them.diceCollection.die("Bone d20")).toContainText("Bone ×3");
-  await expect(them.diceCollection.die("Glass d6")).toContainText("Rare");
+  await expect(them.diceCollection.die("Bone d20")).toHaveAttribute("aria-pressed", "true");
+  await expect(them.diceCollection.shown).toContainText("(your rarest)");
+  await them.diceCollection.showType(6);
+  await expect(them.diceCollection.shown).toContainText("RareGlass");
+  await expect(them.diceCollection.die("Glass d6")).toBeVisible();
   expect(await them.page.content()).not.toContain("Gilded");
 
-  // Glass is rarer, so it would go first; Bone can be their favourite instead.
+  // Chosen rather than only the rarest, it stays chosen.
+  await them.diceCollection.showType(20);
   await them.diceCollection.rollFirst("Bone d20");
   await them.diceCollection.open();
-  await expect(
-    them.diceCollection.die("Bone d20").getByRole("button", { name: "Rolled first" }),
-  ).toBeVisible();
+  await them.diceCollection.showType(20);
+  await expect(them.diceCollection.shown).not.toContainText("(your rarest)");
+  await expect(them.diceCollection.die("Bone d20")).toHaveAttribute("aria-pressed", "true");
 
   // Opening the pack: its die is drawn on the server, and added to theirs.
   const opening = await them.diceCollection.openPack();
