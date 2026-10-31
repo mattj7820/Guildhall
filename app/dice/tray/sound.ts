@@ -33,7 +33,7 @@ export class DiceSound {
     const band = context.createBiquadFilter();
     band.type = "bandpass";
     band.frequency.value = pitch;
-    band.Q.value = 4;
+    band.Q.value = 3;
     const envelope = context.createGain();
     envelope.gain.setValueAtTime(gain, at);
     envelope.gain.exponentialRampToValueAtTime(0.001, at + 0.07);
@@ -42,9 +42,9 @@ export class DiceSound {
 
     const ring = context.createOscillator();
     ring.type = "triangle";
-    ring.frequency.value = pitch * 1.3;
+    ring.frequency.value = pitch * 0.75;
     const ringing = context.createGain();
-    ringing.gain.setValueAtTime(gain * 0.25, at);
+    ringing.gain.setValueAtTime(gain * 0.15, at);
     ringing.gain.exponentialRampToValueAtTime(0.001, at + 0.05);
     ring.connect(ringing).connect(this.out);
     ring.start(at);
@@ -54,7 +54,7 @@ export class DiceSound {
   /** One frame of rolling along the table, from 0 (still) to 1 (tumbling fast). */
   roll(speed: number) {
     if (speed < 0.05 || this.rng(100) > speed * 60) return;
-    this.knock(0.06 + speed * 0.12, 1400 + this.rng(1200));
+    this.knock(0.06 + speed * 0.12, 600 + this.rng(500));
   }
 
   close() {

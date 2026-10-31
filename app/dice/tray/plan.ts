@@ -121,7 +121,7 @@ function simulate(dice: readonly DieRoll[], rng: Rng, { halfX, halfZ }: TrayBoun
         knocks.push({
           frame: step,
           strength: Math.min(1, speed / 14) ** 1.4,
-          pitch: (event.body.mass > 0 ? 3200 : 1700) * pitch * (0.9 + 0.2 * random()),
+          pitch: (event.body.mass > 0 ? 1500 : 800) * pitch * (0.9 + 0.2 * random()),
         });
       },
     );

@@ -88,7 +88,7 @@ export function throwDice(
   const sound = volume > 0 ? new DiceSound(volume, rng) : undefined;
   const last = plan.frames.length - 1;
   let heard = reducedMotion ? plan.knocks.length : 0;
-  if (reducedMotion) sound?.knock(0.4, 2200);
+  if (reducedMotion) sound?.knock(0.4, 1000);
   let started: number | undefined;
   let frame = reducedMotion ? last : 0;
   let raf = 0;
