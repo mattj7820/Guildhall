@@ -3,7 +3,7 @@
  * only when something's first thrown (it brings three.js and cannon-es).
  */
 import * as THREE from "three";
-import type { DiceLook, DiceVoice } from "../looks";
+import type { DiceLook, DieLookAndVoice } from "../looks";
 import { seededRng } from "../rng";
 import type { DieRoll } from "../roll";
 import { planThrow, quaternionAt, type PlannedDie } from "./plan";
@@ -19,8 +19,8 @@ const FOV = 35;
 export interface ThrowOptions {
   /** Where the dice start and how they spin (the same seed throws the same way). */
   seed: number;
-  look: DiceLook;
-  voice: DiceVoice;
+  /** Each thrown die's look and sound (by `thrownDice`), so one roll can mix styles. */
+  styles: readonly DieLookAndVoice[];
   /** 0 for silence. */
   volume: number;
   /** No tumbling: the dice appear where they land. */
@@ -36,7 +36,7 @@ export interface ThrowOptions {
 export function throwDice(
   container: HTMLElement,
   rolls: readonly DieRoll[],
-  { seed, look, voice, volume, reducedMotion, onLanded }: ThrowOptions,
+  { seed, styles, volume, reducedMotion, onLanded }: ThrowOptions,
 ): () => void {
   let renderer: THREE.WebGLRenderer;
   try {
@@ -80,13 +80,13 @@ export function throwDice(
   table.receiveShadow = true;
   scene.add(table);
   disposables.push(table.geometry, table.material);
-  const meshes = plan.dice.map((die) => {
-    const mesh = buildDie(dieShape(die.sides), die, look, disposables);
+  const meshes = plan.dice.map((die, index) => {
+    const mesh = buildDie(dieShape(die.sides), die, styles[index].look, disposables);
     scene.add(mesh);
     return mesh;
   });
 
-  const sound = volume > 0 ? new DiceSound(volume, voice, rng) : undefined;
+  const sound = volume > 0 ? new DiceSound(volume, styles[0].voice, rng) : undefined;
   const last = plan.frames.length - 1;
   let heard = reducedMotion ? plan.knocks.length : 0;
   if (reducedMotion) sound?.knock(0.4, 1000);
@@ -109,8 +109,8 @@ export function throwDice(
       // A few knocks at once at most: more is a din, not dice.
       let together = 0;
       while (heard < plan.knocks.length && plan.knocks[heard].frame <= frame) {
-        const { strength, pitch } = plan.knocks[heard++];
-        if (together++ < 3) sound.knock(strength, pitch);
+        const { die, strength, pitch } = plan.knocks[heard++];
+        if (together++ < 3) sound.knock(strength, pitch, styles[die].voice);
       }
       sound.roll(plan.rolling[frame] ?? 0);
     }

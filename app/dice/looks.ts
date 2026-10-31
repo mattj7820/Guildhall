@@ -24,6 +24,12 @@ export interface DiceVoice {
   knockFor: number;
 }
 
+/** One die's look and sound, as thrown. */
+export interface DieLookAndVoice {
+  look: DiceLook;
+  voice: DiceVoice;
+}
+
 /** The theme's dice, and resin: a short knock with a low, soft ring. */
 export const RESIN_VOICE: DiceVoice = {
   pitch: 1,

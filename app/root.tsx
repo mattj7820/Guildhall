@@ -13,9 +13,10 @@ import {
   useRouteLoaderData,
 } from "react-router";
 import { authMiddleware } from "~/.server/auth/middleware";
-import { chosenSet } from "~/.server/dice/catalogue";
+import { bagFor } from "~/.server/dice/bag";
 import { ViewToggle } from "~/components/ViewToggle";
-import { accountContext, viewerContext } from "~/context";
+import { accountContext, servicesContext, viewerContext } from "~/context";
+import { EMPTY_BAG } from "~/dice/bag";
 import { moduleOf } from "~/theme/modules";
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -23,8 +24,12 @@ import "./app.css";
 /** Resolves who is signed in once per request; every loader reads it from context. */
 export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
 
-export function loader({ context }: Route.LoaderArgs) {
+export async function loader({ context }: Route.LoaderArgs) {
   const account = context.get(accountContext);
+  const bag =
+    account.kind === "member"
+      ? await bagFor(context.get(servicesContext).dice, account.member, account.isDm)
+      : EMPTY_BAG;
   return {
     role: context.get(viewerContext).role,
     user: account.kind === "member" ? { name: account.member.name, isDm: account.isDm } : undefined,
@@ -35,9 +40,9 @@ export function loader({ context }: Route.LoaderArgs) {
         ? {
             on: !account.member.dice?.off,
             sound: !account.member.dice?.quiet,
-            style: chosenSet(account.member.dice, account.isDm),
+            bag,
           }
-        : { on: true, sound: true },
+        : { on: true, sound: true, bag },
   };
 }
 

@@ -3,7 +3,7 @@ import type { LoggedRoll, RollLog } from "~/dice/roll-log";
 import { throwsAny } from "~/dice/tray/thrown";
 import type { RollLogControls } from "~/dice/useRollLog";
 import { useStuntSettings } from "~/maps/stunt-settings";
-import { useDicePreferences } from "./useDicePreferences";
+import { throwStyles, useDicePreferences } from "./useDicePreferences";
 
 /** If the dice never land (a hidden tab draws nothing), the result shows anyway after this. */
 const LONGEST_THROW_MS = 6000;
@@ -53,8 +53,7 @@ export function useDiceTray(
       const { preferences, volume } = settings.current;
       stop = throwDice(container, diceOf(thrown), {
         seed: throwSeed(thrown),
-        look: preferences.look(container),
-        voice: preferences.voice,
+        styles: throwStyles(diceOf(thrown), preferences.bag, container),
         volume,
         reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
         onLanded: () => {

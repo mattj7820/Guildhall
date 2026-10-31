@@ -1,5 +1,6 @@
 import { useRouteLoaderData } from "react-router";
-import { RESIN_VOICE, type DiceLook, type DiceVoice } from "~/dice/looks";
+import { EMPTY_BAG, stylesForThrow, type DiceBag } from "~/dice/bag";
+import { RESIN_VOICE, type DieLookAndVoice } from "~/dice/looks";
 import type { loader as rootLoader } from "~/root";
 import { styleLook, themeLook } from "./looks";
 
@@ -8,22 +9,35 @@ export interface DicePreferences {
   enabled: boolean;
   /** Whether the dice make a sound (the map's Effects menu can still mute it, and sets the volume). */
   sound: boolean;
-  /** The look of this person's dice, resolved where they're drawn. */
-  look: (within: HTMLElement) => DiceLook;
-  /** How they sound: the set's own voice, or resin for the theme's dice. */
-  voice: DiceVoice;
+  /** The dice they roll with, from their collection. */
+  bag: DiceBag;
 }
 
 /**
- * This person's dice, as they chose in Settings: on unless they turned them off, in the set they
- * picked or the theme's colours.
+ * This person's dice, as they chose in Settings: on unless they turned them off, picked up from
+ * their collection.
  */
 export function useDicePreferences(): DicePreferences {
   const dice = useRouteLoaderData<typeof rootLoader>("root")?.dice;
   return {
     enabled: dice?.on ?? true,
     sound: dice?.sound ?? true,
-    look: dice?.style ? styleLook(dice.style) : themeLook,
-    voice: dice?.style?.voice ?? RESIN_VOICE,
+    bag: dice?.bag ?? EMPTY_BAG,
   };
+}
+
+/**
+ * How each thrown die looks and sounds, resolved where they're drawn: a die from their bag in its
+ * style, and once they've run out of a type, the theme's dice, which sound like resin.
+ */
+export function throwStyles(
+  rolls: readonly { sides: number }[],
+  bag: DiceBag,
+  within: HTMLElement,
+): DieLookAndVoice[] {
+  return stylesForThrow(rolls, bag).map((style) =>
+    style
+      ? { look: styleLook(style)(within), voice: style.voice }
+      : { look: themeLook(within), voice: RESIN_VOICE },
+  );
 }

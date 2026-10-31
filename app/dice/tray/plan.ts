@@ -3,10 +3,8 @@ import * as THREE from "three";
 import type { Rng } from "../rng";
 import type { DieRoll } from "../roll";
 import { dieShape, faceUp } from "./shapes";
-import { TRAY_SIDES } from "./thrown";
+import { thrownDice } from "./thrown";
 
-/** More than this many dice in one roll: the first ones are thrown, all are in the text. */
-export const MOST_DICE_THROWN = 10;
 const STEP = 1 / 60;
 /** No throw lasts longer than this, still or not. */
 const LONGEST_STEPS = 60 * 3.5;
@@ -35,7 +33,8 @@ export interface PlannedDie {
 export interface ThrowPlan {
   dice: PlannedDie[];
   frames: Float32Array[];
-  knocks: { frame: number; strength: number; pitch: number }[];
+  /** `die` is the knocking die's index, for its voice. */
+  knocks: { frame: number; die: number; strength: number; pitch: number }[];
   rolling: number[];
 }
 
@@ -45,7 +44,7 @@ export interface ThrowPlan {
  * result. `rng` only sets where they start and how they spin.
  */
 export function planThrow(rolls: readonly DieRoll[], rng: Rng, bounds: TrayBounds): ThrowPlan {
-  const thrown = rolls.filter((die) => TRAY_SIDES.has(die.sides)).slice(0, MOST_DICE_THROWN);
+  const thrown = thrownDice(rolls);
   const { frames, knocks, rolling } = simulate(thrown, rng, bounds);
   const last = frames[frames.length - 1];
   const dice = thrown.map((die, index): PlannedDie => {
@@ -120,6 +119,7 @@ function simulate(dice: readonly DieRoll[], rng: Rng, { halfX, halfZ }: TrayBoun
         if (speed < 1.5) return;
         knocks.push({
           frame: step,
+          die: index,
           strength: Math.min(1, speed / 14) ** 1.4,
           pitch: (event.body.mass > 0 ? 1500 : 800) * pitch * (0.9 + 0.2 * random()),
         });
