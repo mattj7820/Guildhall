@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { statblockKey, type CreatureOption } from "~/combat/types";
 import type { MapGrid } from "~/maps/grid/grid";
 import { buttonClass, iconButtonClass, labelClass } from "~/components/styles";
 import type { TokenAction } from "~/maps/tokens/actions";
@@ -9,14 +10,20 @@ import { PartyTokens } from "./PartyTokens";
 import { PlacingHint, type Placing } from "./PlacingHint";
 import { TokenDistances } from "./TokenDistances";
 import { TokenSettings } from "./TokenSettings";
+import { PickBox } from "./PickBox";
 import { TokenThumb } from "./TokenThumb";
 
 interface Props {
   mapId: MapId;
   party: PartyPlacement[];
   tools: TokenTools;
+  /** The statblocks a marker may join a fight with. */
+  creatures: CreatureOption[];
   tokens: TokenView[];
   selected?: TokenView;
+  /** The tokens picked on the map, for a fight. */
+  picked: readonly string[];
+  onTogglePick: (id: string) => void;
   placing?: Placing;
   error?: string;
   onPlace: (placing: Placing | undefined) => void;
@@ -41,8 +48,11 @@ export function TokensTab({
   mapId,
   party,
   tools,
+  creatures,
   tokens,
   selected,
+  picked,
+  onTogglePick,
   placing,
   error,
   onPlace,
@@ -53,6 +63,9 @@ export function TokensTab({
   size,
 }: Props) {
   const [adding, setAdding] = useState(false);
+  const byKey = new Map(creatures.map((creature) => [creature.key, creature]));
+  const monsterOf = (token: TokenView) =>
+    token.marker?.statblock && byKey.get(statblockKey(token.marker.statblock));
   const markers = tokens.filter((token) => token.kind === "marker").sort(byName);
   const aside = tools.elsewhere.filter((each) => each.aside);
   const elsewhere = tools.elsewhere.filter((each) => !each.aside);
@@ -71,6 +84,8 @@ export function TokensTab({
         mapId={mapId}
         party={party}
         tokens={tokens}
+        picked={picked}
+        onTogglePick={onTogglePick}
         onPlace={onPlace}
         onSelect={onSelect}
         onFind={onFind}
@@ -90,6 +105,7 @@ export function TokensTab({
         {adding && (
           <AddTokenForm
             notes={tools.notes}
+            creatures={creatures}
             existing={markers.map((marker) => marker.name)}
             onCancel={() => setAdding(false)}
             onPlace={(drafts) => {
@@ -114,6 +130,9 @@ export function TokensTab({
                 key={marker.id}
                 marker={marker}
                 chosen={marker.id === selected?.id}
+                monster={monsterOf(marker)}
+                picked={picked.includes(marker.id)}
+                onTogglePick={() => onTogglePick(marker.id)}
                 onSelect={() => onSelect(marker)}
                 send={send}
               />
@@ -150,6 +169,8 @@ export function TokensTab({
           key={selected.id}
           token={selected}
           tools={tools}
+          creatures={creatures}
+          monster={monsterOf(selected)}
           onClose={() => onSelect(undefined)}
           send={send}
         >
@@ -163,11 +184,18 @@ export function TokensTab({
 function MarkerRow({
   marker,
   chosen,
+  monster,
+  picked,
+  onTogglePick,
   onSelect,
   send,
 }: {
   marker: TokenView;
   chosen: boolean;
+  /** The statblock it joins a fight with. */
+  monster?: CreatureOption;
+  picked: boolean;
+  onTogglePick: () => void;
   onSelect: () => void;
   send: (actions: TokenAction[]) => void;
 }) {
@@ -176,6 +204,7 @@ function MarkerRow({
     <li
       className={`flex items-center gap-2 rounded px-1 py-0.5 ${chosen ? "bg-info-surface" : ""}`}
     >
+      <PickBox name={marker.name} picked={picked} onToggle={onTogglePick} />
       <TokenThumb token={marker} />
       <button
         type="button"
@@ -183,6 +212,12 @@ function MarkerRow({
         onClick={onSelect}
       >
         {marker.name}
+        {monster && (
+          <span className="ml-1 text-xs text-muted" title={`Joins a fight as ${monster.name}`}>
+            ⚔ {monster.name}
+          </span>
+        )}
+        {marker.down && <span className="ml-1 text-xs text-danger">down</span>}
         {marker.hidden === "fog" && shown && (
           <span className="ml-1 text-xs text-muted">(under the fog)</span>
         )}

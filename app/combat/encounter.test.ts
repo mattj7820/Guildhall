@@ -4,6 +4,7 @@ import {
   addMonsters,
   createEncounter,
   encounterReducer,
+  joinFromToken,
   MAX_AUTOMATIC_REROLL_ROUNDS,
   perform,
   startBlockers,
@@ -74,6 +75,37 @@ describe("adding monsters", () => {
         .combatants.map((c) => c.id)
         .sort(),
     ).toEqual(["goblin-1", "goblin-2"]);
+  });
+});
+
+describe("joining from a token", () => {
+  const token = { id: "t1", name: "Snaggletooth", hidden: false };
+
+  it("goes by the token's name, rolling initiative and then HP as any monster does", () => {
+    const state = apply(createEncounter(), joinFromToken(minion, token, sequenceRng([10, 3, 4])));
+    expect(state.combatants).toMatchObject([
+      { id: "t1", name: "Snaggletooth", initiative: 12, hp: { current: 7, max: 7 } },
+    ]);
+    expect(state.combatants[0]).not.toHaveProperty("hidden");
+  });
+
+  it("comes in with the hit points it kept, without rolling them", () => {
+    const hurt = { ...token, hp: { current: 3, max: 9 } };
+    const state = apply(createEncounter(), joinFromToken(minion, hurt, sequenceRng([10])));
+    expect(hpOf(state, "Snaggletooth")).toEqual({ current: 3, max: 9, temp: 0 });
+  });
+
+  it("joins hidden when players can't see its token", () => {
+    const action = joinFromToken(minion, { ...token, hidden: true }, sequenceRng([10, 1, 1]));
+    expect(byName(apply(createEncounter(), action), "Snaggletooth")).toMatchObject({
+      hidden: true,
+    });
+  });
+
+  it("leaves the statblock's numbering to monsters without a name of their own", () => {
+    let state = apply(createEncounter(), joinFromToken(minion, token, sequenceRng([10, 1, 1])));
+    state = apply(state, addMonsters(minion, 1, sequenceRng([5, 1, 1])));
+    expect(names(state).sort()).toEqual(["Fixture Minion 1", "Snaggletooth"]);
   });
 });
 

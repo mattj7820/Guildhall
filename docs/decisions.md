@@ -1533,3 +1533,31 @@ tracker can't use, spell fields the picker would drop), so mistakes show before 
 them. Both load the app's own modules through Vite, so they read notes exactly as the app does.
 The vault's path is `VAULT_PATH` from the gitignored `.env`, so nothing personal is committed.
 Guildhall bundles no SRD items, so items always come from the DM.
+
+## 80. Fights start from tokens on the map; a monster is the same marker all through
+
+**Date:** 2026-10-31
+
+**Context.** Preparing a fight meant a separate list (prepared encounters), placed on a map, with
+monsters becoming new tokens when it started: named "Goblin 2" by the tracker, red, then grey
+markers after the fight. The DM sets up scenes with tokens anyway, and wanted the tokens to be
+the fight. A plan where prepared fights pointed at markers (2026-10-14) was dropped for this.
+
+**Decision.** The map is the preparation. A marker may carry a monster's statblock (picked from the
+vault's and both SRDs', or a note's own). The DM picks tokens on the map (Shift-click, a box drawn
+with Shift held, or ticks in the Tokens tab) and starts a fight with them, or adds them to the
+running one: markers with a statblock join as monsters, party members as themselves.
+
+A monster is the same marker all through. It's linked to its combatant (`combatant`, set by a
+`joinFight` token action) and keeps its own name (the combatant takes it, so players see "Snaggle",
+not "Goblin 1"), colour and picture. While it's in the fight, the fight says whether it's hidden
+(one switch: showing the marker reveals the monster) and its hit points; at 0 it's crossed out,
+never greyed. When it leaves the fight (taken out, or the fight left on the map) it stays a plain
+marker with the hit points it had (`hp`, which only fights set; Full HP forgets them) and shown as
+its monster was; clearing the monsters at the end removes it. Monsters added in the tracker are
+placed as linked markers too, so every monster behaves the same. Tokens stored as `combatant`
+tokens by earlier versions are still read.
+
+The links are saved before the fight changes, so the answer to them can't arrive after the
+fight's own live update and undo it in the browser. Prepared encounters keep working for now, to
+be retired once this has been used at the table.

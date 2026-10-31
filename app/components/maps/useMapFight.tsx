@@ -32,6 +32,8 @@ import type { TokenView } from "~/maps/tokens/types";
 import type { MapView, Point } from "~/maps/types";
 import { mapUrl } from "~/maps/urls";
 import { newId } from "~/shared/ids";
+import { joinFromToken, perform } from "~/combat/encounter";
+import { monsterMarker } from "~/maps/tokens/fight-markers";
 import { EndFight } from "./EndFight";
 import { TOKEN_RADIUS } from "./TokenLayer";
 
@@ -47,6 +49,9 @@ interface Options {
   starting?: PreparedEncounter | null;
   /** The next click on the map places the whole party. */
   onBringParty: () => void;
+  /** The tokens the DM has picked on the map. */
+  pickedTokens: readonly string[];
+  onClearPick: () => void;
 }
 
 /**
@@ -64,6 +69,8 @@ export function useMapFight({
   onFind,
   starting,
   onBringParty,
+  pickedTokens,
+  onClearPick,
 }: Options) {
   const { tracker, status, hp, freeMovement, changeFreeMovement } = useSharedFight(fight, map.id);
   const { encounter } = tracker;
@@ -86,7 +93,9 @@ export function useMapFight({
   const shown = encounter.combatants.find((c) => c.id === (shownId ?? encounter.activeId));
   const tokenOf = (combatant: string) => tokens.find((token) => token.combatant === combatant);
   const active = encounter.phase === "active" ? encounter.activeId : null;
-  const unplaced = encounter.combatants.filter((c) => c.kind === "monster" && !tokenOf(c.id));
+  const unplaced = encounter.combatants.filter(
+    (c): c is MonsterCombatant => c.kind === "monster" && !tokenOf(c.id),
+  );
   const squaresOf = (c: Combatant) =>
     (c.statblock && creatures.get(statblockKey(c.statblock))?.squares) || 1;
 
@@ -94,19 +103,10 @@ export function useMapFight({
   const { dispatch } = tracker;
 
   // Monsters picked on the map, for damage or healing all at once.
-  const [pickedIds, setPickedIds] = useState<string[]>([]);
-  const picked = encounter.combatants.filter(
-    (c): c is MonsterCombatant => c.kind === "monster" && pickedIds.includes(c.id),
-  );
-  function pickToken(token: TokenView, additive: boolean) {
-    const id = token.combatant;
-    const monster = id && encounter.combatants.some((c) => c.id === id && c.kind === "monster");
-    if (!monster) return setPickedIds(additive ? pickedIds : []);
-    if (!additive) return setPickedIds([id]);
-    setPickedIds(
-      pickedIds.includes(id) ? pickedIds.filter((each) => each !== id) : [...pickedIds, id],
-    );
-  }
+  const picked = encounter.combatants.filter((c): c is MonsterCombatant => {
+    const token = c.kind === "monster" ? tokenOf(c.id) : undefined;
+    return !!token && pickedTokens.includes(token.id);
+  });
 
   /**
    * A prepared fight starting here: the chosen party joins, and the monsters stand where they
@@ -116,20 +116,11 @@ export function useMapFight({
     const { encounter: started, placed } = startPreparedOnMap(prepared, party, tracker.rng);
     tracker.replace(started);
     void send(
-      placed.map(({ combatant, at }): TokenAction => {
+      placed.flatMap(({ combatant, at }): TokenAction[] => {
         const monster = started.combatants.find((c) => c.id === combatant);
-        const size = monster ? squaresOf(monster) : 1;
-        return {
-          type: "place",
-          token: {
-            kind: "combatant",
-            id: newId(),
-            map: map.id,
-            at,
-            ...(size > 1 && { size }),
-            combatant,
-          },
-        };
+        if (monster?.kind !== "monster") return [];
+        const place = { id: newId(), map: map.id, at, size: squaresOf(monster) };
+        return [{ type: "place", token: monsterMarker(monster, place) }];
       }),
     );
     void fetch(`/combat/prepared/${encodeURIComponent(prepared.id)}`, {
@@ -138,6 +129,57 @@ export function useMapFight({
       body: JSON.stringify({ intent: "markRun" }),
     });
     void navigate(mapUrl(map.id), { replace: true });
+  }
+
+  /**
+   * Tokens picked on the map join the fight, or start one: markers with a statblock as monsters
+   * where they stand (each under its own name, with the hit points it kept, hidden if players
+   * can't see it), and party members as themselves. One change to the tracker, undone in one.
+   */
+  async function joinFromTokens(picked: readonly TokenView[]) {
+    let next = encounter;
+    const links: TokenAction[] = [];
+    const party = new Set(
+      encounter.combatants.flatMap((c) => (c.kind === "player" && c.entityId ? [c.entityId] : [])),
+    );
+    for (const token of picked) {
+      if (token.combatant) continue;
+      if (token.kind === "character") {
+        const member = catalogue.party.find((each) => each.entityId === token.note);
+        if (!member?.player || party.has(member.entityId)) continue;
+        next = perform(
+          next,
+          {
+            type: "addPlayerCombatant",
+            id: newId(),
+            name: member.name,
+            controller: member.player,
+            entityId: member.entityId,
+            statblock: member.statblock,
+          },
+          tracker.rng,
+        );
+        continue;
+      }
+      const statblock = token.marker?.statblock;
+      const creature = statblock && creatures.get(statblockKey(statblock));
+      if (token.kind !== "marker" || !creature) continue;
+      const id = newId();
+      const joining = {
+        id,
+        name: token.name,
+        hp: token.hp,
+        hidden: token.visibility !== "players",
+      };
+      next = perform(next, joinFromToken(creature, joining, tracker.rng), tracker.rng);
+      links.push({ type: "joinFight", id: token.id, combatant: id });
+    }
+    if (next === encounter) return;
+    setOpen(true);
+    // The links are saved first: the answer to them is then never newer than the fight's own
+    // update, which shows the markers in the fight.
+    if (links.length > 0) await send(links);
+    tracker.replace(next);
   }
 
   /** Where the monsters stand here, for keeping the fight as a prepared one. */
@@ -169,14 +211,7 @@ export function useMapFight({
       }
       return {
         type: "place",
-        token: {
-          kind: "combatant",
-          id: newId(),
-          map: map.id,
-          at: point,
-          ...(size > 1 && { size }),
-          combatant: monster.id,
-        },
+        token: monsterMarker(monster, { id: newId(), map: map.id, at: point, size }),
       };
     });
     void send(placed);
@@ -191,7 +226,7 @@ export function useMapFight({
   const panel = (
     <section aria-label="Fight" className="flex flex-col gap-3">
       {picked.length > 0 && (
-        <MonsterDamage monsters={picked} dispatch={dispatch} onClear={() => setPickedIds([])} />
+        <MonsterDamage monsters={picked} dispatch={dispatch} onClear={onClearPick} />
       )}
       {starting && (
         <StartPrepared
@@ -323,21 +358,18 @@ export function useMapFight({
     /** Whether the next click on the map places monsters. */
     placing: unplaced.length > 0,
     placeMonsters,
-    /** A token chosen on the map shows its combatant in the tracker; monsters are picked. */
-    selectToken: (token: TokenView, additive = false) => {
+    joinFromTokens,
+    /** Hides a monster in the fight from players, or reveals it. */
+    setHidden: (combatant: string, hidden: boolean) =>
+      dispatch({ type: "setHidden", id: combatant, hidden }),
+    /** Whether there's a fight to add to, rather than one to start. */
+    running: encounter.combatants.length > 0,
+    /** A token chosen on the map shows its combatant in the tracker. */
+    selectToken: (token: TokenView) => {
       if (token.combatant) setShownId(token.combatant);
-      pickToken(token, additive);
     },
-    /** Picks the monsters of these tokens (those a spell area catches). */
-    pickTokens: (ids: readonly string[]) =>
-      setPickedIds(
-        tokens.flatMap((token) =>
-          ids.includes(token.id) && token.kind === "combatant" && token.combatant
-            ? [token.combatant]
-            : [],
-        ),
-      ),
-    /** The picked monsters' tokens, shown selected. */
-    pickedTokenIds: picked.flatMap((monster) => tokenOf(monster.id)?.id ?? []),
+    /** Whether a token is a monster in this fight, to pick for damage. */
+    isMonster: (token: TokenView) =>
+      encounter.combatants.some((c) => c.id === token.combatant && c.kind === "monster"),
   };
 }

@@ -17,6 +17,10 @@ locations, maps, characters, sessions).
 - **Prepared encounters:** set up fights before a session (monsters with rolled HP, companions,
   notes), then start them at the table by picking who's playing. Kept in the server's data folder,
   and reusable. One set up on a map starts there, with its monsters in place.
+- **Fights from tokens on the map:** markers carry a monster's statblock; the DM picks tokens
+  (Shift-click, a Shift-drag box, ticks) and starts a fight with them, or adds them to the running
+  one. Each stays the same token, under its own name and look; afterwards it keeps its hit points.
+  The map is the preparation (decision 80).
 - **Click-to-roll:** attacks, damage, checks, saves, skills and recharges roll straight from the
   tracker's statblocks, labelled, with natural 20s arming a critical-damage roll.
 - **Interactive maps (first slice):** maps from vault images, with outlined areas that lead to
@@ -107,12 +111,16 @@ locations, maps, characters, sessions).
   - **The fight, more:** conditions shown on tokens; a player's own tokens' turns flagged ("your
     turn") with a sound; moving a whole fight to another map; tidying markers left after a fight
     in one click; a fight's party brought in by those chosen to play, not the whole party.
+  - **Fights from tokens, more:** retire the Prepared encounters page now that the map does its
+    job (decision 80), once fights from tokens have been used at the table; a monster's statblock
+    from the token's settings while it's in a fight; the statblock link for NPC markers whose note
+    gains one later.
 - **Tokens, next steps:** fog clearing around the party as their tokens move, if the DM wants it;
   the DM's fog tools and token placing in the map's toolbar; a lock for the DM to stop players
   moving mid-scene; undo for the DM's moves; touch dragging for tablets and phones.
   - **NPCs, more:** a link to a shown NPC's wiki note for players, when they may read it and the
     token goes by the note's own name; a tokens folder in the vault for custom art; monsters from
-    statblocks (the vault's or the SRD's) as tokens outside a fight; dragging a token from the Tokens tab onto the map.
+    dragging a token from the Tokens tab onto the map.
   - **Handouts:** the DM showing a note or image to the players as a pop-up on the map page, kept
     for them to re-read, in a Handouts tab beside Tokens.
 - **Live, more:** the same hub for shared dice rolls (with the DM's hidden rolls), from the

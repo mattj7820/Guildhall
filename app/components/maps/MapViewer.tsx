@@ -13,6 +13,7 @@ import { useMapTokens } from "~/maps/tokens/useMapTokens";
 import type { AreaView, MapView, Size } from "~/maps/types";
 import { AreaShape } from "./AreaShape";
 import { ClickCatcher } from "./ClickCatcher";
+import { FightPickBar } from "./FightPickBar";
 import { FogAreaList } from "./FogAreaList";
 import { FogLayer } from "./FogLayer";
 import { FogPainter } from "./FogPainter";
@@ -42,6 +43,7 @@ import { TokensTab } from "./TokensTab";
 import { useBattleTools } from "./useBattleTools";
 import { useFogTools } from "./useFogTools";
 import { useMapFight } from "./useMapFight";
+import { useTokenPick } from "./useTokenPick";
 import { useTokenPlacing } from "./useTokenPlacing";
 
 /** How dark the fog is for the DM, who sees the map through it. */
@@ -113,6 +115,7 @@ export function MapViewer({
     onPlaced: setSelectedTokenId,
   });
   const selectedToken = tokens.find((token) => token.id === selectedTokenId);
+  const pick = useTokenPick(tokens, !fogMode && !presenting && !placing);
   const fight = useMapFight({
     map,
     fight: fightFromPage,
@@ -122,8 +125,24 @@ export function MapViewer({
     onFind: find,
     starting,
     onBringParty: () => setPlacing({ kind: "party", name: "the whole party" }),
+    pickedTokens: pick.picked,
+    onClearPick: pick.clear,
   });
   const combat = fight.open && !fogMode;
+  /**
+   * While a marker is in the fight, its monster's hiding is the one switch: showing or hiding the
+   * marker reveals or hides the monster (and the marker follows when it leaves the fight).
+   */
+  const hidingInTheFight = (actions: TokenAction[]): TokenAction[] =>
+    actions.flatMap((action) => {
+      if (action.type !== "editMarker" || !action.visibility) return [action];
+      const combatant = tokens.find((each) => each.id === action.id)?.combatant;
+      if (!combatant) return [action];
+      fight.setHidden(combatant, action.visibility !== "players");
+      const rest = { ...action, visibility: undefined };
+      // Nothing else changed: nothing to send.
+      return Object.values(rest).filter((value) => value !== undefined).length > 2 ? [rest] : [];
+    });
   const placingMonsters = combat && fight.placing && !presenting;
   // The map's tools belong to battle maps, and step aside for the fog tools and placing tokens.
   const battle = useBattleTools({
@@ -131,12 +150,15 @@ export function MapViewer({
     tokens: tokens,
     enabled: !fogMode && !presenting && !placing && !placingMonsters,
   });
-  // Choosing a token on the map opens its settings, unless the fight's picking monsters.
+  // Choosing a token on the map opens its settings, unless the fight's open; Shift-click picks.
+  // In the fight, choosing a monster picks it alone, for damage.
   const [showTokens, setShowTokens] = useState(0);
   const selectToken = (token: TokenView, how?: { additive: boolean }) => {
+    if (how?.additive) return pick.toggle(token.id);
     setSelectedTokenId(token.id);
     if (!combat) setShowTokens((count) => count + 1);
-    fight.selectToken(token, how?.additive);
+    fight.selectToken(token);
+    pick.set(combat && fight.isMonster(token) ? [token.id] : []);
   };
   const [stuntMode, setStuntMode] = useState(false);
   const { settings: stuntSettings, change: changeStunts } = useStuntSettings();
@@ -225,6 +247,17 @@ export function MapViewer({
           )}
           {battle.toolbar}
           {combat && !presenting && fight.overMap}
+          {!presenting && (
+            <FightPickBar
+              picked={tokens.filter((token) => pick.picked.includes(token.id))}
+              running={fight.running}
+              onJoin={(joining) => {
+                void fight.joinFromTokens(joining);
+                pick.clear();
+              }}
+              onClear={pick.clear}
+            />
+          )}
           <MapCanvas
             name={map.name}
             size={map.size}
@@ -296,12 +329,13 @@ export function MapViewer({
                   />
                 )}
                 <StuntLayer under stunts={stunts.points} size={map.size} canvas={canvas} />
+                {!stuntArmed && pick.boxLayer(map.size, canvas)}
                 <TokenLayer
                   tokens={presenting ? tokens.filter((token) => !token.hidden) : tokens}
                   size={map.size}
                   canvas={canvas}
                   selectedId={presenting ? undefined : selectedTokenId}
-                  alsoSelected={combat ? fight.pickedTokenIds : undefined}
+                  alsoSelected={presenting ? undefined : pick.picked}
                   onSelect={
                     stuntArmed
                       ? (token) =>
@@ -376,7 +410,7 @@ export function MapViewer({
                     <button
                       type="button"
                       className={`${buttonClass} self-start`}
-                      onClick={() => fight.pickTokens(battle.caught)}
+                      onClick={() => pick.set(battle.caught)}
                     >
                       Pick the monsters in the area
                     </button>
@@ -418,8 +452,11 @@ export function MapViewer({
                 mapId={map.id}
                 party={party}
                 tools={tokenTools}
+                creatures={catalogue.creatures}
                 tokens={tokens}
                 selected={selectedToken}
+                picked={pick.picked}
+                onTogglePick={pick.toggle}
                 placing={placing}
                 error={tokenError}
                 onPlace={setPlacing}
@@ -427,7 +464,7 @@ export function MapViewer({
                 onFind={find}
                 grid={map.grid}
                 size={map.size}
-                send={(actions) => void send(actions)}
+                send={(actions) => void send(hidingInTheFight(actions))}
               />
             }
           />

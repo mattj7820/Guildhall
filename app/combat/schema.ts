@@ -4,7 +4,7 @@ import { SRD_SOURCES } from "~/campaign/srd";
 import { CONDITIONS, type Encounter, type PreparedEncounter } from "./types";
 
 const player = z.object({ id: z.string(), name: z.string() });
-const statblockRef = z.object({
+export const statblockRef = z.object({
   entityId: z.string(),
   name: z.string(),
   // A source this version doesn't know (stored by a later one) is read as the vault's: the ref

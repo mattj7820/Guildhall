@@ -4,6 +4,7 @@
  */
 import type { MapId, Point } from "../types";
 import type { EntityId } from "~/campaign/types";
+import type { CombatantId, StatblockRef } from "~/combat/types";
 import type { MarkerPicture, MarkerToken, Token, TokenId, TokenSize } from "./types";
 
 export type TokenAction =
@@ -23,7 +24,15 @@ export type TokenAction =
   | { type: "setSize"; id: TokenId; size: TokenSize }
   /** Takes a marker off the map but keeps it, to place again (the DM's). */
   | { type: "setAside"; id: TokenId }
-  /** Changes what's given of a marker; a `null` note or picture takes it away. */
+  /**
+   * A marker joins the fight as this combatant (the DM's). It's unlinked on the server when the
+   * combatant leaves the fight.
+   */
+  | { type: "joinFight"; id: TokenId; combatant: CombatantId }
+  /**
+   * Changes what's given of a marker; a `null` note, picture or statblock takes it away. A `null`
+   * hp forgets what it kept from its last fight, so it joins the next one fresh.
+   */
   | {
       type: "editMarker";
       id: TokenId;
@@ -33,6 +42,8 @@ export type TokenAction =
       note?: EntityId | null;
       picture?: MarkerPicture | null;
       icon?: string;
+      statblock?: StatblockRef | null;
+      hp?: null;
     };
 
 export interface Applied {
@@ -81,6 +92,10 @@ export function applyTokenAction(tokens: readonly Token[], action: TokenAction):
       return replace(tokens, action.id, (token) =>
         token.kind === "marker" ? editMarker(token, action) : token,
       );
+    case "joinFight":
+      return replace(tokens, action.id, (token) =>
+        token.kind === "marker" ? { ...token, combatant: action.combatant } : token,
+      );
   }
 }
 
@@ -96,9 +111,12 @@ function editMarker(
     ...(action.note && { note: action.note }),
     ...(action.picture && { picture: action.picture }),
     ...(action.icon && { icon: action.icon }),
+    ...(action.statblock && { statblock: action.statblock }),
   };
   if (action.note === null) next = without(next, "note");
   if (action.picture === null) next = without(next, "picture");
+  if (action.statblock === null) next = without(next, "statblock");
+  if (action.hp === null) next = without(next, "hp");
   return next;
 }
 

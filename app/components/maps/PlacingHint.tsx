@@ -24,5 +24,5 @@ export type Placing =
 /** A new marker, as the DM fills it in, before it has a place. */
 export type MarkerDraft = Pick<
   MarkerToken,
-  "name" | "colour" | "visibility" | "note" | "picture" | "icon"
+  "name" | "colour" | "visibility" | "note" | "picture" | "icon" | "statblock" | "size"
 >;

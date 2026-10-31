@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   challengeValue,
+  creatureLines,
   creatureTypes,
   findCreatures,
+  statblockOfNote,
   tagOf,
   type CreatureFilters,
   type CreatureTag,
@@ -133,5 +135,34 @@ describe("challengeValue", () => {
     ["a lot", undefined],
   ])("reads %j as %j", (rating, value) => {
     expect(challengeValue(rating)).toBe(value);
+  });
+});
+
+describe("creatureLines", () => {
+  it("says where each is from and its challenge, with the DM's own note when it differs", () => {
+    expect([...creatureLines(CREATURES).keys()]).toEqual([
+      "Winter Wolf (2014, CR 3)",
+      "Wolf (2014, CR 1/4)",
+      "Dire Wolf (2024, CR 1)",
+      "Wolf (2024, CR 1/4)",
+      "Fixture Werewolf Lord (Mine, CR 5)",
+      "Wolf (Mine: Fixture Pack, CR 1/2)",
+      "Goblin Warrior (2024, CR 1/4)",
+      "Fixture Bare (Mine)",
+    ]);
+  });
+
+  it("numbers lines that would read the same, so each finds its own creature", () => {
+    const twins = [creature("Wolf", "srd-5.1"), creature("Wolf", "srd-5.1", { key: "other" })];
+    const lines = creatureLines(twins);
+    expect([...lines.keys()]).toEqual(["Wolf (2014)", "Wolf (2014) #2"]);
+    expect(lines.get("Wolf (2014) #2")?.key).toBe("other");
+  });
+});
+
+describe("statblockOfNote", () => {
+  it("finds a vault note's statblock by its entity ID, never an SRD monster's", () => {
+    expect(statblockOfNote(CREATURES, "Bestiary/Wolf")?.noteTitle).toBe("Fixture Pack");
+    expect(statblockOfNote(CREATURES, "wolf")).toBeUndefined();
   });
 });

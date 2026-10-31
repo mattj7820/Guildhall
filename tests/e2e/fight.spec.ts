@@ -12,3 +12,4 @@ import "./fight/click-to-roll";
 import "./fight/prepared-encounters";
 import "./fight/map-fight";
 import "./fight/srd-monsters";
+import "./fight/fights-from-tokens";

@@ -56,6 +56,12 @@ interface NewMonster {
   maxHp: number;
   /** The d20 face; the statblock's bonus is added when the monster joins. Null when preparing. */
   initiativeRoll: number | null;
+  /** Its own name (a token's), rather than the statblock's numbered ("Goblin 2"). */
+  name?: string;
+  /** Hit points it comes in with, if not full (kept from a fight before). */
+  currentHp?: number;
+  /** Joins hidden from players (an ambusher). */
+  hidden?: boolean;
 }
 
 export function createEncounter(id: string = newId()): Encounter {
@@ -70,7 +76,7 @@ export function encounterReducer(state: Encounter, action: EncounterAction): Enc
       const added = action.monsters.map((monster): MonsterCombatant => ({
         kind: "monster",
         id: monster.id,
-        name: `${creature.name} ${++number}`,
+        name: monster.name ?? `${creature.name} ${++number}`,
         initiative:
           monster.initiativeRoll === null
             ? null
@@ -82,7 +88,11 @@ export function encounterReducer(state: Encounter, action: EncounterAction): Enc
         statblock: creature.ref,
         initiativeBonus: creature.initiativeBonus,
         armorClass: creature.armorClass,
-        hp: fullHp(monster.maxHp),
+        hp:
+          monster.currentHp === undefined
+            ? fullHp(monster.maxHp)
+            : { ...fullHp(monster.maxHp), current: clampHp(monster.currentHp, monster.maxHp) },
+        ...(monster.hidden && { hidden: true }),
       }));
       return arrange(
         state,
@@ -270,6 +280,33 @@ export function addMonsters(
   };
 }
 
+/**
+ * A monster joining from a token on the map: under the token's own name, with the hit points it
+ * kept from its last fight (else rolled, as `addMonsters` does), hidden if players can't see it.
+ */
+export function joinFromToken(
+  creature: MonsterSource & HpSource,
+  token: { id: CombatantId; name: string; hp?: { current: number; max: number }; hidden: boolean },
+  rng: Rng,
+): EncounterAction {
+  const initiativeRoll = rng(20);
+  const { ref, name, armorClass, initiativeBonus } = creature;
+  return {
+    type: "addMonsters",
+    creature: { ref, name, armorClass, initiativeBonus },
+    monsters: [
+      {
+        id: token.id,
+        initiativeRoll,
+        maxHp: token.hp?.max ?? rollMaxHp(creature, rng),
+        name: token.name,
+        ...(token.hp && { currentHp: token.hp.current }),
+        ...(token.hidden && { hidden: true }),
+      },
+    ],
+  };
+}
+
 /** Fresh HP for one monster, rolled the same way as when it was added. */
 export function rerollHp(creature: HpSource, id: CombatantId, rng: Rng): EncounterAction {
   return { type: "resetHp", id, maxHp: rollMaxHp(creature, rng) };
@@ -284,6 +321,8 @@ export function rollMonsterInitiatives(state: Encounter, rng: Rng): EncounterAct
       .map((c) => ({ id: c.id, roll: rng(20) })),
   };
 }
+
+const clampHp = (hp: number, max: number) => Math.max(0, Math.min(max, Math.floor(hp)));
 
 function rollMaxHp(creature: HpSource, rng: Rng): number {
   const rolled = creature.hitDice ? rollText(creature.hitDice, rng) : undefined;

@@ -35,8 +35,20 @@ describe("tokenSchema", () => {
     expect(tokenSchema.parse(npc)).toEqual(npc);
   });
 
+  it("keeps a monster's statblock, the hit points it kept, and its place in the fight", () => {
+    const goblin = aMarker({
+      statblock: { entityId: "goblin", name: "Goblin", source: "srd-5.2" },
+      hp: { current: 3, max: 7 },
+      combatant: "c1",
+    });
+    expect(tokenSchema.parse(goblin)).toEqual(goblin);
+  });
+
   it.each([
     ["note", { note: "" }],
+    ["statblock", { statblock: { name: "Goblin" } }],
+    ["hp", { hp: { current: -2, max: 7 } }],
+    ["combatant", { combatant: "" }],
     ["picture", { picture: "photo" }],
     ["icon", { icon: 7 }],
     ["aside", { aside: "yes" }],
@@ -80,6 +92,8 @@ describe("tokenActionsSchema", () => {
       { type: "remove", id: "a" },
       { type: "editMarker", id: "a", colour: "blue" },
       { type: "editMarker", id: "a", note: null, picture: "icon", icon: "hood" },
+      { type: "editMarker", id: "a", statblock: { entityId: "goblin", name: "Goblin" } },
+      { type: "editMarker", id: "a", statblock: null, hp: null },
       { type: "setAside", id: "a" },
     ];
     expect(tokenActionsSchema.parse(actions)).toEqual(actions);
@@ -90,6 +104,8 @@ describe("tokenActionsSchema", () => {
     ["too many actions", Array.from({ length: 51 }, () => ({ type: "remove", id: "a" }))],
     ["an unknown action", [{ type: "teleport", id: "a" }]],
     ["a move off the image", [{ type: "move", id: "a", to: [-0.1, 0.5] }]],
+    // Hit points come only from fights; the DM can only forget them.
+    ["setting hit points", [{ type: "editMarker", id: "a", hp: { current: 1, max: 7 } }]],
   ])("refuses %s", (_name, actions) => {
     expect(tokenActionsSchema.safeParse(actions).success).toBe(false);
   });

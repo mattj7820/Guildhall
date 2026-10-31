@@ -279,11 +279,13 @@ export class MapView extends MapCanvasPage {
 
   /**
    * Adds NPCs or markers in the Tokens tab and places them where the DM clicks: from a note (by
-   * its path) if given, numbered if more than one, with an icon if given.
+   * its path) if given, a monster's statblock (by its line in the list, "Fixture Minion (Mine,
+   * CR 1/8)") if given, numbered if more than one, with an icon if given.
    */
   async addToken({
     name,
     note,
+    monster,
     count = 1,
     icon,
     shown,
@@ -291,6 +293,7 @@ export class MapView extends MapCanvasPage {
   }: {
     name: string;
     note?: string;
+    monster?: string;
     count?: number;
     icon?: string;
     shown: boolean;
@@ -301,6 +304,7 @@ export class MapView extends MapCanvasPage {
     const form = this.page.getByRole("form", { name: "New token" });
     if (note) await form.getByLabel("Note (optional)").fill(note);
     await form.getByLabel("Name", { exact: true }).fill(name);
+    if (monster) await form.getByLabel(/^Monster/).fill(monster);
     if (count > 1) await form.getByLabel("How many").fill(String(count));
     await form.getByRole("button", { name: "teal" }).click();
     if (icon) {
@@ -325,6 +329,28 @@ export class MapView extends MapCanvasPage {
   /** The chosen token's settings. */
   tokenSettings(name: string) {
     return this.page.getByRole("region", { name: `Token: ${name}` });
+  }
+
+  /* Picking tokens, for a fight */
+
+  /** Adds a token to the pick, or takes it out, as Shift-clicking it does. */
+  async shiftClickToken(name: string) {
+    await this.token(name).click({ modifiers: ["Shift"] });
+  }
+
+  /** Draws a box with Shift held, picking the tokens inside. */
+  async pickWithBox(from: Point, to: Point) {
+    await this.page.keyboard.down("Shift");
+    await this.page.mouse.move(...xy(await this.at(from)));
+    await this.page.mouse.down();
+    await this.page.mouse.move(...xy(await this.at(to)), { steps: 4 });
+    await this.page.mouse.up();
+    await this.page.keyboard.up("Shift");
+  }
+
+  /** The bar over the map listing the picked tokens a fight can be started with. */
+  get pickBar() {
+    return this.page.getByRole("region", { name: "Picked for a fight" });
   }
 
   /** Shows a token to players, or hides it, with its button in the list. */

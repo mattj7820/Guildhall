@@ -52,6 +52,7 @@ const CONTENT_COLOUR_FILES = [
   "app/components/maps/Stunts.tsx",
   "app/components/maps/TokenLayer.tsx",
   "app/components/maps/TokenThumb.tsx",
+  "app/components/maps/useTokenPick.tsx",
   "app/components/maps/VertexHandles.tsx",
 ];
 

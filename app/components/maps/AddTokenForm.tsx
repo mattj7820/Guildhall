@@ -4,6 +4,9 @@ import { guessTokenIcon } from "~/maps/tokens/icons";
 import { numberedNames } from "~/maps/tokens/naming";
 import { MARKER_NAME_MAX } from "~/maps/tokens/schema";
 import type { NoteChoice } from "~/maps/tokens/types";
+import { statblockOfNote } from "~/combat/find-creatures";
+import type { CreatureOption } from "~/combat/types";
+import { MonsterField } from "./MonsterField";
 import { NotePicker } from "./NotePicker";
 import type { MarkerDraft } from "./PlacingHint";
 import { TokenLook, type Look } from "./TokenLook";
@@ -12,17 +15,21 @@ import { TokenLook, type Look } from "./TokenLook";
 const COUNT_MAX = 20;
 
 /**
- * Adding NPCs or markers, quickly mid-session: a note (its picture, if it has one, else an icon
- * guessed from its name), a name, how many (numbered, carrying on from those already here), the
+ * Adding NPCs, monsters or markers, quickly mid-session: a note (its picture, if it has one, else
+ * an icon guessed from its name; its statblock, if it has one), a monster's statblock (its name
+ * and size, for a fight), a name, how many (numbered, carrying on from those already here), the
  * look, and whether players see them. New tokens are DM-only unless shown.
  */
 export function AddTokenForm({
   notes,
+  creatures,
   existing,
   onPlace,
   onCancel,
 }: {
   notes: NoteChoice[];
+  /** The statblocks a token may join a fight with. */
+  creatures: CreatureOption[];
   /** The names already on this map, to carry on numbering. */
   existing: string[];
   onPlace: (markers: MarkerDraft[]) => void;
@@ -33,6 +40,9 @@ export function AddTokenForm({
   const [count, setCount] = useState(1);
   const [shown, setShown] = useState(false);
   const [look, setLook] = useState<Look>({ colour: "red" });
+  const [creature, setCreature] = useState<CreatureOption>();
+  // Remounts the monster field when a note chooses its statblock.
+  const [chosenBy, setChosenBy] = useState(0);
   const note = notes.find((each) => each.slug === slug);
   const names = numberedNames(name || "Token", count, existing);
 
@@ -58,6 +68,8 @@ export function AddTokenForm({
             ...(note && { note: note.id }),
             ...(look.picture && { picture: look.picture }),
             ...(look.icon && { icon: look.icon }),
+            ...(creature && { statblock: creature.ref }),
+            ...(creature?.squares && creature.squares > 1 && { size: creature.squares }),
           })),
         );
       }}
@@ -72,6 +84,26 @@ export function AddTokenForm({
           if (!picked) return;
           setName(picked.title);
           suggest(picked.title, picked.imageUrl);
+          const own = statblockOfNote(creatures, picked.id);
+          if (own) {
+            setCreature(own);
+            setChosenBy(chosenBy + 1);
+          }
+        }}
+      />
+      <MonsterField
+        key={chosenBy}
+        label="Monster (optional, for fights)"
+        creatures={creatures}
+        value={creature}
+        onChange={(picked) => {
+          setCreature(picked);
+          if (!picked) return;
+          // A name from the statblock, unless a note or the DM gave one.
+          if (!note && !name.trim()) {
+            setName(picked.name);
+            if (!look.picture) suggest(picked.name);
+          }
         }}
       />
       <div className="flex gap-2">

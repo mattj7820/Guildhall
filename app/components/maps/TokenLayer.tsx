@@ -53,7 +53,7 @@ interface Props {
   size: Size;
   canvas: CanvasTools;
   selectedId?: string;
-  /** Also selected: several monsters picked at once in a fight. */
+  /** Also selected: the tokens the DM has picked, for a fight or damage. */
   alsoSelected?: readonly string[];
   /** The DM chooses a token to change it; with Shift (`additive`), adding to a pick. */
   onSelect?: (token: TokenView, how: { additive: boolean }) => void;
@@ -285,6 +285,7 @@ function TokenMark({
           } stroke-stone-900 group-focus-visible:fill-sky-400`}
         />
         <TokenFace token={token} r={r} />
+        {token.down && <DownMark r={r} scale={scale} />}
       </g>
       {token.hp && <HitPointsBar hp={token.hp} r={r} scale={scale} />}
       <text
@@ -389,6 +390,19 @@ export function initials(name: string): string {
   const number = /\s(\d+)$/.exec(name)?.[1];
   const first = name.charAt(0).toUpperCase();
   return number ? `${first}${number}` : first;
+}
+
+/** A cross over a monster at 0 hit points, so it keeps its own colour and picture. */
+function DownMark({ r, scale }: { r: number; scale: number }) {
+  const arm = r * 0.7;
+  const path = `M ${-arm} ${-arm} L ${arm} ${arm} M ${arm} ${-arm} L ${-arm} ${arm}`;
+  return (
+    <g className="pointer-events-none" strokeLinecap="round">
+      <circle r={r} className="fill-stone-900/45" />
+      <path d={path} strokeWidth={5 / scale} className="stroke-stone-900" />
+      <path d={path} strokeWidth={2.5 / scale} className="stroke-white" />
+    </g>
+  );
 }
 
 /** What a screen reader hears, and what tests find a token by. */
