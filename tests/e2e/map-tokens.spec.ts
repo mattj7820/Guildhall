@@ -298,6 +298,48 @@ test("the DM brings everyone into a deeper map, and players find where they are"
   await expect(player.page.getByRole("status", { name: "Zoom level" })).not.toHaveText("100%");
 });
 
+test("a player takes their token into a revealed deeper map, and back up", async ({
+  api,
+  lit: outer,
+  maps,
+  openAs,
+}) => {
+  const inner = await sharedMap(api);
+  const behindSecret = await sharedMap(api);
+  const hidden = await api.createMap({ name: uniqueName("Hidden") });
+  const area = (id: string, name: string, map: string, visibility: string, x: number) => ({
+    id,
+    name,
+    outline: rectangle([x, 0.1], [x + 0.08, 0.9]),
+    map,
+    visibility,
+  });
+  // In the revealed left third: a way in, a secret way in, and a way to a map that isn't shared.
+  await api.saveMap(outer, {
+    areas: [
+      area("gate", "Fixture gate", inner.id, "players", 0.02),
+      area("secret", "Fixture secret door", behindSecret.id, "dm", 0.11),
+      area("closed", "Fixture closed door", hidden.id, "players", 0.2),
+    ],
+  });
+  const view = await maps.view(outer);
+  await view.placeMember("Fixture PC One", LIT);
+
+  const player = await openAs("playerOne");
+  const theirs = await player.maps.view(outer);
+  await expect(player.page.getByRole("button", { name: /Take Fixture PC One/ })).toHaveCount(1);
+  await theirs.travel("Fixture PC One", "into Fixture gate");
+  await expect(player.page).toHaveURL(new RegExp(`${inner.url}$`));
+  await expect(theirs.token("Fixture PC One")).toBeVisible();
+  // The DM sees them go.
+  await expect(view.token("Fixture PC One")).toBeHidden();
+
+  await theirs.travel("Fixture PC One", `back to ${outer.name}`);
+  await expect(player.page).toHaveURL(new RegExp(`${outer.url}$`));
+  await theirs.expectTokenNear("Fixture PC One", [0.06, 0.5]);
+  await expect(view.token("Fixture PC One")).toBeVisible();
+});
+
 test("on a battle map, tokens fill their squares and snap to them, unless the DM turns it off", async ({
   api,
   lit,

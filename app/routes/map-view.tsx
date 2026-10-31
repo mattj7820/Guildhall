@@ -4,6 +4,7 @@ import { combatCatalogue } from "~/.server/combat/catalogue";
 import { fightView } from "~/.server/combat/fight-view";
 import { loadMapView, mapVersion } from "~/.server/maps/load";
 import { loadMapTokens, partyPlacements, tokenTools } from "~/.server/maps/tokens";
+import { loadTravelWays } from "~/.server/maps/travel";
 import { notFound } from "~/.server/not-found";
 import { MapViewer } from "~/components/maps/MapViewer";
 import { PlayerMapViewer } from "~/components/maps/PlayerMapViewer";
@@ -42,6 +43,7 @@ export async function loader({ params, request, context }: Route.LoaderArgs) {
       version,
       fight: fight && !fight.forDm ? fight : null,
       characters: await openableCharacters(services, viewer),
+      ways: await loadTravelWays(services, map, maps, viewer),
     };
   }
   // The fight wherever it is: running it from here brings it to this map.
@@ -100,6 +102,7 @@ export default function MapPage({ loaderData }: Route.ComponentProps) {
         version={loaderData.version}
         fight={loaderData.fight}
         characters={loaderData.characters}
+        ways={loaderData.ways}
       />
     );
   }

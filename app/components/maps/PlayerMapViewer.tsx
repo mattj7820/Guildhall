@@ -6,7 +6,7 @@ import { mapUrl, mapVersionUrl } from "~/maps/urls";
 import { useMapUpdates } from "~/maps/useMapUpdates";
 import { LiveStatus } from "../LiveStatus";
 import { toPixels } from "~/maps/geometry";
-import type { InsideBadge, TokenView } from "~/maps/tokens/types";
+import type { InsideBadge, TokenView, TravelWay } from "~/maps/tokens/types";
 import { useMapTokens } from "~/maps/tokens/useMapTokens";
 import { AreaShape } from "./AreaShape";
 import { useFogImage } from "./FogLayer";
@@ -28,6 +28,7 @@ import type { CharacterChoice } from "~/characters/view";
 import { MapSidePanel } from "./MapSidePanel";
 import { NotePanel } from "./NotePanel";
 import { TokenLayer } from "./TokenLayer";
+import { TravelButtons, useTravel, type Travel } from "./Travel";
 
 const REVEALED_ID = "revealed-by-fog";
 
@@ -44,6 +45,7 @@ export function PlayerMapViewer({
   version,
   fight: fightFromPage,
   characters,
+  ways,
 }: {
   map: MapView;
   tokens: TokenView[];
@@ -53,6 +55,8 @@ export function PlayerMapViewer({
   fight: PlayerFightView | null;
   /** Characters this player may open beside the map. */
   characters: CharacterChoice[];
+  /** Where this player may take their party members from here. */
+  ways: TravelWay[];
 }) {
   const { fight, endTurn, ending } = usePlayerFight(fightFromPage);
   const fightHere = fight?.map === map.id && fight.view.started ? fight : undefined;
@@ -81,6 +85,11 @@ export function PlayerMapViewer({
   const mask = useMemo(() => fogMask(map.fog), [map.fog]);
   const revealed = useFogImage(mask, "revealed");
   const tiles = map.image.tiles;
+  const travel = useTravel(map.id);
+  const travellers = mapTokens.tokens.filter(
+    (token) => token.kind === "character" && token.movable,
+  );
+  const up = ways.find((way) => way.direction === "up");
   const nothingYet = !tiles || tiles.tiles.length === 0;
 
   return (
@@ -88,6 +97,21 @@ export function PlayerMapViewer({
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line px-4 py-2">
         <MapBreadcrumbs crumbs={map.breadcrumbs} />
         <h1 className="sr-only">{map.name}</h1>
+        {up && (
+          <div className="flex items-center gap-2">
+            <TravelButtons
+              way={up}
+              travellers={travellers}
+              travel={travel}
+              label={`back to ${up.map.name}`}
+            />
+          </div>
+        )}
+        {travel.error && (
+          <p role="alert" className="text-sm text-danger">
+            {travel.error}
+          </p>
+        )}
         <div className="ml-auto flex items-center gap-3">
           <StuntSettingsMenu stunts={stunts} settings={stuntSettings} onChange={changeStunts} />
           <LiveStatus status={status} />
@@ -186,6 +210,9 @@ export function PlayerMapViewer({
               <PartyHere tokens={mapTokens.tokens} onFind={find} grid={map.grid} size={map.size} />
               <AreaList
                 areas={map.areas}
+                ways={ways}
+                travellers={travellers}
+                travel={travel}
                 onSelect={(area) => setSelectedId(area.id)}
                 onHighlight={places.highlight}
               />
@@ -302,10 +329,16 @@ function SelectedArea({ area, onClose }: { area: AreaView; onClose: () => void }
 
 function AreaList({
   areas,
+  ways,
+  travellers,
+  travel,
   onSelect,
   onHighlight,
 }: {
   areas: AreaView[];
+  ways: TravelWay[];
+  travellers: TokenView[];
+  travel: Travel;
   onSelect: (area: AreaView) => void;
   /** Picks the area out on the map while it's pointed at or focused in the list. */
   onHighlight: (area: AreaId | undefined) => void;
@@ -327,28 +360,41 @@ function AreaList({
         Places
       </h2>
       <ul aria-label="Areas" className="flex flex-col text-sm">
-        {sorted.map((area) => (
-          <li key={area.id}>
-            {area.map ? (
-              <Link
-                to={mapUrl(area.map.id)}
-                className="block rounded px-1 py-0.5 hover:bg-raised"
-                {...highlighting(area)}
-              >
-                ▸ {area.name}
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onSelect(area)}
-                className="block w-full rounded px-1 py-0.5 text-left hover:bg-raised"
-                {...highlighting(area)}
-              >
-                {area.name}
-              </button>
-            )}
-          </li>
-        ))}
+        {sorted.map((area) => {
+          const way = ways.find((each) => each.direction === "in" && each.area === area.id);
+          return (
+            <li key={area.id} className="flex items-center gap-1">
+              {area.map ? (
+                <>
+                  <Link
+                    to={mapUrl(area.map.id)}
+                    className="mr-auto block rounded px-1 py-0.5 hover:bg-raised"
+                    {...highlighting(area)}
+                  >
+                    ▸ {area.name}
+                  </Link>
+                  {way && (
+                    <TravelButtons
+                      way={way}
+                      travellers={travellers}
+                      travel={travel}
+                      label={`into ${area.name}`}
+                    />
+                  )}
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onSelect(area)}
+                  className="block w-full rounded px-1 py-0.5 text-left hover:bg-raised"
+                  {...highlighting(area)}
+                >
+                  {area.name}
+                </button>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

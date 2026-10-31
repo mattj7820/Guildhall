@@ -278,6 +278,14 @@ export class MapView extends MapCanvasPage {
   }
 
   /**
+   * A player takes their party member to another map ("into Fixture town", "back to Outer"),
+   * and the page follows them there.
+   */
+  async travel(member: string, where: string) {
+    await this.page.getByRole("button", { name: `Take ${member} ${where}` }).click();
+  }
+
+  /**
    * Adds NPCs or markers in the Tokens tab and places them where the DM clicks: from a note (by
    * its path) if given, a monster's statblock (by its line in the list, "Fixture Minion (Mine,
    * CR 1/8)") if given, numbered if more than one, with an icon if given.
