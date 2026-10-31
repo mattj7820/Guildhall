@@ -15,6 +15,17 @@ export class DiceCollection extends AppPage {
     return this.page.getByRole("list", { name: "Packs to open" }).getByRole("listitem");
   }
 
+  /**
+   * Opens the first pack and waits for the die (at once: tests ask for reduced motion). Returns
+   * what it says, such as "New!".
+   */
+  async openPack() {
+    await this.packs.first().getByRole("button", { name: "Open" }).click();
+    const opening = this.page.getByRole("dialog", { name: "Opening a pack" });
+    await expect(opening.getByRole("button", { name: "Done" })).toBeFocused();
+    return opening;
+  }
+
   /** A die they've found, by its style and type ("Bone d20"). */
   die(label: string) {
     return this.page.getByRole("listitem", { name: label, exact: true });

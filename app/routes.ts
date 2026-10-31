@@ -35,6 +35,7 @@ export default [
   route("members", "routes/members.tsx"),
   route("settings", "routes/settings.tsx"),
   route("settings/dice", "routes/settings-dice.tsx"),
+  route("settings/dice/open", "routes/dice-open.ts"),
   route("characters", "routes/characters.tsx"),
   route("characters/:id", "routes/character.tsx"),
   route("characters/:id/portrait", "routes/character-portrait.ts"),

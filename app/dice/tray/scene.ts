@@ -138,7 +138,7 @@ export function throwDice(
   return stop;
 }
 
-function buildDie(
+export function buildDie(
   shape: DieShape,
   die: PlannedDie,
   look: DiceLook,

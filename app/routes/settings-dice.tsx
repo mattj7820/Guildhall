@@ -1,4 +1,5 @@
-import { data, Form, Link } from "react-router";
+import { useState } from "react";
+import { data, Form, Link, useRevalidator } from "react-router";
 import { z } from "zod";
 import { DataFileError } from "~/.server/data/json-store";
 import { diceStyle } from "~/.server/dice/catalogue";
@@ -6,8 +7,9 @@ import { usableDice } from "~/.server/dice/collections";
 import { collectionView } from "~/.server/dice/view";
 import { notFound } from "~/.server/not-found";
 import { DieIcon } from "~/components/dice/DieIcon";
+import { PackOpening } from "~/components/dice/PackOpening";
 import { TryDice } from "~/components/dice/TryDice";
-import { panelClass } from "~/components/styles";
+import { panelClass, primaryButtonClass } from "~/components/styles";
 import { accountContext, servicesContext } from "~/context";
 import type { CollectionView, DicePack, OwnedDieView } from "~/dice/collection";
 import { DIE_TYPES, RARITIES, RARITY_INFO, type DieType } from "~/dice/styles";
@@ -101,8 +103,10 @@ export default function SettingsDice({ loaderData, actionData }: Route.Component
   );
 }
 
-/** Packs waiting to be opened, with why the DM gave them. */
+/** Packs waiting to be opened, with why the DM gave them: each opened by its own click. */
 function Packs({ packs }: { packs: DicePack[] }) {
+  const [opening, setOpening] = useState<DicePack>();
+  const revalidator = useRevalidator();
   return (
     <section aria-labelledby="packs-heading" className="flex flex-col gap-3">
       <h2 id="packs-heading" className="font-display text-title text-2xl">
@@ -116,9 +120,25 @@ function Packs({ packs }: { packs: DicePack[] }) {
             <li key={pack.id} aria-label="A pack" className={`${panelClass} flex flex-col gap-1`}>
               <span className="text-title font-semibold">A dice pack</span>
               {pack.reason && <span className="text-muted text-sm">{pack.reason}</span>}
+              <button
+                type="button"
+                className={`${primaryButtonClass} mt-1 self-start`}
+                onClick={() => setOpening(pack)}
+              >
+                Open
+              </button>
             </li>
           ))}
         </ul>
+      )}
+      {opening && (
+        <PackOpening
+          pack={opening}
+          onDone={() => {
+            setOpening(undefined);
+            void revalidator.revalidate();
+          }}
+        />
       )}
     </section>
   );

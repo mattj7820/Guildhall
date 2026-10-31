@@ -93,7 +93,7 @@ test("the DM gives packs and particular dice, and sees what each member has", as
   await expect(them.page.getByRole("link", { name: "1 pack to open", exact: true })).toBeVisible();
   await them.settings.yourDice.click();
   await expect(them.diceCollection.collection).toHaveText("Collection (4 dice)");
-  await expect(them.diceCollection.packs).toHaveText(["A dice packFor the session recap"]);
+  await expect(them.diceCollection.packs).toHaveText(["A dice packFor the session recapOpen"]);
   await expect(them.diceCollection.die("Bone d20")).toContainText("Bone ×3");
   await expect(them.diceCollection.die("Glass d6")).toContainText("Rare");
   expect(await them.page.content()).not.toContain("Gilded");
@@ -104,4 +104,14 @@ test("the DM gives packs and particular dice, and sees what each member has", as
   await expect(
     them.diceCollection.die("Bone d20").getByRole("button", { name: "Rolled first" }),
   ).toBeVisible();
+
+  // Opening the pack: its die is drawn on the server, and added to theirs.
+  const opening = await them.diceCollection.openPack();
+  await expect(opening).toContainText("For the session recap");
+  await expect(opening.getByRole("heading")).toHaveText(/^\w+ d(4|6|8|10|12|20)$/);
+  await opening.getByRole("button", { name: "Done" }).click();
+  await expect(opening).toHaveCount(0);
+  await expect(them.diceCollection.collection).toHaveText("Collection (5 dice)");
+  await expect(them.diceCollection.packs).toHaveCount(0);
+  await expect(them.page.getByRole("link", { name: "1 pack to open", exact: true })).toHaveCount(0);
 });

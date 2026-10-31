@@ -84,3 +84,14 @@ export interface CollectionView {
   favourites: Partial<Record<DieType, string>>;
   packs: DicePack[];
 }
+
+/** A die just out of a pack, as its opener is told. */
+export interface OpenedDie {
+  style: DieStyle;
+  sides: DieType;
+  /** How many of it they have now. */
+  count: number;
+  /** Their first of this style in this type. */
+  isNew: boolean;
+  reason?: string;
+}

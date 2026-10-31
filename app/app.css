@@ -934,3 +934,94 @@ it over and leaves it down. */
     opacity: 0.3;
   }
 }
+
+/*
+ * Opening a dice pack: it shakes, glows in the rarity's colour (--rarity), bursts, and the die
+ * comes in; very rare and legendary dice get light behind them. Only for the person opening it.
+ */
+.pack-shake {
+  animation: pack-shake 900ms ease-in-out both;
+}
+.pack-glow {
+  animation: pack-glow var(--glow-for, 800ms) ease-in both;
+}
+.pack-burst {
+  animation: pack-burst 450ms ease-out forwards;
+}
+.pack-reveal {
+  animation: pack-reveal 500ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+.pack-rays {
+  background: repeating-conic-gradient(
+    from 0deg,
+    color-mix(in srgb, var(--rarity) 45%, transparent) 0deg 10deg,
+    transparent 10deg 30deg
+  );
+  mask-image: radial-gradient(circle, black 15%, transparent 70%);
+  animation:
+    pack-rays 12s linear infinite,
+    preview-in 800ms ease-out;
+}
+@keyframes pack-shake {
+  0%,
+  100% {
+    transform: rotate(0) scale(1);
+  }
+  20% {
+    transform: rotate(-4deg) scale(1.02);
+  }
+  40% {
+    transform: rotate(4deg) scale(1.03);
+  }
+  60% {
+    transform: rotate(-3deg) scale(1.04);
+  }
+  80% {
+    transform: rotate(2deg) scale(1.05);
+  }
+}
+@keyframes pack-glow {
+  from {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 0 transparent;
+  }
+  to {
+    transform: scale(1.12);
+    box-shadow:
+      0 0 40px 12px var(--rarity),
+      inset 0 0 30px var(--rarity);
+  }
+}
+@keyframes pack-burst {
+  from {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+    filter: brightness(2.5);
+  }
+}
+@keyframes pack-reveal {
+  from {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+}
+@keyframes pack-rays {
+  to {
+    transform: rotate(1turn);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pack-shake,
+  .pack-glow,
+  .pack-burst,
+  .pack-rays {
+    animation: none;
+  }
+  .pack-reveal {
+    animation: preview-in 300ms ease-out both;
+  }
+}
