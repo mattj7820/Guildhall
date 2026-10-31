@@ -1,5 +1,7 @@
 import { Link } from "react-router";
-import { viewerContext } from "~/context";
+import { frontPagePrototype } from "~/.server/home/front-page-prototype";
+import { FrontPagePrototype } from "~/components/home/FrontPagePrototype";
+import { servicesContext, viewerContext } from "~/context";
 import { hubLinks, type HubLink } from "~/hub/links";
 import type { Route } from "./+types/home";
 
@@ -10,11 +12,28 @@ export function meta(_: Route.MetaArgs) {
   ];
 }
 
-export function loader({ context }: Route.LoaderArgs) {
-  return { modules: hubLinks(context.get(viewerContext).role) };
+export async function loader({ context, request }: Route.LoaderArgs) {
+  const viewer = context.get(viewerContext);
+  const modules = hubLinks(viewer.role);
+  // PROTOTYPE: the living front page.
+  if (new URL(request.url).searchParams.get("prototype") === "front") {
+    const front = await frontPagePrototype(context.get(servicesContext), viewer);
+    return { modules, front, forDm: viewer.role === "dm" };
+  }
+  return { modules };
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
+  if ("front" in loaderData && loaderData.front) {
+    return (
+      <FrontPagePrototype
+        data={loaderData.front}
+        forDm={!!loaderData.forDm}
+        modules={loaderData.modules}
+        icon={(id) => <HubIcon id={id} />}
+      />
+    );
+  }
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
       <h1 className="gh-hub-title font-display text-title text-5xl">Guildhall</h1>

@@ -934,3 +934,130 @@ it over and leaves it down. */
     opacity: 0.3;
   }
 }
+
+/*
+ * PROTOTYPE: the living front page's banner. Each theme's movement is slow and faint, and still
+ * for anyone who prefers reduced motion.
+ */
+.gh-hero-motion {
+  @variant storybook {
+    /* Candlelight: a warm glow that breathes in one corner. */
+    background: radial-gradient(28rem 20rem at 8% 0%, rgb(255 196 110 / 0.35), transparent 70%);
+    animation: gh-candle 5s ease-in-out infinite alternate;
+  }
+  @variant ember {
+    /* Embers: specks of light rising from the bottom edge. */
+    background-image:
+      radial-gradient(2px 2px at 10% 90%, #ff8a3d, transparent),
+      radial-gradient(1.5px 1.5px at 25% 80%, #ffb067, transparent),
+      radial-gradient(2px 2px at 42% 95%, #ff6a1f, transparent),
+      radial-gradient(1.5px 1.5px at 58% 85%, #ffb067, transparent),
+      radial-gradient(2.5px 2.5px at 73% 92%, #ff8a3d, transparent),
+      radial-gradient(1.5px 1.5px at 88% 82%, #ff6a1f, transparent),
+      radial-gradient(60rem 14rem at 50% 115%, rgb(196 71 28 / 0.35), transparent);
+    background-size:
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      100% 100%;
+    animation: gh-embers 9s linear infinite;
+  }
+  @variant gem {
+    /* Glints: a few points of light that slowly come and go. */
+    background-image:
+      radial-gradient(3px 3px at 15% 20%, #e8f6ff, transparent),
+      radial-gradient(2px 2px at 35% 70%, #d9c9ff, transparent),
+      radial-gradient(3px 3px at 62% 15%, #fff1cf, transparent),
+      radial-gradient(2px 2px at 80% 60%, #e8f6ff, transparent),
+      radial-gradient(2.5px 2.5px at 92% 30%, #d9c9ff, transparent),
+      radial-gradient(40rem 20rem at 100% 0%, rgb(120 200 255 / 0.18), transparent),
+      radial-gradient(40rem 20rem at 0% 100%, rgb(160 120 255 / 0.16), transparent);
+    animation: gh-glints 6s ease-in-out infinite alternate;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.gh-hero {
+  @variant storybook {
+    border-radius: 1.5rem;
+    border-width: 3px;
+    border-color: var(--gh-trim);
+  }
+  @variant ember {
+    border-radius: 0;
+    border-top: 2px solid var(--gh-trim);
+  }
+  @variant gem {
+    box-shadow: 0 0 3rem -1rem rgb(143 211 255 / 0.45);
+  }
+}
+
+/* Someone here now: their face glows, in each theme's light. */
+.gh-online {
+  box-shadow: 0 0 0 3px var(--gh-good);
+  @variant ember {
+    box-shadow:
+      0 0 0 2px #ff8a3d,
+      0 0 1.25rem #c4471c;
+  }
+  @variant gem {
+    box-shadow:
+      0 0 0 2px #8fd3ff,
+      0 0 1.5rem rgb(143 211 255 / 0.8);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    animation: gh-breathe 3s ease-in-out infinite;
+  }
+}
+
+@keyframes gh-candle {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes gh-embers {
+  from {
+    background-position:
+      0 0,
+      0 0,
+      0 0,
+      0 0,
+      0 0,
+      0 0,
+      0 0;
+  }
+  to {
+    background-position:
+      2rem -24rem,
+      -1rem -30rem,
+      1rem -20rem,
+      -2rem -28rem,
+      1.5rem -22rem,
+      -1rem -26rem,
+      0 0;
+  }
+}
+
+@keyframes gh-glints {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes gh-breathe {
+  50% {
+    filter: brightness(1.15);
+  }
+}
