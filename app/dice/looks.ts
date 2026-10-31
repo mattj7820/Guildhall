@@ -10,7 +10,27 @@ export interface DiceLook {
   opacity: number;
   /** A colour the die glows with, faintly in its body and brightly around its numbers. */
   glow?: string;
+  /** Colours running through the body, in place of `body` alone. */
+  pattern?: DicePattern;
+  /** Flecks that catch the light as the die turns. */
+  glitter?: { colour: string; /** 0 to 1: how many. */ amount: number };
+  /** A smaller die inside a see-through one, slowly swirling, like a liquid core. */
+  core?: { colours: [string, string]; glitter?: string };
+  /** Little things set inside a see-through die. */
+  inclusions?: { kind: InclusionKind; colours: string[]; count: number };
+  /** Icons (token icon IDs, from game-icons.net) in place of a d20's 20 and 1. */
+  symbols?: { high?: string; low?: string };
 }
+
+export interface DicePattern {
+  kind: "marble" | "swirl" | "nebula" | "speckle";
+  /** Two or three: the base first, then the colours running through it. */
+  colours: string[];
+  /** Bigger is finer. About 1. */
+  scale?: number;
+}
+
+export type InclusionKind = "leaf" | "flower" | "star" | "flake" | "bubble";
 
 /** How a set of dice sounds as it knocks on the table and on other dice. */
 export interface DiceVoice {

@@ -7,6 +7,8 @@ import type { DiceLook, DieLookAndVoice } from "../looks";
 import { seededRng } from "../rng";
 import type { DieRoll } from "../roll";
 import { planThrow, quaternionAt, type PlannedDie } from "./plan";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { bodyMaterial, coreMesh, inclusionMeshes, symbolFor, type Animate } from "./effects";
 import { dieShape, type DieShape } from "./shapes";
 import { DiceSound } from "./sound";
 
@@ -65,6 +67,7 @@ export function throwDice(
   camera.up.set(0, 0, -1);
   camera.lookAt(0, 0, 0);
   scene.add(new THREE.AmbientLight(0xffffff, 1.4));
+  lightWithRoom(renderer, scene, disposables);
   const sun = new THREE.DirectionalLight(0xffffff, 2.2);
   sun.position.set(-6, 20, -4);
   sun.castShadow = true;
@@ -80,8 +83,10 @@ export function throwDice(
   table.receiveShadow = true;
   scene.add(table);
   disposables.push(table.geometry, table.material);
+  const animate: Animate[] = [];
   const meshes = plan.dice.map((die, index) => {
-    const mesh = buildDie(dieShape(die.sides), die, styles[index].look, disposables);
+    const look = styles[index].look;
+    const mesh = buildDie(dieShape(die.sides), die, look, disposables, seed + index, animate);
     scene.add(mesh);
     return mesh;
   });
@@ -104,6 +109,7 @@ export function throwDice(
       mesh.position.fromArray(data, index * 7);
       mesh.quaternion.copy(quaternionAt(data, index));
     });
+    animate.forEach((each) => each((now - started!) / 1000));
     renderer.render(scene, camera);
     if (sound && !reducedMotion) {
       // A few knocks at once at most: more is a din, not dice.
@@ -138,28 +144,41 @@ export function throwDice(
   return stop;
 }
 
+/** Reflections from a plain lit room, so metal, glass and glitter have something to catch. */
+export function lightWithRoom(
+  renderer: THREE.WebGLRenderer,
+  scene: THREE.Scene,
+  disposables: { dispose: () => void }[],
+) {
+  const generator = new THREE.PMREMGenerator(renderer);
+  const room = new RoomEnvironment();
+  const environment = generator.fromScene(room, 0.04).texture;
+  scene.environment = environment;
+  scene.environmentIntensity = 0.3;
+  room.dispose();
+  generator.dispose();
+  disposables.push(environment);
+}
+
 export function buildDie(
   shape: DieShape,
   die: PlannedDie,
   look: DiceLook,
   disposables: { dispose: () => void }[],
+  seed = 1,
+  animate: Animate[] = [],
 ): THREE.Object3D {
-  // The die an advantage roll dropped is drawn faded.
-  const opacity = look.opacity * (die.kept ? 1 : 0.45);
-  const body = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(look.body),
-    roughness: look.roughness,
-    metalness: look.metalness,
-    emissive: new THREE.Color(look.glow ?? "#000000"),
-    emissiveIntensity: look.glow ? 0.1 : 0,
-    flatShading: true,
-    transparent: opacity < 1,
-    opacity,
-  });
+  // The die an advantage roll dropped is drawn faded; with a core or things inside, the shell is
+  // see-through whatever the look says.
+  const inside = !!look.core || !!look.inclusions;
+  const opacity = (inside ? Math.min(look.opacity, 0.4) : look.opacity) * (die.kept ? 1 : 0.45);
+  const body = bodyMaterial(look, opacity, seed, animate);
   const geometry = shape.geometry.clone();
   disposables.push(body, geometry);
   const mesh = new THREE.Mesh(geometry, body);
   mesh.castShadow = true;
+  if (look.core) mesh.add(coreMesh(geometry, look, seed, animate, disposables));
+  for (const inclusion of inclusionMeshes(look, seed, disposables)) mesh.add(inclusion);
   const number = (value: number, size: number) => {
     const texture = numberTexture(value, die.sides, look);
     const material = new THREE.MeshBasicMaterial({
@@ -216,7 +235,14 @@ function numberTexture(value: number, sides: number, look: DiceLook): THREE.Canv
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.font = `bold ${value >= 10 ? 60 : 72}px ${look.font}`;
-  context.fillText(String(value), 64, 68);
+  const symbol = symbolFor(look, value, sides);
+  if (symbol) {
+    // An icon in place of the number: drawn on 512 × 512, shrunk to fit the face.
+    context.translate(20, 22);
+    context.scale(88 / 512, 88 / 512);
+    context.fill(symbol);
+    context.setTransform(1, 0, 0, 1, 0, 0);
+  } else context.fillText(String(value), 64, 68);
   // 6 and 9 underlined, as real dice do.
   if ((value === 6 || value === 9) && sides > 6) context.fillRect(44, 104, 40, 6);
   const texture = new THREE.CanvasTexture(canvas);
