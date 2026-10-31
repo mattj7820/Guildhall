@@ -6,7 +6,7 @@ import { diceStyle } from "~/.server/dice/catalogue";
 import { usableDice } from "~/.server/dice/collections";
 import { collectionView } from "~/.server/dice/view";
 import { notFound } from "~/.server/not-found";
-import { DieIcon } from "~/components/dice/DieIcon";
+import { DiePicture } from "~/components/dice/DiePicture";
 import { PackOpening } from "~/components/dice/PackOpening";
 import { TryDice } from "~/components/dice/TryDice";
 import { panelClass, primaryButtonClass } from "~/components/styles";
@@ -178,7 +178,7 @@ function DieCard({ die, favourite }: { die: OwnedDieView; favourite: boolean }) 
       aria-label={`${style.label} d${sides}`}
       className={`gh-card bg-surface flex gap-3 rounded-lg border p-3 ${favourite ? "border-accent ring-accent ring-2" : "border-line"}`}
     >
-      <DieIcon sides={sides} style={style} />
+      <DiePicture sides={sides} style={style} />
       <div className="flex min-w-0 flex-col gap-1">
         <span className="text-title font-semibold">
           {style.label}

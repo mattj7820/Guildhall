@@ -4,7 +4,9 @@
  */
 import * as THREE from "three";
 import type { DiceLook } from "../looks";
-import { buildDie } from "./scene";
+import type { Animate } from "./effects";
+import { hasEffects } from "./effects";
+import { buildDie, lightWithRoom } from "./scene";
 import { dieShape } from "./shapes";
 
 /**
@@ -34,6 +36,8 @@ export function showDie(
   camera.position.set(0, 0.9, 6.8);
   camera.lookAt(0, 0, 0);
   scene.add(new THREE.AmbientLight(0xffffff, 1.3));
+  const disposables: { dispose: () => void }[] = [renderer];
+  if (hasEffects(look)) lightWithRoom(renderer, scene, disposables);
   const key = new THREE.DirectionalLight(0xffffff, 2.4);
   key.position.set(-3, 4, 5);
   scene.add(key);
@@ -42,17 +46,27 @@ export function showDie(
   scene.add(rim);
 
   const shape = dieShape(sides);
-  const disposables: { dispose: () => void }[] = [renderer];
   const labels = shape.faces.map((_, face) => face + 1);
-  const die = buildDie(shape, { sides, value: sides, kept: true, labels }, look, disposables);
+  const animate: Animate[] = [];
+  const die = buildDie(
+    shape,
+    { sides, value: sides, kept: true, labels },
+    look,
+    disposables,
+    1,
+    animate,
+  );
   die.rotation.set(0.5, 0.6, 0.2);
   scene.add(die);
 
   let raf = 0;
   let last: number | undefined;
+  let started: number | undefined;
   const draw = (now: number) => {
     const seconds = last === undefined ? 0 : (now - last) / 1000;
     last = now;
+    started ??= now;
+    animate.forEach((each) => each((now - started!) / 1000));
     die.rotation.y += seconds * 0.6;
     die.rotation.x += seconds * 0.15;
     renderer.render(scene, camera);

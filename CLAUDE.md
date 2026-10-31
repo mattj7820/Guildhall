@@ -136,8 +136,10 @@ First e2e run needs `npx playwright install chromium`.
   thrown: `thrown.ts` (`thrownDice`, which dice are drawn), `shapes.ts` (d4 to d20, `faceUp`),
   `plan.ts` (`planThrow`: the throw simulated with cannon-es, each die numbered to land on its
   roll; pure), `scene.ts` (`throwDice`: drawn with three.js, each die in its own look and voice),
-  `showcase.ts` (`showDie`: one die turning, out of a pack) and `sound.ts` (`DiceSound`, Web
-  Audio).
+  `effects.ts` (patterns and glitter in the shader, from each point inside the die; cores,
+  inclusions and d20 symbols), `showcase.ts` (`showDie`: one die turning, out of a pack),
+  `picture.ts` (`pictureOf`: a still picture of a die for lists, one shared renderer) and
+  `sound.ts` (`DiceSound`, Web Audio).
 - `app/combat/`: the combat tracker's model (isomorphic): `types.ts`, `encounter.ts` (reducer,
   action creators, `perform`), `initiative.ts` (ordering, reroll tie-breaks), `turns.ts`, `hp.ts`,
   `visibility.ts` (`encounterForViewer`), `schema.ts` (zod),
@@ -323,6 +325,7 @@ First e2e run needs `npx playwright install chromium`.
   what's shown until they land; the tray to place), `useDicePreferences` (on or off and the bag,
   from the root loader; `throwStyles`, each die's look and voice), `looks.ts` (`themeLook`,
   `styleLook`: resolved in the browser), `DieIcon` (a die drawn flat in its colours),
+  `DiePicture` (the 3D picture, with `DieIcon` until it's drawn),
   `TryDice` and `PackOpening` (a pack opened over the page, and the die it held).
 - `app/components/combat/`: the tracker's UI (`CombatTracker` lays it out), and the prepared
   encounter editor (`PreparedEditor`). `TurnStrip` (the turn order as round faces, over a map or

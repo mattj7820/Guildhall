@@ -31,7 +31,8 @@ locations, maps, characters, sessions).
 - **Dice packs:** the DM gives packs (for the recap, say) and particular dice; members open them
   with a shake, a glow in the rarity's colour and the die in 3D, and keep a collection by rarity
   in Settings, with a favourite for each type. Dice count: two d20s of a style roll two at once
-  (decision 84).
+  (decision 84). Rarer dice have patterns, glitter, liquid cores, things set inside and symbols on
+  the 20 and 1 (decision 85).
 - **Interactive maps (first slice):** maps from vault images, with outlined areas that lead to
   deeper maps and wiki notes, nesting to any depth with breadcrumbs. Drawn and reshaped in an
   editor with undo; a clean view for the table. Kept in the data folder.
@@ -173,7 +174,7 @@ locations, maps, characters, sessions).
   - Creating a character in the app from scratch (D&D Beyond style), once rules exist.
 - **Dice:** shared dice rolling, including DM hidden rolls, each thrown in the roller's set for
   everyone watching (sketched in `docs/spikes/3d-dice.md`). Complements physical dice on camera.
-  More dice (patterns, real glass) and the DM's own names for them; the throw worked out in a Web Worker;
+  More dice and themed sets, with the DM's own names for them; the throw worked out in a Web Worker;
   a click to skip to the result; d100 as a percentile pair.
 - **Monsters, more:**
   - A filter by home region or theme (forest, underdark, coast…), which the SRD data doesn't
