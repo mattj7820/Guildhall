@@ -418,6 +418,7 @@ export function MapViewer({
                 mapId={map.id}
                 party={party}
                 tools={tokenTools}
+                creatures={catalogue.creatures}
                 tokens={tokens}
                 selected={selectedToken}
                 placing={placing}

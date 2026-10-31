@@ -81,3 +81,32 @@ export function findCreatures(
     })
     .map(({ creature }) => creature);
 }
+
+/**
+ * Each creature as one line in a plain list, keyed by that line: "Wolf (2014, CR 1/4)", the DM's
+ * own with their note ("Wolf (Mine: Fixture Pack, CR 1/2)"). Lines that would read the same are
+ * numbered, so each still finds one creature.
+ */
+export function creatureLines(creatures: CreatureOption[]): Map<string, CreatureOption> {
+  const lines = new Map<string, CreatureOption>();
+  for (const creature of creatures) {
+    const tag = tagOf(creature);
+    const from =
+      tag === "Mine" && creature.noteTitle && creature.noteTitle !== creature.name
+        ? `Mine: ${creature.noteTitle}`
+        : tag;
+    const line = `${creature.name} (${from}${creature.challenge ? `, CR ${creature.challenge}` : ""})`;
+    let unique = line;
+    for (let count = 2; lines.has(unique); count++) unique = `${line} #${count}`;
+    lines.set(unique, creature);
+  }
+  return lines;
+}
+
+/** A note's own statblock (its first), for an NPC token linked to it. */
+export function statblockOfNote(
+  creatures: CreatureOption[],
+  note: string,
+): CreatureOption | undefined {
+  return creatures.find((creature) => !creature.ref.source && creature.ref.entityId === note);
+}

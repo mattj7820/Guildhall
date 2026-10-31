@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { statblockKey, type CreatureOption } from "~/combat/types";
 import type { MapGrid } from "~/maps/grid/grid";
 import { buttonClass, iconButtonClass, labelClass } from "~/components/styles";
 import type { TokenAction } from "~/maps/tokens/actions";
@@ -15,6 +16,8 @@ interface Props {
   mapId: MapId;
   party: PartyPlacement[];
   tools: TokenTools;
+  /** The statblocks a marker may join a fight with. */
+  creatures: CreatureOption[];
   tokens: TokenView[];
   selected?: TokenView;
   placing?: Placing;
@@ -41,6 +44,7 @@ export function TokensTab({
   mapId,
   party,
   tools,
+  creatures,
   tokens,
   selected,
   placing,
@@ -53,6 +57,9 @@ export function TokensTab({
   size,
 }: Props) {
   const [adding, setAdding] = useState(false);
+  const byKey = new Map(creatures.map((creature) => [creature.key, creature]));
+  const monsterOf = (token: TokenView) =>
+    token.marker?.statblock && byKey.get(statblockKey(token.marker.statblock));
   const markers = tokens.filter((token) => token.kind === "marker").sort(byName);
   const aside = tools.elsewhere.filter((each) => each.aside);
   const elsewhere = tools.elsewhere.filter((each) => !each.aside);
@@ -90,6 +97,7 @@ export function TokensTab({
         {adding && (
           <AddTokenForm
             notes={tools.notes}
+            creatures={creatures}
             existing={markers.map((marker) => marker.name)}
             onCancel={() => setAdding(false)}
             onPlace={(drafts) => {
@@ -114,6 +122,7 @@ export function TokensTab({
                 key={marker.id}
                 marker={marker}
                 chosen={marker.id === selected?.id}
+                monster={monsterOf(marker)}
                 onSelect={() => onSelect(marker)}
                 send={send}
               />
@@ -150,6 +159,8 @@ export function TokensTab({
           key={selected.id}
           token={selected}
           tools={tools}
+          creatures={creatures}
+          monster={monsterOf(selected)}
           onClose={() => onSelect(undefined)}
           send={send}
         >
@@ -163,11 +174,14 @@ export function TokensTab({
 function MarkerRow({
   marker,
   chosen,
+  monster,
   onSelect,
   send,
 }: {
   marker: TokenView;
   chosen: boolean;
+  /** The statblock it joins a fight with. */
+  monster?: CreatureOption;
   onSelect: () => void;
   send: (actions: TokenAction[]) => void;
 }) {
@@ -183,6 +197,12 @@ function MarkerRow({
         onClick={onSelect}
       >
         {marker.name}
+        {monster && (
+          <span className="ml-1 text-xs text-muted" title={`Joins a fight as ${monster.name}`}>
+            ⚔ {monster.name}
+          </span>
+        )}
+        {marker.down && <span className="ml-1 text-xs text-danger">down</span>}
         {marker.hidden === "fog" && shown && (
           <span className="ml-1 text-xs text-muted">(under the fog)</span>
         )}

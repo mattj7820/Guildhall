@@ -9,7 +9,9 @@ import {
   type TokenTools,
   type TokenView,
 } from "~/maps/tokens/types";
+import type { CreatureOption } from "~/combat/types";
 import { noteUrl } from "~/wiki/urls";
+import { MonsterField } from "./MonsterField";
 import { NotePicker } from "./NotePicker";
 import { TokenLook } from "./TokenLook";
 
@@ -21,12 +23,18 @@ import { TokenLook } from "./TokenLook";
 export function TokenSettings({
   token,
   tools,
+  creatures,
+  monster,
   onClose,
   send,
   children,
 }: {
   token: TokenView;
   tools: TokenTools;
+  /** The statblocks a marker may join a fight with. */
+  creatures: CreatureOption[];
+  /** The one it has, if it's still there. */
+  monster?: CreatureOption;
   onClose: () => void;
   send: (actions: TokenAction[]) => void;
   /** More about it, such as how far the others are. */
@@ -51,6 +59,9 @@ export function TokenSettings({
         </p>
       )}
       {marker && <MarkerFields token={token} tools={tools} send={send} />}
+      {marker && (
+        <MonsterFields token={token} creatures={creatures} monster={monster} send={send} />
+      )}
       <label className="flex items-center gap-2">
         <span className={labelClass}>Size</span>
         <select
@@ -219,6 +230,62 @@ function MarkerFields({
         />
         Players can see it (where it&rsquo;s revealed)
       </label>
+    </>
+  );
+}
+
+/**
+ * The statblock a marker joins a fight with, and the hit points it kept from the last one. A
+ * monster bigger than its token takes its size.
+ */
+function MonsterFields({
+  token,
+  creatures,
+  monster,
+  send,
+}: {
+  token: TokenView;
+  creatures: CreatureOption[];
+  monster?: CreatureOption;
+  send: (actions: TokenAction[]) => void;
+}) {
+  const statblock = token.marker?.statblock;
+  return (
+    <>
+      <MonsterField
+        label="Monster (for fights)"
+        creatures={creatures}
+        value={monster}
+        onChange={(picked) => {
+          if (!picked) {
+            if (statblock) send([{ type: "editMarker", id: token.id, statblock: null }]);
+            return;
+          }
+          const grow = picked.squares && picked.squares > token.size;
+          send([
+            { type: "editMarker", id: token.id, statblock: picked.ref },
+            ...(grow ? [{ type: "setSize" as const, id: token.id, size: picked.squares! }] : []),
+          ]);
+        }}
+      />
+      {statblock && !monster && (
+        <p className="text-danger">Its statblock ({statblock.name}) is no longer there.</p>
+      )}
+      {token.hp && !token.combatant && (
+        <p className="flex items-center gap-2">
+          <span className="mr-auto">
+            {token.hp.current} of {token.hp.max} HP, kept from its last fight
+          </span>
+          <button
+            type="button"
+            className="text-muted hover:underline"
+            title="It joins its next fight with fresh hit points"
+            onClick={() => send([{ type: "editMarker", id: token.id, hp: null }])}
+          >
+            Full HP
+          </button>
+        </p>
+      )}
     </>
   );
 }
