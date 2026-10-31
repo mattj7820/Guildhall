@@ -3,7 +3,7 @@
  * checked by the server, drawn and moved in the browser.
  */
 import type { EntityId, Visibility } from "~/campaign/types";
-import type { CombatantId } from "~/combat/types";
+import type { CombatantId, StatblockRef } from "~/combat/types";
 import type { AreaId, MapId, Point } from "../types";
 
 export type TokenId = string;
@@ -72,11 +72,30 @@ export interface MarkerToken extends TokenBase {
    * to no one, and listed for the DM. `map` is where it was last.
    */
   aside?: true;
+  /** A monster's statblock, for joining a fight with. */
+  statblock?: StatblockRef;
+  /**
+   * Its hit points when it last left a fight, to join the next one with. While it's in a fight,
+   * the fight's are the ones that count.
+   */
+  hp?: KeptHitPoints;
+  /**
+   * The combatant it is in the fight. While that combatant is in the fight, the fight says
+   * whether it's hidden or down, and its hit points; it keeps its own name and look.
+   */
+  combatant?: CombatantId;
+}
+
+/** A marker's hit points between fights. */
+export interface KeptHitPoints {
+  current: number;
+  max: number;
 }
 
 /**
  * A monster in the fight, by its combatant: its name, size and hit points come from the fight.
- * Placed when it joins the fight on a map, and cleared (or left as a marker) when the fight ends.
+ * Stored by earlier versions, which placed one when a monster joined the fight on a map; new
+ * monsters are markers linked to their combatant.
  */
 export interface CombatantToken extends TokenBase {
   kind: "combatant";
@@ -100,7 +119,7 @@ export interface TokenView {
   /** Markers: a built-in icon drawn on the colour, instead of initials. */
   icon?: string;
   /** DM only: a marker's own settings, for its form (what's drawn is above). */
-  marker?: Pick<MarkerToken, "note" | "picture" | "icon">;
+  marker?: Pick<MarkerToken, "note" | "picture" | "icon" | "statblock">;
   /** Whether this viewer may drag it. */
   movable: boolean;
   /** Players: their own token, somewhere still under the fog. */
@@ -113,9 +132,9 @@ export interface TokenView {
   note?: EntityId;
   /** The combatant it stands for in the fight: a monster's own, or a party member's. */
   combatant?: CombatantId;
-  /** A monster at 0 hit points. */
+  /** A monster at 0 hit points, in the fight or left from one. */
   down?: boolean;
-  /** DM only: a monster's hit points, for its bar. */
+  /** DM only: a monster's hit points (the fight's, or those it kept), for its bar. */
   hp?: { current: number; max: number };
 }
 

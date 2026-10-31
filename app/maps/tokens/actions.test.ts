@@ -99,6 +99,17 @@ describe("applyTokenAction", () => {
     expect(tokens).toEqual([aMarker({ id: "inn", icon: "hood" })]);
   });
 
+  it("gives a marker a statblock, takes it away, and forgets the hit points it kept", () => {
+    const goblin = { entityId: "goblin", name: "Goblin", source: "srd-5.2" as const };
+    const given = applyTokenAction([marker], { type: "editMarker", id: "inn", statblock: goblin });
+    expect(given.tokens).toEqual([{ ...marker, statblock: goblin }]);
+    const hurt = { ...marker, statblock: goblin, hp: { current: 2, max: 7 } };
+    const fresh = applyTokenAction([hurt], { type: "editMarker", id: "inn", hp: null });
+    expect(fresh.tokens).toEqual([{ ...marker, statblock: goblin }]);
+    const taken = applyTokenAction([hurt], { type: "editMarker", id: "inn", statblock: null });
+    expect(taken.tokens).toEqual([{ ...marker, hp: { current: 2, max: 7 } }]);
+  });
+
   describe("setting a marker aside", () => {
     const aside = { ...marker, aside: true as const };
 

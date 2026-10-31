@@ -224,7 +224,6 @@ function TokenMark({
       role={interactive ? "button" : "img"}
       aria-label={tokenLabel(token, sayMovable)}
       aria-pressed={onSelect ? selected : undefined}
-      data-token-id={token.id}
       tabIndex={interactive ? 0 : undefined}
       className={`group outline-none ${cursor}`}
       style={{
@@ -286,6 +285,7 @@ function TokenMark({
           } stroke-stone-900 group-focus-visible:fill-sky-400`}
         />
         <TokenFace token={token} r={r} />
+        {token.down && <DownMark r={r} scale={scale} />}
       </g>
       {token.hp && <HitPointsBar hp={token.hp} r={r} scale={scale} />}
       <text
@@ -390,6 +390,19 @@ export function initials(name: string): string {
   const number = /\s(\d+)$/.exec(name)?.[1];
   const first = name.charAt(0).toUpperCase();
   return number ? `${first}${number}` : first;
+}
+
+/** A cross over a monster at 0 hit points, so it keeps its own colour and picture. */
+function DownMark({ r, scale }: { r: number; scale: number }) {
+  const arm = r * 0.7;
+  const path = `M ${-arm} ${-arm} L ${arm} ${arm} M ${arm} ${-arm} L ${-arm} ${arm}`;
+  return (
+    <g className="pointer-events-none" strokeLinecap="round">
+      <circle r={r} className="fill-stone-900/45" />
+      <path d={path} strokeWidth={5 / scale} className="stroke-stone-900" />
+      <path d={path} strokeWidth={2.5 / scale} className="stroke-white" />
+    </g>
+  );
 }
 
 /** What a screen reader hears, and what tests find a token by. */

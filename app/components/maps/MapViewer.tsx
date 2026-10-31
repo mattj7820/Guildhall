@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useRevalidator, useSearchParams } from "react-router";
+import { useRevalidator } from "react-router";
 import type { DmFightView } from "~/combat/fight";
 import type { CombatCatalogue, PreparedEncounter } from "~/combat/types";
 import { buttonClass, primaryButtonClass } from "~/components/styles";
@@ -14,7 +14,6 @@ import type { AreaView, MapView, Size } from "~/maps/types";
 import { AreaShape } from "./AreaShape";
 import { ClickCatcher } from "./ClickCatcher";
 import { FogAreaList } from "./FogAreaList";
-import { useFightTokensPrototype } from "./FightTokensPrototype";
 import { FogLayer } from "./FogLayer";
 import { FogPainter } from "./FogPainter";
 import { FogToolbar } from "./FogToolbar";
@@ -125,16 +124,6 @@ export function MapViewer({
     onBringParty: () => setPlacing({ kind: "party", name: "the whole party" }),
   });
   const combat = fight.open && !fogMode;
-  // PROTOTYPE: fights started from tokens picked on the map (`?prototype=tokens`).
-  const [searchParams] = useSearchParams();
-  const proto = useFightTokensPrototype({
-    on: searchParams.get("prototype") === "tokens" && !fogMode,
-    mapId: map.id,
-    tokens,
-    catalogue,
-    fightRunning: fight.running,
-    onStart: fight.startFromTokens,
-  });
   const placingMonsters = combat && fight.placing && !presenting;
   // The map's tools belong to battle maps, and step aside for the fog tools and placing tokens.
   const battle = useBattleTools({
@@ -145,10 +134,6 @@ export function MapViewer({
   // Choosing a token on the map opens its settings, unless the fight's picking monsters.
   const [showTokens, setShowTokens] = useState(0);
   const selectToken = (token: TokenView, how?: { additive: boolean }) => {
-    if (proto.on && token.kind !== "combatant") {
-      if (how?.additive) return proto.toggle(token);
-      proto.clear();
-    }
     setSelectedTokenId(token.id);
     if (!combat) setShowTokens((count) => count + 1);
     fight.selectToken(token, how?.additive);
@@ -240,7 +225,6 @@ export function MapViewer({
           )}
           {battle.toolbar}
           {combat && !presenting && fight.overMap}
-          {!presenting && proto.bar}
           <MapCanvas
             name={map.name}
             size={map.size}
@@ -317,13 +301,7 @@ export function MapViewer({
                   size={map.size}
                   canvas={canvas}
                   selectedId={presenting ? undefined : selectedTokenId}
-                  alsoSelected={
-                    proto.on
-                      ? [...proto.picked, ...(combat ? fight.pickedTokenIds : [])]
-                      : combat
-                        ? fight.pickedTokenIds
-                        : undefined
-                  }
+                  alsoSelected={combat ? fight.pickedTokenIds : undefined}
                   onSelect={
                     stuntArmed
                       ? (token) =>
@@ -344,7 +322,6 @@ export function MapViewer({
                   takeHeld
                 />
                 {battle.layers(canvas)}
-                {!presenting && proto.boxLayer(map.size, canvas)}
                 <StuntDefs />
                 <StuntLayer stunts={stunts.points} size={map.size} canvas={canvas} />
                 {placingMonsters && !placing && !stuntArmed && (
@@ -451,7 +428,6 @@ export function MapViewer({
                 grid={map.grid}
                 size={map.size}
                 send={(actions) => void send(actions)}
-                proto={proto.on ? proto : undefined}
               />
             }
           />

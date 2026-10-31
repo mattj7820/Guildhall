@@ -4,6 +4,7 @@ import { characterAccess, type Controllers } from "~/characters/permissions";
 import { pointRevealed } from "../fog/mask";
 import type { FogMask } from "../fog/types";
 import { fightAllowsMove, type Fight } from "~/combat/fight";
+import type { MonsterCombatant } from "~/combat/types";
 import type { MarkerToken, Token, TokenView } from "./types";
 
 /** The URL of an NPC's picture (by the token), if its note has one; looked up on the server. */
@@ -75,9 +76,10 @@ export function tokensForViewer({
       continue;
     }
     if (token.kind === "marker") {
-      const secret = token.visibility !== "players";
+      const monster = inTheFight(token, fight);
+      const secret = monster ? !!monster.hidden : token.visibility !== "players";
       if (viewer.role !== "dm" && (secret || !revealed)) continue;
-      views.push(markerView(token, viewer, revealed, pictureOf));
+      views.push(markerView(token, viewer, revealed, pictureOf, monster));
       continue;
     }
 
@@ -107,20 +109,30 @@ export function tokensForViewer({
   return views;
 }
 
+/** The monster a marker is in the fight, while it's in it. */
+function inTheFight(token: MarkerToken, fight: Fight | undefined): MonsterCombatant | undefined {
+  if (!token.combatant) return undefined;
+  const combatant = fight?.encounter.combatants.find((c) => c.id === token.combatant);
+  return combatant?.kind === "monster" ? combatant : undefined;
+}
+
 /**
  * A marker as a viewer who may see it sees it: its own name, and the picture the DM chose for it
  * (the one the DM sees on it), so showing a token shows exactly what's on it. Its note, and the
- * settings behind the picture, are the DM's only.
+ * settings behind the picture, are the DM's only. A monster's marker is down at 0 hit points,
+ * for everyone; while it's in the fight, the fight says whether it's hidden, and its hit points.
  */
 export function markerView(
   token: MarkerToken,
   viewer: Viewer,
   revealed: boolean,
   pictureOf: PictureOf,
+  monster?: MonsterCombatant,
 ): TokenView {
   const portraitUrl = token.picture === "note" ? pictureOf(token) : undefined;
   const icon = token.picture === "icon" ? token.icon : undefined;
-  const secret = token.visibility !== "players";
+  const secret = monster ? !!monster.hidden : token.visibility !== "players";
+  const hp = monster ? { current: monster.hp.current, max: monster.hp.max } : token.hp;
   return {
     id: token.id,
     kind: "marker",
@@ -130,13 +142,18 @@ export function markerView(
     colour: token.colour,
     ...(portraitUrl ? { portraitUrl } : icon && { icon }),
     movable: viewer.role === "dm",
+    ...(monster && { combatant: monster.id }),
+    ...(hp && hp.current <= 0 && { down: true }),
     ...(viewer.role === "dm" && {
-      visibility: token.visibility,
+      // In the fight, the fight's hiding is the one switch.
+      visibility: secret ? ("dm" as const) : ("players" as const),
       marker: {
         ...(token.note && { note: token.note }),
         ...(token.picture && { picture: token.picture }),
         ...(token.icon && { icon: token.icon }),
+        ...(token.statblock && { statblock: token.statblock }),
       },
+      ...(hp && { hp }),
       ...(secret ? { hidden: "secret" as const } : !revealed && { hidden: "fog" as const }),
     }),
   };

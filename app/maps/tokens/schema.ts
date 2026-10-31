@@ -1,6 +1,7 @@
 /** zod schemas for tokens crossing a trust boundary: the data file and requests. */
 import { z } from "zod";
 import type { Visibility } from "~/campaign/types";
+import { statblockRef } from "~/combat/schema";
 import type { TokenAction } from "./actions";
 import { MARKER_COLOURS, TOKEN_SIZES, type Token } from "./types";
 
@@ -22,6 +23,12 @@ const note = z.string().min(1).max(500).optional().catch(undefined);
 const picture = z.enum(["note", "icon"]).optional().catch(undefined);
 const icon = z.string().min(1).max(40).optional().catch(undefined);
 const aside = z.literal(true).optional().catch(undefined);
+const statblock = statblockRef.optional().catch(undefined);
+const hp = z
+  .object({ current: z.number().int().min(0), max: z.number().int().min(1) })
+  .optional()
+  .catch(undefined);
+const combatant = id.optional().catch(undefined);
 
 export const tokenSchema: z.ZodType<Token> = z.discriminatedUnion("kind", [
   z.object({
@@ -45,6 +52,9 @@ export const tokenSchema: z.ZodType<Token> = z.discriminatedUnion("kind", [
     picture,
     icon,
     aside,
+    statblock,
+    hp,
+    combatant,
   }),
   z.object({
     kind: z.literal("combatant"),
@@ -92,6 +102,8 @@ export const tokenActionSchema: z.ZodType<TokenAction> = z.discriminatedUnion("t
     note: z.string().min(1).max(500).nullable().optional(),
     picture: z.enum(["note", "icon"]).nullable().optional(),
     icon: z.string().min(1).max(40).optional(),
+    statblock: statblockRef.nullable().optional(),
+    hp: z.null().optional(),
   }),
 ]);
 

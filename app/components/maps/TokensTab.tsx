@@ -10,8 +10,6 @@ import { PlacingHint, type Placing } from "./PlacingHint";
 import { TokenDistances } from "./TokenDistances";
 import { TokenSettings } from "./TokenSettings";
 import { TokenThumb } from "./TokenThumb";
-import { MonsterField, type FightTokensPrototype } from "./FightTokensPrototype";
-import { newId } from "~/shared/ids";
 
 interface Props {
   mapId: MapId;
@@ -29,8 +27,6 @@ interface Props {
   /** On a battle map, the chosen token lists how far the others are. */
   grid?: MapGrid;
   size: Size;
-  /** PROTOTYPE: statblocks on tokens. */
-  proto?: FightTokensPrototype;
 }
 
 const byName = (a: { name: string }, b: { name: string }) =>
@@ -55,7 +51,6 @@ export function TokensTab({
   send,
   grid,
   size,
-  proto,
 }: Props) {
   const [adding, setAdding] = useState(false);
   const markers = tokens.filter((token) => token.kind === "marker").sort(byName);
@@ -96,17 +91,9 @@ export function TokensTab({
           <AddTokenForm
             notes={tools.notes}
             existing={markers.map((marker) => marker.name)}
-            monsters={proto?.creatures}
             onCancel={() => setAdding(false)}
-            onPlace={(given, creature) => {
+            onPlace={(drafts) => {
               setAdding(false);
-              // PROTOTYPE: IDs made here, to link each new token to its statblock.
-              const drafts = given.map((draft) => {
-                const id = newId();
-                if (creature) proto?.link(id, creature.key);
-                const size = creature?.squares ?? 1;
-                return { ...draft, id, ...(size > 1 && { size }) };
-              });
               const first = drafts[0].name;
               const last = drafts.at(-1)?.name;
               onPlace({
@@ -127,7 +114,6 @@ export function TokensTab({
                 key={marker.id}
                 marker={marker}
                 chosen={marker.id === selected?.id}
-                monster={proto?.creatureOf(marker.id)?.name}
                 onSelect={() => onSelect(marker)}
                 send={send}
               />
@@ -159,17 +145,6 @@ export function TokensTab({
         </details>
       )}
 
-      {selected && proto && selected.kind === "marker" && (
-        <div className="text-sm">
-          <MonsterField
-            key={selected.id}
-            label={`${selected.name}'s statblock (prototype)`}
-            creatures={proto.creatures}
-            value={proto.creatureOf(selected.id)}
-            onChange={(creature) => proto.link(selected.id, creature?.key)}
-          />
-        </div>
-      )}
       {selected && (
         <TokenSettings
           key={selected.id}
@@ -188,13 +163,11 @@ export function TokensTab({
 function MarkerRow({
   marker,
   chosen,
-  monster,
   onSelect,
   send,
 }: {
   marker: TokenView;
   chosen: boolean;
-  monster?: string;
   onSelect: () => void;
   send: (actions: TokenAction[]) => void;
 }) {
@@ -210,11 +183,6 @@ function MarkerRow({
         onClick={onSelect}
       >
         {marker.name}
-        {monster && (
-          <span className="ml-1 text-xs text-muted" title={`Joins a fight as ${monster}`}>
-            ⚔ {monster}
-          </span>
-        )}
         {marker.hidden === "fog" && shown && (
           <span className="ml-1 text-xs text-muted">(under the fog)</span>
         )}

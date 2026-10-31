@@ -223,6 +223,64 @@ describe("tokensForViewer", () => {
     it("links a party member's token to their place in the fight", () => {
       expect(seen(playerOne, pc("Party/One"))[0].combatant).toBe("One");
     });
+
+    describe("markers in the fight", () => {
+      const goblin = { entityId: "srd-goblin", name: "Goblin", source: "srd-5.2" as const };
+      const marker = (combatant: string, fields: Partial<MarkerToken> = {}) =>
+        aMarker({
+          id: `m-${combatant}`,
+          at: LIT,
+          name: "Snaggletooth",
+          colour: "green",
+          statblock: goblin,
+          combatant,
+          ...fields,
+        });
+
+      it("keeps its own name and look, linked to its combatant", () => {
+        expect(seen(playerOne, marker("Goblin 1", { visibility: "players" }))).toEqual([
+          {
+            id: "m-Goblin 1",
+            kind: "marker",
+            at: LIT,
+            size: 1,
+            name: "Snaggletooth",
+            colour: "green",
+            movable: false,
+            combatant: "Goblin 1",
+          },
+        ]);
+      });
+
+      it("is hidden or shown as its monster is, whatever the marker said before", () => {
+        // The fight's hiding is the one switch while it's in the fight.
+        expect(seen(playerOne, marker("Goblin 1", { visibility: "dm" }))).toHaveLength(1);
+        expect(seen(playerOne, marker("Ambusher", { visibility: "players" }))).toEqual([]);
+        expect(seen(DM_VIEWER, marker("Ambusher"))[0]).toMatchObject({
+          hidden: "secret",
+          visibility: "dm",
+        });
+      });
+
+      it("takes its hit points from the fight, for the DM, and is down at 0 for everyone", () => {
+        const kept = { hp: { current: 9, max: 9 }, visibility: "players" as const };
+        expect(seen(DM_VIEWER, marker("Goblin 1", kept))[0].hp).toEqual({ current: 4, max: 7 });
+        const [down] = seen(playerOne, marker("Goblin 2", kept));
+        expect(down).toMatchObject({ down: true, colour: "green" });
+        expect(down).not.toHaveProperty("hp");
+      });
+
+      it("is a plain marker again once its combatant isn't in the fight", () => {
+        const left = marker("Gone", { visibility: "players", hp: { current: 0, max: 7 } });
+        const [token] = seen(playerOne, left);
+        expect(token).not.toHaveProperty("combatant");
+        expect(token).toMatchObject({ name: "Snaggletooth", down: true });
+        expect(seen(DM_VIEWER, left)[0]).toMatchObject({
+          hp: { current: 0, max: 7 },
+          marker: { statblock: goblin },
+        });
+      });
+    });
   });
 
   it("never gives players DM-only details, whatever the token", () => {
