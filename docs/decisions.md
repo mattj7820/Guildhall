@@ -1588,3 +1588,30 @@ still refuses players' moves with a `map`.
 The DM gets no lock: keeping a place shut is keeping it fogged, secret or unshared, and the DM sees
 tokens go live and can bring them back. Fights stop it: no one walks into a map with a fight on it,
 and no one in the fight walks out of its map; the DM still moves them as the story needs.
+
+## 82. The front page shows the campaign as it stands
+
+**Date:** 2026-10-31
+
+**Context.** The home page was a title and a card per module: a menu, the same every week. The
+DM wanted it to have some life, and Guildhall already knows where the party is, whether a fight
+is on and who's connected.
+
+**Decision.** The front page is a banner of the campaign now, the party, then the modules in a row:
+
+- **The map where the party is**, chosen with nothing to set (`bannerMap`): a player's is the map
+  their own character is on, the DM's the one most of the party is on. It's the Maps page's
+  thumbnail, so a player sees only what they've explored, and the faces are the tokens
+  `tokensForViewer` gives them (a party member in the dark isn't there).
+- **A fight**, from the fight's live room: the round and whose turn, as `fightView` lets the
+  viewer know it (a hidden monster's turn names no one to players).
+- **The next session**: a date the DM sets on the page, kept as an instant in
+  `next-session.json` (a date that can't be read is none). It's shown only in the browser, in its
+  own time zone, so the server never guesses one, counting calendar days ("tomorrow"). Beside it,
+  the latest session note the viewer may read (`type: session`, by its title's number).
+- **Who's here**: a ring on each PC whose player has Guildhall open, and on the DM. The hub knows
+  who's connected; a party room tells each viewer by party-card names (never note IDs, which can
+  be paths), whenever someone comes or goes. Nothing from the sheets, since players' characters
+  are theirs, and nothing about which page anyone is on.
+- **Each theme's movement**: embers, glints, candlelight and motes, in CSS on the `gh-hero-*`
+  hooks, faint and slow, and still under reduced motion.

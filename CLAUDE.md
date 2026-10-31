@@ -7,22 +7,23 @@ Guildhall links out to those tools and grows its own modules. The point of build
 **interconnection**: eventually wiki, maps, characters, combat and dice all link through a shared
 campaign model (NPCs, locations, maps, characters, sessions). See `docs/roadmap.md`.
 
-Built so far: hub home page, read-only Obsidian wiki with a DM preview of the players' view, a
-combat tracker (one fight for the table, kept in the data folder and pushed live; players follow it
-and end their own turn; run beside a map, with monsters' tokens and quick damage for picked
-monsters; fights started from tokens picked on the map, each monster the same marker all through;
-prepared encounters, which can start on a map; every SRD monster from both the 2014 and
+Built so far: a front page with the campaign as it stands (where the party is, a fight, the next
+session with a countdown, who's here now), read-only Obsidian wiki with a DM preview of the players'
+view, a combat tracker (one fight for the table, kept in the data folder and pushed live; players
+follow it and end their own turn; run beside a map, with monsters' tokens and quick damage for
+picked monsters; fights started from tokens picked on the map, each monster the same marker all
+through; prepared encounters, which can start on a map; every SRD monster from both the 2014 and
 2024 SRDs beside the vault's statblocks), the DM's stunts and sounds on maps (played live for
-everyone, only when the DM plays them), interactive maps (vault images with
-areas, shown as pins, leading to deeper maps and notes; found on a Maps page with a preview of
-each; kept in the data folder), fog of war and tokens on
-maps (the party's, NPCs from their notes and the DM's markers, moved live over websockets and
-managed from the DM's Tokens tab; kept in the data folder),
-character sheets with a game-style bag (players edit their own, the DM gives items; spells, slots,
-features' uses, hit dice and rests tracked on them, spells picked from both SRDs and the DM's spell notes, and prepared from a longer list; a player's sheet and bag beside the map; kept in
-the data folder), sign-in with Discord, where the DM lets players in and says who they play, and three themes
-(Storybook, Iron and Ember, Gemlight), each person's pick saved on their account.
-It's built to be hosted: a Docker image, with the vault copied read-only from Google Drive (see
+everyone, only when the DM plays them), interactive maps (vault images with areas, shown as pins,
+leading to deeper maps and notes; found on a Maps page with a preview of each; kept in the data
+folder), fog of war and tokens on maps (the party's, NPCs from their notes and the DM's markers,
+moved live over websockets and managed from the DM's Tokens tab; kept in the data folder), character
+sheets with a game-style bag (players edit their own, the DM gives items; spells, slots, features'
+uses, hit dice and rests tracked on them, spells picked from both SRDs and the DM's spell notes, and
+prepared from a longer list; a player's sheet and bag beside the map; kept in the data folder),
+sign-in with Discord, where the DM lets players in and says who they play, and three themes
+(Storybook, Iron and Ember, Gemlight), each person's pick saved on their account. It's built to be
+hosted: a Docker image, with the vault copied read-only from Google Drive (see
 `docs/deployment.md`).
 
 ## Hard constraints
@@ -95,10 +96,10 @@ First e2e run needs `npx playwright install chromium`.
 - `server.js`: HTTP entry (Vite middleware in dev, static and build in prod), hands websocket
   upgrades to the app, and a clean shutdown on SIGTERM.
 - `server/app.ts`: creates long-lived services once (config, `LiveVault`, `PreparedEncounters`,
-  `CurrentFight`, `CampaignMaps`, `MapFogs`, `MapTokens`, `Characters`, `Members`, sessions, Discord
-  sign-in, and `Live`) and passes them to React Router through `servicesContext`; also the
-  connection's address, for dev sign-in. Exports `handleUpgrade` for websockets. `server/http.ts`:
-  trusting the proxy, security headers, `/healthz`.
+  `CurrentFight`, `NextSession`, `CampaignMaps`, `MapFogs`, `MapTokens`, `Characters`, `Members`,
+  sessions, Discord sign-in, and `Live`) and passes them to React Router through `servicesContext`;
+  also the connection's address, for dev sign-in. Exports `handleUpgrade` for websockets.
+  `server/http.ts`: trusting the proxy, security headers, `/healthz`.
 - `app/root.tsx`: its middleware is `authMiddleware` (`app/.server/auth/middleware.ts`), which
   checks the Origin of posts, reads the session, decides access, and sets `accountContext` and
   `viewerContext`. **Loaders read the viewer from context and pass it into every vault query.**
@@ -166,9 +167,9 @@ First e2e run needs `npx playwright install chromium`.
   `distance.ts` (true lengths at 5 ft a square, `formatFeet`), `shapes.ts` (spell areas:
   `insideArea`, `coveredSquares` by the centre rule, `areaPath`, `caughtIn`).
 - `app/live/`: the live connection (isomorphic): `messages.ts` (what each end sends; zod for the
-  browser's; `FIGHT_ROOM`, the room for the fight), `client.ts` (`LiveClient`: one connection per
-  tab, rooms, reconnecting), `throttle.ts` (20 drags a second) and `useLive.ts` (`useLiveMap`,
-  `sendLive`).
+  browser's; `FIGHT_ROOM`, the room for the fight; `PARTY_ROOM`, who's here), `client.ts`
+  (`LiveClient`: one connection per tab, rooms, reconnecting), `throttle.ts` (20 drags a second) and
+  `useLive.ts` (`useLiveMap`, `sendLive`).
 - `app/characters/`: character sheets and bags (isomorphic): `types.ts` (`Character` is a
   `PlayerCharacter` with a `Sheet`, or a shared `Companion`; `InventoryItem`, `Purse`),
   `abilities.ts` (abilities, skills, `abilityModifier`, `signed`), `derive.ts` (`deriveSheet`: the
@@ -243,10 +244,11 @@ First e2e run needs `npx playwright install chromium`.
   token from a map; `fightStopsTravel`, `travelLanding`).
 - `app/.server/live/`: websockets. `sockets.ts` (`LiveSockets`: signs an upgrade in with
   `identify`, and a strict Origin check), `hub.ts` (`LiveHub`: connections, rooms per map,
-  `publish` building each viewer's copy, not repeating a state, limits, pings, rechecking members),
+  `publish` building each viewer's copy, not repeating a state, limits, pings, rechecking members,
+  `online`: who has a connection open),
   `map-rooms.ts` (a map's state and tokens for one viewer), `holds.ts` (who's moving which token),
   `live.ts` (`Live`, in the services: `mapChanged`, `memberChanged`, `fightChanged`, `stunt`,
-  drags).
+  `online`, drags; tells the party room when someone comes or goes).
 - `app/.server/srd/`: the SRD's monsters and spells, generated by `scripts/import-srd.ts` (with
   `scripts/srd/convert.ts` and `scripts/srd/spells.ts`, the pure conversions) and never edited by
   hand: `monsters-5.1.json`, `monsters-5.2.json`, `spells-5.1.json`, `spells-5.2.json`,
@@ -264,31 +266,37 @@ First e2e run needs `npx playwright install chromium`.
   that isn't JSON fails the check: a 400, never a 500). `app/.server/not-found.ts`: `notFound()`
   and `requireDm(viewer)`, the one 404 for missing and not-yours alike.
 - `app/wiki/`: URL helpers and types shared with the browser.
-- `app/routes/`: `home`, `wiki` (layout + sidebar), `wiki-home` (landing page + `?q=` search),
-  `wiki-note` (`/wiki/*`), `combat` (the DM's tracker, or a player's view of the fight; a hydrating
-  `clientLoader` adds a fight left in the browser from before; `?start=<id>` starts a prepared
-  encounter), `combat-fight` (JSON: GET the fight as the viewer may see it; POST the DM's saves,
-  free movement and ending, and a player's end of turn), `combat-statblock` (JSON: one statblock
-  for the DM, by key), `combat-prepared` (list; create, duplicate
-  and delete actions), `combat-prepared-edit` (editor; autosave action), `maps` (the nested list of maps with a
-  preview: every map for the DM, only shared ones for players; create action), `map-view` (`/maps/:id`: the table
-  view for the DM, with Combat and `?start=<id>` for a prepared fight there; the fogged view for
-  players, with the fight's turn strip), `map-edit` (editor; save, createChild, setImage,
-  setVisibility and delete actions; `?area=` preselects an area), `map-fog` (JSON: the DM's fog
-  changes), `map-tile` (resource route: one tile of a map's image as players may see it),
-  `map-thumbnail` (resource route: a map's thumbnail, the DM's whole or players' masked),
-  `map-version` (JSON: what an open player map polls while its live connection is down: the version
-  and its tokens), `map-tokens` (JSON: POST token actions), `map-travel` (JSON: a player takes their token to
-  another map), `map-token-picture` (resource route:
-  an NPC token's picture, only to those who may see the token),
-  `map-stunts` (JSON: the DM plays a stunt or sound), `sound` (resource route: audio from the
-  sounds folder only, for anyone signed in), `map-image` (resource route: a map's
-  image by map ID), `vault-asset` (resource route), `view-mode` (the DM's preview toggle), `login`
-  (sign-in page; dev sign-in action), `logout` (POST), `auth-discord` (starts Discord sign-in) and
-  `auth-discord-callback`, `waiting` (for newcomers), `members` (DM-only: approve, assign, remove), `settings` (each member's own: their theme),
-  `characters` (the party; start, relink and delete actions), `character` (`/characters/:id`, a
-  sheet or companion), `character-changes` (JSON: GET the stored character, POST a batch of
-  actions), `character-sheet-data` (JSON: a sheet's page data, for opening it beside the map),
+- `app/home/`: the front page (isomorphic): `front-page.ts` (`FrontPage`, `bannerMap`: the map
+  where the party is for one viewer, `fightSummary`, `latestSession`) and `countdown.ts`.
+  `app/.server/home/`: `front-page.ts` (`frontPage`, the page for a viewer), `next-session.ts`
+  (`NextSession`, over `next-session.json`) and `presence.ts` (`presenceFor`: who's here, by
+  party-card names). `app/components/home/`: `FrontPage`, `BannerMap`, `NextSession`,
+  `PartyStrip`, `HubIcon`.
+- `app/routes/`: `home` (the front page; the DM sets the next session), `wiki` (layout + sidebar),
+  `wiki-home` (landing page + `?q=` search), `wiki-note` (`/wiki/*`), `combat` (the DM's tracker, or
+  a player's view of the fight; a hydrating `clientLoader` adds a fight left in the browser from
+  before; `?start=<id>` starts a prepared encounter), `combat-fight` (JSON: GET the fight as the
+  viewer may see it; POST the DM's saves, free movement and ending, and a player's end of turn),
+  `combat-statblock` (JSON: one statblock for the DM, by key), `combat-prepared` (list; create,
+  duplicate and delete actions), `combat-prepared-edit` (editor; autosave action), `maps` (the
+  nested list of maps with a preview: every map for the DM, only shared ones for players; create
+  action), `map-view` (`/maps/:id`: the table view for the DM, with Combat and `?start=<id>` for a
+  prepared fight there; the fogged view for players, with the fight's turn strip), `map-edit`
+  (editor; save, createChild, setImage, setVisibility and delete actions; `?area=` preselects an
+  area), `map-fog` (JSON: the DM's fog changes), `map-tile` (resource route: one tile of a map's
+  image as players may see it), `map-thumbnail` (resource route: a map's thumbnail, the DM's whole
+  or players' masked), `map-version` (JSON: what an open player map polls while its live connection
+  is down: the version and its tokens), `map-tokens` (JSON: POST token actions), `map-travel` (JSON:
+  a player takes their token to another map), `map-token-picture` (resource route: an NPC token's
+  picture, only to those who may see the token), `map-stunts` (JSON: the DM plays a stunt or sound),
+  `sound` (resource route: audio from the sounds folder only, for anyone signed in), `map-image`
+  (resource route: a map's image by map ID), `vault-asset` (resource route), `view-mode` (the DM's
+  preview toggle), `login` (sign-in page; dev sign-in action), `logout` (POST), `auth-discord`
+  (starts Discord sign-in) and `auth-discord-callback`, `waiting` (for newcomers), `members`
+  (DM-only: approve, assign, remove), `settings` (each member's own: their theme), `characters` (the
+  party; start, relink and delete actions), `character` (`/characters/:id`, a sheet or companion),
+  `character-changes` (JSON: GET the stored character, POST a batch of actions),
+  `character-sheet-data` (JSON: a sheet's page data, for opening it beside the map),
   `character-give` (JSON: a gift to another bag), `character-portrait` (resource route), `spells`
   (JSON: every spell the viewer may pick, for the picker when it opens), `spell-text` (JSON: one
   spell's text as the viewer may read it), `credits` (icon and SRD credits).
