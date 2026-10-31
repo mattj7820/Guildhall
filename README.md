@@ -182,12 +182,16 @@ _The same fight as a player sees it: only what the DM has revealed, with their s
     hold Alt), by mouse or a square at a time with the arrow keys.
   - A toolbar over the map: measure true distances, with turns; lay out a spell's sphere, cube,
     cone or line and see which squares and who it catches. Just on your own screen.
+  - **Fights from the map:** give a token a monster's statblock (the vault's or either SRD's)
+    when adding it, set up the scene, then pick the ones in the fight (Shift-click, Shift-drag a
+    box, or tick them) and Start a fight with them. Each stays the same token, under its own name
+    and with its own look, for everyone; a DM-only one joins hidden, and showing it reveals it.
+    Monsters added in the tracker are placed with a click instead. Afterwards they stay where they
+    fell, keeping their hit points for the next fight (or End fight clears them).
   - **The fight on the map:** Combat puts the tracker beside the map and a turn strip across it.
-    Monsters joining are placed with a click, sized from their statblocks; their tokens show the
-    DM an HP bar, go grey when down, and leave when the monster does. Whoever's turn it is is
+    Monsters' tokens show the DM an HP bar and are crossed out when down. Whoever's turn it is is
     ringed, for everyone. Players move only on their own turn, unless the DM switches on free
-    movement (the DM moves anything). End fight clears the monsters, or leaves them where they
-    fell.
+    movement (the DM moves anything).
   - **Quick damage:** click a monster's token (Shift-click for more, or pick everyone a spell area
     catches) and type the number a player rolled: Damage, Half or Heal, all at once.
   - **Stunts, for the big moments:** the DM can play an impact, a flash, a cloud of smoke or a
