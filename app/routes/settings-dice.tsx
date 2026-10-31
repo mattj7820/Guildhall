@@ -1,18 +1,17 @@
 import { useState } from "react";
-import { data, Form, Link, useRevalidator } from "react-router";
+import { data, Link, useRevalidator } from "react-router";
 import { z } from "zod";
 import { DataFileError } from "~/.server/data/json-store";
 import { diceStyle } from "~/.server/dice/catalogue";
 import { usableDice } from "~/.server/dice/collections";
 import { collectionView } from "~/.server/dice/view";
 import { notFound } from "~/.server/not-found";
-import { DiePicture } from "~/components/dice/DiePicture";
+import { DicePicker } from "~/components/dice/DicePicker";
 import { PackOpening } from "~/components/dice/PackOpening";
-import { TryDice } from "~/components/dice/TryDice";
 import { panelClass, primaryButtonClass } from "~/components/styles";
 import { accountContext, servicesContext } from "~/context";
-import type { CollectionView, DicePack, OwnedDieView } from "~/dice/collection";
-import { DIE_TYPES, RARITIES, RARITY_INFO, type DieType } from "~/dice/styles";
+import type { CollectionView, DicePack } from "~/dice/collection";
+import { DIE_TYPES, RARITIES, RARITY_INFO } from "~/dice/styles";
 import type { Route } from "./+types/settings-dice";
 
 export function meta(_: Route.MetaArgs) {
@@ -81,7 +80,7 @@ export default function SettingsDice({ loaderData, actionData }: Route.Component
       {!isDm && <Packs packs={packs} />}
       <section aria-labelledby="collection-heading" className="flex flex-col gap-4">
         <h2 id="collection-heading" className="font-display text-title text-2xl">
-          Collection ({total === 1 ? "1 die" : `${total} dice`})
+          Collection ({isDm ? "every die" : total === 1 ? "1 die" : `${total} dice`})
         </h2>
         {owned.length === 0 && (
           <p className="text-muted">
@@ -89,14 +88,7 @@ export default function SettingsDice({ loaderData, actionData }: Route.Component
             inspiration.
           </p>
         )}
-        {DIE_TYPES.map((sides) => (
-          <DieType
-            key={sides}
-            sides={sides}
-            dice={owned.filter((die) => die.sides === sides)}
-            favourite={favourites[sides]}
-          />
-        ))}
+        {owned.length > 0 && <DicePicker owned={owned} favourites={favourites} />}
       </section>
       {!isDm && <Odds />}
     </main>
@@ -141,67 +133,6 @@ function Packs({ packs }: { packs: DicePack[] }) {
         />
       )}
     </section>
-  );
-}
-
-/** One type's dice, each with a button to roll it first. */
-function DieType({
-  sides,
-  dice,
-  favourite,
-}: {
-  sides: DieType;
-  dice: OwnedDieView[];
-  favourite: string | undefined;
-}) {
-  if (dice.length === 0) return null;
-  return (
-    <section aria-label={`d${sides}`} className="flex flex-col gap-2">
-      <div className="flex items-baseline gap-3">
-        <h3 className="font-display text-title text-xl">d{sides}</h3>
-        <TryDice sides={sides} />
-      </div>
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {dice.map((die) => (
-          <DieCard key={die.style.id} die={die} favourite={die.style.id === favourite} />
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function DieCard({ die, favourite }: { die: OwnedDieView; favourite: boolean }) {
-  const { style, sides, count } = die;
-  const rarity = RARITY_INFO[style.rarity];
-  return (
-    <li
-      aria-label={`${style.label} d${sides}`}
-      className={`gh-card bg-surface flex gap-3 rounded-lg border p-3 ${favourite ? "border-accent ring-accent ring-2" : "border-line"}`}
-    >
-      <DiePicture sides={sides} style={style} />
-      <div className="flex min-w-0 flex-col gap-1">
-        <span className="text-title font-semibold">
-          {style.label}
-          {count > 1 && <span className="text-muted font-normal"> ×{count}</span>}
-        </span>
-        <span className="text-xs font-semibold" style={{ color: rarity.colour }}>
-          {rarity.label}
-        </span>
-        <span className="text-muted text-sm">{style.description}</span>
-        <Form method="post">
-          <input type="hidden" name="sides" value={sides} />
-          <button
-            type="submit"
-            name="style"
-            value={favourite ? "" : style.id}
-            aria-pressed={favourite}
-            className="text-link text-sm font-semibold"
-          >
-            {favourite ? "Rolled first" : "Roll these first"}
-          </button>
-        </Form>
-      </div>
-    </li>
   );
 }
 
