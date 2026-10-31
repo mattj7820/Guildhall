@@ -61,8 +61,11 @@ _The same fight as a player sees it: only what the DM has revealed, with their s
   - A dice roller (`2d6+3`, advantage and disadvantage), and undo.
   - **3D dice:** every roll in Guildhall (here, on the map and on character sheets) is thrown
     across the roller's own screen and lands on the result already rolled, which shows once they
-    land. Each member can turn them off in Settings, and the DM gives out dice sets (Gilded,
-    Glass, Bone, Blood) on the Members page.
+    land. Each member can turn them off in Settings.
+  - **Dice packs:** the DM gives packs for things worth inspiration, and each member opens theirs
+    (a shake, a glow in the rarity's colour, the die turning in 3D) to find one die, common to
+    legendary. Their collection in Settings shows what they've found, and which style each type
+    rolls with first; two of a d20 roll two at once.
   - **One fight for the table**, kept on the server: it survives reloads and restarts, and every
     change reaches everyone at once. Players follow it on their Combat page (or over the map): the
     turn order, their own characters' conditions and hit points (from their sheets), and an "End

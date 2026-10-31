@@ -1622,3 +1622,45 @@ dice in tests aren't used up.
   (`DiceVoice`: metal clinks and rings on, glass chimes, bone thuds), and the theme's dice sound
   like resin.
 - End-to-end tests ask for reduced motion, so results show at once; `dice.spec.ts` throws them.
+
+## 83. Dice packs: dice one at a time, drawn on the server, in each member's own collection
+
+**Date:** 2026-10-31
+
+**Context.** With decision 82, the DM gave whole dice sets, one look for every die. The DM wanted
+something to give for things worth inspiration (writing the session recap, say): packs a member
+opens to find new dice, a little like trading-card packs, a collection of what they've found,
+and a choice of dice for each type. Owning two of a d20 should mean rolling two at once.
+
+**Decision.** A die is one style in one type (Bone d20), and members own a count of each. The DM
+gives packs (with why, in the DM's own words) and particular dice on the Members page; each pack
+holds one die, drawn on the server, with the injected `Rng`, when its member opens it.
+
+- **Styles are the app's, and server-only** (`app/.server/dice/catalogue.ts`), so a browser never
+  learns of a die its viewer hasn't found: the root loader sends only the styles in their bag, the
+  collection page only theirs, and opening a pack answers with the one drawn. The DM has every
+  die and opens no packs. An ID, once used, is never reused.
+- **Rarities** are D&D's five, with odds shown on the collection page: common 50%, uncommon 30%,
+  rare 13%, very rare 5%, legendary 2%. The rarity is drawn by the odds, then a style of it and a
+  type evenly (`drawDie`). No pity rule.
+- **Never a wasted pack:** each die has a most worth having (d20 ×3 for Elven Accuracy, d12 ×2,
+  d10 ×4, d8 ×8, d6 ×10, d4 ×4: about the most a roll throws). A pack never draws a die past it,
+  and a rarity with nothing left shares its odds out; a member with everything keeps the pack.
+  Nothing converts into anything.
+- **Rolling** picks dice up like a bag: for each type, the favourite style's first, then their
+  other dice of that type, rarest first, then the theme's dice. One roll can mix styles, each die
+  drawn and heard in its own (`diceBag` on the server, `stylesForThrow` in the browser).
+- **Sets given before packs** (`dice.given`) count as a full kit of that style, for good, and the
+  set picked (`dice.set`) is the favourite for any type without a choice. Nothing writes either
+  any more; a choice of "none" overrides the old pick.
+- **Kept in `dice.json`**, apart from `members.json`, so an older Guildhall never reads it.
+  Damaged entries are dropped, never refusing the file. Opening is by pack ID, inside one write,
+  so two tabs can't open a pack twice.
+- **Opening** is always the member's own click (decision 55): the pack shakes, glows in the
+  rarity's colour for longer the rarer the die, bursts, and the die turns in 3D, with light behind
+  very rare and legendary ones. A click skips to the die. With reduced motion it's simply there.
+  The sounds (a shimmer, a burst, a chime with more notes for rarer dice) follow the dice sounds
+  switch. Only the opener sees it; packs wait for the next page load, nothing is sent live.
+- **The first new dice** (five common, two uncommon, two rare, a very rare and two legendaries
+  that glow) have plain working labels and functional descriptions, for the DM to rename. Looks
+  can now glow (`DiceLook.glow`); patterns and real glass are still to come.

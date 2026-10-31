@@ -172,6 +172,10 @@ Dice decide initiative, tie-breaks and monster HP, so tests must control them.
   for others' browsers in `openAs`), so dice land at once and results show straight away;
   `dice.spec.ts` turns motion back on to watch them land. `planThrow` is unit tested for every
   face of every die landing on top.
+- **Dice packs** are drawn on the server with real randomness, so end-to-end tests check only
+  that a pack opens into some die and joins the collection; the DM's gifts of particular dice
+  set up what's known. The odds, caps and draws are unit tested with scripted and seeded `Rng`s,
+  against fixture styles (`app/.server/dice/test-styles.ts`), not the growing catalogue.
 - The table has one fight, kept on the server, so every spec that uses the tracker is gathered
   in `tests/e2e/fight.spec.ts`, which imports them from `tests/e2e/fight/` and runs them one after
   another, each starting with the fight ended. Wait for `fightSaved(page)` before checking what
