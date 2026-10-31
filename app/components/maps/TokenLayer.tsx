@@ -224,6 +224,7 @@ function TokenMark({
       role={interactive ? "button" : "img"}
       aria-label={tokenLabel(token, sayMovable)}
       aria-pressed={onSelect ? selected : undefined}
+      data-token-id={token.id}
       tabIndex={interactive ? 0 : undefined}
       className={`group outline-none ${cursor}`}
       style={{

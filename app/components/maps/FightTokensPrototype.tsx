@@ -15,6 +15,9 @@ export interface FightPick {
   creature?: CreatureOption;
 }
 
+/** Screen pixels a press may wander and still be a click. */
+const CLICK_SLOP = 4;
+
 const label = (creature: CreatureOption) =>
   `${creature.name} (${tagOf(creature)}${creature.challenge ? `, CR ${creature.challenge}` : ""})`;
 
@@ -91,7 +94,12 @@ export function useFightTokensPrototype({
       window.removeEventListener("keyup", up);
     };
   }, [on]);
-  const [box, setBox] = useState<{ from: [number, number]; to: [number, number] }>();
+  const [box, setBox] = useState<{
+    from: [number, number];
+    to: [number, number];
+    /** Where the press was on screen, to tell a click from a drag. */
+    client: [number, number];
+  }>();
 
   function boxLayer(size: Size, canvas: CanvasTools) {
     if (!on || (!shift && !box)) return null;
@@ -113,15 +121,27 @@ export function useFightTokensPrototype({
             const point = canvas.clientToImage(event.clientX, event.clientY);
             if (!point) return;
             event.currentTarget.setPointerCapture(event.pointerId);
-            setBox({ from: point, to: point });
+            setBox({ from: point, to: point, client: [event.clientX, event.clientY] });
           }}
           onPointerMove={(event) => {
             if (!box) return;
             const point = canvas.clientToImage(event.clientX, event.clientY);
             if (point) setBox({ ...box, to: point });
           }}
-          onPointerUp={() => {
-            if (rect) {
+          onPointerUp={(event) => {
+            const moved = box
+              ? Math.hypot(event.clientX - box.client[0], event.clientY - box.client[1])
+              : 0;
+            if (box && moved < CLICK_SLOP) {
+              // A shift-click: toggles the token under the pointer (this layer covers them).
+              const under = document
+                .elementsFromPoint(event.clientX, event.clientY)
+                .find((element) => element.closest("[data-token-id]"))
+                ?.closest("[data-token-id]")
+                ?.getAttribute("data-token-id");
+              const token = tokens.find((each) => each.id === under);
+              if (token) toggle(token);
+            } else if (rect) {
               const inside = tokens.filter((token) => {
                 if (!pickable(token)) return false;
                 const [x, y] = toPixels(token.at, size);
