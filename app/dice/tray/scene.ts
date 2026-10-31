@@ -150,6 +150,8 @@ export function buildDie(
     color: new THREE.Color(look.body),
     roughness: look.roughness,
     metalness: look.metalness,
+    emissive: new THREE.Color(look.glow ?? "#000000"),
+    emissiveIntensity: look.glow ? 0.1 : 0,
     flatShading: true,
     transparent: opacity < 1,
     opacity,
@@ -207,6 +209,10 @@ function numberTexture(value: number, sides: number, look: DiceLook): THREE.Canv
   canvas.width = canvas.height = 128;
   const context = canvas.getContext("2d")!;
   context.fillStyle = look.ink;
+  if (look.glow) {
+    context.shadowColor = look.glow;
+    context.shadowBlur = 14;
+  }
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.font = `bold ${value >= 10 ? 60 : 72}px ${look.font}`;

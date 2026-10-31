@@ -1,18 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { MOST_OF_A_DIE, type OwnedDie } from "~/dice/collection";
 import { seededRng, sequenceRng } from "~/dice/rng";
-import { DIE_TYPES, RARITIES, type DieStyle, type Rarity } from "~/dice/styles";
+import { DIE_TYPES, RARITIES } from "~/dice/styles";
 import { drawDie } from "./packs";
+import { testStyle } from "./test-styles";
 
-const style = (id: string, rarity: Rarity): DieStyle => ({
-  id,
-  label: id,
-  description: "Fixture: a style for tests",
-  rarity,
-  look: { body: "#000000", ink: "#ffffff", metalness: 0, roughness: 1, opacity: 1 },
-  voice: { pitch: 1, ring: 0, ringPitch: 1, ringFor: 0, knockFor: 0.05 },
-});
-const STYLES = RARITIES.map((rarity) => style(rarity, rarity));
+const STYLES = RARITIES.map((rarity) => testStyle(rarity, rarity));
 const all = (id: string): OwnedDie[] =>
   DIE_TYPES.map((sides) => ({ style: id, sides, count: MOST_OF_A_DIE[sides] }));
 

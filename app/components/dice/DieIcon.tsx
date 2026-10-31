@@ -33,7 +33,14 @@ export function DieIcon({
   const font = style?.look.font ?? "var(--font-display)";
   const opacity = style ? 0.4 + 0.6 * style.look.opacity : 1;
   return (
-    <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true" className="shrink-0">
+    <svg
+      viewBox="0 0 100 100"
+      width={size}
+      height={size}
+      aria-hidden="true"
+      className="shrink-0"
+      style={style?.look.glow ? { filter: `drop-shadow(0 0 6px ${style.look.glow})` } : undefined}
+    >
       <polygon
         points={outline.points}
         fill={body}

@@ -7,6 +7,7 @@ import { sequenceRng, type Rng } from "~/dice/rng";
 import { DIE_TYPES } from "~/dice/styles";
 import { DICE_STYLES } from "./catalogue";
 import { DiceCollections, everyDie, usableDice } from "./collections";
+import { testStyle } from "./test-styles";
 
 let folder: string;
 beforeEach(async () => {
@@ -17,10 +18,13 @@ afterEach(() => rm(folder, { recursive: true, force: true }));
 const MEMBER = "100000000000000001";
 const OTHER = "100000000000000002";
 
+/** A common style and a rare one: 50 tickets and 13. */
+const STYLES = [testStyle("plain", "common"), testStyle("shiny", "rare")];
+
 function store(rng: Rng = sequenceRng([])) {
   let minute = 0;
   const now = () => new Date(Date.UTC(2026, 9, 31, 19, minute++));
-  return DiceCollections.inFolder(folder, { rng, now });
+  return DiceCollections.inFolder(folder, { rng, now, styles: STYLES });
 }
 
 /** The pack's ID, once given. */
@@ -51,13 +55,13 @@ describe("DiceCollections", () => {
   });
 
   it("draws a pack's die on the server as it's opened, and adds it to their dice", async () => {
-    // Uncommon, rare and very rare share 48 tickets: the last 5 are Gilded, and type 6 is the d20.
-    const dice = store(sequenceRng([48, 6]));
+    // Ticket 63 is the last, rare one, and type 6 is the d20.
+    const dice = store(sequenceRng([63, 6]));
     const pack = await givenPack(dice, "For the recap");
     expect(await dice.openPack(MEMBER, pack)).toEqual({
       opened: {
         at: "2026-10-31T19:01:00.000Z",
-        style: "gilded",
+        style: "shiny",
         sides: 20,
         pack,
         reason: "For the recap",
@@ -67,20 +71,20 @@ describe("DiceCollections", () => {
     });
     const collection = await dice.get(MEMBER);
     expect(collection.packs).toEqual([]);
-    expect(collection.owned).toEqual([{ style: "gilded", sides: 20, count: 1 }]);
+    expect(collection.owned).toEqual([{ style: "shiny", sides: 20, count: 1 }]);
     expect(collection.history).toHaveLength(1);
   });
 
   it("counts a second of the same die, which lets them roll two at once", async () => {
-    const dice = store(sequenceRng([48, 6, 48, 6]));
+    const dice = store(sequenceRng([63, 6, 63, 6]));
     await dice.openPack(MEMBER, await givenPack(dice));
     const second = await dice.openPack(MEMBER, await givenPack(dice));
     expect(second).toMatchObject({ opened: { count: 2, isNew: false } });
-    expect((await dice.get(MEMBER)).owned).toEqual([{ style: "gilded", sides: 20, count: 2 }]);
+    expect((await dice.get(MEMBER)).owned).toEqual([{ style: "shiny", sides: 20, count: 2 }]);
   });
 
   it("opens each pack only once, and only its owner's", async () => {
-    const dice = store(sequenceRng([48, 6]));
+    const dice = store(sequenceRng([63, 6]));
     const pack = await givenPack(dice);
     expect(await dice.openPack(OTHER, pack)).toBeUndefined();
     const [first, second] = await Promise.all([
@@ -93,29 +97,29 @@ describe("DiceCollections", () => {
   it("keeps a pack unopened when there's nothing left worth giving", async () => {
     const dice = store();
     const pack = await givenPack(dice);
-    expect(await dice.openPack(MEMBER, pack, everyDie())).toEqual({ full: true });
+    expect(await dice.openPack(MEMBER, pack, everyDie(STYLES))).toEqual({ full: true });
     expect((await dice.get(MEMBER)).packs).toHaveLength(1);
   });
 
   it("never draws a die they already have a full kit of from an old dice set", async () => {
-    // With Gilded's kit had, its 5 tickets go: the last of the 43 left is rare, Glass.
-    const kit = everyDie().filter((die) => die.style === "gilded");
-    const dice = store(sequenceRng([43, 1]));
+    // With the rare style's kit had, its 13 tickets go, and the last of the 50 left is common.
+    const kit = everyDie(STYLES).filter((die) => die.style === "shiny");
+    const dice = store(sequenceRng([50, 1]));
     const opened = await dice.openPack(MEMBER, await givenPack(dice), kit);
-    expect(opened).toMatchObject({ opened: { style: "glass" } });
+    expect(opened).toMatchObject({ opened: { style: "plain" } });
   });
 
   it("lets the DM give a particular die, up to the most worth having", async () => {
     const dice = store();
     for (let n = 0; n < MOST_OF_A_DIE[12]; n++)
-      expect(await dice.giveDie(MEMBER, "bone", 12)).toBe(true);
-    expect(await dice.giveDie(MEMBER, "bone", 12)).toBe(false);
+      expect(await dice.giveDie(MEMBER, "plain", 12)).toBe(true);
+    expect(await dice.giveDie(MEMBER, "plain", 12)).toBe(false);
     expect(await dice.giveDie(MEMBER, "no such style", 12)).toBe(false);
     const collection = await dice.get(MEMBER);
-    expect(collection.owned).toEqual([{ style: "bone", sides: 12, count: MOST_OF_A_DIE[12] }]);
+    expect(collection.owned).toEqual([{ style: "plain", sides: 12, count: MOST_OF_A_DIE[12] }]);
     expect(collection.history.at(-1)).toEqual({
       at: expect.any(String),
-      style: "bone",
+      style: "plain",
       sides: 12,
     });
   });
@@ -138,16 +142,16 @@ describe("DiceCollections", () => {
 
   it("drops damaged entries rather than refusing the file", async () => {
     const dice = store();
-    await dice.giveDie(MEMBER, "bone", 6);
-    await dice.giveDie(OTHER, "glass", 8);
+    await dice.giveDie(MEMBER, "plain", 6);
+    await dice.giveDie(OTHER, "shiny", 8);
     const filePath = path.join(folder, "dice.json");
     const onDisk = JSON.parse(await readFile(filePath, "utf8"));
-    onDisk.collections[0].owned.push({ style: "bone", sides: 7, count: 1 }, "not a die");
+    onDisk.collections[0].owned.push({ style: "plain", sides: 7, count: 1 }, "not a die");
     onDisk.collections[0].packs = "not a list";
     onDisk.collections.push({ discordId: 12 });
     await writeFile(filePath, JSON.stringify(onDisk));
     const collection = await store().get(MEMBER);
-    expect(collection.owned).toEqual([{ style: "bone", sides: 6, count: 1 }]);
+    expect(collection.owned).toEqual([{ style: "plain", sides: 6, count: 1 }]);
     expect(collection.packs).toEqual([]);
     expect((await store().get(OTHER)).owned).toHaveLength(1);
   });
