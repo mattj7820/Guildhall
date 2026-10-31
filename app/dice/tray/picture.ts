@@ -4,6 +4,7 @@
  */
 import * as THREE from "three";
 import type { DiceLook } from "../looks";
+import { hasEffects } from "./effects";
 import { buildDie, lightWithRoom } from "./scene";
 import { dieShape } from "./shapes";
 
@@ -22,6 +23,8 @@ export function pictureOf(sides: number, look: DiceLook): string | undefined {
   const ready = studioFor();
   if (!ready) return undefined;
   const { renderer, scene, camera } = ready;
+  // Prepared once, for the first fancy die: slow on weak graphics, and plain dice don't use it.
+  if (hasEffects(look) && !scene.environment) lightWithRoom(renderer, scene, []);
 
   const shape = dieShape(sides);
   const disposables: { dispose: () => void }[] = [];
@@ -51,8 +54,6 @@ function studioFor() {
     const key = new THREE.DirectionalLight(0xffffff, 2.4);
     key.position.set(-3, 4, 5);
     scene.add(key);
-    // Kept for the page's life, like the pictures.
-    lightWithRoom(renderer, scene, []);
     studio = { renderer, scene, camera };
   } catch {
     studio = null;

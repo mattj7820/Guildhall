@@ -5,6 +5,7 @@
 import * as THREE from "three";
 import type { DiceLook } from "../looks";
 import type { Animate } from "./effects";
+import { hasEffects } from "./effects";
 import { buildDie, lightWithRoom } from "./scene";
 import { dieShape } from "./shapes";
 
@@ -36,7 +37,7 @@ export function showDie(
   camera.lookAt(0, 0, 0);
   scene.add(new THREE.AmbientLight(0xffffff, 1.3));
   const disposables: { dispose: () => void }[] = [renderer];
-  lightWithRoom(renderer, scene, disposables);
+  if (hasEffects(look)) lightWithRoom(renderer, scene, disposables);
   const key = new THREE.DirectionalLight(0xffffff, 2.4);
   key.position.set(-3, 4, 5);
   scene.add(key);

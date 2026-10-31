@@ -8,7 +8,14 @@ import { seededRng } from "../rng";
 import type { DieRoll } from "../roll";
 import { planThrow, quaternionAt, type PlannedDie } from "./plan";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { bodyMaterial, coreMesh, inclusionMeshes, symbolFor, type Animate } from "./effects";
+import {
+  bodyMaterial,
+  coreMesh,
+  hasEffects,
+  inclusionMeshes,
+  symbolFor,
+  type Animate,
+} from "./effects";
 import { dieShape, type DieShape } from "./shapes";
 import { DiceSound } from "./sound";
 
@@ -67,7 +74,8 @@ export function throwDice(
   camera.up.set(0, 0, -1);
   camera.lookAt(0, 0, 0);
   scene.add(new THREE.AmbientLight(0xffffff, 1.4));
-  lightWithRoom(renderer, scene, disposables);
+  // Preparing the reflections is slow on weak graphics: only for throws with fancy dice.
+  if (styles.some(({ look }) => hasEffects(look))) lightWithRoom(renderer, scene, disposables);
   const sun = new THREE.DirectionalLight(0xffffff, 2.2);
   sun.position.set(-6, 20, -4);
   sun.castShadow = true;
