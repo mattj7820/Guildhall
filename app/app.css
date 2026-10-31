@@ -936,49 +936,75 @@ it over and leaves it down. */
 }
 
 /*
- * The front page's banner. Each theme's movement is slow and faint, and still
- * for anyone who prefers reduced motion.
+ * The front page's banner: each theme's movement, slow and faint, in two layers that drift at
+ * different speeds. Specks are repeating tiles, so moving by a tile's height loops seamlessly.
+ * Still for anyone who prefers reduced motion.
  */
 .gh-hero-motion {
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    mask-image: linear-gradient(to top, black, transparent 85%);
+  }
   @variant storybook {
-    /* Candlelight: a warm glow that breathes in one corner. */
-    background: radial-gradient(28rem 20rem at 8% 0%, rgb(255 196 110 / 0.35), transparent 70%);
+    /* Candlelight in one corner, and dust motes drifting up through it. */
+    background: radial-gradient(30rem 22rem at 6% 0%, rgb(255 196 110 / 0.4), transparent 70%);
     animation: gh-candle 5s ease-in-out infinite alternate;
+    &::before {
+      background-image:
+        radial-gradient(2px 2px at 20% 30%, rgb(214 160 70 / 0.7), transparent),
+        radial-gradient(1.5px 1.5px at 70% 75%, rgb(214 160 70 / 0.6), transparent);
+      background-size: 220px 260px;
+      animation: gh-rise-260 26s linear infinite;
+    }
   }
   @variant ember {
-    /* Embers: specks of light rising from the bottom edge. */
-    background-image:
-      radial-gradient(2px 2px at 10% 90%, #ff8a3d, transparent),
-      radial-gradient(1.5px 1.5px at 25% 80%, #ffb067, transparent),
-      radial-gradient(2px 2px at 42% 95%, #ff6a1f, transparent),
-      radial-gradient(1.5px 1.5px at 58% 85%, #ffb067, transparent),
-      radial-gradient(2.5px 2.5px at 73% 92%, #ff8a3d, transparent),
-      radial-gradient(1.5px 1.5px at 88% 82%, #ff6a1f, transparent),
-      radial-gradient(60rem 14rem at 50% 115%, rgb(196 71 28 / 0.35), transparent);
-    background-size:
-      100% 100%,
-      100% 100%,
-      100% 100%,
-      100% 100%,
-      100% 100%,
-      100% 100%,
-      100% 100%;
-    animation: gh-embers 9s linear infinite;
+    /* Embers rising off a glow along the bottom edge. */
+    background: radial-gradient(60rem 14rem at 50% 115%, rgb(196 71 28 / 0.4), transparent);
+    &::before {
+      background-image:
+        radial-gradient(2.5px 2.5px at 15% 20%, #ff8a3d, transparent),
+        radial-gradient(2px 2px at 60% 55%, #ffb067, transparent),
+        radial-gradient(1.5px 1.5px at 85% 85%, #ff6a1f, transparent);
+      background-size: 180px 240px;
+      animation: gh-rise-240 11s linear infinite;
+    }
+    &::after {
+      background-image:
+        radial-gradient(1.5px 1.5px at 35% 40%, #ffb067, transparent),
+        radial-gradient(3px 3px at 75% 10%, rgb(255 120 40 / 0.7), transparent);
+      background-size: 260px 320px;
+      animation: gh-rise-320 19s linear infinite;
+    }
   }
   @variant gem {
-    /* Glints: a few points of light that slowly come and go. */
+    /* Points of light that come and go, over two soft glows. */
     background-image:
-      radial-gradient(3px 3px at 15% 20%, #e8f6ff, transparent),
-      radial-gradient(2px 2px at 35% 70%, #d9c9ff, transparent),
-      radial-gradient(3px 3px at 62% 15%, #fff1cf, transparent),
-      radial-gradient(2px 2px at 80% 60%, #e8f6ff, transparent),
-      radial-gradient(2.5px 2.5px at 92% 30%, #d9c9ff, transparent),
       radial-gradient(40rem 20rem at 100% 0%, rgb(120 200 255 / 0.18), transparent),
       radial-gradient(40rem 20rem at 0% 100%, rgb(160 120 255 / 0.16), transparent);
-    animation: gh-glints 6s ease-in-out infinite alternate;
+    &::before,
+    &::after {
+      mask-image: none;
+      background-image:
+        radial-gradient(3px 3px at 20% 25%, #e8f6ff, transparent),
+        radial-gradient(2px 2px at 65% 70%, #d9c9ff, transparent),
+        radial-gradient(2.5px 2.5px at 85% 20%, #fff1cf, transparent);
+      background-size: 240px 200px;
+      animation: gh-twinkle 4s ease-in-out infinite alternate;
+    }
+    &::after {
+      background-position: 120px 100px;
+      animation-delay: -2s;
+    }
   }
   @media (prefers-reduced-motion: reduce) {
-    animation: none;
+    &,
+    &::before,
+    &::after {
+      animation: none;
+    }
   }
 }
 
@@ -1024,32 +1050,27 @@ it over and leaves it down. */
   }
 }
 
-@keyframes gh-embers {
-  from {
-    background-position:
-      0 0,
-      0 0,
-      0 0,
-      0 0,
-      0 0,
-      0 0,
-      0 0;
-  }
+@keyframes gh-rise-240 {
   to {
-    background-position:
-      2rem -24rem,
-      -1rem -30rem,
-      1rem -20rem,
-      -2rem -28rem,
-      1.5rem -22rem,
-      -1rem -26rem,
-      0 0;
+    background-position-y: -240px;
   }
 }
 
-@keyframes gh-glints {
+@keyframes gh-rise-260 {
+  to {
+    background-position-y: -260px;
+  }
+}
+
+@keyframes gh-rise-320 {
+  to {
+    background-position-y: -320px;
+  }
+}
+
+@keyframes gh-twinkle {
   from {
-    opacity: 0.45;
+    opacity: 0.15;
   }
   to {
     opacity: 1;
