@@ -134,15 +134,6 @@ export class LiveHub {
     if (open) this.send(open, message);
   }
 
-  /** PROTOTYPE: who has Guildhall open now, the DM and players by ID. */
-  online(): { dm: boolean; players: Set<string> } {
-    const all = [...this.open].map((connection) => connection.who);
-    return {
-      dm: all.some((who) => who.account.isDm),
-      players: new Set(all.flatMap((who) => who.account.member.playerId ?? [])),
-    };
-  }
-
   /** The maps being watched by anyone. */
   watchedMaps(): MapId[] {
     return [...new Set([...this.open].flatMap((connection) => [...connection.maps]))];

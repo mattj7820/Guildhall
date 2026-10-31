@@ -58,11 +58,6 @@ export class Live {
     this.sockets = new LiveSockets(services, (socket, who) => this.hub.connect(socket, who));
   }
 
-  /** PROTOTYPE: who has Guildhall open now. */
-  online() {
-    return this.hub.online();
-  }
-
   handleUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer): Promise<void> {
     return this.sockets.handleUpgrade(req, socket, head);
   }
