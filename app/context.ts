@@ -5,6 +5,7 @@ import type { Characters } from "~/.server/characters/characters";
 import type { Sessions } from "~/.server/auth/sessions";
 import type { Live } from "~/.server/live/live";
 import type { CurrentFight } from "~/.server/combat/current-fight";
+import type { NextSession } from "~/.server/home/next-session";
 import type { PreparedEncounters } from "~/.server/combat/prepared-encounters";
 import type { Config } from "~/.server/config";
 import type { CampaignMaps } from "~/.server/maps/campaign-maps";
@@ -22,6 +23,8 @@ export interface Services {
   vault: LiveVault;
   /** The fight the table is in, kept in the data folder and shown to everyone. */
   fight: CurrentFight;
+  /** When the table next meets, set by the DM, kept in the data folder. */
+  nextSession: NextSession;
   /** Combat encounters prepared ahead of a session, kept in the data folder. */
   preparedEncounters: PreparedEncounters;
   /** Interactive maps and their areas, kept in the data folder. */

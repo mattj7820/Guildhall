@@ -5,7 +5,7 @@ import path from "node:path";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Services } from "~/context";
 import { inCombat, monster, player as player_ } from "~/combat/test-builders";
-import { FIGHT_ROOM } from "~/live/messages";
+import { FIGHT_ROOM, PARTY_ROOM } from "~/live/messages";
 import type { StuntEvent } from "~/maps/stunts";
 import { aCharacterToken, aMarker } from "~/maps/tokens/test-builders";
 import type { Token } from "~/maps/tokens/types";
@@ -107,6 +107,26 @@ const aboutMap = (client: Client, map: string) =>
   client.received.filter((message) => (message as { map?: string }).map === map);
 
 describe("Live", () => {
+  it("tells the front page who's here, as they come and go", async () => {
+    const presence = (message: { type: string }) => message.type === "presence";
+    const player = await connect(DISCORD_IDS.playerOne, "player one");
+    const first = player.next(presence);
+    player.send({ type: "watch", map: PARTY_ROOM });
+    // Their own PC, by its name on the party card; the companion is never anyone's.
+    expect(await first).toEqual({
+      type: "presence",
+      map: PARTY_ROOM,
+      online: { dm: false, party: ["Fixture PC One"] },
+    });
+
+    const dmCame = player.next(presence);
+    const dm = await connect(DISCORD_IDS.dm);
+    expect(await dmCame).toMatchObject({ online: { dm: true, party: ["Fixture PC One"] } });
+    const dmWent = player.next(presence);
+    dm.socket.close();
+    expect(await dmWent).toMatchObject({ online: { dm: false } });
+  });
+
   it("tells a player watching a shared map its version", async () => {
     const player = await connect(DISCORD_IDS.playerOne, "player one");
     const reply = player.next(about(shared.id));

@@ -28,7 +28,12 @@ _The same fight as a player sees it: only what the DM has revealed, with their s
 
 ## Features
 
-- **Hub home page** with cards for in-app modules.
+- **A front page with the campaign as it stands:** the map where the party is (a player's own
+  character's, as fogged as they've explored it), with their faces where their tokens are; "A
+  fight is on", live, with the round and whose turn; the next session's date, set by the DM, with
+  a countdown in each person's own time zone, and a link to the latest session note; the party,
+  with whoever has Guildhall open glowing; and each theme's own slow movement (still for anyone
+  who prefers reduced motion).
 - **Campaign wiki**, read straight from an Obsidian vault folder, which stays the source of truth:
   - Obsidian-flavoured markdown: frontmatter, `[[wikilinks]]` (aliases, heading links, Obsidian's
     shortest-path resolution), `![[image]]` embeds with sizes, GitHub-flavoured markdown.
@@ -342,6 +347,7 @@ app/
                    shared fight and what each person sees of it (isomorphic)
   dice/            Dice expressions and rolling, with injectable randomness (isomorphic)
   hub/             Hub links configuration
+  home/            The front page: where the party is, the fight, the next session (isomorphic)
   wiki/            Wiki types and URL helpers shared by server and browser
   maps/            Interactive maps model: areas, geometry, pan and zoom, the editor (isomorphic)
     fog/           Fog of war: the mask, reveals and hides, undo, pixels and tiles (isomorphic)

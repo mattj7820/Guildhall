@@ -1,5 +1,5 @@
 import type { WebSocket } from "ws";
-import type { Viewer } from "~/campaign/types";
+import type { PlayerId, Viewer } from "~/campaign/types";
 import {
   CLOSE_ACCESS_CHANGED,
   clientMessageSchema,
@@ -53,6 +53,11 @@ interface Open extends Connection {
  * `publish`, which builds each message for the viewer who gets it, so nothing is ever sent to a
  * room as a whole.
  */
+export interface Online {
+  dm: boolean;
+  players: ReadonlySet<PlayerId>;
+}
+
 export class LiveHub {
   private readonly open = new Set<Open>();
   private readonly timers: ReturnType<typeof setInterval>[];
@@ -63,6 +68,8 @@ export class LiveHub {
       members: { get(discordId: string): Promise<Member | undefined> };
       /** Messages about what's on a map (dragging tokens), for someone else to handle. */
       onMessage?: (connection: Connection, message: ClientMessage) => void;
+      /** A connection has opened. */
+      onOpen?: (connection: Connection) => void;
       /** A connection has closed. */
       onClose?: (connection: Connection) => void;
     },
@@ -93,6 +100,7 @@ export class LiveHub {
       this.open.delete(connection);
       this.deps.onClose?.(connection);
     });
+    this.deps.onOpen?.(connection);
     socket.on("pong", () => (connection.alive = true));
     socket.on("message", (data, isBinary) => {
       if (isBinary || !this.withinLimit(connection)) return;
@@ -132,6 +140,15 @@ export class LiveHub {
   reply(connection: Connection, message: ServerMessage): void {
     const open = [...this.open].find((each) => each === connection);
     if (open) this.send(open, message);
+  }
+
+  /** Who has a connection open: whether the DM does, and which players. */
+  online(): Online {
+    const who = [...this.open].map((connection) => connection.who.account);
+    return {
+      dm: who.some((account) => account.isDm),
+      players: new Set(who.flatMap((account) => account.member.playerId ?? [])),
+    };
   }
 
   /** The maps being watched by anyone. */

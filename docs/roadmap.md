@@ -7,6 +7,8 @@ locations, maps, characters, sessions).
 ## Built
 
 - **Hub shell:** a home page linking to Guildhall's own modules.
+- **Front page:** the campaign as it stands: where the party is, a fight if one is on, the next
+  session with a countdown, and who's here now; each theme's own slow movement.
 - **Campaign wiki (read-only):** browse and search the Obsidian vault, with DM/player preview.
   Shared notes can keep DM-only parts: a `## DM` section or a `> [!dm]` callout.
 - **Combat tracker:** encounters built from vault statblocks (and the SRD's, below) and PC notes, initiative with
@@ -29,7 +31,7 @@ locations, maps, characters, sessions).
 - **Dice packs:** the DM gives packs (for the recap, say) and particular dice; members open them
   with a shake, a glow in the rarity's colour and the die in 3D, and keep a collection by rarity
   in Settings, with a favourite for each type. Dice count: two d20s of a style roll two at once
-  (decision 83).
+  (decision 84).
 - **Interactive maps (first slice):** maps from vault images, with outlined areas that lead to
   deeper maps and wiki notes, nesting to any depth with breadcrumbs. Drawn and reshaped in an
   editor with undo; a clean view for the table. Kept in the data folder.

@@ -1,9 +1,10 @@
 import type { IncomingMessage } from "node:http";
 import type { Duplex } from "node:stream";
+import type { Viewer } from "~/campaign/types";
 import { canView } from "~/campaign/visibility";
 import type { Character } from "~/characters/types";
 import type { Services } from "~/context";
-import { FIGHT_ROOM, type ClientMessage } from "~/live/messages";
+import { FIGHT_ROOM, PARTY_ROOM, type ClientMessage, type ServerMessage } from "~/live/messages";
 import type { FogMask } from "~/maps/fog/types";
 import { fightAllowsMove, type Fight } from "~/combat/fight";
 import { canMoveToken } from "~/maps/tokens/permissions";
@@ -12,6 +13,7 @@ import { tokensForViewer } from "~/maps/tokens/visibility";
 import type { CampaignMap, MapId, Point } from "~/maps/types";
 import { ancestors } from "~/maps/tree";
 import { isTokenStunt, stuntSeenBy, type StuntEvent } from "~/maps/stunts";
+import { presenceFor } from "../home/presence";
 import { loadTokens, partyControllers, partyFor } from "../maps/tokens";
 import { Holds } from "./holds";
 import { LiveHub, type BuildMessage, type Connection } from "./hub";
@@ -47,13 +49,18 @@ export class Live {
       members: services.members,
       join: async (map, viewer) => {
         if (map === FIGHT_ROOM) return [await fightState(services, viewer)];
+        if (map === PARTY_ROOM) return [await this.presenceState(viewer)];
         const state = await mapState(services, map, viewer);
         if (state.type === "gone") return [state];
         const tokens = await tokensState(services, map, viewer);
         return tokens ? [state, tokens] : [state];
       },
       onMessage: (connection, message) => void this.receive(connection, message),
-      onClose: (connection) => this.holds.releaseAll(connection),
+      onOpen: () => void this.presenceChanged(),
+      onClose: (connection) => {
+        this.holds.releaseAll(connection);
+        void this.presenceChanged();
+      },
     });
     this.sockets = new LiveSockets(services, (socket, who) => this.hub.connect(socket, who));
   }
@@ -89,6 +96,21 @@ export class Live {
         .filter((map) => map !== FIGHT_ROOM)
         .map((map) => this.publishOnMap(map, (viewer) => tokensState(this.services, map, viewer))),
     );
+  }
+
+  /** Who has Guildhall open now, for a page's first look before its connection says. */
+  online() {
+    return this.hub.online();
+  }
+
+  /** Someone came or went: everyone on the front page hears who's here, as they know the party. */
+  private presenceChanged(): Promise<void> {
+    return this.hub.publish(PARTY_ROOM, (viewer) => this.presenceState(viewer));
+  }
+
+  private async presenceState(viewer: Viewer): Promise<ServerMessage> {
+    const online = await presenceFor(this.services, viewer, this.hub.online());
+    return { type: "presence", map: PARTY_ROOM, online };
   }
 
   /** The vault changed, which any map's notes or image may depend on. */
