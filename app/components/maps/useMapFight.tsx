@@ -136,7 +136,7 @@ export function useMapFight({
    * where they stand (each under its own name, with the hit points it kept, hidden if players
    * can't see it), and party members as themselves. One change to the tracker, undone in one.
    */
-  function joinFromTokens(picked: readonly TokenView[]) {
+  async function joinFromTokens(picked: readonly TokenView[]) {
     let next = encounter;
     const links: TokenAction[] = [];
     const party = new Set(
@@ -175,9 +175,11 @@ export function useMapFight({
       links.push({ type: "joinFight", id: token.id, combatant: id });
     }
     if (next === encounter) return;
-    tracker.replace(next);
-    if (links.length > 0) void send(links);
     setOpen(true);
+    // The links are saved first: the answer to them is then never newer than the fight's own
+    // update, which shows the markers in the fight.
+    if (links.length > 0) await send(links);
+    tracker.replace(next);
   }
 
   /** Where the monsters stand here, for keeping the fight as a prepared one. */

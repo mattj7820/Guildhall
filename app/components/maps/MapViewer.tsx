@@ -252,7 +252,7 @@ export function MapViewer({
               picked={tokens.filter((token) => pick.picked.includes(token.id))}
               running={fight.running}
               onJoin={(joining) => {
-                fight.joinFromTokens(joining);
+                void fight.joinFromTokens(joining);
                 pick.clear();
               }}
               onClear={pick.clear}
