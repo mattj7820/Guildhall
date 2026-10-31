@@ -95,6 +95,9 @@ function makeShape(sides: number): DieShape {
           const inner = Math.min(...points.map((p) => p.distanceTo(centre)));
           return { normal, centre, size: inner * (sides === 10 ? 0.8 : 1.1) };
         });
+  // Drawn from the triangles as turned to face outwards, or the hidden side of each would be
+  // skipped (the hand-made d10's are wound both ways).
+  merged.setIndex(triangles.flat());
   const geometry = merged.toNonIndexed();
   geometry.computeVertexNormals();
   merged.dispose();
