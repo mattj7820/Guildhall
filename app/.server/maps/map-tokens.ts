@@ -78,30 +78,45 @@ export class MapTokens {
   }
 
   /**
-   * When monsters leave the fight (taken out of it, or the fight ending), their tokens are
-   * cleared, or left where they fell as markers the DM can tidy later (seen by players, unless
-   * the monster was hidden). Answers with the maps whose tokens changed.
+   * When monsters leave the fight: taken out of it ("removed"), or the fight ending with the DM
+   * clearing them or leaving them on the map. A marker that joined the fight is cleared with the
+   * others, or else stays a marker, keeping its hit points (down at 0) and shown or hidden as its
+   * monster was. A monster's own token (placed from the tracker) is cleared when it's removed,
+   * and left where it fell as a grey marker if the DM leaves them. Answers with the maps whose
+   * tokens changed.
    */
-  removeCombatants(combatants: readonly Combatant[], leave: boolean): Promise<MapId[]> {
+  removeCombatants(
+    combatants: readonly Combatant[],
+    leaving: "removed" | "clear" | "leave",
+  ): Promise<MapId[]> {
     return this.file.update((data) => {
       const changed = new Set<MapId>();
       const tokens = data.tokens.flatMap((token): Token[] => {
-        if (token.kind !== "combatant") return [token];
+        if (token.kind === "character") return [token];
         const monster = combatants.find((c) => c.id === token.combatant);
-        if (!monster) return [token];
+        if (monster?.kind !== "monster") return [token];
         changed.add(token.map);
-        if (!leave) return [];
-        const marker: Token = {
-          kind: "marker",
-          id: token.id,
-          map: token.map,
-          at: token.at,
-          ...(token.size && { size: token.size }),
-          name: monster.name.slice(0, MARKER_NAME_MAX),
-          colour: "grey",
-          visibility: monster.kind === "monster" && monster.hidden ? "dm" : "players",
-        };
-        return [marker];
+        if (leaving === "clear") return [];
+        const visibility = monster.hidden ? "dm" : "players";
+        if (token.kind === "marker") {
+          const { combatant: _, ...marker } = token;
+          return [
+            { ...marker, visibility, hp: { current: monster.hp.current, max: monster.hp.max } },
+          ];
+        }
+        if (leaving === "removed") return [];
+        return [
+          {
+            kind: "marker",
+            id: token.id,
+            map: token.map,
+            at: token.at,
+            ...(token.size && { size: token.size }),
+            name: monster.name.slice(0, MARKER_NAME_MAX),
+            colour: "grey",
+            visibility,
+          },
+        ];
       });
       return { next: changed.size > 0 ? { ...data, tokens } : data, result: [...changed] };
     });

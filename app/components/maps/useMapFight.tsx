@@ -32,6 +32,7 @@ import type { TokenView } from "~/maps/tokens/types";
 import type { MapView, Point } from "~/maps/types";
 import { mapUrl } from "~/maps/urls";
 import { newId } from "~/shared/ids";
+import { joinFromToken, perform } from "~/combat/encounter";
 import { EndFight } from "./EndFight";
 import { TOKEN_RADIUS } from "./TokenLayer";
 
@@ -134,6 +135,55 @@ export function useMapFight({
       body: JSON.stringify({ intent: "markRun" }),
     });
     void navigate(mapUrl(map.id), { replace: true });
+  }
+
+  /**
+   * Tokens picked on the map join the fight, or start one: markers with a statblock as monsters
+   * where they stand (each under its own name, with the hit points it kept, hidden if players
+   * can't see it), and party members as themselves. One change to the tracker, undone in one.
+   */
+  function joinFromTokens(picked: readonly TokenView[]) {
+    let next = encounter;
+    const links: TokenAction[] = [];
+    const party = new Set(
+      encounter.combatants.flatMap((c) => (c.kind === "player" && c.entityId ? [c.entityId] : [])),
+    );
+    for (const token of picked) {
+      if (token.combatant) continue;
+      if (token.kind === "character") {
+        const member = catalogue.party.find((each) => each.entityId === token.note);
+        if (!member?.player || party.has(member.entityId)) continue;
+        next = perform(
+          next,
+          {
+            type: "addPlayerCombatant",
+            id: newId(),
+            name: member.name,
+            controller: member.player,
+            entityId: member.entityId,
+            statblock: member.statblock,
+          },
+          tracker.rng,
+        );
+        continue;
+      }
+      const statblock = token.marker?.statblock;
+      const creature = statblock && creatures.get(statblockKey(statblock));
+      if (token.kind !== "marker" || !creature) continue;
+      const id = newId();
+      const joining = {
+        id,
+        name: token.name,
+        hp: token.hp,
+        hidden: token.visibility !== "players",
+      };
+      next = perform(next, joinFromToken(creature, joining, tracker.rng), tracker.rng);
+      links.push({ type: "joinFight", id: token.id, combatant: id });
+    }
+    if (next === encounter) return;
+    tracker.replace(next);
+    if (links.length > 0) void send(links);
+    setOpen(true);
   }
 
   /** Where the monsters stand here, for keeping the fight as a prepared one. */
@@ -319,6 +369,12 @@ export function useMapFight({
     /** Whether the next click on the map places monsters. */
     placing: unplaced.length > 0,
     placeMonsters,
+    joinFromTokens,
+    /** Hides a monster in the fight from players, or reveals it. */
+    setHidden: (combatant: string, hidden: boolean) =>
+      dispatch({ type: "setHidden", id: combatant, hidden }),
+    /** Whether there's a fight to add to, rather than one to start. */
+    running: encounter.combatants.length > 0,
     /** A token chosen on the map shows its combatant in the tracker. */
     selectToken: (token: TokenView) => {
       if (token.combatant) setShownId(token.combatant);

@@ -1,5 +1,4 @@
-import type { ReactNode } from "react";
-import { buttonClass } from "~/components/styles";
+import { buttonClass, primaryButtonClass } from "~/components/styles";
 import { inTheFight } from "~/maps/tokens/picking";
 import type { TokenView } from "~/maps/tokens/types";
 
@@ -11,17 +10,20 @@ import type { TokenView } from "~/maps/tokens/types";
  */
 export function FightPickBar({
   picked,
+  running,
+  onJoin,
   onClear,
-  children,
 }: {
   picked: readonly TokenView[];
+  /** Whether there's a fight they'd join, rather than one to start. */
+  running: boolean;
+  onJoin: (tokens: TokenView[]) => void;
   onClear: () => void;
-  /** What's done with them. */
-  children?: ReactNode;
 }) {
   const outside = picked.filter((token) => !inTheFight(token));
   if (outside.length === 0) return null;
   const cannot = outside.filter((token) => token.kind === "marker" && !token.marker?.statblock);
+  const joining = outside.filter((token) => !cannot.includes(token));
   return (
     <section
       aria-label="Picked for a fight"
@@ -52,7 +54,13 @@ export function FightPickBar({
         </p>
       )}
       <div className="flex flex-wrap items-center gap-2">
-        {children}
+        {joining.length > 0 && (
+          <button type="button" className={primaryButtonClass} onClick={() => onJoin(joining)}>
+            {running
+              ? `Add ${joining.length} to the fight`
+              : `Start a fight with ${joining.length}`}
+          </button>
+        )}
         <button type="button" className={buttonClass} onClick={onClear}>
           Clear
         </button>

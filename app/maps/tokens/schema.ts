@@ -92,6 +92,7 @@ export const tokenActionSchema: z.ZodType<TokenAction> = z.discriminatedUnion("t
   z.object({ type: z.literal("remove"), id }),
   z.object({ type: z.literal("setSize"), id, size }),
   z.object({ type: z.literal("setAside"), id }),
+  z.object({ type: z.literal("joinFight"), id, combatant: id }),
   z.object({
     type: z.literal("editMarker"),
     id,

@@ -66,7 +66,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     const maps = ended
       ? await services.tokens.removeCombatants(
           ended.encounter.combatants,
-          body.data.monsters === "leave",
+          body.data.monsters === "leave" ? "leave" : "clear",
         )
       : [];
     await services.live.fightChanged();
@@ -84,10 +84,11 @@ export async function action({ request, context }: Route.ActionArgs) {
       { status: 409 },
     );
   }
-  // Monsters taken out of the fight (or a new fight replacing it) take their tokens with them.
+  // Monsters taken out of the fight (or a new fight replacing it) take their own tokens with
+  // them; markers that joined stay, out of the fight.
   const now = new Set(saved.fight.encounter.combatants.map((c) => c.id));
   const gone = saved.previous?.encounter.combatants.filter((c) => !now.has(c.id)) ?? [];
-  const maps = gone.length > 0 ? await services.tokens.removeCombatants(gone, false) : [];
+  const maps = gone.length > 0 ? await services.tokens.removeCombatants(gone, "removed") : [];
   await services.live.fightChanged();
   await Promise.all(maps.map((changed) => services.live.mapChanged(changed)));
   return Response.json({ fight: await fightView(services, saved.fight, viewer) });

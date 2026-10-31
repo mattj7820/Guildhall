@@ -110,6 +110,18 @@ describe("applyTokenAction", () => {
     expect(taken.tokens).toEqual([{ ...marker, hp: { current: 2, max: 7 } }]);
   });
 
+  it("links a marker to its combatant when it joins the fight, and nothing else", () => {
+    const { tokens } = applyTokenAction([pc, marker], {
+      type: "joinFight",
+      id: "inn",
+      combatant: "c1",
+    });
+    expect(tokens).toEqual([pc, { ...marker, combatant: "c1" }]);
+    expect(
+      applyTokenAction([pc], { type: "joinFight", id: pc.id, combatant: "c1" }).tokens,
+    ).toEqual([pc]);
+  });
+
   describe("setting a marker aside", () => {
     const aside = { ...marker, aside: true as const };
 

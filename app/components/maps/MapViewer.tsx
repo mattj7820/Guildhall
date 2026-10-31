@@ -129,6 +129,20 @@ export function MapViewer({
     onClearPick: pick.clear,
   });
   const combat = fight.open && !fogMode;
+  /**
+   * While a marker is in the fight, its monster's hiding is the one switch: showing or hiding the
+   * marker reveals or hides the monster (and the marker follows when it leaves the fight).
+   */
+  const hidingInTheFight = (actions: TokenAction[]): TokenAction[] =>
+    actions.flatMap((action) => {
+      if (action.type !== "editMarker" || !action.visibility) return [action];
+      const combatant = tokens.find((each) => each.id === action.id)?.combatant;
+      if (!combatant) return [action];
+      fight.setHidden(combatant, action.visibility !== "players");
+      const rest = { ...action, visibility: undefined };
+      // Nothing else changed: nothing to send.
+      return Object.values(rest).filter((value) => value !== undefined).length > 2 ? [rest] : [];
+    });
   const placingMonsters = combat && fight.placing && !presenting;
   // The map's tools belong to battle maps, and step aside for the fog tools and placing tokens.
   const battle = useBattleTools({
@@ -236,6 +250,11 @@ export function MapViewer({
           {!presenting && (
             <FightPickBar
               picked={tokens.filter((token) => pick.picked.includes(token.id))}
+              running={fight.running}
+              onJoin={(joining) => {
+                fight.joinFromTokens(joining);
+                pick.clear();
+              }}
               onClear={pick.clear}
             />
           )}
@@ -445,7 +464,7 @@ export function MapViewer({
                 onFind={find}
                 grid={map.grid}
                 size={map.size}
-                send={(actions) => void send(actions)}
+                send={(actions) => void send(hidingInTheFight(actions))}
               />
             }
           />

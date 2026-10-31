@@ -129,7 +129,7 @@ describe("MapTokens", () => {
       const tokens = MapTokens.inFolder(folder);
       await tokens.apply("world", [place(onMap("Goblin 1")), place(inn)], everything);
       await tokens.apply("keep", [place(onMap("Ambusher", "keep"))], everything);
-      expect((await tokens.removeCombatants(fight.combatants, false)).sort()).toEqual([
+      expect((await tokens.removeCombatants(fight.combatants, "clear")).sort()).toEqual([
         "keep",
         "world",
       ]);
@@ -139,7 +139,7 @@ describe("MapTokens", () => {
     it("leaves them where they fell as markers, a hidden one for the DM only", async () => {
       const tokens = MapTokens.inFolder(folder);
       await tokens.apply("world", [place(onMap("Goblin 1")), place(onMap("Ambusher"))], everything);
-      await tokens.removeCombatants(fight.combatants, true);
+      await tokens.removeCombatants(fight.combatants, "leave");
       expect(await tokens.list()).toEqual([
         expect.objectContaining({
           kind: "marker",
@@ -154,8 +154,64 @@ describe("MapTokens", () => {
     it("leaves tokens of monsters from other fights alone", async () => {
       const tokens = MapTokens.inFolder(folder);
       await tokens.apply("world", [place(onMap("Someone else"))], everything);
-      expect(await tokens.removeCombatants(fight.combatants, false)).toEqual([]);
+      expect(await tokens.removeCombatants(fight.combatants, "clear")).toEqual([]);
       expect(await tokens.list()).toHaveLength(1);
+    });
+
+    it("clears a monster's own token when it's taken out of the fight", async () => {
+      const tokens = MapTokens.inFolder(folder);
+      await tokens.apply("world", [place(onMap("Goblin 1"))], everything);
+      expect(await tokens.removeCombatants(fight.combatants, "removed")).toEqual(["world"]);
+      expect(await tokens.list()).toEqual([]);
+    });
+
+    describe("markers that joined the fight", () => {
+      const hurt = encounter([
+        monster("Goblin 1", { hp: { current: 0, max: 7, temp: 0 } }),
+        monster("Ambusher", { hidden: true, hp: { current: 5, max: 9, temp: 2 } }),
+      ]);
+      const joined = (combatant: string) =>
+        aMarker({
+          id: `m-${combatant}`,
+          name: `Fixture ${combatant}`,
+          colour: "green",
+          visibility: "players",
+          statblock: { entityId: "goblin", name: "Goblin", source: "srd-5.2" },
+          combatant,
+        });
+
+      it.each(["removed", "leave"] as const)(
+        "stay markers when %s, keeping their look and hit points, shown as their monster was",
+        async (leaving) => {
+          const tokens = MapTokens.inFolder(folder);
+          await tokens.apply(
+            "world",
+            [place(joined("Goblin 1")), place(joined("Ambusher"))],
+            everything,
+          );
+          expect(await tokens.removeCombatants(hurt.combatants, leaving)).toEqual(["world"]);
+          const [goblin, ambusher] = await tokens.list();
+          expect(goblin).toEqual({
+            ...joined("Goblin 1"),
+            combatant: undefined,
+            hp: { current: 0, max: 7 },
+          });
+          expect(goblin).not.toHaveProperty("combatant");
+          expect(ambusher).toMatchObject({
+            name: "Fixture Ambusher",
+            colour: "green",
+            visibility: "dm",
+            hp: { current: 5, max: 9 },
+          });
+        },
+      );
+
+      it("are cleared with the others when the DM clears the monsters", async () => {
+        const tokens = MapTokens.inFolder(folder);
+        await tokens.apply("world", [place(joined("Goblin 1")), place(inn)], everything);
+        await tokens.removeCombatants(hurt.combatants, "clear");
+        expect(await tokens.list()).toEqual([inn]);
+      });
     });
   });
 
