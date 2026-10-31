@@ -11,6 +11,7 @@ import type { CampaignMaps } from "~/.server/maps/campaign-maps";
 import type { MapFogs } from "~/.server/maps/map-fogs";
 import type { MapTokens } from "~/.server/maps/map-tokens";
 import type { PlayerImages } from "~/.server/maps/player-image";
+import type { DiceCollections } from "~/.server/dice/collections";
 import type { Members } from "~/.server/members/members";
 import type { LiveVault } from "~/.server/vault/live-vault";
 import { DM_VIEWER, type Viewer } from "~/campaign/types";
@@ -35,6 +36,8 @@ export interface Services {
   characters: Characters;
   /** Everyone who has signed in, approved or waiting, kept in the data folder. */
   members: Members;
+  /** Members' dice collections and unopened packs, kept in the data folder. */
+  dice: DiceCollections;
   /** Live updates: websockets on the same server, signed in like pages. */
   live: Live;
   /** Signed session cookies. */

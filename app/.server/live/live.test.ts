@@ -18,6 +18,7 @@ import { Characters } from "../characters/characters";
 import { CurrentFight } from "../combat/current-fight";
 import { MapFogs } from "../maps/map-fogs";
 import { MapTokens } from "../maps/map-tokens";
+import { DiceCollections } from "../dice/collections";
 import { Members } from "../members/members";
 import { Vault } from "../vault/vault";
 import { Live } from "./live";
@@ -65,6 +66,7 @@ beforeEach(async () => {
     fight: CurrentFight.inFolder(folder),
     characters: Characters.inFolder(folder),
     members: Members.inFolder(folder),
+    dice: DiceCollections.inFolder(folder),
     sessions: createSessions({ secrets: ["test-secret-test-secret-test-secret"], secure: false }),
   } as Omit<Services, "live">;
   const image = { path: "Maps/Fixture World.png", width: 400, height: 200 };
