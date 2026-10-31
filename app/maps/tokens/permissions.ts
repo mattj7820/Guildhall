@@ -20,7 +20,8 @@ export function canMoveToken(viewer: Viewer, token: Token, controllers: Controll
 /**
  * Whether the viewer may make this change on this map, given the tokens as they are now. Players
  * may only move their tokens about the map they're looking at; placing, removing, markers and
- * moving between maps are the DM's.
+ * moving between maps are the DM's. (Players take theirs to another map only through the travel
+ * route, which has its own rules: `app/.server/maps/travel.ts`.)
  */
 export function mayApply(
   viewer: Viewer,
