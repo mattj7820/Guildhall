@@ -1,4 +1,4 @@
-import { test as base, type Browser, type BrowserContext } from "@playwright/test";
+import { test as base, type BrowserContext } from "@playwright/test";
 import { AppPage } from "../pages/app-page";
 import { Characters } from "../pages/characters";
 import { Combat, Prepared } from "../pages/combat";
@@ -60,20 +60,20 @@ export const test = base.extend<Fixtures>({
   settings: async ({ app }, use) => use(app.settings),
   signIn: async ({ app }, use) => use(app.signIn),
 
-  openAs: async ({ browser, baseURL }, use) => {
+  openAs: async ({ browser, baseURL, reducedMotion }, use) => {
     const opened: BrowserContext[] = [];
     await use(async (who) => {
-      const context = await newContext(browser, who, baseURL);
+      const context = await browser.newContext({
+        storageState: who === "signedOut" ? SIGNED_OUT : SIGNED_IN[who],
+        baseURL,
+        // Others' browsers ask for less motion like the test's own, so their dice land at once.
+        reducedMotion,
+      });
       opened.push(context);
       return new App(await context.newPage());
     });
     await Promise.all(opened.map((context) => context.close()));
   },
 });
-
-function newContext(browser: Browser, who: Who, baseURL: string | undefined) {
-  const storageState = who === "signedOut" ? SIGNED_OUT : SIGNED_IN[who];
-  return browser.newContext({ storageState, baseURL });
-}
 
 export { expect } from "@playwright/test";

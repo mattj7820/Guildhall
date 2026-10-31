@@ -34,6 +34,10 @@ export interface Member {
 export interface MemberDice {
   /** They'd rather see rolls only as text. */
   off?: boolean;
+  /** The dice sets the DM has given them (`DiceSetId`s; any no longer in the app are ignored). */
+  given?: string[];
+  /** The set they use; without one (or once it's taken back), the theme's dice. */
+  set?: string;
 }
 
 /** Who someone is on Discord, as read when they sign in. */

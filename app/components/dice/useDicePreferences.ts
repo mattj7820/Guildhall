@@ -1,7 +1,7 @@
 import { useRouteLoaderData } from "react-router";
 import type { DiceLook } from "~/dice/looks";
 import type { loader as rootLoader } from "~/root";
-import { themeLook } from "./themeLook";
+import { setLook, themeLook } from "./looks";
 
 export interface DicePreferences {
   /** Whether rolls are thrown as 3D dice. */
@@ -10,8 +10,11 @@ export interface DicePreferences {
   look: (within: HTMLElement) => DiceLook;
 }
 
-/** This person's dice, as they chose in Settings: on unless they turned them off. */
+/**
+ * This person's dice, as they chose in Settings: on unless they turned them off, in the set they
+ * picked or the theme's colours.
+ */
 export function useDicePreferences(): DicePreferences {
   const dice = useRouteLoaderData<typeof rootLoader>("root")?.dice;
-  return { enabled: dice?.on ?? true, look: themeLook };
+  return { enabled: dice?.on ?? true, look: dice?.set ? setLook(dice.set) : themeLook };
 }

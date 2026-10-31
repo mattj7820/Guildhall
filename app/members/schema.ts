@@ -20,7 +20,11 @@ export const memberSchema: z.ZodType<Member> = z.object({
   theme: z.enum(THEMES).optional().catch(undefined),
   // Damaged dice settings fall back to the defaults (dice on), never refusing the file.
   dice: z
-    .object({ off: z.boolean().optional().catch(undefined) })
+    .object({
+      off: z.boolean().optional().catch(undefined),
+      given: z.array(z.string().max(40)).max(50).optional().catch(undefined),
+      set: z.string().max(40).optional().catch(undefined),
+    })
     .optional()
     .catch(undefined),
 });

@@ -4,6 +4,7 @@ import type { PlayerId } from "~/campaign/types";
 import { memberSchema } from "~/members/schema";
 import type { DiscordId, DiscordProfile, Member } from "~/members/types";
 import { newId } from "~/shared/ids";
+import type { DiceSetId } from "~/dice/sets";
 import type { Theme } from "~/theme/themes";
 import { JsonFile } from "../data/json-store";
 
@@ -130,6 +131,25 @@ export class Members {
       const dice = { ...member.dice };
       delete dice.off;
       return { ...member, dice: on ? dice : { ...dice, off: true } };
+    });
+  }
+
+  /** The DM gives someone a dice set, or takes it back. */
+  giveDiceSet(discordId: DiscordId, set: DiceSetId, give: boolean): Promise<Member | undefined> {
+    return this.change(discordId, (member) => {
+      const given = member.dice?.given ?? [];
+      const others = given.filter((each) => each !== set);
+      const next = !give ? others : given.includes(set) ? given : [...given, set];
+      return { ...member, dice: { ...member.dice, given: next } };
+    });
+  }
+
+  /** Someone picks the set their dice are in, or undefined for the theme's dice. */
+  chooseDiceSet(discordId: DiscordId, set: DiceSetId | undefined): Promise<Member | undefined> {
+    return this.change(discordId, (member) => {
+      const dice = { ...member.dice };
+      delete dice.set;
+      return { ...member, dice: set ? { ...dice, set } : dice };
     });
   }
 
