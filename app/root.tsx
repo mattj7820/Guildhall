@@ -29,6 +29,7 @@ export function loader({ context }: Route.LoaderArgs) {
     user: account.kind === "member" ? { name: account.member.name, isDm: account.isDm } : undefined,
     // Without a pick (or signed out), the device's light or dark mode decides.
     theme: account.kind === "member" ? account.member.theme : undefined,
+    dice: { on: account.kind !== "member" || !account.member.dice?.off },
   };
 }
 

@@ -1,4 +1,6 @@
+import { useRouteLoaderData } from "react-router";
 import type { DiceLook } from "~/dice/looks";
+import type { loader as rootLoader } from "~/root";
 import { themeLook } from "./themeLook";
 
 export interface DicePreferences {
@@ -8,7 +10,8 @@ export interface DicePreferences {
   look: (within: HTMLElement) => DiceLook;
 }
 
-/** This person's dice: for now, everyone's are on and in the theme's colours. */
+/** This person's dice, as they chose in Settings: on unless they turned them off. */
 export function useDicePreferences(): DicePreferences {
-  return { enabled: true, look: themeLook };
+  const dice = useRouteLoaderData<typeof rootLoader>("root")?.dice;
+  return { enabled: dice?.on ?? true, look: themeLook };
 }

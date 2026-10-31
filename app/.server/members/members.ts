@@ -124,6 +124,15 @@ export class Members {
     return this.change(discordId, (member) => ({ ...member, theme }));
   }
 
+  /** Turns someone's 3D dice on or off. */
+  setDiceOn(discordId: DiscordId, on: boolean): Promise<Member | undefined> {
+    return this.change(discordId, (member) => {
+      const dice = { ...member.dice };
+      delete dice.off;
+      return { ...member, dice: on ? dice : { ...dice, off: true } };
+    });
+  }
+
   /**
    * Removes someone, whether waiting or approved, signing them out everywhere. If they sign in
    * again they're a newcomer, with a new session key. False if they weren't on the list.

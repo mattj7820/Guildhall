@@ -27,6 +27,13 @@ export interface Member {
   lastSignInAt: string;
   /** The look they picked; without one, Guildhall follows their device's light or dark mode. */
   theme?: Theme;
+  /** Their 3D dice. Without it, their rolls are thrown as dice in the theme's colours. */
+  dice?: MemberDice;
+}
+
+export interface MemberDice {
+  /** They'd rather see rolls only as text. */
+  off?: boolean;
 }
 
 /** Who someone is on Discord, as read when they sign in. */

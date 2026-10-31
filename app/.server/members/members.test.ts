@@ -138,6 +138,29 @@ describe("Members", () => {
     expect(await members.get(discordId)).toMatchObject({ name: "Renamed", theme: "ember" });
   });
 
+  it("throws dice for everyone until they turn them off", async () => {
+    const members = store();
+    const { discordId } = await signedIn(members, profile(1), { approve: true });
+    expect((await members.get(discordId))?.dice?.off).toBeUndefined();
+    await members.setDiceOn(discordId, false);
+    expect((await members.get(discordId))?.dice).toEqual({ off: true });
+    await members.setDiceOn(discordId, true);
+    expect((await members.get(discordId))?.dice?.off).toBeUndefined();
+    expect(await members.setDiceOn("100000000000000999", false)).toBeUndefined();
+  });
+
+  it("reads damaged dice settings as the defaults, rather than refusing the file", async () => {
+    const { discordId } = await signedIn(store(), profile(1), { approve: true });
+    const filePath = path.join(folder, "members.json");
+    const onDisk = JSON.parse(await readFile(filePath, "utf8"));
+    onDisk.members[0].dice = { off: "sometimes" };
+    await writeFile(filePath, JSON.stringify(onDisk));
+    expect((await store().get(discordId))?.dice).toEqual({});
+    onDisk.members[0].dice = "not even an object";
+    await writeFile(filePath, JSON.stringify(onDisk));
+    expect((await store().get(discordId))?.dice).toBeUndefined();
+  });
+
   it("reads a look it doesn't know as none picked, rather than refusing the file", async () => {
     const { discordId } = await signedIn(store(), profile(1), { approve: true });
     const filePath = path.join(folder, "members.json");

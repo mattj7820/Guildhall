@@ -9,21 +9,27 @@ export function meta(_: Route.MetaArgs) {
   return [{ title: "Settings · Guildhall" }];
 }
 
-/** Each person's own settings: for now, their theme. */
+/** Each person's own settings: their theme and their dice. */
 export function loader({ context }: Route.LoaderArgs) {
   const account = context.get(accountContext);
   if (account.kind !== "member") notFound();
-  return { theme: account.member.theme };
+  return { theme: account.member.theme, diceOn: !account.member.dice?.off };
 }
 
-const settingsSchema = z.object({ theme: z.enum(THEMES) });
+const settingsSchema = z.union([
+  z.object({ theme: z.enum(THEMES) }),
+  z.object({ dice: z.enum(["on", "off"]) }),
+]);
 
 export async function action({ request, context }: Route.ActionArgs) {
   const account = context.get(accountContext);
   if (account.kind !== "member") notFound();
   const parsed = settingsSchema.safeParse(Object.fromEntries(await request.formData()));
-  if (!parsed.success) return data({ error: "That isn't one of the themes." }, 400);
-  await context.get(servicesContext).members.setTheme(account.member.discordId, parsed.data.theme);
+  if (!parsed.success) return data({ error: "That isn't one of the choices." }, 400);
+  const { members } = context.get(servicesContext);
+  const { discordId } = account.member;
+  if ("theme" in parsed.data) await members.setTheme(discordId, parsed.data.theme);
+  else await members.setDiceOn(discordId, parsed.data.dice === "on");
   return { ok: true };
 }
 
@@ -54,6 +60,7 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
           ))}
         </Form>
       </section>
+      <DiceSettings on={loaderData.diceOn} />
     </main>
   );
 }
@@ -84,5 +91,42 @@ function ThemeChoice({ theme, chosen }: { theme: Theme; chosen: boolean }) {
       <span className="text-muted text-sm">{info.description}</span>
       <span className="text-link text-sm font-semibold">{chosen ? "Your theme" : "Use this"}</span>
     </button>
+  );
+}
+
+/** Whether rolls are thrown as 3D dice across the screen, or shown only as text. */
+function DiceSettings({ on }: { on: boolean }) {
+  return (
+    <section aria-labelledby="dice-heading" className="flex flex-col gap-3">
+      <div>
+        <h2 id="dice-heading" className="font-display text-title text-2xl">
+          Dice
+        </h2>
+        <p className="text-muted mt-1">
+          Your rolls in Guildhall are thrown as dice across your screen, and the result shows when
+          they land. Only you see them. With your device set to reduce motion, they land at once.
+        </p>
+      </div>
+      <Form method="post">
+        <button
+          type="submit"
+          name="dice"
+          value={on ? "off" : "on"}
+          role="switch"
+          aria-checked={on}
+          className="hover:bg-raised flex items-center gap-2 rounded-md px-1.5 py-1 font-medium"
+        >
+          <span
+            aria-hidden="true"
+            className={`relative inline-block h-5 w-9 rounded-full transition-colors ${on ? "bg-accent" : "bg-line-strong"}`}
+          >
+            <span
+              className={`bg-surface absolute top-0.5 left-0 h-4 w-4 rounded-full shadow transition-transform ${on ? "translate-x-4" : "translate-x-0.5"}`}
+            />
+          </span>
+          Roll with 3D dice
+        </button>
+      </Form>
+    </section>
   );
 }
