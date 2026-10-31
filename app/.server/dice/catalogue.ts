@@ -57,22 +57,3 @@ const BY_ID = new Map(DICE_STYLES.map((style) => [style.id, style]));
 export function diceStyle(id: string | undefined): DieStyle | undefined {
   return id === undefined ? undefined : BY_ID.get(id);
 }
-
-/** Someone's dice as stored: what the DM gave them and what they chose. */
-export interface DiceChoices {
-  given?: readonly string[];
-  set?: string;
-}
-
-/**
- * The styles someone may use, in the usual order: the DM has them all, everyone else those given
- * to them. Styles no longer in the app are left out.
- */
-export function setsFor(dice: DiceChoices | undefined, isDm: boolean): DieStyle[] {
-  return DICE_STYLES.filter((style) => isDm || (dice?.given ?? []).includes(style.id));
-}
-
-/** The style someone's dice are in, or undefined for the theme's dice (also once it's taken back). */
-export function chosenSet(dice: DiceChoices | undefined, isDm: boolean): DieStyle | undefined {
-  return setsFor(dice, isDm).find((style) => style.id === dice?.set);
-}

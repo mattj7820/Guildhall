@@ -156,14 +156,7 @@ describe("Members", () => {
     const onDisk = JSON.parse(await readFile(filePath, "utf8"));
     onDisk.members[0].dice = { given: ["bone", "glass"] };
     await writeFile(filePath, JSON.stringify(onDisk));
-    await members.chooseDiceSet(discordId, "glass");
     await members.setDiceOn(discordId, false);
-    expect((await members.get(discordId))?.dice).toEqual({
-      given: ["bone", "glass"],
-      set: "glass",
-      off: true,
-    });
-    await members.chooseDiceSet(discordId, undefined);
     expect((await members.get(discordId))?.dice).toEqual({ given: ["bone", "glass"], off: true });
   });
 

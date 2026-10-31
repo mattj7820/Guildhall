@@ -32,13 +32,9 @@ export class Settings extends AppPage {
     return this.page.getByRole("switch", { name: "Dice sounds" });
   }
 
-  get diceSets() {
-    return this.page.getByRole("form", { name: "Your dice" });
-  }
-
-  /** A dice set to choose ("Bone"), or "The theme's dice". */
-  diceSet(label: string) {
-    return this.diceSets.getByRole("button", { name: new RegExp(`^${label}`) });
+  /** The way to their dice collection, saying how many they've found and have to open. */
+  get yourDice() {
+    return this.page.getByRole("link", { name: /^Your dice/ });
   }
 
   async pick(label: string, value: string) {

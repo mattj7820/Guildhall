@@ -34,7 +34,10 @@ export interface DiceGot {
 export interface DiceCollection {
   owned: OwnedDie[];
   packs: DicePack[];
-  /** The style each type is rolled in first; the rest of their dice of that type fill in after. */
+  /**
+   * The style each type is rolled in first; the rest of their dice of that type fill in after.
+   * An empty style is a choice of none: their rarest first.
+   */
   favourites: { sides: DieType; style: string }[];
   /** What they got, newest last (kept to the latest few hundred). */
   history: DiceGot[];
@@ -70,4 +73,14 @@ export interface OwnedDieView {
   style: DieStyle;
   sides: DieType;
   count: number;
+}
+
+/** Someone's collection page, as sent to them. */
+export interface CollectionView {
+  /** The DM has every die and opens no packs. */
+  isDm: boolean;
+  owned: OwnedDieView[];
+  /** The style each type is rolled in first, as things stand. */
+  favourites: Partial<Record<DieType, string>>;
+  packs: DicePack[];
 }

@@ -22,14 +22,16 @@ export interface RarityInfo {
   label: string;
   /** The chance a pack's die is this rare, out of 100. */
   odds: number;
+  /** Its colour on badges and in a pack's glow, the same in every theme, as on magic items. */
+  colour: string;
 }
 
 export const RARITY_INFO: Record<Rarity, RarityInfo> = {
-  common: { label: "Common", odds: 50 },
-  uncommon: { label: "Uncommon", odds: 30 },
-  rare: { label: "Rare", odds: 13 },
-  veryRare: { label: "Very rare", odds: 5 },
-  legendary: { label: "Legendary", odds: 2 },
+  common: { label: "Common", odds: 50, colour: "#9ca3af" },
+  uncommon: { label: "Uncommon", odds: 30, colour: "#22c55e" },
+  rare: { label: "Rare", odds: 13, colour: "#3b82f6" },
+  veryRare: { label: "Very rare", odds: 5, colour: "#a855f7" },
+  legendary: { label: "Legendary", odds: 2, colour: "#f59e0b" },
 };
 
 /** A style as sent to its owner's browser. Without a font, the numbers use the theme's. */

@@ -120,7 +120,7 @@ describe("DiceCollections", () => {
     });
   });
 
-  it("keeps each type's favourite style, and forgets it when asked", async () => {
+  it("keeps each type's favourite style, and none when asked", async () => {
     const dice = store();
     await dice.chooseFavourite(MEMBER, 20, "bone");
     await dice.chooseFavourite(MEMBER, 6, "glass");
@@ -130,7 +130,10 @@ describe("DiceCollections", () => {
       { sides: 20, style: "blood" },
     ]);
     await dice.chooseFavourite(MEMBER, 6, undefined);
-    expect((await dice.get(MEMBER)).favourites).toEqual([{ sides: 20, style: "blood" }]);
+    expect((await dice.get(MEMBER)).favourites).toEqual([
+      { sides: 20, style: "blood" },
+      { sides: 6, style: "" },
+    ]);
   });
 
   it("drops damaged entries rather than refusing the file", async () => {

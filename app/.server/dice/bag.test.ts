@@ -25,6 +25,8 @@ describe("diceBag", () => {
     const owned = [d20s("bone", 1), d20s("glass", 1)];
     expect(diceBag(owned, [], "bone").byType[20]?.[0]).toBe("bone");
     expect(diceBag(owned, [{ sides: 20, style: "glass" }], "bone").byType[20]?.[0]).toBe("glass");
+    // Choosing none: the rarest first, Glass.
+    expect(diceBag(owned, [{ sides: 20, style: "" }], "bone").byType[20]?.[0]).toBe("glass");
   });
 
   it("ignores a favourite they don't have", () => {

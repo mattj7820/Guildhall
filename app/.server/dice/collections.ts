@@ -170,11 +170,14 @@ export class DiceCollections {
     });
   }
 
-  /** Which style a type rolls in first, or undefined to let their rarest dice go first. */
+  /**
+   * Which style a type rolls in first, or undefined to let their rarest dice go first (kept as
+   * "", so it also wins over a set picked before packs).
+   */
   chooseFavourite(discordId: DiscordId, sides: DieType, style: string | undefined): Promise<void> {
     return this.change(discordId, (collection) => {
       const others = collection.favourites.filter((each) => each.sides !== sides);
-      const favourites = style ? [...others, { sides, style }] : others;
+      const favourites = [...others, { sides, style: style ?? "" }];
       return { next: { ...collection, favourites }, result: undefined };
     });
   }

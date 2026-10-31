@@ -49,20 +49,21 @@ export function favouriteFor(
 ): string | undefined {
   const has = (style: string | undefined) =>
     ofType.some((die) => die.sides === sides && die.style === style);
-  const chosen = favourites.find((each) => each.sides === sides)?.style;
-  if (has(chosen)) return chosen;
+  // A choice, even of none (""), wins over the set picked before packs.
+  const chosen = favourites.find((each) => each.sides === sides);
+  if (chosen) return has(chosen.style) ? chosen.style : undefined;
   return has(oldSet) ? oldSet : undefined;
 }
 
 /**
- * Someone's dice to roll with. If `dice.json` can't be read, they roll what they had before packs
- * (or the theme's dice) rather than the page failing.
+ * Someone's dice to roll with, and how many packs they have to open. If `dice.json` can't be
+ * read, they roll what they had before packs (or the theme's dice) rather than the page failing.
  */
-export async function bagFor(
+export async function rollingDice(
   collections: DiceCollections,
   member: Member,
   isDm: boolean,
-): Promise<DiceBag> {
+): Promise<{ bag: DiceBag; packs: number }> {
   let collection = EMPTY_COLLECTION;
   try {
     collection = await collections.get(member.discordId);
@@ -70,5 +71,8 @@ export async function bagFor(
     if (!(error instanceof DataFileError)) throw error;
   }
   const usable = usableDice(collection, member.dice?.given, isDm);
-  return diceBag(usable, collection.favourites, member.dice?.set);
+  return {
+    bag: diceBag(usable, collection.favourites, member.dice?.set),
+    packs: isDm ? 0 : collection.packs.length,
+  };
 }

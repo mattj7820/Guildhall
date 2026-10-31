@@ -142,15 +142,6 @@ export class Members {
     });
   }
 
-  /** Someone picks the set their dice are in, or undefined for the theme's dice. */
-  chooseDiceSet(discordId: DiscordId, set: string | undefined): Promise<Member | undefined> {
-    return this.change(discordId, (member) => {
-      const dice = { ...member.dice };
-      delete dice.set;
-      return { ...member, dice: set ? { ...dice, set } : dice };
-    });
-  }
-
   /**
    * Removes someone, whether waiting or approved, signing them out everywhere. If they sign in
    * again they're a newcomer, with a new session key. False if they weren't on the list.

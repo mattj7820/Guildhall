@@ -34,6 +34,7 @@ export default [
   route("waiting", "routes/waiting.tsx"),
   route("members", "routes/members.tsx"),
   route("settings", "routes/settings.tsx"),
+  route("settings/dice", "routes/settings-dice.tsx"),
   route("characters", "routes/characters.tsx"),
   route("characters/:id", "routes/character.tsx"),
   route("characters/:id/portrait", "routes/character-portrait.ts"),

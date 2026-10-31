@@ -13,7 +13,7 @@ import {
   useRouteLoaderData,
 } from "react-router";
 import { authMiddleware } from "~/.server/auth/middleware";
-import { bagFor } from "~/.server/dice/bag";
+import { rollingDice } from "~/.server/dice/bag";
 import { ViewToggle } from "~/components/ViewToggle";
 import { accountContext, servicesContext, viewerContext } from "~/context";
 import { EMPTY_BAG } from "~/dice/bag";
@@ -26,13 +26,16 @@ export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
 
 export async function loader({ context }: Route.LoaderArgs) {
   const account = context.get(accountContext);
-  const bag =
+  const { bag, packs } =
     account.kind === "member"
-      ? await bagFor(context.get(servicesContext).dice, account.member, account.isDm)
-      : EMPTY_BAG;
+      ? await rollingDice(context.get(servicesContext).dice, account.member, account.isDm)
+      : { bag: EMPTY_BAG, packs: 0 };
   return {
     role: context.get(viewerContext).role,
-    user: account.kind === "member" ? { name: account.member.name, isDm: account.isDm } : undefined,
+    user:
+      account.kind === "member"
+        ? { name: account.member.name, isDm: account.isDm, packs }
+        : undefined,
     // Without a pick (or signed out), the device's light or dark mode decides.
     theme: account.kind === "member" ? account.member.theme : undefined,
     dice:
@@ -101,7 +104,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {user && (
               <div className="ml-auto flex items-center gap-4">
                 {user.isDm && role && <ViewToggle role={role} />}
-                <SignedIn name={user.name} />
+                <SignedIn name={user.name} packs={user.packs} />
               </div>
             )}
           </div>
@@ -119,12 +122,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SignedIn({ name }: { name: string }) {
+function SignedIn({ name, packs }: { name: string; packs: number }) {
   return (
     <Form method="post" action="/logout" className="flex items-center gap-2 text-sm">
       <Link to="/settings" title="Settings" className="hover:text-on-bar-strong">
         {name}
       </Link>
+      {packs > 0 && (
+        <Link
+          to="/settings/dice"
+          className="rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold hover:bg-white/25"
+        >
+          {packs === 1 ? "1 pack" : `${packs} packs`} to open
+        </Link>
+      )}
       <button
         type="submit"
         className="hover:text-on-bar-strong rounded-md px-2 py-1 hover:bg-white/10"
