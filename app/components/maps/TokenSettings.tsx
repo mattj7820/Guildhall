@@ -79,7 +79,7 @@ export function TokenSettings({
         </select>
       </label>
       <div className="flex flex-wrap gap-2">
-        {token.kind !== "combatant" && tools.otherMaps.length > 0 && (
+        {!(token.combatant && token.kind !== "character") && tools.otherMaps.length > 0 && (
           <select
             aria-label="Send to map"
             className={inputClass}

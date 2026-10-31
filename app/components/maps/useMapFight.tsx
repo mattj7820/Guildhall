@@ -33,6 +33,7 @@ import type { MapView, Point } from "~/maps/types";
 import { mapUrl } from "~/maps/urls";
 import { newId } from "~/shared/ids";
 import { joinFromToken, perform } from "~/combat/encounter";
+import { monsterMarker } from "~/maps/tokens/fight-markers";
 import { EndFight } from "./EndFight";
 import { TOKEN_RADIUS } from "./TokenLayer";
 
@@ -92,7 +93,9 @@ export function useMapFight({
   const shown = encounter.combatants.find((c) => c.id === (shownId ?? encounter.activeId));
   const tokenOf = (combatant: string) => tokens.find((token) => token.combatant === combatant);
   const active = encounter.phase === "active" ? encounter.activeId : null;
-  const unplaced = encounter.combatants.filter((c) => c.kind === "monster" && !tokenOf(c.id));
+  const unplaced = encounter.combatants.filter(
+    (c): c is MonsterCombatant => c.kind === "monster" && !tokenOf(c.id),
+  );
   const squaresOf = (c: Combatant) =>
     (c.statblock && creatures.get(statblockKey(c.statblock))?.squares) || 1;
 
@@ -113,20 +116,11 @@ export function useMapFight({
     const { encounter: started, placed } = startPreparedOnMap(prepared, party, tracker.rng);
     tracker.replace(started);
     void send(
-      placed.map(({ combatant, at }): TokenAction => {
+      placed.flatMap(({ combatant, at }): TokenAction[] => {
         const monster = started.combatants.find((c) => c.id === combatant);
-        const size = monster ? squaresOf(monster) : 1;
-        return {
-          type: "place",
-          token: {
-            kind: "combatant",
-            id: newId(),
-            map: map.id,
-            at,
-            ...(size > 1 && { size }),
-            combatant,
-          },
-        };
+        if (monster?.kind !== "monster") return [];
+        const place = { id: newId(), map: map.id, at, size: squaresOf(monster) };
+        return [{ type: "place", token: monsterMarker(monster, place) }];
       }),
     );
     void fetch(`/combat/prepared/${encodeURIComponent(prepared.id)}`, {
@@ -215,14 +209,7 @@ export function useMapFight({
       }
       return {
         type: "place",
-        token: {
-          kind: "combatant",
-          id: newId(),
-          map: map.id,
-          at: point,
-          ...(size > 1 && { size }),
-          combatant: monster.id,
-        },
+        token: monsterMarker(monster, { id: newId(), map: map.id, at: point, size }),
       };
     });
     void send(placed);

@@ -112,17 +112,21 @@ test.describe("A fight on a map", () => {
     await expect(tracker.combatant("Fixture Minion 2")).toContainText("HP 10/12");
   });
 
-  test("takes a monster's token off the map when it leaves the fight", async ({ arena }) => {
+  test("keeps a monster taken out of the fight on the map, with its hit points", async ({
+    arena,
+  }) => {
     const tracker = await twoMinionsPlaced(arena);
     await tracker
       .combatant("Fixture Minion 2")
       .getByRole("button", { name: "Remove Fixture Minion 2" })
       .click();
-    await expect(arena.anyTokenNamed("Fixture Minion 2")).toHaveCount(0);
+    await expect(tracker.combatant("Fixture Minion 2")).toHaveCount(0);
+    // A marker now, out of the fight, keeping the hit points to join another with.
+    await expect(arena.anyTokenNamed("Fixture Minion 2")).toHaveAccessibleName(/12 of 12 HP/);
     await expect(arena.anyTokenNamed("Fixture Minion 1")).toBeVisible();
   });
 
-  test("ends the fight, clearing the monsters or leaving them as markers", async ({
+  test("ends the fight, clearing the monsters or leaving them on the map", async ({
     api,
     arena,
   }) => {
@@ -132,8 +136,8 @@ test.describe("A fight on a map", () => {
     await tracker.saved();
 
     await arena.endFight("Leave them on the map");
-    // Markers now: no hit points, and the hidden one still hidden.
-    await expect(minion(1)).not.toHaveAccessibleName(/HP/);
+    // Markers out of the fight: keeping their hit points, and the hidden one still hidden.
+    await expect(minion(1)).toHaveAccessibleName(/7 of 7 HP/);
     await expect(minion(2)).toHaveAccessibleName(/players can't see this/);
     expect(await api.fight()).toBeNull();
 
