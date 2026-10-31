@@ -144,7 +144,7 @@ export function throwDice(
   return stop;
 }
 
-/** Reflections from a plain lit room, so metal, glass and glitter have something to catch. */
+/** Reflections from a plain lit room, so fancy dice's glitter and shine have something to catch. */
 export function lightWithRoom(
   renderer: THREE.WebGLRenderer,
   scene: THREE.Scene,

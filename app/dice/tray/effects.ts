@@ -100,6 +100,11 @@ vec3 gh_glitter(vec3 local, vec3 viewNormal) {
 }
 `;
 
+/** Whether a look has anything beyond plain colours. */
+export function hasEffects(look: DiceLook): boolean {
+  return !!(look.pattern || look.glitter || look.core || look.inclusions || look.symbols);
+}
+
 /** A material for a die's body, or its core, with the look's pattern and glitter. */
 export function bodyMaterial(
   look: DiceLook,
@@ -123,6 +128,8 @@ export function bodyMaterial(
     color: new THREE.Color(options.core ? "#ffffff" : look.body),
     roughness: options.core ? 0.4 : look.roughness,
     metalness: options.core ? 0 : look.metalness,
+    // Only fancy dice catch the room's reflections: plain ones keep the colours they always had.
+    envMapIntensity: hasEffects(look) ? 1 : 0,
     emissive: new THREE.Color(look.glow ?? "#000000"),
     // A pattern keeps its own colours: the glow is only around the numbers.
     emissiveIntensity: look.glow && !look.pattern ? 0.1 : 0,
