@@ -1691,3 +1691,32 @@ holds one die, drawn on the server, with the injected `Rng`, when its member ope
 - **The first new dice** (five common, two uncommon, two rare, a very rare and two legendaries
   that glow) have plain working labels and functional descriptions, for the DM to rename. Looks
   can now glow (`DiceLook.glow`); patterns and real glass are still to come.
+
+## 85. Fancier dice: patterns, glitter, cores, things inside and symbols, worked out in 3D
+
+**Date:** 2026-10-31
+
+**Context.** The first dice (decision 84) were block colours. The DM wanted the rarer ones to
+look like real resin dice: swirls and marble, glitter, liquid cores, things set inside, themed
+sets, and symbols on a d20's 20 and 1. A throwaway prototype (on `prototype/dice-looks`, never
+merged) tried eight looks; everything but real glass was kept.
+
+**Decision.** A `DiceLook` can now have a `pattern` (marble, swirl, nebula or speckle, in two or
+three colours), `glitter`, a liquid `core`, `inclusions` (leaves, flowers, stars, gold leaf or
+bubbles) and `symbols` (token icons, from game-icons.net, in place of a d20's 20 and 1).
+
+- **Patterns are worked out in the shader** from each point's place inside the die
+  (`effects.ts`, added to three.js's standard material), not from an image wrapped round it. Our
+  dice have no image mapping, so every shape works the same, and each die of a style gets its own
+  part of the pattern.
+- **Cores and inclusions** are extra meshes inside a see-through shell; a core swirls slowly as
+  it rolls. Symbols are drawn where the number would be, glowing if the look glows.
+- **Only fancy dice catch a lit room's reflections**, which give glitter and shine something to
+  catch; plain dice keep exactly the colours they had.
+- **No real glass:** three.js's glass needs something behind the die in the 3D scene, and ours are
+  drawn over the page, so it looked like plain plastic.
+- **The collection shows each die as a still 3D picture**, drawn once by one shared renderer
+  (`picture.ts`), so a page of dice uses a single WebGL context. The flat outline stays as the
+  fallback.
+- **Seven fancy dice** (two rare, three very rare, two legendary) have plain working labels and
+  functional descriptions, for the DM to rename.
