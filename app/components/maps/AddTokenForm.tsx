@@ -7,6 +7,8 @@ import type { NoteChoice } from "~/maps/tokens/types";
 import { NotePicker } from "./NotePicker";
 import type { MarkerDraft } from "./PlacingHint";
 import { TokenLook, type Look } from "./TokenLook";
+import type { CreatureOption } from "~/combat/types";
+import { MonsterField } from "./FightTokensPrototype";
 
 /** The most tokens added at once. */
 const COUNT_MAX = 20;
@@ -19,13 +21,16 @@ const COUNT_MAX = 20;
 export function AddTokenForm({
   notes,
   existing,
+  monsters,
   onPlace,
   onCancel,
 }: {
   notes: NoteChoice[];
   /** The names already on this map, to carry on numbering. */
   existing: string[];
-  onPlace: (markers: MarkerDraft[]) => void;
+  /** PROTOTYPE: monsters to give the tokens a statblock from. */
+  monsters?: CreatureOption[];
+  onPlace: (markers: MarkerDraft[], creature?: CreatureOption) => void;
   onCancel: () => void;
 }) {
   const [slug, setSlug] = useState("");
@@ -33,6 +38,7 @@ export function AddTokenForm({
   const [count, setCount] = useState(1);
   const [shown, setShown] = useState(false);
   const [look, setLook] = useState<Look>({ colour: "red" });
+  const [creature, setCreature] = useState<CreatureOption>();
   const note = notes.find((each) => each.slug === slug);
   const names = numberedNames(name || "Token", count, existing);
 
@@ -59,6 +65,7 @@ export function AddTokenForm({
             ...(look.picture && { picture: look.picture }),
             ...(look.icon && { icon: look.icon }),
           })),
+          creature,
         );
       }}
     >
@@ -74,6 +81,18 @@ export function AddTokenForm({
           suggest(picked.title, picked.imageUrl);
         }}
       />
+      {monsters && (
+        <MonsterField
+          creatures={monsters}
+          value={creature}
+          onChange={(picked) => {
+            setCreature(picked);
+            if (!picked) return;
+            if (!name.trim()) setName(picked.name);
+            if (!note) suggest(picked.name);
+          }}
+        />
+      )}
       <div className="flex gap-2">
         <label className="flex flex-1 flex-col gap-1">
           <span className="font-medium">Name</span>
