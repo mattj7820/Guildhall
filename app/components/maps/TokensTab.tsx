@@ -10,6 +10,7 @@ import { PartyTokens } from "./PartyTokens";
 import { PlacingHint, type Placing } from "./PlacingHint";
 import { TokenDistances } from "./TokenDistances";
 import { TokenSettings } from "./TokenSettings";
+import { PickBox } from "./PickBox";
 import { TokenThumb } from "./TokenThumb";
 
 interface Props {
@@ -20,6 +21,9 @@ interface Props {
   creatures: CreatureOption[];
   tokens: TokenView[];
   selected?: TokenView;
+  /** The tokens picked on the map, for a fight. */
+  picked: readonly string[];
+  onTogglePick: (id: string) => void;
   placing?: Placing;
   error?: string;
   onPlace: (placing: Placing | undefined) => void;
@@ -47,6 +51,8 @@ export function TokensTab({
   creatures,
   tokens,
   selected,
+  picked,
+  onTogglePick,
   placing,
   error,
   onPlace,
@@ -78,6 +84,8 @@ export function TokensTab({
         mapId={mapId}
         party={party}
         tokens={tokens}
+        picked={picked}
+        onTogglePick={onTogglePick}
         onPlace={onPlace}
         onSelect={onSelect}
         onFind={onFind}
@@ -123,6 +131,8 @@ export function TokensTab({
                 marker={marker}
                 chosen={marker.id === selected?.id}
                 monster={monsterOf(marker)}
+                picked={picked.includes(marker.id)}
+                onTogglePick={() => onTogglePick(marker.id)}
                 onSelect={() => onSelect(marker)}
                 send={send}
               />
@@ -175,6 +185,8 @@ function MarkerRow({
   marker,
   chosen,
   monster,
+  picked,
+  onTogglePick,
   onSelect,
   send,
 }: {
@@ -182,6 +194,8 @@ function MarkerRow({
   chosen: boolean;
   /** The statblock it joins a fight with. */
   monster?: CreatureOption;
+  picked: boolean;
+  onTogglePick: () => void;
   onSelect: () => void;
   send: (actions: TokenAction[]) => void;
 }) {
@@ -190,6 +204,7 @@ function MarkerRow({
     <li
       className={`flex items-center gap-2 rounded px-1 py-0.5 ${chosen ? "bg-info-surface" : ""}`}
     >
+      <PickBox name={marker.name} picked={picked} onToggle={onTogglePick} />
       <TokenThumb token={marker} />
       <button
         type="button"

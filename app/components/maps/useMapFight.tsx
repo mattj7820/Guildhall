@@ -47,6 +47,9 @@ interface Options {
   starting?: PreparedEncounter | null;
   /** The next click on the map places the whole party. */
   onBringParty: () => void;
+  /** The tokens the DM has picked on the map. */
+  pickedTokens: readonly string[];
+  onClearPick: () => void;
 }
 
 /**
@@ -64,6 +67,8 @@ export function useMapFight({
   onFind,
   starting,
   onBringParty,
+  pickedTokens,
+  onClearPick,
 }: Options) {
   const { tracker, status, hp, freeMovement, changeFreeMovement } = useSharedFight(fight, map.id);
   const { encounter } = tracker;
@@ -94,19 +99,10 @@ export function useMapFight({
   const { dispatch } = tracker;
 
   // Monsters picked on the map, for damage or healing all at once.
-  const [pickedIds, setPickedIds] = useState<string[]>([]);
-  const picked = encounter.combatants.filter(
-    (c): c is MonsterCombatant => c.kind === "monster" && pickedIds.includes(c.id),
-  );
-  function pickToken(token: TokenView, additive: boolean) {
-    const id = token.combatant;
-    const monster = id && encounter.combatants.some((c) => c.id === id && c.kind === "monster");
-    if (!monster) return setPickedIds(additive ? pickedIds : []);
-    if (!additive) return setPickedIds([id]);
-    setPickedIds(
-      pickedIds.includes(id) ? pickedIds.filter((each) => each !== id) : [...pickedIds, id],
-    );
-  }
+  const picked = encounter.combatants.filter((c): c is MonsterCombatant => {
+    const token = c.kind === "monster" ? tokenOf(c.id) : undefined;
+    return !!token && pickedTokens.includes(token.id);
+  });
 
   /**
    * A prepared fight starting here: the chosen party joins, and the monsters stand where they
@@ -191,7 +187,7 @@ export function useMapFight({
   const panel = (
     <section aria-label="Fight" className="flex flex-col gap-3">
       {picked.length > 0 && (
-        <MonsterDamage monsters={picked} dispatch={dispatch} onClear={() => setPickedIds([])} />
+        <MonsterDamage monsters={picked} dispatch={dispatch} onClear={onClearPick} />
       )}
       {starting && (
         <StartPrepared
@@ -323,21 +319,12 @@ export function useMapFight({
     /** Whether the next click on the map places monsters. */
     placing: unplaced.length > 0,
     placeMonsters,
-    /** A token chosen on the map shows its combatant in the tracker; monsters are picked. */
-    selectToken: (token: TokenView, additive = false) => {
+    /** A token chosen on the map shows its combatant in the tracker. */
+    selectToken: (token: TokenView) => {
       if (token.combatant) setShownId(token.combatant);
-      pickToken(token, additive);
     },
-    /** Picks the monsters of these tokens (those a spell area catches). */
-    pickTokens: (ids: readonly string[]) =>
-      setPickedIds(
-        tokens.flatMap((token) =>
-          ids.includes(token.id) && token.kind === "combatant" && token.combatant
-            ? [token.combatant]
-            : [],
-        ),
-      ),
-    /** The picked monsters' tokens, shown selected. */
-    pickedTokenIds: picked.flatMap((monster) => tokenOf(monster.id)?.id ?? []),
+    /** Whether a token is a monster in this fight, to pick for damage. */
+    isMonster: (token: TokenView) =>
+      encounter.combatants.some((c) => c.id === token.combatant && c.kind === "monster"),
   };
 }

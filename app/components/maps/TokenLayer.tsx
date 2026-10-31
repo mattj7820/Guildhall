@@ -53,7 +53,7 @@ interface Props {
   size: Size;
   canvas: CanvasTools;
   selectedId?: string;
-  /** Also selected: several monsters picked at once in a fight. */
+  /** Also selected: the tokens the DM has picked, for a fight or damage. */
   alsoSelected?: readonly string[];
   /** The DM chooses a token to change it; with Shift (`additive`), adding to a pick. */
   onSelect?: (token: TokenView, how: { additive: boolean }) => void;
