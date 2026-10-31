@@ -20,7 +20,9 @@ maps (the party's, NPCs from their notes and the DM's markers, moved live over w
 managed from the DM's Tokens tab; kept in the data folder),
 character sheets with a game-style bag (players edit their own, the DM gives items; spells, slots,
 features' uses, hit dice and rests tracked on them, spells picked from both SRDs and the DM's spell notes, and prepared from a longer list; a player's sheet and bag beside the map; kept in
-the data folder), sign-in with Discord, where the DM lets players in and says who they play, and three themes
+the data folder), 3D dice (every roll thrown across the roller's own screen, landing on the
+result already rolled, which shows once they land; a switch in Settings, and dice sets the DM gives
+each member), sign-in with Discord, where the DM lets players in and says who they play, and three themes
 (Storybook, Iron and Ember, Gemlight), each person's pick saved on their account.
 It's built to be hosted: a Docker image, with the vault copied read-only from Google Drive (see
 `docs/deployment.md`).
@@ -117,9 +119,13 @@ First e2e run needs `npx playwright install chromium`.
   `app/app.css`: named colours, fonts, and each theme's decoration on the `gh-*` hooks.
 - `app/shared/`: small generic helpers used by several modules: `newId()`, `history.ts` (undo) and
   `name-search.ts` (`matchRank`, `byName`: the pickers' search).
-- `app/dice/`: dice expressions (`parseDice`, `rollText`, `critical`), the `Rng` type, and the
-  roll log (`rollInto`: labelled rolls, one-roll advantage, Critical) with its `useRollLog` hook
-  (isomorphic).
+- `app/dice/`: dice expressions (`parseDice`, `rollText`, `critical`), the `Rng` type (and
+  `seededRng`, for what only has to look random), and the roll log (`rollInto`: labelled rolls,
+  one-roll advantage, Critical) with its `useRollLog` hook (isomorphic). `sets.ts` (`DICE_SETS`,
+  `DICE_SET_INFO`, `setsFor`, `chosenSet`) and `looks.ts` (`DiceLook`). `tray/`: 3D dice, loaded
+  only in the browser when first thrown: `shapes.ts` (d4 to d20, `faceUp`), `plan.ts`
+  (`planThrow`: the throw simulated with cannon-es, each die numbered to land on its roll; pure),
+  `scene.ts` (`throwDice`: drawn with three.js) and `sound.ts` (`DiceSound`, Web Audio).
 - `app/combat/`: the combat tracker's model (isomorphic): `types.ts`, `encounter.ts` (reducer,
   action creators, `perform`), `initiative.ts` (ordering, reroll tie-breaks), `turns.ts`, `hp.ts`,
   `visibility.ts` (`encounterForViewer`), `schema.ts` (zod),
@@ -292,6 +298,9 @@ First e2e run needs `npx playwright install chromium`.
   `character-give` (JSON: a gift to another bag), `character-portrait` (resource route), `spells`
   (JSON: every spell the viewer may pick, for the picker when it opens), `spell-text` (JSON: one
   spell's text as the viewer may read it), `credits` (icon and SRD credits).
+- `app/components/dice/`: `useDiceTray` (a roller's dice: throws each roll and holds it back from
+  what's shown until they land; the tray to place), `useDicePreferences` (on or off and the set,
+  from the root loader) and `looks.ts` (`themeLook`, `setLook`: resolved in the browser).
 - `app/components/combat/`: the tracker's UI (`CombatTracker` lays it out), and the prepared
   encounter editor (`PreparedEditor`). `TurnStrip` (the turn order as round faces, over a map or
   in a page), `PlayerFight` (a player's Combat page, and `EndMyTurn`), `FightStatus` (saving,
@@ -355,6 +364,11 @@ First e2e run needs `npx playwright install chromium`.
 - Frontmatter: `visibility` (`players`|`dm`, default `dm`), `type`, `aliases`, `tags`, `id`, and
   `player` on `type: pc` notes (who plays the character). `type: spell` notes may give the spell's
   fields (level, classes, casting time…; the README's "Spell notes").
+- Dice: the `Rng` decides every result; 3D dice only show it (`planThrow` numbers them after the
+  simulation), with their motion from `seededRng`, never the roll's `Rng`. Anything showing a roll
+  reads the log from `useDiceTray`, so it waits for the dice. Dice are drawn only on the roller's
+  own screen; nothing about them is sent. Sets are the app's, given per member (`dice.given` in
+  `members.json`), never stored in bags.
 - Combat: every encounter change is an `EncounterAction` through the pure `encounterReducer`.
   Dice are rolled in action creators (or `perform`) and carried in the action. All randomness goes
   through an injected `Rng`; never call `Math.random` directly. IDs come from `newId()`

@@ -19,6 +19,8 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: "retain-on-failure",
+    // 3D dice land at once, so a roll's result shows straight away; dice.spec.ts throws them.
+    reducedMotion: "reduce",
   },
   projects: [
     // Signs in once and saves the cookies; every other test then starts signed in as the DM

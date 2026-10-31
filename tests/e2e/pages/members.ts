@@ -36,6 +36,15 @@ export class Members extends AppPage {
     await expect(this.page.getByRole("listitem", { name })).toHaveCount(0);
   }
 
+  /** Gives someone a dice set, or takes it back. */
+  async giveDice(name: string, set: string, give = true) {
+    const button = this.member(name)
+      .getByRole("group", { name: `${name}'s dice sets` })
+      .getByRole("button", { name: set });
+    if ((await button.getAttribute("aria-pressed")) !== String(give)) await button.click();
+    await expect(button).toHaveAttribute("aria-pressed", String(give));
+  }
+
   async remove(name: string) {
     const row = this.member(name);
     await row.getByRole("button", { name: "Remove…" }).click();

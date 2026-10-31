@@ -167,6 +167,11 @@ Dice decide initiative, tie-breaks and monster HP, so tests must control them.
   that rolls. It replaces `Math.random` inside the loaded page. It isn't done in an init script
   because React and React Router also call `Math.random` while starting up and navigating. Specs
   document the order dice are rolled in (for new monsters: initiative, then hit dice).
+- **3D dice** don't use the roll's `Rng`: their motion comes from `seededRng`, so scripted dice
+  are left for the rolls. End-to-end tests ask for reduced motion (in `playwright.config.ts`, and
+  for others' browsers in `openAs`), so dice land at once and results show straight away;
+  `dice.spec.ts` turns motion back on to watch them land. `planThrow` is unit tested for every
+  face of every die landing on top.
 - The table has one fight, kept on the server, so every spec that uses the tracker is gathered
   in `tests/e2e/fight.spec.ts`, which imports them from `tests/e2e/fight/` and runs them one after
   another, each starting with the fight ended. Wait for `fightSaved(page)` before checking what

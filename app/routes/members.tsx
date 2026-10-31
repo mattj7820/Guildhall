@@ -7,6 +7,7 @@ import { partyPlayers } from "~/.server/members/players";
 import type { Player } from "~/campaign/types";
 import { buttonClass, inputClass, panelClass, primaryButtonClass } from "~/components/styles";
 import { accountContext, servicesContext } from "~/context";
+import { DICE_SET_INFO, DICE_SETS, isDiceSet } from "~/dice/sets";
 import type { Member } from "~/members/types";
 import type { Route } from "./+types/members";
 
@@ -28,7 +29,10 @@ export async function loader({ context }: Route.LoaderArgs) {
   }
 }
 
-/** Forms post `intent` = approve | assign | remove, with the member's `discordId`. */
+/**
+ * Forms post `intent` = approve | assign | remove | dice, with the member's `discordId`; dice also
+ * posts the `diceSet` and whether to `give` it ("yes") or take it back.
+ */
 export async function action({ request, context }: Route.ActionArgs) {
   const account = context.get(accountContext);
   if (account.kind !== "member" || !account.isDm) notFound();
@@ -48,6 +52,13 @@ export async function action({ request, context }: Route.ActionArgs) {
     case "assign":
       await members.assignPlayer(discordId, playerId);
       break;
+    case "dice": {
+      const set = form.get("diceSet");
+      if (!isDiceSet(set)) return data({ error: "That isn't one of the dice sets." }, 400);
+      await members.giveDiceSet(discordId, set, form.get("give") === "yes");
+      // Dice are only ever drawn for their owner: nothing live to tell anyone.
+      return { ok: true };
+    }
     case "remove":
       if (discordId === account.member.discordId) {
         return data({ error: "You can't remove yourself." }, 400);
@@ -211,6 +222,7 @@ function MemberRow({
           </button>
         </Form>
       )}
+      {!isDm && <DiceSets member={member} />}
       {isYou ? (
         <span className="text-xs text-muted">That's you</span>
       ) : confirmingRemove ? (
@@ -235,5 +247,41 @@ function MemberRow({
         </button>
       )}
     </li>
+  );
+}
+
+/** The dice sets the DM has given someone: each a switch, saved at once. */
+function DiceSets({ member }: { member: Member }) {
+  const given = member.dice?.given ?? [];
+  return (
+    <div
+      role="group"
+      aria-label={`${member.name}'s dice sets`}
+      className="flex basis-full flex-wrap items-center gap-2 text-sm"
+    >
+      <span className="text-xs font-medium text-muted">Dice sets</span>
+      {DICE_SETS.map((set) => {
+        const has = given.includes(set);
+        return (
+          <Form key={set} method="post">
+            <input type="hidden" name="intent" value="dice" />
+            <input type="hidden" name="discordId" value={member.discordId} />
+            <input type="hidden" name="diceSet" value={set} />
+            <input type="hidden" name="give" value={has ? "no" : "yes"} />
+            <button
+              type="submit"
+              aria-pressed={has}
+              className={`rounded-full border px-2.5 py-0.5 ${
+                has
+                  ? "border-accent bg-accent-surface font-semibold text-title"
+                  : "border-line text-muted"
+              }`}
+            >
+              {DICE_SET_INFO[set].label}
+            </button>
+          </Form>
+        );
+      })}
+    </div>
   );
 }
