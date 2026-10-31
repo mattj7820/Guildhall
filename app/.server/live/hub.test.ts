@@ -66,6 +66,7 @@ let hub: LiveHub;
 let join: Mock<(map: string, viewer: Viewer) => Promise<ServerMessage[]>>;
 let other: Mock<(connection: Connection, message: ClientMessage) => void>;
 let closed: Mock<(connection: Connection) => void>;
+let opened: Mock<(connection: Connection) => void>;
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -80,8 +81,15 @@ beforeEach(() => {
   ]);
   other = vi.fn<(connection: Connection, message: ClientMessage) => void>();
   closed = vi.fn<(connection: Connection) => void>();
+  opened = vi.fn<(connection: Connection) => void>();
   hub = new LiveHub(
-    { join, members: { get: async (id) => stored.get(id) }, onMessage: other, onClose: closed },
+    {
+      join,
+      members: { get: async (id) => stored.get(id) },
+      onMessage: other,
+      onOpen: opened,
+      onClose: closed,
+    },
     { heartbeatMs: 1000, recheckMs: 60_000 },
   );
 });
@@ -217,6 +225,21 @@ describe("LiveHub", () => {
     const socket = connect(player());
     socket.close(1000);
     expect(closed).toHaveBeenCalledTimes(1);
+  });
+
+  it("says when a connection has opened", () => {
+    connect(player());
+    expect(opened).toHaveBeenCalledTimes(1);
+  });
+
+  it("knows who has a connection open: the DM, and players by ID, until they close", () => {
+    expect(hub.online()).toEqual({ dm: false, players: new Set() });
+    const theirs = connect(player());
+    connect(player("p1", "player one"));
+    connect(dm());
+    expect(hub.online()).toEqual({ dm: true, players: new Set(["player one"]) });
+    theirs.close(1000);
+    expect(hub.online().players).toEqual(new Set(["player one"]));
   });
 
   it("answers one connection only when replying", async () => {

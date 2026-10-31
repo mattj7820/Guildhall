@@ -91,6 +91,30 @@ test("the DM places the party and markers, and a player gets only what they may 
   }
 });
 
+test("the front page shows where the party is, with only the faces each viewer may see", async ({
+  app,
+  openAs,
+  page,
+}) => {
+  // Placed by the test before: PC One in the light and PC Two in the dark, on the newest map.
+  await app.goto("/");
+  const party = page.getByRole("list", { name: "The party here" });
+  await expect(page.getByRole("region", { name: "The campaign now" })).toContainText(
+    /The party is at Tokens/,
+  );
+  await expect(party.getByRole("img", { name: "Fixture PC Two" })).toBeVisible();
+
+  const player = await openAs("playerOne");
+  await player.goto("/");
+  const theirs = player.page.getByRole("list", { name: "The party here" });
+  await expect(theirs.getByRole("img", { name: "Fixture PC One" })).toBeVisible();
+  await expect(theirs.getByRole("img")).toHaveCount(1);
+  await player.page.getByRole("link", { name: /^Open Tokens/ }).click();
+  await expect(player.page.getByRole("navigation", { name: "Breadcrumbs" })).toContainText(
+    "Tokens",
+  );
+});
+
 test("a player sees their own token even under the fog, in the dark", async ({
   lit,
   maps,

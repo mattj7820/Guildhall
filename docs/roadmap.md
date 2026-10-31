@@ -7,6 +7,8 @@ locations, maps, characters, sessions).
 ## Built
 
 - **Hub shell:** a home page linking to Guildhall's own modules.
+- **Front page:** the campaign as it stands: where the party is, a fight if one is on, the next
+  session with a countdown, and who's here now; each theme's own slow movement.
 - **Campaign wiki (read-only):** browse and search the Obsidian vault, with DM/player preview.
   Shared notes can keep DM-only parts: a `## DM` section or a `> [!dm]` callout.
 - **Combat tracker:** encounters built from vault statblocks (and the SRD's, below) and PC notes, initiative with
