@@ -27,7 +27,7 @@ export interface Member {
   lastSignInAt: string;
   /** The look they picked; without one, Guildhall follows their device's light or dark mode. */
   theme?: Theme;
-  /** Their 3D dice. Without it, their rolls are thrown as dice in the theme's colours. */
+  /** Their 3D dice settings. The dice themselves are in `dice.json` (`DiceCollections`). */
   dice?: MemberDice;
 }
 
@@ -36,9 +36,12 @@ export interface MemberDice {
   off?: boolean;
   /** Their dice make no sound. */
   quiet?: boolean;
-  /** The dice sets the DM has given them (`DiceSetId`s; any no longer in the app are ignored). */
+  /**
+   * Dice sets the DM gave before packs (style IDs): each counts as a full kit of that style, kept
+   * for good. Nothing writes it any more.
+   */
   given?: string[];
-  /** The set they use; without one (or once it's taken back), the theme's dice. */
+  /** The set they picked before packs: their favourite for each type they haven't chosen one for. */
   set?: string;
 }
 

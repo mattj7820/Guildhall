@@ -1,4 +1,4 @@
-import type { DieType } from "./styles";
+import type { DieStyle, DieType } from "./styles";
 
 /**
  * Someone's dice collection: the dice they own (one style in one type, counted, since owning two
@@ -63,4 +63,11 @@ export function addDie(owned: readonly OwnedDie[], style: string, sides: DieType
   const count = Math.min(countOf(owned, style, sides) + 1, MOST_OF_A_DIE[sides]);
   const others = owned.filter((die) => !(die.style === style && die.sides === sides));
   return [...others, { style, sides, count }];
+}
+
+/** A die someone owns, with its style, as sent to them (or to the DM). */
+export interface OwnedDieView {
+  style: DieStyle;
+  sides: DieType;
+  count: number;
 }

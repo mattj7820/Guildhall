@@ -53,7 +53,7 @@ test.describe("as Player One", () => {
   });
 });
 
-test("the DM gives a dice set, the member rolls with it, and it goes when taken back", async ({
+test("the DM gives packs and particular dice, and sees what each member has", async ({
   members,
   openAs,
 }) => {
@@ -70,16 +70,18 @@ test("the DM gives a dice set, the member rolls with it, and it goes when taken 
   await expect(them.settings.diceSoundSwitch).toHaveAttribute("aria-checked", "false");
   await them.settings.open();
   await expect(them.settings.diceSoundSwitch).toHaveAttribute("aria-checked", "false");
-  // Only the theme's dice until the DM gives a set.
-  await expect(them.settings.diceSets).toHaveCount(0);
 
-  await members.giveDice(name, "Bone");
-  await them.settings.open();
-  await them.settings.diceSet("Bone").click();
-  await expect(them.settings.diceSet("Bone")).toHaveAttribute("aria-pressed", "true");
-  await expect(them.settings.diceSet("The theme")).toHaveAttribute("aria-pressed", "false");
-
-  await members.giveDice(name, "Bone", false);
-  await them.settings.open();
-  await expect(them.settings.diceSets).toHaveCount(0);
+  const dice = members.dice(name);
+  await expect(dice).toContainText("0 dice");
+  await members.givePack(name, "For the session recap");
+  await expect(dice).toContainText("0 dice, 1 pack unopened");
+  await members.giveDie(name, "Bone (Uncommon)", 20);
+  await members.giveDie(name, "Bone (Uncommon)", 20);
+  await expect(dice).toContainText("2 dice, 1 pack unopened");
+  await dice.getByText("2 dice").click();
+  await expect(dice.getByRole("listitem")).toHaveText(["Bone d20 ×2 (Uncommon)"]);
+  // Never more of one die than a roll could use: three d20s at most.
+  await members.giveDie(name, "Bone (Uncommon)", 20);
+  await members.giveDie(name, "Bone (Uncommon)", 20);
+  await expect(dice.getByRole("alert")).toContainText("as many of that die as a roll could use");
 });

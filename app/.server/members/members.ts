@@ -142,16 +142,6 @@ export class Members {
     });
   }
 
-  /** The DM gives someone a dice set, or takes it back. */
-  giveDiceSet(discordId: DiscordId, set: string, give: boolean): Promise<Member | undefined> {
-    return this.change(discordId, (member) => {
-      const given = member.dice?.given ?? [];
-      const others = given.filter((each) => each !== set);
-      const next = !give ? others : given.includes(set) ? given : [...given, set];
-      return { ...member, dice: { ...member.dice, given: next } };
-    });
-  }
-
   /** Someone picks the set their dice are in, or undefined for the theme's dice. */
   chooseDiceSet(discordId: DiscordId, set: string | undefined): Promise<Member | undefined> {
     return this.change(discordId, (member) => {

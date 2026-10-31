@@ -36,13 +36,25 @@ export class Members extends AppPage {
     await expect(this.page.getByRole("listitem", { name })).toHaveCount(0);
   }
 
-  /** Gives someone a dice set, or takes it back. */
-  async giveDice(name: string, set: string, give = true) {
-    const button = this.member(name)
-      .getByRole("group", { name: `${name}'s dice sets` })
-      .getByRole("button", { name: set });
-    if ((await button.getAttribute("aria-pressed")) !== String(give)) await button.click();
-    await expect(button).toHaveAttribute("aria-pressed", String(give));
+  /** Someone's dice on their row: what they have, and giving them more. */
+  dice(name: string) {
+    return this.member(name).getByRole("group", { name: `${name}'s dice` });
+  }
+
+  /** Gives someone a pack, saying why. */
+  async givePack(name: string, reason = "") {
+    const dice = this.dice(name);
+    await dice.getByLabel("Why").fill(reason);
+    await dice.getByRole("button", { name: "Give a pack" }).click();
+    await expect(dice.getByLabel("Why")).toHaveValue("");
+  }
+
+  /** Gives someone a particular die, by its style as listed ("Bone (Uncommon)") and sides. */
+  async giveDie(name: string, style: string, sides: number) {
+    const dice = this.dice(name);
+    await dice.getByLabel("Style").selectOption({ label: style });
+    await dice.getByLabel("Die").selectOption(String(sides));
+    await dice.getByRole("button", { name: "Give this die" }).click();
   }
 
   async remove(name: string) {
