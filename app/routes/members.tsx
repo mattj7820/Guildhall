@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { data, Form } from "react-router";
+import { data, Form, useLoaderData } from "react-router";
 import { notFound } from "~/.server/not-found";
 import { dmDiscordIds } from "~/.server/auth/identify";
 import { DataFileError } from "~/.server/data/json-store";
+import { DICE_STYLES, diceStyle } from "~/.server/dice/catalogue";
 import { partyPlayers } from "~/.server/members/players";
 import type { Player } from "~/campaign/types";
 import { buttonClass, inputClass, panelClass, primaryButtonClass } from "~/components/styles";
 import { accountContext, servicesContext } from "~/context";
-import { DICE_SET_INFO, DICE_SETS, isDiceSet } from "~/dice/sets";
 import type { Member } from "~/members/types";
 import type { Route } from "./+types/members";
 
@@ -20,7 +20,12 @@ export async function loader({ context }: Route.LoaderArgs) {
   if (account.kind !== "member" || !account.isDm) notFound();
   const services = context.get(servicesContext);
   const players = partyPlayers(services.vault.current);
-  const page = { you: account.member.discordId, dms: [...dmDiscordIds(services)], players };
+  const page = {
+    you: account.member.discordId,
+    dms: [...dmDiscordIds(services)],
+    players,
+    styles: DICE_STYLES.map(({ id, label }) => ({ id, label })),
+  };
   try {
     return { ...page, members: await services.members.list() };
   } catch (error) {
@@ -53,9 +58,9 @@ export async function action({ request, context }: Route.ActionArgs) {
       await members.assignPlayer(discordId, playerId);
       break;
     case "dice": {
-      const set = form.get("diceSet");
-      if (!isDiceSet(set)) return data({ error: "That isn't one of the dice sets." }, 400);
-      await members.giveDiceSet(discordId, set, form.get("give") === "yes");
+      const style = diceStyle(String(form.get("diceSet") ?? ""));
+      if (!style) return data({ error: "That isn't one of the dice sets." }, 400);
+      await members.giveDiceSet(discordId, style.id, form.get("give") === "yes");
       // Dice are only ever drawn for their owner: nothing live to tell anyone.
       return { ok: true };
     }
@@ -252,6 +257,7 @@ function MemberRow({
 
 /** The dice sets the DM has given someone: each a switch, saved at once. */
 function DiceSets({ member }: { member: Member }) {
+  const { styles } = useLoaderData<typeof loader>();
   const given = member.dice?.given ?? [];
   return (
     <div
@@ -260,7 +266,7 @@ function DiceSets({ member }: { member: Member }) {
       className="flex basis-full flex-wrap items-center gap-2 text-sm"
     >
       <span className="text-xs font-medium text-muted">Dice sets</span>
-      {DICE_SETS.map((set) => {
+      {styles.map(({ id: set, label }) => {
         const has = given.includes(set);
         return (
           <Form key={set} method="post">
@@ -277,7 +283,7 @@ function DiceSets({ member }: { member: Member }) {
                   : "border-line text-muted"
               }`}
             >
-              {DICE_SET_INFO[set].label}
+              {label}
             </button>
           </Form>
         );

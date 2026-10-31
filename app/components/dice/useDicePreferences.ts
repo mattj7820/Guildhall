@@ -1,8 +1,7 @@
 import { useRouteLoaderData } from "react-router";
 import { RESIN_VOICE, type DiceLook, type DiceVoice } from "~/dice/looks";
-import { DICE_SET_INFO } from "~/dice/sets";
 import type { loader as rootLoader } from "~/root";
-import { setLook, themeLook } from "./looks";
+import { styleLook, themeLook } from "./looks";
 
 export interface DicePreferences {
   /** Whether rolls are thrown as 3D dice. */
@@ -24,7 +23,7 @@ export function useDicePreferences(): DicePreferences {
   return {
     enabled: dice?.on ?? true,
     sound: dice?.sound ?? true,
-    look: dice?.set ? setLook(dice.set) : themeLook,
-    voice: dice?.set ? DICE_SET_INFO[dice.set].voice : RESIN_VOICE,
+    look: dice?.style ? styleLook(dice.style) : themeLook,
+    voice: dice?.style?.voice ?? RESIN_VOICE,
   };
 }

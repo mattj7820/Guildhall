@@ -1,5 +1,5 @@
 import type { DiceLook } from "~/dice/looks";
-import { DICE_SET_INFO, type DiceSetId } from "~/dice/sets";
+import type { DieStyle } from "~/dice/styles";
 
 /** The theme's dice: its accent colour, with its display font for the numbers. */
 export function themeLook(within: HTMLElement): DiceLook {
@@ -13,9 +13,8 @@ export function themeLook(within: HTMLElement): DiceLook {
   };
 }
 
-/** A dice set's look, with the theme's display font unless the set has its own. */
-export function setLook(set: DiceSetId) {
-  const { look } = DICE_SET_INFO[set];
+/** A style's look, with the theme's display font unless the style has its own. */
+export function styleLook({ look }: Pick<DieStyle, "look">) {
   return (within: HTMLElement): DiceLook => ({
     ...look,
     font: look.font ?? resolved(within, "fontFamily", "var(--font-display)"),

@@ -13,9 +13,9 @@ import {
   useRouteLoaderData,
 } from "react-router";
 import { authMiddleware } from "~/.server/auth/middleware";
+import { chosenSet } from "~/.server/dice/catalogue";
 import { ViewToggle } from "~/components/ViewToggle";
 import { accountContext, viewerContext } from "~/context";
-import { chosenSet } from "~/dice/sets";
 import { moduleOf } from "~/theme/modules";
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -35,7 +35,7 @@ export function loader({ context }: Route.LoaderArgs) {
         ? {
             on: !account.member.dice?.off,
             sound: !account.member.dice?.quiet,
-            set: chosenSet(account.member.dice, account.isDm),
+            style: chosenSet(account.member.dice, account.isDm),
           }
         : { on: true, sound: true },
   };

@@ -1,8 +1,9 @@
 import { data, Form } from "react-router";
 import { z } from "zod";
+import { chosenSet, setsFor } from "~/.server/dice/catalogue";
 import { notFound } from "~/.server/not-found";
 import { accountContext, servicesContext } from "~/context";
-import { chosenSet, DICE_SET_INFO, DICE_SETS, setsFor, type DiceSetId } from "~/dice/sets";
+import type { DieStyle } from "~/dice/styles";
 import { THEME_INFO, THEMES, type Theme } from "~/theme/themes";
 import type { Route } from "./+types/settings";
 
@@ -21,7 +22,7 @@ export function loader({ context }: Route.LoaderArgs) {
       on: !dice?.off,
       sound: !dice?.quiet,
       sets: setsFor(dice, account.isDm),
-      chosen: chosenSet(dice, account.isDm),
+      chosen: chosenSet(dice, account.isDm)?.id,
     },
   };
 }
@@ -30,7 +31,7 @@ const settingsSchema = z.union([
   z.object({ theme: z.enum(THEMES) }),
   z.object({ dice: z.enum(["on", "off"]) }),
   z.object({ diceSound: z.enum(["on", "off"]) }),
-  z.object({ diceSet: z.enum([...DICE_SETS, "theme"]) }),
+  z.object({ diceSet: z.string().max(40) }),
 ]);
 
 export async function action({ request, context }: Route.ActionArgs) {
@@ -46,7 +47,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     await members.setDiceSound(discordId, parsed.data.diceSound === "on");
   } else {
     const set = parsed.data.diceSet === "theme" ? undefined : parsed.data.diceSet;
-    if (set && !setsFor(account.member.dice, account.isDm).includes(set)) {
+    if (set && !setsFor(account.member.dice, account.isDm).some((style) => style.id === set)) {
       return data({ error: "That set hasn't been given to you." }, 400);
     }
     await members.chooseDiceSet(discordId, set);
@@ -124,8 +125,8 @@ function DiceSettings({
 }: {
   on: boolean;
   sound: boolean;
-  sets: DiceSetId[];
-  chosen: DiceSetId | undefined;
+  sets: DieStyle[];
+  chosen: string | undefined;
 }) {
   return (
     <section aria-labelledby="dice-heading" className="flex flex-col gap-3">
@@ -146,7 +147,7 @@ function DiceSettings({
         <Form method="post" aria-label="Your dice" className="grid gap-3 sm:grid-cols-3">
           <DiceSetChoice chosen={!chosen} />
           {sets.map((set) => (
-            <DiceSetChoice key={set} set={set} chosen={set === chosen} />
+            <DiceSetChoice key={set.id} set={set} chosen={set.id === chosen} />
           ))}
         </Form>
       )}
@@ -155,13 +156,12 @@ function DiceSettings({
 }
 
 /** A dice set to roll with (the theme's dice without one): picking it saves it. */
-function DiceSetChoice({ set, chosen }: { set?: DiceSetId; chosen: boolean }) {
-  const info = set && DICE_SET_INFO[set];
+function DiceSetChoice({ set: info, chosen }: { set?: DieStyle; chosen: boolean }) {
   return (
     <button
       type="submit"
       name="diceSet"
-      value={set ?? "theme"}
+      value={info?.id ?? "theme"}
       aria-pressed={chosen}
       className={`gh-card bg-surface hover:border-accent flex items-center gap-3 rounded-lg border p-3 text-left ${
         chosen ? "border-accent ring-accent ring-2" : "border-line"
