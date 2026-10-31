@@ -2,7 +2,8 @@ import * as CANNON from "cannon-es";
 import * as THREE from "three";
 import type { Rng } from "../rng";
 import type { DieRoll } from "../roll";
-import { TRAY_SIDES, dieShape, faceUp } from "./shapes";
+import { dieShape, faceUp } from "./shapes";
+import { TRAY_SIDES } from "./thrown";
 
 /** More than this many dice in one roll: the first ones are thrown, all are in the text. */
 export const MOST_DICE_THROWN = 10;
@@ -36,11 +37,6 @@ export interface ThrowPlan {
   frames: Float32Array[];
   knocks: { frame: number; strength: number; pitch: number }[];
   rolling: number[];
-}
-
-/** Whether any of these dice would be thrown, rather than only shown as text. */
-export function throwsAny(rolls: readonly DieRoll[]): boolean {
-  return rolls.some((die) => TRAY_SIDES.has(die.sides));
 }
 
 /**

@@ -1588,3 +1588,34 @@ still refuses players' moves with a `map`.
 The DM gets no lock: keeping a place shut is keeping it fogged, secret or unshared, and the DM sees
 tokens go live and can bring them back. Fights stop it: no one walks into a map with a fight on it,
 and no one in the fight walks out of its map; the DM still moves them as the story needs.
+
+## 82. 3D dice, landing on the result already rolled, on each person's own screen
+
+**Date:** 2026-10-31
+
+**Context.** The DM wanted rolls to feel like dice, as on Roll20 or D&D Beyond, without giving up
+what decides them: every result comes from the injected `Rng` (decision 55's table still rolls
+real dice, and Guildhall's rolls are a convenience beside them). A spike
+(`docs/spikes/3d-dice.md`) compared `@3d-dice/dice-box` (can't land on a result chosen first),
+`@3d-dice/dice-box-threejs` (can, but stale since 2022) and three.js with cannon-es by hand.
+
+**Decision.** three.js and cannon-es (both MIT), by hand, loaded in one lazy chunk on the first
+roll. The roll is made as before; then the whole throw is simulated (`planThrow`) and each die
+numbered so that the face that ends up on top shows the rolled value. The physics only decides
+how the dice move. The throw's motion comes from `seededRng`, never the roll's `Rng`, so scripted
+dice in tests aren't used up.
+
+- Everything that shows a roll (the dice box, the sheet's latest roll, the panel beside the map)
+  holds it back until the dice land, about 3 seconds (`useDiceTray`); if they never do (a hidden
+  tab), it shows after 6. With reduced motion asked for, the dice appear landed and the result
+  shows at once.
+- Each person sees only their own dice: the DM's on the map and Combat page, a player's on their
+  sheet and beside the map. Nothing is sent to anyone else. Shared rolls stay on the roadmap.
+- Dice are on for everyone, with a switch in Settings saved on the account (`dice.off`).
+- Dice sets (Gilded, Glass, Bone, Blood) are defined in the app, not the vault. The DM gives them
+  per member on the Members page (`dice.given`) and has them all; each member picks theirs in
+  Settings (`dice.set`), or the theme's dice in its accent colours. A set taken back falls back to
+  the theme's dice. Sets belong to members, not to bags.
+- The sounds are made with Web Audio (knocks from the simulation's collisions, a patter while
+  rolling), following the stunts' sound switch and volume.
+- End-to-end tests ask for reduced motion, so results show at once; `dice.spec.ts` throws them.

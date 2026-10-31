@@ -1,9 +1,6 @@
 import * as THREE from "three";
 import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
-/** The dice drawn in 3D. Others (d2, d3, d100…) show as text only. */
-export const TRAY_SIDES: ReadonlySet<number> = new Set([4, 6, 8, 10, 12, 20]);
-
 export interface Face {
   /** Outward, in the die's own frame. */
   normal: THREE.Vector3;

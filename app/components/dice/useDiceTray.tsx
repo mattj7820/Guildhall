@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { LoggedRoll, RollLog } from "~/dice/roll-log";
-import { throwsAny } from "~/dice/tray/plan";
+import { throwsAny } from "~/dice/tray/thrown";
 import type { RollLogControls } from "~/dice/useRollLog";
 import { useStuntSettings } from "~/maps/stunt-settings";
 import { useDicePreferences } from "./useDicePreferences";

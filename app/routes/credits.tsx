@@ -103,6 +103,22 @@ export default function Credits() {
           spells as paragraphs; the SRD&rsquo;s text is unchanged.
         </p>
       </section>
+      <section aria-labelledby="dice" className="mt-6">
+        <h2 id="dice" className="font-serif text-xl font-bold">
+          3D dice
+        </h2>
+        <p className="mt-2 text-ink">
+          The dice are drawn with{" "}
+          <a href="https://threejs.org" className="text-link underline">
+            three.js
+          </a>{" "}
+          (MIT License, copyright 2010–2026 three.js authors) and tumble with{" "}
+          <a href="https://github.com/pmndrs/cannon-es" className="text-link underline">
+            cannon-es
+          </a>{" "}
+          (MIT License, copyright 2015 cannon.js authors).
+        </p>
+      </section>
       <section aria-labelledby="fonts" className="mt-6">
         <h2 id="fonts" className="font-serif text-xl font-bold">
           Fonts

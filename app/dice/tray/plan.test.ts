@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { seededRng } from "../rng";
 import type { DieRoll } from "../roll";
-import { MOST_DICE_THROWN, planThrow, quaternionAt, throwsAny } from "./plan";
-import { TRAY_SIDES, dieShape, faceUp } from "./shapes";
+import { MOST_DICE_THROWN, planThrow, quaternionAt } from "./plan";
+import { dieShape, faceUp } from "./shapes";
+import { TRAY_SIDES, throwsAny } from "./thrown";
 
 const TRAY = { halfX: 9, halfZ: 6 };
 const die = (sides: number, value: number, kept = true): DieRoll => ({ sides, value, kept });
