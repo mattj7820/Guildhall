@@ -32,9 +32,11 @@ export function useDiceTray(
   if (!throwing && before !== log) setBefore(log);
 
   const tray = useRef<HTMLDivElement>(null);
-  const settings = useRef({ preferences, volume: sound.sound ? sound.volume : 0 });
+  // Heard only with their dice sounds on and sounds not muted in the map's Effects menu.
+  const volume = preferences.sound && sound.sound ? sound.volume : 0;
+  const settings = useRef({ preferences, volume });
   useEffect(() => {
-    settings.current = { preferences, volume: sound.sound ? sound.volume : 0 };
+    settings.current = { preferences, volume };
   });
   // The roll on the table: it stays there after landing, until the next throw or the page goes.
   const [thrown, setThrown] = useState<LoggedRoll>();

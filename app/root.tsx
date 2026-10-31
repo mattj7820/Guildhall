@@ -32,8 +32,12 @@ export function loader({ context }: Route.LoaderArgs) {
     theme: account.kind === "member" ? account.member.theme : undefined,
     dice:
       account.kind === "member"
-        ? { on: !account.member.dice?.off, set: chosenSet(account.member.dice, account.isDm) }
-        : { on: true },
+        ? {
+            on: !account.member.dice?.off,
+            sound: !account.member.dice?.quiet,
+            set: chosenSet(account.member.dice, account.isDm),
+          }
+        : { on: true, sound: true },
   };
 }
 

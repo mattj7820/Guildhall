@@ -34,6 +34,8 @@ export interface Member {
 export interface MemberDice {
   /** They'd rather see rolls only as text. */
   off?: boolean;
+  /** Their dice make no sound. */
+  quiet?: boolean;
   /** The dice sets the DM has given them (`DiceSetId`s; any no longer in the app are ignored). */
   given?: string[];
   /** The set they use; without one (or once it's taken back), the theme's dice. */

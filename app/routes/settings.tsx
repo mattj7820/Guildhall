@@ -19,6 +19,7 @@ export function loader({ context }: Route.LoaderArgs) {
     theme: account.member.theme,
     dice: {
       on: !dice?.off,
+      sound: !dice?.quiet,
       sets: setsFor(dice, account.isDm),
       chosen: chosenSet(dice, account.isDm),
     },
@@ -28,6 +29,7 @@ export function loader({ context }: Route.LoaderArgs) {
 const settingsSchema = z.union([
   z.object({ theme: z.enum(THEMES) }),
   z.object({ dice: z.enum(["on", "off"]) }),
+  z.object({ diceSound: z.enum(["on", "off"]) }),
   z.object({ diceSet: z.enum([...DICE_SETS, "theme"]) }),
 ]);
 
@@ -40,7 +42,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   const { discordId } = account.member;
   if ("theme" in parsed.data) await members.setTheme(discordId, parsed.data.theme);
   else if ("dice" in parsed.data) await members.setDiceOn(discordId, parsed.data.dice === "on");
-  else {
+  else if ("diceSound" in parsed.data) {
+    await members.setDiceSound(discordId, parsed.data.diceSound === "on");
+  } else {
     const set = parsed.data.diceSet === "theme" ? undefined : parsed.data.diceSet;
     if (set && !setsFor(account.member.dice, account.isDm).includes(set)) {
       return data({ error: "That set hasn't been given to you." }, 400);
@@ -114,10 +118,12 @@ function ThemeChoice({ theme, chosen }: { theme: Theme; chosen: boolean }) {
 /** Whether rolls are thrown as 3D dice across the screen, or shown only as text. */
 function DiceSettings({
   on,
+  sound,
   sets,
   chosen,
 }: {
   on: boolean;
+  sound: boolean;
   sets: DiceSetId[];
   chosen: DiceSetId | undefined;
 }) {
@@ -132,25 +138,9 @@ function DiceSettings({
           they land. Only you see them. With your device set to reduce motion, they land at once.
         </p>
       </div>
-      <Form method="post">
-        <button
-          type="submit"
-          name="dice"
-          value={on ? "off" : "on"}
-          role="switch"
-          aria-checked={on}
-          className="hover:bg-raised flex items-center gap-2 rounded-md px-1.5 py-1 font-medium"
-        >
-          <span
-            aria-hidden="true"
-            className={`relative inline-block h-5 w-9 rounded-full transition-colors ${on ? "bg-accent" : "bg-line-strong"}`}
-          >
-            <span
-              className={`bg-surface absolute top-0.5 left-0 h-4 w-4 rounded-full shadow transition-transform ${on ? "translate-x-4" : "translate-x-0.5"}`}
-            />
-          </span>
-          Roll with 3D dice
-        </button>
+      <Form method="post" className="flex flex-wrap gap-x-4 gap-y-1">
+        <SettingSwitch name="dice" on={on} label="Roll with 3D dice" />
+        <SettingSwitch name="diceSound" on={sound} label="Dice sounds" />
       </Form>
       {sets.length > 0 && (
         <Form method="post" aria-label="Your dice" className="grid gap-3 sm:grid-cols-3">
@@ -204,5 +194,29 @@ function DieFace({ body, ink, seeThrough }: { body: string; ink: string; seeThro
     >
       20
     </span>
+  );
+}
+
+/** A setting switched on or off, saved at once: it posts `name` = "on" or "off". */
+function SettingSwitch({ name, on, label }: { name: string; on: boolean; label: string }) {
+  return (
+    <button
+      type="submit"
+      name={name}
+      value={on ? "off" : "on"}
+      role="switch"
+      aria-checked={on}
+      className="hover:bg-raised flex items-center gap-2 rounded-md px-1.5 py-1 font-medium"
+    >
+      <span
+        aria-hidden="true"
+        className={`relative inline-block h-5 w-9 rounded-full transition-colors ${on ? "bg-accent" : "bg-line-strong"}`}
+      >
+        <span
+          className={`bg-surface absolute top-0.5 left-0 h-4 w-4 rounded-full shadow transition-transform ${on ? "translate-x-4" : "translate-x-0.5"}`}
+        />
+      </span>
+      {label}
+    </button>
   );
 }

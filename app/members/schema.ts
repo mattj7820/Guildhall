@@ -22,6 +22,7 @@ export const memberSchema: z.ZodType<Member> = z.object({
   dice: z
     .object({
       off: z.boolean().optional().catch(undefined),
+      quiet: z.boolean().optional().catch(undefined),
       given: z.array(z.string().max(40)).max(50).optional().catch(undefined),
       set: z.string().max(40).optional().catch(undefined),
     })

@@ -167,6 +167,16 @@ describe("Members", () => {
     expect((await members.get(discordId))?.dice).toEqual({ given: ["bone"], off: true });
   });
 
+  it("keeps someone's dice quiet until they turn the sound back on", async () => {
+    const members = store();
+    const { discordId } = await signedIn(members, profile(1), { approve: true });
+    await members.setDiceSound(discordId, false);
+    expect((await members.get(discordId))?.dice).toEqual({ quiet: true });
+    await members.setDiceSound(discordId, true);
+    expect((await members.get(discordId))?.dice?.quiet).toBeUndefined();
+    expect(await members.setDiceSound("100000000000000999", false)).toBeUndefined();
+  });
+
   it("reads damaged dice settings as the defaults, rather than refusing the file", async () => {
     const { discordId } = await signedIn(store(), profile(1), { approve: true });
     const filePath = path.join(folder, "members.json");

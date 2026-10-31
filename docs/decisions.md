@@ -1611,7 +1611,8 @@ dice in tests aren't used up.
   shows at once.
 - Each person sees only their own dice: the DM's on the map and Combat page, a player's on their
   sheet and beside the map. Nothing is sent to anyone else. Shared rolls stay on the roadmap.
-- Dice are on for everyone, with a switch in Settings saved on the account (`dice.off`).
+- Dice are on for everyone, with a switch in Settings saved on the account (`dice.off`), and
+  another for their sound (`dice.quiet`).
 - Dice sets (Gilded, Glass, Bone, Blood) are defined in the app, not the vault. The DM gives them
   per member on the Members page (`dice.given`) and has them all; each member picks theirs in
   Settings (`dice.set`), or the theme's dice in its accent colours. A set taken back falls back to

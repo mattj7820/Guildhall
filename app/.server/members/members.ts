@@ -134,6 +134,15 @@ export class Members {
     });
   }
 
+  /** Turns the sound of someone's dice on or off. */
+  setDiceSound(discordId: DiscordId, on: boolean): Promise<Member | undefined> {
+    return this.change(discordId, (member) => {
+      const dice = { ...member.dice };
+      delete dice.quiet;
+      return { ...member, dice: on ? dice : { ...dice, quiet: true } };
+    });
+  }
+
   /** The DM gives someone a dice set, or takes it back. */
   giveDiceSet(discordId: DiscordId, set: DiceSetId, give: boolean): Promise<Member | undefined> {
     return this.change(discordId, (member) => {

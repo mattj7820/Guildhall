@@ -28,6 +28,10 @@ export class Settings extends AppPage {
     await expect(this.diceSwitch).toHaveAttribute("aria-checked", String(on));
   }
 
+  get diceSoundSwitch() {
+    return this.page.getByRole("switch", { name: "Dice sounds" });
+  }
+
   get diceSets() {
     return this.page.getByRole("form", { name: "Your dice" });
   }

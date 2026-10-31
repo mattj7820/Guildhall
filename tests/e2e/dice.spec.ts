@@ -65,6 +65,11 @@ test("the DM gives a dice set, the member rolls with it, and it goes when taken 
 
   await them.settings.open();
   await expect(them.settings.diceSwitch).toHaveAttribute("aria-checked", "true");
+  // Their dice can go quiet, and stay quiet.
+  await them.settings.diceSoundSwitch.click();
+  await expect(them.settings.diceSoundSwitch).toHaveAttribute("aria-checked", "false");
+  await them.settings.open();
+  await expect(them.settings.diceSoundSwitch).toHaveAttribute("aria-checked", "false");
   // Only the theme's dice until the DM gives a set.
   await expect(them.settings.diceSets).toHaveCount(0);
 
