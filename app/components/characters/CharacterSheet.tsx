@@ -29,6 +29,7 @@ import { RestButtons } from "./Rests";
 import { SheetTabs, type Tab } from "./SheetTabs";
 import { Trackers } from "./Trackers";
 import { useSheetParts } from "./useSheetParts";
+import { useDiceTray } from "~/components/dice/useDiceTray";
 
 /**
  * A player character's sheet, laid out like the paper one: abilities across the top, then saves
@@ -53,7 +54,8 @@ export function CharacterSheet({ page }: { page: CharacterPage }) {
 
   const name = sheet.name.trim() || page.name;
   const portraitPath = sheet.portrait ?? page.notePortrait;
-  const { parts, rolls } = useSheetParts(editor, sheet, name, editing);
+  const { parts, rolls: sheetRolls } = useSheetParts(editor, sheet, name, editing);
+  const { rolls, tray } = useDiceTray(sheetRolls, { fixed: true });
   const derived = parts.derived;
   const text = (field: TextFieldName) => (value: string) =>
     editor.dispatch({ type: "text", field, value, from: sheet[field] });
@@ -265,6 +267,7 @@ export function CharacterSheet({ page }: { page: CharacterPage }) {
         )}
       </div>
       <LatestRoll rolls={rolls} />
+      {tray}
     </main>
   );
 }

@@ -31,7 +31,9 @@ export function DiceRoller({
     });
   }
 
-  const [latest, ...earlier] = log.rolls;
+  // While dice are rolling, the roll before them is no longer the latest.
+  const latest = rolls.rolling ? undefined : log.rolls[0];
+  const earlier = rolls.rolling ? log.rolls : log.rolls.slice(1);
 
   return (
     <section aria-labelledby="dice-heading" className={panelClass}>
@@ -90,7 +92,11 @@ export function DiceRoller({
         </p>
       )}
       <output aria-live="polite" aria-label="Latest roll" className="mt-3 block">
-        {latest && <RollLine roll={latest} large />}
+        {rolls.rolling ? (
+          <span className="block font-mono text-xl text-muted">Rolling&hellip;</span>
+        ) : (
+          latest && <RollLine roll={latest} large />
+        )}
       </output>
       {earlier.length > 0 && (
         <>

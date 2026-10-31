@@ -1,0 +1,63 @@
+import type { Rng } from "../rng";
+
+/**
+ * The dice's sounds, made on the spot with Web Audio rather than recordings: a knock is a short
+ * burst of filtered noise with a quick ring, like resin on wood, and rolling along the table is a
+ * patter of tiny knocks, as many as the dice's speed calls for.
+ */
+export class DiceSound {
+  private readonly context = new AudioContext();
+  private readonly out: GainNode;
+  private readonly noise: AudioBuffer;
+
+  /** `rng` varies the noise and the patter; it's only sound, never a result. */
+  constructor(
+    volume: number,
+    private readonly rng: Rng,
+  ) {
+    this.out = this.context.createGain();
+    this.out.gain.value = volume;
+    this.out.connect(this.context.destination);
+    this.noise = this.context.createBuffer(1, this.context.sampleRate / 2, this.context.sampleRate);
+    const samples = this.noise.getChannelData(0);
+    for (let i = 0; i < samples.length; i++) samples[i] = rng(2001) / 1000 - 1.001;
+  }
+
+  knock(strength: number, pitch: number) {
+    const { context } = this;
+    const at = context.currentTime;
+    const gain = 0.9 * strength;
+    const source = context.createBufferSource();
+    source.buffer = this.noise;
+    source.playbackRate.value = 0.8 + strength * 0.4;
+    const band = context.createBiquadFilter();
+    band.type = "bandpass";
+    band.frequency.value = pitch;
+    band.Q.value = 4;
+    const envelope = context.createGain();
+    envelope.gain.setValueAtTime(gain, at);
+    envelope.gain.exponentialRampToValueAtTime(0.001, at + 0.07);
+    source.connect(band).connect(envelope).connect(this.out);
+    source.start(at, this.rng(400) / 1000, 0.09);
+
+    const ring = context.createOscillator();
+    ring.type = "triangle";
+    ring.frequency.value = pitch * 1.3;
+    const ringing = context.createGain();
+    ringing.gain.setValueAtTime(gain * 0.25, at);
+    ringing.gain.exponentialRampToValueAtTime(0.001, at + 0.05);
+    ring.connect(ringing).connect(this.out);
+    ring.start(at);
+    ring.stop(at + 0.06);
+  }
+
+  /** One frame of rolling along the table, from 0 (still) to 1 (tumbling fast). */
+  roll(speed: number) {
+    if (speed < 0.05 || this.rng(100) > speed * 60) return;
+    this.knock(0.06 + speed * 0.12, 1400 + this.rng(1200));
+  }
+
+  close() {
+    void this.context.close();
+  }
+}

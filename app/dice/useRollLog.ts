@@ -21,6 +21,8 @@ export function useRollLog(rng: Rng) {
   return {
     log,
     error,
+    /** Whether the latest roll's dice are still tumbling, its result not shown yet. */
+    rolling: false,
     roll: useCallback(
       (request: RollRequest) => {
         const outcome = rollInto(latest.current, request, rng);
