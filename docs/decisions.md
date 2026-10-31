@@ -1617,5 +1617,7 @@ dice in tests aren't used up.
   Settings (`dice.set`), or the theme's dice in its accent colours. A set taken back falls back to
   the theme's dice. Sets belong to members, not to bags.
 - The sounds are made with Web Audio (knocks from the simulation's collisions, a patter while
-  rolling), following the stunts' sound switch and volume.
+  rolling), following the stunts' sound switch and volume. Each set has its own voice
+  (`DiceVoice`: metal clinks and rings on, glass chimes, bone thuds), and the theme's dice sound
+  like resin.
 - End-to-end tests ask for reduced motion, so results show at once; `dice.spec.ts` throws them.

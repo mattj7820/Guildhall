@@ -3,7 +3,7 @@
  * only when something's first thrown (it brings three.js and cannon-es).
  */
 import * as THREE from "three";
-import type { DiceLook } from "../looks";
+import type { DiceLook, DiceVoice } from "../looks";
 import { seededRng } from "../rng";
 import type { DieRoll } from "../roll";
 import { planThrow, quaternionAt, type PlannedDie } from "./plan";
@@ -20,6 +20,7 @@ export interface ThrowOptions {
   /** Where the dice start and how they spin (the same seed throws the same way). */
   seed: number;
   look: DiceLook;
+  voice: DiceVoice;
   /** 0 for silence. */
   volume: number;
   /** No tumbling: the dice appear where they land. */
@@ -35,7 +36,7 @@ export interface ThrowOptions {
 export function throwDice(
   container: HTMLElement,
   rolls: readonly DieRoll[],
-  { seed, look, volume, reducedMotion, onLanded }: ThrowOptions,
+  { seed, look, voice, volume, reducedMotion, onLanded }: ThrowOptions,
 ): () => void {
   let renderer: THREE.WebGLRenderer;
   try {
@@ -85,7 +86,7 @@ export function throwDice(
     return mesh;
   });
 
-  const sound = volume > 0 ? new DiceSound(volume, rng) : undefined;
+  const sound = volume > 0 ? new DiceSound(volume, voice, rng) : undefined;
   const last = plan.frames.length - 1;
   let heard = reducedMotion ? plan.knocks.length : 0;
   if (reducedMotion) sound?.knock(0.4, 1000);

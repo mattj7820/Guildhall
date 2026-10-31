@@ -1,9 +1,10 @@
+import type { DiceVoice } from "../looks";
 import type { Rng } from "../rng";
 
 /**
  * The dice's sounds, made on the spot with Web Audio rather than recordings: a knock is a short
- * burst of filtered noise with a quick ring, like resin on wood, and rolling along the table is a
- * patter of tiny knocks, as many as the dice's speed calls for.
+ * burst of filtered noise with a ring in the set's voice (resin, metal, glass, bone), and rolling
+ * along the table is a patter of tiny knocks, as many as the dice's speed calls for.
  */
 export class DiceSound {
   private readonly context = new AudioContext();
@@ -13,6 +14,7 @@ export class DiceSound {
   /** `rng` varies the noise and the patter; it's only sound, never a result. */
   constructor(
     volume: number,
+    private readonly voice: DiceVoice,
     private readonly rng: Rng,
   ) {
     this.out = this.context.createGain();
@@ -23,8 +25,9 @@ export class DiceSound {
     for (let i = 0; i < samples.length; i++) samples[i] = rng(2001) / 1000 - 1.001;
   }
 
-  knock(strength: number, pitch: number) {
-    const { context } = this;
+  knock(strength: number, knockPitch: number) {
+    const { context, voice } = this;
+    const pitch = knockPitch * voice.pitch;
     const at = context.currentTime;
     const gain = 0.9 * strength;
     const source = context.createBufferSource();
@@ -33,22 +36,24 @@ export class DiceSound {
     const band = context.createBiquadFilter();
     band.type = "bandpass";
     band.frequency.value = pitch;
-    band.Q.value = 3;
+    // Without a ring the knock is wider and duller, like bone.
+    band.Q.value = voice.ring > 0 ? 3 : 1.5;
     const envelope = context.createGain();
     envelope.gain.setValueAtTime(gain, at);
-    envelope.gain.exponentialRampToValueAtTime(0.001, at + 0.07);
+    envelope.gain.exponentialRampToValueAtTime(0.001, at + voice.knockFor);
     source.connect(band).connect(envelope).connect(this.out);
-    source.start(at, this.rng(400) / 1000, 0.09);
+    source.start(at, this.rng(400) / 1000, voice.knockFor + 0.02);
+    if (voice.ring <= 0) return;
 
     const ring = context.createOscillator();
-    ring.type = "triangle";
-    ring.frequency.value = pitch * 0.75;
+    ring.type = voice.ringPitch > 1.2 ? "sine" : "triangle";
+    ring.frequency.value = pitch * voice.ringPitch;
     const ringing = context.createGain();
-    ringing.gain.setValueAtTime(gain * 0.15, at);
-    ringing.gain.exponentialRampToValueAtTime(0.001, at + 0.05);
+    ringing.gain.setValueAtTime(gain * voice.ring, at);
+    ringing.gain.exponentialRampToValueAtTime(0.001, at + voice.ringFor);
     ring.connect(ringing).connect(this.out);
     ring.start(at);
-    ring.stop(at + 0.06);
+    ring.stop(at + voice.ringFor + 0.01);
   }
 
   /** One frame of rolling along the table, from 0 (still) to 1 (tumbling fast). */

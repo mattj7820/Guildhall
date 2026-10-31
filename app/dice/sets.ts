@@ -1,4 +1,4 @@
-import type { DiceLook } from "./looks";
+import { RESIN_VOICE, type DiceLook, type DiceVoice } from "./looks";
 
 /**
  * Dice sets the DM can give: looks beyond the theme's own dice, defined here rather than in the
@@ -12,22 +12,27 @@ export interface DiceSetInfo {
   description: string;
   /** Without a font, the numbers use the theme's display font. */
   look: Omit<DiceLook, "font"> & { font?: string };
+  voice: DiceVoice;
 }
 
 export const DICE_SET_INFO: Record<DiceSetId, DiceSetInfo> = {
   gilded: {
     label: "Gilded",
-    description: "Black, with gold numbers.",
+    description: "Black, with gold numbers. They clink like metal.",
     look: { body: "#17161a", ink: "#e8c25a", metalness: 0.6, roughness: 0.3, opacity: 1 },
+    // Metal: a clink that rings on, slightly out of tune with itself.
+    voice: { pitch: 1.3, ring: 0.4, ringPitch: 2.1, ringFor: 0.35, knockFor: 0.05 },
   },
   glass: {
     label: "Glass",
-    description: "See-through blue, with white numbers.",
+    description: "See-through blue, with white numbers. They chime like glass.",
     look: { body: "#8fd3ff", ink: "#ffffff", metalness: 0, roughness: 0.05, opacity: 0.55 },
+    // Glass: bright, with a short clear ring.
+    voice: { pitch: 1.6, ring: 0.3, ringPitch: 1.5, ringFor: 0.18, knockFor: 0.04 },
   },
   bone: {
     label: "Bone",
-    description: "Ivory, with dark brown numbers.",
+    description: "Ivory, with dark brown numbers. They clack dully, like bone.",
     look: {
       body: "#e9dfc8",
       ink: "#3b2a1a",
@@ -36,11 +41,14 @@ export const DICE_SET_INFO: Record<DiceSetId, DiceSetInfo> = {
       opacity: 1,
       font: "Georgia, serif",
     },
+    // Bone: low and dull, no ring at all.
+    voice: { pitch: 0.7, ring: 0, ringPitch: 1, ringFor: 0.01, knockFor: 0.05 },
   },
   blood: {
     label: "Blood",
     description: "Dark red resin, with cream numbers.",
     look: { body: "#6e0b14", ink: "#f4efe6", metalness: 0.2, roughness: 0.25, opacity: 0.85 },
+    voice: { ...RESIN_VOICE, pitch: 0.95, ring: 0.2, ringPitch: 0.8, ringFor: 0.06 },
   },
 };
 

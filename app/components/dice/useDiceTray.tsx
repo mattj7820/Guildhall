@@ -52,6 +52,7 @@ export function useDiceTray(
       stop = throwDice(container, diceOf(thrown), {
         seed: throwSeed(thrown),
         look: preferences.look(container),
+        voice: preferences.voice,
         volume,
         reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
         onLanded: () => {
