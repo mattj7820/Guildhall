@@ -41,14 +41,34 @@ export function chapterOf(slug: string | undefined, chapters: Chapter[]): string
 
 export type TurnDirection = "forward" | "back";
 
+export interface Turn {
+  /** The browser's Back or Forward (a "POP"), rather than following a link. */
+  popped: boolean;
+  /** React Router numbers each history entry (`idx`): a lower number is an earlier page. */
+  fromIdx: unknown;
+  toIdx: unknown;
+  fromSlug: string | undefined;
+  toSlug: string | undefined;
+  /** Every note's slug in the book's order: the chapters' contents, one after another. */
+  order: readonly string[];
+}
+
 /**
- * Going back through history turns the page back; anything else turns it forward. React Router
- * numbers each history entry (`idx`), so a lower number is an earlier page.
+ * Which way the page turns. Back and Forward in the browser turn the way they go through
+ * history; following a link (from a note, the contents or a search) turns towards where the note
+ * is in the book, so a note earlier in the book turns the page back.
  */
-export function turnDirection(fromIdx: unknown, toIdx: unknown): TurnDirection {
-  return typeof fromIdx === "number" && typeof toIdx === "number" && toIdx < fromIdx
-    ? "back"
-    : "forward";
+export function turnDirection(turn: Turn): TurnDirection {
+  if (turn.popped) {
+    return typeof turn.fromIdx === "number" &&
+      typeof turn.toIdx === "number" &&
+      turn.toIdx < turn.fromIdx
+      ? "back"
+      : "forward";
+  }
+  const from = turn.fromSlug === undefined ? -1 : turn.order.indexOf(turn.fromSlug);
+  const to = turn.toSlug === undefined ? -1 : turn.order.indexOf(turn.toSlug);
+  return from >= 0 && to >= 0 && to < from ? "back" : "forward";
 }
 
 export interface MarkedPart {

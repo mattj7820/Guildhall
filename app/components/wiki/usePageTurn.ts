@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
-import { useLocation } from "react-router";
-import { turnDirection, type TurnDirection } from "~/wiki/tome";
+import { useLocation, useNavigationType } from "react-router";
+import { slugOf, turnDirection, type TurnDirection } from "~/wiki/tome";
 
 /** How many hinged strips a leaf is made of: enough for it to curl as it turns. */
 const STRIPS = 6;
@@ -25,8 +25,12 @@ export function usePageTurn(
   page: RefObject<HTMLElement | null>,
   scroller: RefObject<HTMLElement | null>,
   layer: RefObject<HTMLElement | null>,
+  /** Every note's slug in the book's order, to turn towards where a linked note is. */
+  order: readonly string[],
 ) {
   const { pathname } = useLocation();
+  const navigation = useNavigationType();
+  const shownPath = useRef(pathname);
   const picture = useRef<Picture | null>(null);
   const shownIdx = useRef<unknown>(undefined);
   // How the next note arrives: on a turned page, or through mist (Misty Step).
@@ -61,13 +65,23 @@ export function usePageTurn(
     const before = picture.current;
     picture.current = null;
     const idx = historyIdx();
-    const direction = turnDirection(shownIdx.current, idx);
+    const direction = turnDirection({
+      popped: navigation === "POP",
+      fromIdx: shownIdx.current,
+      toIdx: idx,
+      fromSlug: slugOf(shownPath.current),
+      toSlug: slugOf(pathname),
+      order,
+    });
     shownIdx.current = idx;
+    shownPath.current = pathname;
     const how = arrival.current;
     arrival.current = "turn";
     if (!before || !page.current || !layer.current || reducedMotion()) return;
     if (how === "mist") mist(layer.current, page.current);
     else turn(layer.current, page.current, left.current, before, direction);
+    // Only a new page turns; the book's order or the navigation type changing alone doesn't.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, left, page, scroller, layer]);
 
   /** Has the next note arrive through mist rather than on a turned page. */
@@ -104,17 +118,22 @@ function turn(
   let hinge = leaf;
   for (let i = 0; i < STRIPS; i++) {
     const piece = i === 0 ? leaf : part("gh-tome-strip");
+    // Where the strip is across the leaf, front and back, so shading runs over it unbroken.
+    piece.style.setProperty("--front-at", `${-i * strip}px`);
+    piece.style.setProperty("--back-at", `${-(STRIPS - 1 - i) * strip}px`);
     const face = part("gh-tome-leaf-front");
     face.append(sliceOf(front, i * strip, width));
     const back = part("gh-tome-leaf-back");
     // A strip lands mirrored: its slice of the front covers that much of the left page's far side.
-    if (onLeft) back.append(sliceOf(onLeft, width - (i + 1) * strip, width));
+    // (Strips after the first are a pixel wider, and mirrored that pixel is on the other side.)
+    if (onLeft) back.append(sliceOf(onLeft, width - (i + 1) * strip - (i > 0 ? 1 : 0), width));
     piece.append(face, back);
     if (i > 0) hinge.append(piece);
     hinge = piece;
   }
   if (!onLeft) leaf.classList.add("gh-tome-leaf-blank");
   layer.style.setProperty("--strip", `${strip}px`);
+  layer.style.setProperty("--leaf", `${width}px`);
   layer.replaceChildren(...under, part("gh-tome-turn-shade"), leaf);
   layer.dataset.turn = direction;
   // Copies only scroll once they're on the page.

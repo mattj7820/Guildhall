@@ -43,6 +43,11 @@ export function Tome({
   const { pathname } = useLocation();
   const chapters = useMemo(() => chaptersOf(tree), [tree]);
   const allNotes = useMemo(() => notesIn(tree), [tree]);
+  // The book's order is the chapters' contents one after another, as the ribbons go.
+  const order = useMemo(
+    () => chapters.flatMap((chapter) => notesIn(chapter.folder).map((note) => note.slug)),
+    [chapters],
+  );
   const openSlug = slugOf(pathname);
   const openNote = useRouteLoaderData("routes/wiki-note") as
     { title: string; linkedFrom: NoteSummary[] } | undefined;
@@ -58,7 +63,7 @@ export function Tome({
   const desk = useRef<HTMLDivElement>(null);
   useBookHeight(desk);
   const spellButtons = useRef(new Map<SpellId, HTMLButtonElement>());
-  const arriveByMist = usePageTurn(left, page, scroller, layer);
+  const arriveByMist = usePageTurn(left, page, scroller, layer, order);
 
   // Opening a note shows its chapter, and on phones closes the left page to read it.
   const [shownSlug, setShownSlug] = useState(openSlug);

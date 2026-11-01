@@ -61,10 +61,26 @@ describe("slugOf and chapterOf", () => {
 });
 
 describe("turnDirection", () => {
-  it("turns back only when going to an earlier history entry", () => {
-    expect(turnDirection(3, 2)).toBe("back");
-    expect(turnDirection(2, 3)).toBe("forward");
-    expect(turnDirection(undefined, 1)).toBe("forward");
+  const order = ["Home", "NPCs/Mira", "NPCs/Voss"];
+  const link = { popped: false, fromIdx: 1, toIdx: 2, order };
+
+  it("turns towards where a linked note is in the book", () => {
+    expect(turnDirection({ ...link, fromSlug: "Home", toSlug: "NPCs/Voss" })).toBe("forward");
+    expect(turnDirection({ ...link, fromSlug: "NPCs/Voss", toSlug: "NPCs/Mira" })).toBe("back");
+  });
+
+  it("turns forward to or from a page that isn't a note in the book", () => {
+    expect(turnDirection({ ...link, fromSlug: undefined, toSlug: "Home" })).toBe("forward");
+    expect(turnDirection({ ...link, fromSlug: "NPCs/Voss", toSlug: "Gone" })).toBe("forward");
+  });
+
+  it("turns the way the browser goes through history on Back and Forward", () => {
+    const popped = { popped: true, order, fromSlug: "Home", toSlug: "NPCs/Voss" };
+    expect(turnDirection({ ...popped, fromIdx: 3, toIdx: 2 })).toBe("back");
+    expect(
+      turnDirection({ ...popped, fromIdx: 2, toIdx: 3, fromSlug: "NPCs/Voss", toSlug: "Home" }),
+    ).toBe("forward");
+    expect(turnDirection({ ...popped, fromIdx: undefined, toIdx: 1 })).toBe("forward");
   });
 });
 
