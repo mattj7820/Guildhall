@@ -58,10 +58,14 @@ export function TownMap(props: TownMapProps) {
   useLayoutEffect(() => {
     const last = rememberedPlace();
     if (!last || last === "hall" || !byId.has(last)) return;
-    rememberPlace("hall");
     walker.standAt(last);
-    // Without motion, it's simply home.
-    if (!walker.go("hall", { fade: true })) walker.standAt("hall");
+    // Home only once it gets there: an effect can run twice (React's strict mode), and the
+    // second run must still walk. Without motion, it's simply home.
+    const home = () => rememberPlace("hall");
+    if (!walker.go("hall", { fade: true, done: home })) {
+      walker.standAt("hall");
+      home();
+    }
     // Once, on arriving.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
