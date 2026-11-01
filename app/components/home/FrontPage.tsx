@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useRouteLoaderData } from "react-router";
 import { fightSummary, type FightSummary, type FrontPage as Data } from "~/home/front-page";
-import type { HubLink } from "~/hub/links";
 import { FIGHT_ROOM, PARTY_ROOM } from "~/live/messages";
 import { useLiveMap } from "~/live/useLive";
 import { mapUrl } from "~/maps/urls";
@@ -13,10 +12,12 @@ import { PartyStrip } from "./PartyStrip";
 import { TownMap } from "./TownMap";
 
 /**
- * The campaign as it stands: where the party is, a fight if one is on, the last session, and the
- * party; the modules underneath. The fight follows the live connection.
+ * The front page: the guildhall as a town map, each module a place, with the campaign as it stands
+ * drawn in place and listed in a plain panel beside it (the fight, where the party is, the next
+ * session, who's here), and the party under the map. The fight and who's here follow the live
+ * connection.
  */
-export function FrontPage(props: { data: Data; modules: HubLink[]; forDm: boolean }) {
+export function FrontPage(props: { data: Data; forDm: boolean }) {
   const { data } = props;
   const [fight, setFight] = useState(data.fight);
   useLiveMap(FIGHT_ROOM, (message) => {

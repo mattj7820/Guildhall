@@ -246,7 +246,7 @@ body {
 
 /*
  * Each theme's dressing, on the shared hooks only (gh-page, gh-bar, gh-brand, gh-nav-on, gh-card,
- * gh-card-icon, gh-panel, gh-button, gh-primary, gh-field, gh-hub-title). Components never style
+ * gh-panel, gh-button, gh-primary, gh-field). Components never style
  * for a theme themselves.
  */
 body {
@@ -323,17 +323,6 @@ body {
   }
 }
 
-.gh-hub-title {
-  @variant ember {
-    font-weight: 700;
-    font-size: 3.5rem;
-  }
-  @variant gem {
-    letter-spacing: 0.1em;
-    text-shadow: 0 0 1.75rem rgb(143 211 255 / 0.45);
-  }
-}
-
 .gh-card,
 .gh-panel {
   @variant storybook {
@@ -384,34 +373,6 @@ body {
   }
   @variant gem {
     box-shadow: 0 0 1.6rem -0.5rem var(--gh-module);
-  }
-}
-
-.gh-card-icon {
-  @variant storybook {
-    border-radius: 0.6rem;
-    background: var(--gh-module);
-    color: var(--gh-on-accent);
-    box-shadow: inset 0 0 0 2px var(--gh-trim);
-  }
-  @variant ember {
-    border: 1px solid var(--gh-line-strong);
-    transform: rotate(45deg) scale(0.85);
-    & > svg {
-      transform: rotate(-45deg);
-    }
-  }
-  @variant gem {
-    position: relative;
-    &::before {
-      content: "";
-      position: absolute;
-      inset: 4px;
-      border: 1px solid currentColor;
-      transform: rotate(45deg);
-      opacity: 0.55;
-      box-shadow: 0 0 0.75rem -0.1rem currentColor;
-    }
   }
 }
 
@@ -940,88 +901,6 @@ it over and leaves it down. */
  * different speeds. Specks are repeating tiles, so moving by a tile's height loops seamlessly.
  * Still for anyone who prefers reduced motion.
  */
-.gh-hero-motion {
-  &::before,
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    mask-image: linear-gradient(to top, black, transparent 85%);
-  }
-  @variant storybook {
-    /* Candlelight in one corner, and dust motes drifting up through it. */
-    background: radial-gradient(30rem 22rem at 6% 0%, rgb(255 196 110 / 0.4), transparent 70%);
-    animation: gh-candle 5s ease-in-out infinite alternate;
-    &::before {
-      background-image:
-        radial-gradient(2px 2px at 20% 30%, rgb(214 160 70 / 0.7), transparent),
-        radial-gradient(1.5px 1.5px at 70% 75%, rgb(214 160 70 / 0.6), transparent);
-      background-size: 220px 260px;
-      animation: gh-rise-260 26s linear infinite;
-    }
-  }
-  @variant ember {
-    /* Embers rising off a glow along the bottom edge. */
-    background: radial-gradient(60rem 14rem at 50% 115%, rgb(196 71 28 / 0.4), transparent);
-    &::before {
-      background-image:
-        radial-gradient(2.5px 2.5px at 15% 20%, #ff8a3d, transparent),
-        radial-gradient(2px 2px at 60% 55%, #ffb067, transparent),
-        radial-gradient(1.5px 1.5px at 85% 85%, #ff6a1f, transparent);
-      background-size: 180px 240px;
-      animation: gh-rise-240 11s linear infinite;
-    }
-    &::after {
-      background-image:
-        radial-gradient(1.5px 1.5px at 35% 40%, #ffb067, transparent),
-        radial-gradient(3px 3px at 75% 10%, rgb(255 120 40 / 0.7), transparent);
-      background-size: 260px 320px;
-      animation: gh-rise-320 19s linear infinite;
-    }
-  }
-  @variant gem {
-    /* Points of light that come and go, over two soft glows. */
-    background-image:
-      radial-gradient(40rem 20rem at 100% 0%, rgb(120 200 255 / 0.18), transparent),
-      radial-gradient(40rem 20rem at 0% 100%, rgb(160 120 255 / 0.16), transparent);
-    &::before,
-    &::after {
-      mask-image: none;
-      background-image:
-        radial-gradient(3px 3px at 20% 25%, #e8f6ff, transparent),
-        radial-gradient(2px 2px at 65% 70%, #d9c9ff, transparent),
-        radial-gradient(2.5px 2.5px at 85% 20%, #fff1cf, transparent);
-      background-size: 240px 200px;
-      animation: gh-twinkle 4s ease-in-out infinite alternate;
-    }
-    &::after {
-      background-position: 120px 100px;
-      animation-delay: -2s;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    &,
-    &::before,
-    &::after {
-      animation: none;
-    }
-  }
-}
-
-.gh-hero {
-  @variant storybook {
-    border-radius: 1.5rem;
-    border-width: 3px;
-    border-color: var(--gh-trim);
-  }
-  @variant ember {
-    border-radius: 0;
-    border-top: 2px solid var(--gh-trim);
-  }
-  @variant gem {
-    box-shadow: 0 0 3rem -1rem rgb(143 211 255 / 0.45);
-  }
-}
 
 /* Someone here now: their face glows, in each theme's light. */
 .gh-online {
@@ -1038,42 +917,6 @@ it over and leaves it down. */
   }
   @media (prefers-reduced-motion: no-preference) {
     animation: gh-breathe 3s ease-in-out infinite;
-  }
-}
-
-@keyframes gh-candle {
-  from {
-    opacity: 0.65;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes gh-rise-240 {
-  to {
-    background-position-y: -240px;
-  }
-}
-
-@keyframes gh-rise-260 {
-  to {
-    background-position-y: -260px;
-  }
-}
-
-@keyframes gh-rise-320 {
-  to {
-    background-position-y: -320px;
-  }
-}
-
-@keyframes gh-twinkle {
-  from {
-    opacity: 0.15;
-  }
-  to {
-    opacity: 1;
   }
 }
 
