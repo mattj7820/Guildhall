@@ -3,7 +3,6 @@ import { frontPage } from "~/.server/home/front-page";
 import { requireDm } from "~/.server/not-found";
 import { FrontPage } from "~/components/home/FrontPage";
 import { servicesContext, viewerContext } from "~/context";
-import { hubLinks } from "~/hub/links";
 import type { Route } from "./+types/home";
 
 export function meta(_: Route.MetaArgs) {
@@ -17,7 +16,6 @@ export async function loader({ context }: Route.LoaderArgs) {
   const viewer = context.get(viewerContext);
   return {
     front: await frontPage(context.get(servicesContext), viewer),
-    modules: hubLinks(viewer.role),
     forDm: viewer.role === "dm",
   };
 }
@@ -35,7 +33,5 @@ export async function action({ request, context }: Route.ActionArgs) {
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-  return (
-    <FrontPage data={loaderData.front} modules={loaderData.modules} forDm={loaderData.forDm} />
-  );
+  return <FrontPage data={loaderData.front} forDm={loaderData.forDm} />;
 }
