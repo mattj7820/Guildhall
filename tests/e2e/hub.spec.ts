@@ -16,11 +16,19 @@ test.describe("Hub home page", () => {
     await expect(wiki.heading("Session 1")).toBeVisible();
   });
 
-  test("opens the wiki module", async ({ page, wiki }) => {
-    await page.getByRole("link", { name: /Campaign wiki/ }).click();
+  test("walks to the Library on the town map, which opens the wiki", async ({ page, wiki }) => {
+    await page.getByRole("link", { name: "Library: Wiki" }).click();
     await expect(page).toHaveURL("/wiki");
     // Titled with the campaign's name once the DM gives one (wiki-tome.spec.ts).
     await expect(wiki.sidebar).toBeVisible();
+  });
+
+  test("keeps the Steward's Office (Members) from players", async ({ page, openAs }) => {
+    await expect(page.getByRole("link", { name: "Steward's Office: Members" })).toBeVisible();
+    const player = await openAs("playerOne");
+    await player.goto("/");
+    await expect(player.page.getByRole("link", { name: "Library: Wiki" })).toBeVisible();
+    await expect(player.page.getByRole("link", { name: /Steward's Office/ })).toHaveCount(0);
   });
 
   test("the DM sets the next session, and players see it but can't change it", async ({

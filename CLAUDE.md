@@ -7,8 +7,9 @@ Guildhall links out to those tools and grows its own modules. The point of build
 **interconnection**: eventually wiki, maps, characters, combat and dice all link through a shared
 campaign model (NPCs, locations, maps, characters, sessions). See `docs/roadmap.md`.
 
-Built so far: a front page with the campaign as it stands (where the party is, a fight, the next
-session with a countdown, who's here now), read-only Obsidian wiki with a DM preview of the players'
+Built so far: a front page drawn as a town map of the guildhall, each module a place your token
+walks to, with the campaign as it stands in place and in a panel beside it (where the party is, a
+fight, the next session with a countdown, who's here now), read-only Obsidian wiki with a DM preview of the players'
 view (or, as each person's pick in Settings, the wiki as a tome: a closed book with the campaign's
 name as its front page, the DM's chosen folder as its chapters, searching as spells, pages that
 turn), a combat tracker (one fight for the table, kept in the data folder and pushed live; players
@@ -298,11 +299,15 @@ First e2e run needs `npx playwright install chromium`.
   Scrying), `NoteList`, `RuneCircle`, `usePageTurn` (a leaf of hinged strips, copies of the
   pages, turned in CSS 3D) and `useReading` (reading mode, in the browser).
 - `app/home/`: the front page (isomorphic): `front-page.ts` (`FrontPage`, `bannerMap`: the map
-  where the party is for one viewer, `fightSummary`, `latestSession`) and `countdown.ts`.
+  where the party is for one viewer, `fightSummary`, `latestSession`), `countdown.ts`, `town.ts`
+  (the town map's places and routes in plan units: `townPlaces`, `placeOf` (a page's place),
+  `sharedWay` (where two routes part); its art in `public/town/`, one picture per theme, is made
+  to it in the mapgen repo, `docs/prototypes/hub-map-mapgen-prompt.md`) and `town-position.ts`
+  (where the token is, per tab: every page records its place).
   `app/.server/home/`: `front-page.ts` (`frontPage`, the page for a viewer), `next-session.ts`
   (`NextSession`, over `next-session.json`) and `presence.ts` (`presenceFor`: who's here, by
-  party-card names). `app/components/home/`: `FrontPage`, `BannerMap`, `NextSession`,
-  `PartyStrip`, `HubIcon`.
+  party-card names). `app/components/home/`: `FrontPage`, `TownMap` (the plan
+  over its art, the walks, the campaign drawn in place), `BannerMap`, `NextSession`, `PartyStrip`.
 - `app/routes/`: `home` (the front page; the DM sets the next session), `wiki` (layout + sidebar),
   `wiki-home` (landing page + `?q=` search; the tome's cover and title page; the DM's naming
   action), `wiki-note` (`/wiki/*`), `combat` (the DM's tracker, or
