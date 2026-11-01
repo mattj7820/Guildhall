@@ -21,6 +21,7 @@ import type { FolderNode, NoteSummary } from "~/wiki/types";
 import { noteUrl } from "~/wiki/urls";
 import { DetectMagic, LocateObject, MistyStep, Scrying } from "./Spells";
 import { usePageTurn } from "./usePageTurn";
+import { useReading } from "./useReading";
 
 /** Each spell's input, focused when it's cast from the keyboard. */
 const WORDS: Partial<Record<SpellId, string>> = { locate: "locate-object", misty: "misty-step" };
@@ -64,6 +65,11 @@ export function Tome({
   useBookHeight(desk);
   const spellButtons = useRef(new Map<SpellId, HTMLButtonElement>());
   const arriveByMist = usePageTurn(left, page, scroller, layer, order);
+  const [reading, setReading] = useReading();
+  const readingNow = useRef(reading);
+  useEffect(() => {
+    readingNow.current = reading;
+  }, [reading]);
 
   // Opening a note shows its chapter, and on phones closes the left page to read it.
   const [shownSlug, setShownSlug] = useState(openSlug);
@@ -76,6 +82,7 @@ export function Tome({
 
   useEffect(() => {
     function cast(next: SpellId) {
+      setReading(false);
       setSpell(next);
       setSheetOpen(true);
       const words = WORDS[next];
@@ -91,7 +98,10 @@ export function Tome({
       } else if (event.key === "/" && !isTyping(event.target)) {
         event.preventDefault();
         cast("locate");
+      } else if (event.key.toLowerCase() === "r" && !isTyping(event.target)) {
+        setReading(!readingNow.current);
       } else if (event.key === "Escape") {
+        setReading(false);
         setSpell((casting) => {
           if (casting) requestAnimationFrame(() => spellButtons.current.get(casting)?.focus());
           return null;
@@ -101,16 +111,18 @@ export function Tome({
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, []);
+  }, [setReading]);
 
   const chapter = chapters.find((c) => c.key === chapterKey) ?? chapters[0];
 
   function toggle(next: SpellId) {
+    setReading(false);
     setSpell((casting) => (casting === next ? null : next));
     setSheetOpen(true);
   }
 
   function openChapter(key: string) {
+    setReading(false);
     setChapterKey(key);
     setSpell(null);
     setSheetOpen(true);
@@ -136,11 +148,15 @@ export function Tome({
             </button>
           ))}
         </div>
-        <div className="gh-tome-spread relative grid h-full grid-rows-[minmax(0,1fr)] md:grid-cols-2">
+        <div
+          data-reading={reading || undefined}
+          className="gh-tome-spread relative grid h-full grid-rows-[minmax(0,1fr)]"
+        >
           <section
             ref={left}
             aria-label="Spells and contents"
             data-open={sheetOpen || undefined}
+            inert={reading || undefined}
             className="gh-tome-page gh-tome-left flex min-w-0 flex-col"
           >
             <div className="gh-tome-scroll min-h-0 flex-1 overflow-y-auto px-6 pt-12 pb-10 md:px-10">
@@ -198,6 +214,15 @@ export function Tome({
             </div>
           </section>
           <div ref={page} className="gh-tome-page gh-tome-right relative flex min-w-0 flex-col">
+            {/* Long reads: the left page folds away and the note has the book's width. */}
+            <button
+              type="button"
+              aria-keyshortcuts="R"
+              onClick={() => setReading(!reading)}
+              className="gh-tome-read absolute top-3 right-4 z-20 rounded px-2 py-0.5 text-sm max-md:hidden"
+            >
+              {reading ? "Contents" : "Read"}
+            </button>
             <div
               ref={scroller}
               className="gh-tome-scroll min-h-0 flex-1 overflow-y-auto px-6 pt-12 pb-12 md:px-12"
@@ -215,6 +240,7 @@ export function Tome({
           name="Contents"
           plain={chapter?.name ?? ""}
           onClick={() => {
+            setReading(false);
             setSpell(null);
             setSheetOpen(!(sheetOpen && !spell));
           }}
@@ -226,6 +252,7 @@ export function Tome({
             name={s.short}
             plain={s.plain}
             onClick={() => {
+              setReading(false);
               if (sheetOpen && spell === s.id) return setSheetOpen(false);
               setSpell(s.id);
               setSheetOpen(true);

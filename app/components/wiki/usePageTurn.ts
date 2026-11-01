@@ -108,9 +108,10 @@ function turn(
     under.push(old);
     front = { page: copyOf(page), scrolled: scrollOf(page) };
   }
-  // On phones the left page is a sheet kept off screen, so the leaf's back is left blank.
+  // On phones the left page is a sheet kept off screen, and while reading it's folded away: then
+  // the leaf's back is left blank.
   const onLeft =
-    left && getComputedStyle(left).position !== "fixed"
+    left && getComputedStyle(left).position !== "fixed" && !left.closest("[data-reading]")
       ? { page: copyOf(left), scrolled: scrollOf(left) }
       : undefined;
 

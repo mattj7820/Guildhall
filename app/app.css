@@ -1194,7 +1194,7 @@ it over and leaves it down. */
   --tome-turn: 620ms;
   /* Fine fibres, and the larger blotches of age, in the paper. */
   --tome-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .32 0 0 0 0 .22 0 0 0 0 .1 0 0 0 .16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  --tome-age: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.008' numOctaves='4' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .3 0 0 0 0 .12 0 0 0 .32 -.12'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --tome-age: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.01' numOctaves='4' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .3 0 0 0 0 .12 0 0 0 .32 -.12'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   /* Pebbled leather. */
   --tome-hide: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .5 -.08'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   /* The book fills the window below the top bar, measured into --tome-top. */
@@ -1361,6 +1361,11 @@ it over and leaves it down. */
 /* Ribbons: silk bookmarks for the chapters, each the next of the theme's colours, muted. */
 .gh-tome-ribbons {
   filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.35));
+  /* The strip spans the book's top; only the ribbons themselves take clicks. */
+  pointer-events: none;
+  & > * {
+    pointer-events: auto;
+  }
 }
 .gh-tome-ribbon {
   --hue: var(--gh-info);
@@ -1555,7 +1560,8 @@ it over and leaves it down. */
   inset: 0;
   z-index: 30;
   pointer-events: none;
-  perspective: 4200px;
+  /* As deep for a wide page (reading, phones) as for one of a spread. */
+  perspective: calc(var(--leaf, 580px) * 7.2);
   perspective-origin: 0 50%;
   &[data-turn="back"] *,
   &[data-turn="back"] *::after {
@@ -1772,6 +1778,57 @@ it over and leaves it down. */
   }
 }
 
+/*
+ * Two pages side by side; for long reads (useReading.ts) the left page folds away under the right
+ * and the note has the book's width, its text kept to a readable measure.
+ */
+@media (width >= 48rem) {
+  .gh-tome-spread {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    transition: grid-template-columns 420ms cubic-bezier(0.4, 0, 0.2, 1);
+    &[data-reading] {
+      grid-template-columns: minmax(0, 0fr) minmax(0, 1fr);
+    }
+    container-type: inline-size;
+    & > .gh-tome-left {
+      overflow: hidden;
+      transition: opacity 260ms 120ms;
+      /* Its writing keeps its width, so folding slides it under the right page, unsqueezed. */
+      & > .gh-tome-scroll {
+        min-width: 50cqw;
+      }
+    }
+    /* It slides under the right page as its column closes, fading only at the end. */
+    &[data-reading] > .gh-tome-left {
+      opacity: 0;
+      visibility: hidden;
+      transition:
+        opacity 140ms 280ms,
+        visibility 0s 420ms;
+    }
+    &[data-reading] > .gh-tome-right {
+      border-radius: 3px;
+      .gh-tome-scroll > * {
+        max-width: 46rem;
+        margin-inline: auto;
+      }
+    }
+  }
+}
+.gh-tome-read {
+  color: var(--gh-muted);
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+  border: 1px solid transparent;
+  transition:
+    color 150ms,
+    border-color 150ms;
+  &:hover {
+    color: var(--tome-rubric);
+    border-color: color-mix(in srgb, var(--gh-ink) 20%, transparent);
+  }
+}
+
 /* Phones: one page. The left page is a sheet over the note, opened from the bar. */
 .gh-tome-dock {
   background-color: var(--tome-leather);
@@ -1837,7 +1894,9 @@ it over and leaves it down. */
   .gh-rune-ring,
   .gh-tome-left,
   .gh-tome-ribbon,
-  .gh-tome-aura {
-    transition: none;
+  .gh-tome-aura,
+  .gh-tome-spread,
+  .gh-tome-spread > .gh-tome-left {
+    transition: none !important;
   }
 }

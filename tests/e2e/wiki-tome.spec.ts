@@ -52,6 +52,14 @@ test.describe("The wiki as a tome", () => {
     await expect(linkedFrom.getByRole("link", { name: /Brindleford/ })).toBeVisible();
     await expect(linkedFrom.getByRole("link", { name: /Fixture Informant/ })).toHaveCount(0);
 
+    // Reading: the left page folds away for a long note, and comes back.
+    await tome.page.getByRole("button", { name: "Read", exact: true }).click();
+    await expect(tome.spell("Locate Object")).toBeHidden();
+    await tome.reload();
+    await expect(tome.page.getByRole("button", { name: "Contents", exact: true })).toBeVisible();
+    await tome.page.keyboard.press("r");
+    await expect(tome.spell("Locate Object")).toBeVisible();
+
     // Back to pages: the plain wiki's sidebar.
     await them.settings.open();
     await them.settings.pickWikiLook("Pages");
