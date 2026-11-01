@@ -1,5 +1,6 @@
 import { expect, test } from "./support/fixtures";
 import { d20, scriptDice } from "./support/dice";
+import { DiceCollection } from "./pages/dice-collection";
 import { SIGNED_IN } from "./support/sign-in";
 import { uniqueName } from "./support/test-data";
 
@@ -121,5 +122,19 @@ test("the DM gives packs and particular dice, and sees what each member has", as
   await expect(opening).toHaveCount(0);
   await expect(them.diceCollection.collection).toHaveText("Collection (5 dice)");
   await expect(them.diceCollection.packs).toHaveCount(0);
+
+  // A pack opened in another tab, then opened again here: it says so, and is gone once closed.
+  await members.givePack(name, "Fixture: a pack opened twice");
+  await expect(members.dice(name)).toContainText("1 pack unopened");
+  await them.diceCollection.open();
+  const otherTab = new DiceCollection(await them.page.context().newPage());
+  await otherTab.open();
+  await otherTab.openPack();
+  await them.diceCollection.packs.first().getByRole("button", { name: "Open" }).click();
+  const again = them.page.getByRole("dialog", { name: "Opening a pack" });
+  await expect(again.getByRole("alert")).toHaveText("That pack has already been opened.");
+  await again.getByRole("button", { name: "Close" }).click();
+  await expect(them.diceCollection.packs).toHaveCount(0);
+  await expect(them.diceCollection.collection).toHaveText("Collection (6 dice)");
   await expect(them.page.getByRole("link", { name: "1 pack to open", exact: true })).toHaveCount(0);
 });

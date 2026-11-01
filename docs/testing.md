@@ -176,6 +176,10 @@ Dice decide initiative, tie-breaks and monster HP, so tests must control them.
   that a pack opens into some die and joins the collection; the DM's gifts of particular dice
   set up what's known. The odds, caps and draws are unit tested with scripted and seeded `Rng`s,
   against fixture styles (`app/.server/dice/test-styles.ts`), not the growing catalogue.
+  Who may do what is tested at the routes (`dice-open`, `settings-dice`, `members`), with
+  `aMember` and `signedInAs` (`app/.server/members/test-builders.ts`): someone else's pack, a
+  pack opened twice, the DM, dice not found, gifts to non-members, and that no page or answer
+  names a die its viewer hasn't found.
 - The table has one fight, kept on the server, so every spec that uses the tracker is gathered
   in `tests/e2e/fight.spec.ts`, which imports them from `tests/e2e/fight/` and runs them one after
   another, each starting with the fight ended. Wait for `fightSaved(page)` before checking what
