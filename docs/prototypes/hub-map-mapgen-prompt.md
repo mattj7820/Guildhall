@@ -66,7 +66,7 @@ walls about 15 units thick (the walls straddle the outline).
 | Steward's Office     | Members         | `M690,145 L820,128 L852,205 L735,228 Z`                                                                      | 770, 182    |
 | Barracks             | Characters      | `M165,400 L305,392 L325,470 L295,545 L175,545 L140,470 Z`                                                    | 232, 478    |
 | Treasury             | Dice            | `M725,440 L850,432 L868,515 L735,528 Z`                                                                      | 797, 474    |
-| Notice board (small) | Next session    | a free-standing board in the courtyard: `M555,470 h66 v40 h-66 z`, posts at its bottom corners down to y 514 | 588, 530    |
+| Notice board (small) | Next session    | a free-standing board in the courtyard: `M555,506 h66 v40 h-66 z`, posts at its bottom corners down to y 550 | 588, 562    |
 
 Furnishings that fit each room's purpose, kept low-contrast and away from label points: the hall
 a long table across 420–580 at y 368–384 and a dais at 470–530, y 256–268; the Library
@@ -124,7 +124,7 @@ The viewer stands in the hall at 500,365. These are the walks the app draws; ove
 - Steward's Office: `M500,365 L500,352 L655,352 C685,372 680,312 712,330 L790,300 L790,252 C805,238 770,236 782,222 L770,196`
 - Barracks: `M500,365 L500,470 L420,470 C380,490 350,450 318,468 L232,490`
 - Treasury: `M500,365 L500,470 L580,470 C640,495 690,450 728,478 L797,492`
-- Notice board: `M500,365 L500,470 L556,500`
+- Notice board: `M500,365 L500,470 L556,536`
 
 Other people stand in the hall at 440,398; 560,398; 410,350; 590,350; 470,290; 530,290: keep
 those spots plain floor too.
