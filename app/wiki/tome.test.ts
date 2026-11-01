@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  OTHER_NOTES,
   byTitle,
   chapterOf,
   chaptersOf,
@@ -27,7 +28,7 @@ describe("chaptersOf", () => {
       notes: [note("Home")],
     };
     expect(chaptersOf(root).map(({ key, name }) => ({ key, name }))).toEqual([
-      { key: "", name: TOP_NOTES },
+      { key: "/", name: TOP_NOTES },
       { key: "NPCs", name: "NPCs" },
       { key: "Locations", name: "Locations" },
     ]);
@@ -36,6 +37,44 @@ describe("chaptersOf", () => {
 
   it("has no front pages when every note is in a folder", () => {
     expect(chaptersOf({ ...folder(""), folders: [folder("NPCs")] })).toHaveLength(1);
+  });
+});
+
+describe("chaptersOf, with a folder as the book", () => {
+  // Shaped like a vault kept in one campaign folder, with a little outside it.
+  const root: FolderNode = {
+    ...folder("", ["Loose"]),
+    folders: [
+      {
+        ...folder("Book", ["Book/Intro"]),
+        folders: [folder("Book/NPCs", ["Book/NPCs/Mira"]), folder("Book/Places")],
+      },
+      folder("Extras", ["Extras/Thing"]),
+    ],
+  };
+
+  it("makes the book's folders the chapters, its own notes first, the rest after", () => {
+    expect(
+      chaptersOf(root, "Book").map(({ key, name, outside }) => ({ key, name, outside })),
+    ).toEqual([
+      { key: "Book/", name: TOP_NOTES, outside: undefined },
+      { key: "Book/NPCs", name: "NPCs", outside: undefined },
+      { key: "Book/Places", name: "Places", outside: undefined },
+      { key: "Extras", name: "Extras", outside: true },
+      { key: "/", name: OTHER_NOTES, outside: true },
+    ]);
+  });
+
+  it("finds a note's chapter in the book, its front pages, or outside it", () => {
+    const chapters = chaptersOf(root, "Book");
+    expect(chapterOf("Book/NPCs/Mira", chapters)).toBe("Book/NPCs");
+    expect(chapterOf("book/intro", chapters)).toBe("Book/");
+    expect(chapterOf("Extras/Thing", chapters)).toBe("Extras");
+    expect(chapterOf("Loose", chapters)).toBe("/");
+  });
+
+  it("falls back to the top folders when the book folder isn't there", () => {
+    expect(chaptersOf(root, "Gone").map(({ key }) => key)).toEqual(["/", "Book", "Extras"]);
   });
 });
 
@@ -54,7 +93,7 @@ describe("slugOf and chapterOf", () => {
 
   it("finds the chapter by the note's top folder, ignoring case like note URLs", () => {
     expect(chapterOf("npcs/Deep/Someone", chapters)).toBe("NPCs");
-    expect(chapterOf("Home", chapters)).toBe("");
+    expect(chapterOf("Home", chapters)).toBe("/");
     expect(chapterOf("Elsewhere/Note", chapters)).toBeUndefined();
     expect(chapterOf(undefined, chapters)).toBeUndefined();
   });

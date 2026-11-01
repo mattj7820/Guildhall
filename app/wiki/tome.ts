@@ -1,24 +1,59 @@
 /**
- * The tome's bookkeeping: its chapters (the vault's top folders, as ribbons), which one a note is
- * in, which way a page turns, and marking a query in a result. Isomorphic and pure.
+ * The tome's bookkeeping: its chapters (as ribbons), which one a note is in, which way a page
+ * turns, and marking a query in a result. Isomorphic and pure.
  */
 import { byName, matchRank } from "~/shared/name-search";
 import type { FolderNode, NoteSummary } from "./types";
 
 export interface Chapter {
-  /** The top folder's path, or `` for notes at the top of the vault. */
+  /** Unique: the folder's path, with a `/` after it for only its own notes. */
   key: string;
   name: string;
+  /** The notes the chapter holds (for front pages, the folder without its folders). */
   folder: FolderNode;
+  /** Only the folder's own notes, not those in its folders. */
+  shallow?: boolean;
+  /** Outside the book's folder: set apart after the book's own chapters. */
+  outside?: boolean;
 }
 
-/** The ribbon for notes that aren't in any folder. */
+/** The ribbon for the book's own notes, outside any of its chapters. */
 export const TOP_NOTES = "Front pages";
+/** With a book folder chosen, the ribbon for notes at the top of the vault, outside it. */
+export const OTHER_NOTES = "Other pages";
 
-export function chaptersOf(root: FolderNode): Chapter[] {
-  const chapters = root.folders.map((folder) => ({ key: folder.path, name: folder.name, folder }));
-  if (root.notes.length === 0) return chapters;
-  return [{ key: "", name: TOP_NOTES, folder: { ...root, folders: [] } }, ...chapters];
+/**
+ * The tome's chapters. Without a book folder (or one this viewer has nothing in), they're the
+ * vault's top folders, with any notes at the top first. With one, they're the book's folders,
+ * with its own notes first, then everything outside it, set apart.
+ */
+export function chaptersOf(root: FolderNode, bookFolder?: string): Chapter[] {
+  const book = bookFolder ? root.folders.find((folder) => folder.path === bookFolder) : undefined;
+  const whole = (folder: FolderNode, outside?: boolean): Chapter => ({
+    key: folder.path,
+    name: folder.name,
+    folder,
+    ...(outside && { outside }),
+  });
+  const own = (folder: FolderNode, name: string, outside?: boolean): Chapter[] =>
+    folder.notes.length === 0
+      ? []
+      : [
+          {
+            key: `${folder.path}/`,
+            name,
+            folder: { ...folder, folders: [] },
+            shallow: true,
+            ...(outside && { outside }),
+          },
+        ];
+  if (!book) return [...own(root, TOP_NOTES), ...root.folders.map((folder) => whole(folder))];
+  return [
+    ...own(book, TOP_NOTES),
+    ...book.folders.map((folder) => whole(folder)),
+    ...root.folders.filter((folder) => folder !== book).map((folder) => whole(folder, true)),
+    ...own(root, OTHER_NOTES, true),
+  ];
 }
 
 /** The note's slug from a wiki URL, or undefined for the wiki's own pages. */
@@ -35,8 +70,15 @@ export function slugOf(pathname: string): string | undefined {
 /** The chapter a note is in, or undefined if there's none (a missing note, the wiki's home). */
 export function chapterOf(slug: string | undefined, chapters: Chapter[]): string | undefined {
   if (slug === undefined) return undefined;
-  const top = slug.includes("/") ? slug.slice(0, slug.indexOf("/")).toLowerCase() : "";
-  return chapters.find((chapter) => chapter.key.toLowerCase() === top)?.key;
+  // Ignoring case, like note URLs.
+  const folder = slug.includes("/") ? slug.slice(0, slug.lastIndexOf("/")).toLowerCase() : "";
+  const path = (chapter: Chapter) => chapter.folder.path.toLowerCase();
+  const own = chapters.find((chapter) => chapter.shallow && path(chapter) === folder);
+  const within = chapters.find(
+    (chapter) =>
+      !chapter.shallow && (folder === path(chapter) || folder.startsWith(`${path(chapter)}/`)),
+  );
+  return (own ?? within)?.key;
 }
 
 export type TurnDirection = "forward" | "back";

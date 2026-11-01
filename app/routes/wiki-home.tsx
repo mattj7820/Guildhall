@@ -1,4 +1,4 @@
-import { Link, useRouteLoaderData } from "react-router";
+import { data, Link, useRouteLoaderData } from "react-router";
 import { requireDm } from "~/.server/not-found";
 import { TitlePage } from "~/components/wiki/Cover";
 import { TypeBadge } from "~/components/TypeBadge";
@@ -28,20 +28,38 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     type: note.type,
     snippet,
   }));
+  const book = await campaignName.book();
+  const forDm = viewer.role === "dm";
   return {
     query,
     results,
     noteCount: vault.current.notes(viewer).length,
-    campaignName: await campaignName.get(),
-    canName: viewer.role === "dm",
+    campaignName: book.name,
+    canName: forDm,
+    // For the DM's cover form: which top folder is the book, and the ones to choose from.
+    bookFolder: forDm ? book.folder : undefined,
+    folders: forDm ? vault.current.folderTree(viewer).folders.map((folder) => folder.path) : [],
   };
 }
 
-/** The DM names the campaign, for the tome's cover (an empty name clears it). */
+/**
+ * The DM names the campaign and picks which top folder is the book, on the tome's cover. An
+ * empty name or folder clears it; a form without a folder leaves it as it was.
+ */
 export async function action({ request, context }: Route.ActionArgs) {
-  requireDm(context.get(viewerContext));
-  const name = String((await request.formData()).get("campaignName") ?? "");
-  await context.get(servicesContext).campaignName.set(name);
+  const viewer = context.get(viewerContext);
+  requireDm(viewer);
+  const { vault, campaignName } = context.get(servicesContext);
+  const form = await request.formData();
+  const name = String(form.get("campaignName") ?? "");
+  const folder = form.has("bookFolder")
+    ? String(form.get("bookFolder"))
+    : ((await campaignName.book()).folder ?? "");
+  const folders = vault.current.folderTree(viewer).folders.map((top) => top.path);
+  if (form.has("bookFolder") && folder && !folders.includes(folder)) {
+    return data({ error: "That isn't one of the vault's folders." }, 400);
+  }
+  await campaignName.set(name, folder);
   return { ok: true };
 }
 

@@ -4,14 +4,19 @@ import { Tome } from "~/components/wiki/Tome";
 import { accountContext, servicesContext, viewerContext } from "~/context";
 import type { Route } from "./+types/wiki";
 
-export function loader({ context }: Route.LoaderArgs) {
-  const { vault } = context.get(servicesContext);
+export async function loader({ context }: Route.LoaderArgs) {
+  const { vault, campaignName } = context.get(servicesContext);
   const viewer = context.get(viewerContext);
   const account = context.get(accountContext);
   const tome = account.kind === "member" && account.member.wikiLook === "tome";
+  const tree = vault.current.folderTree(viewer);
+  // The tome's chapters come from the book's folder, sent only when this viewer has notes in
+  // it: the name of a folder they can't see is never sent.
+  const { folder } = tome ? await campaignName.book() : {};
   return {
-    tree: vault.current.folderTree(viewer),
+    tree,
     look: tome ? "tome" : "pages",
+    bookFolder: tree.folders.some((top) => top.path === folder) ? folder : undefined,
     // Detect Magic, in the tome: every tag on the notes this viewer may see.
     tags: tome ? vault.current.tags(viewer) : [],
   };
@@ -22,7 +27,7 @@ export default function WikiLayout({ loaderData }: Route.ComponentProps) {
 
   if (loaderData.look === "tome") {
     return (
-      <Tome tree={loaderData.tree} tags={loaderData.tags}>
+      <Tome tree={loaderData.tree} tags={loaderData.tags} bookFolder={loaderData.bookFolder}>
         <Outlet />
       </Tome>
     );

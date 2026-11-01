@@ -36,10 +36,13 @@ const WORDS: Partial<Record<SpellId, string>> = { locate: "locate-object", misty
 export function Tome({
   tree,
   tags,
+  bookFolder,
   children,
 }: {
   tree: FolderNode;
   tags: { tag: string; notes: NoteSummary[] }[];
+  /** The vault folder that is the book, its folders the chapters; none for the whole vault. */
+  bookFolder?: string;
   children: ReactNode;
 }) {
   const { pathname, search } = useLocation();
@@ -48,8 +51,8 @@ export function Tome({
   const closed = pathname === "/wiki" && search === "";
   const cover = useCover(closed);
   const front = useRouteLoaderData("routes/wiki-home") as
-    { campaignName?: string; canName: boolean } | undefined;
-  const chapters = useMemo(() => chaptersOf(tree), [tree]);
+    { campaignName?: string; canName: boolean; bookFolder?: string; folders: string[] } | undefined;
+  const chapters = useMemo(() => chaptersOf(tree, bookFolder), [tree, bookFolder]);
   const allNotes = useMemo(() => notesIn(tree), [tree]);
   // The book's order is the chapters' contents one after another, as the ribbons go.
   const order = useMemo(
@@ -164,10 +167,14 @@ export function Tome({
           aria-label="Chapters"
           className="gh-tome-ribbons absolute -top-1 right-4 left-6 z-40 flex gap-1 overflow-x-auto [scrollbar-width:none] md:left-10"
         >
-          {chapters.map((c) => (
+          {chapters.map((c, i) => (
             <button
               key={c.key}
               type="button"
+              // Chapters outside the book's folder hang apart from its own.
+              title={c.outside ? "Outside the book's folder" : undefined}
+              data-outside={c.outside || undefined}
+              data-apart={(c.outside && !chapters[i - 1]?.outside) || undefined}
               aria-pressed={!spell && c.key === chapter?.key}
               onClick={() => openChapter(c.key)}
               className="gh-tome-ribbon shrink-0 px-2.5 pt-2 pb-4 text-xs font-semibold tracking-wide"
@@ -272,6 +279,8 @@ export function Tome({
             <CoverFront
               name={front?.campaignName}
               canName={front?.canName ?? false}
+              bookFolder={front?.bookFolder}
+              folders={front?.folders ?? []}
               onOpen={() => navigate("/wiki?open")}
             />
             <div ref={coverInside} className="gh-tome-cover-inside" aria-hidden="true" inert />

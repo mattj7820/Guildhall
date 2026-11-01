@@ -7,7 +7,14 @@ import { uniqueName } from "./support/test-data";
  * that the spells only ever find what players may read.
  */
 test.describe("The wiki as a tome", () => {
-  test("someone picks the tome and finds notes with its spells", async ({ members, openAs }) => {
+  // They share the campaign's name and book folder, so they take turns.
+  test.describe.configure({ mode: "serial" });
+
+  test("someone picks the tome and finds notes with its spells", async ({
+    api,
+    members,
+    openAs,
+  }) => {
     const them = await openAs("signedOut");
     const name = uniqueName("Tome reader");
     await them.signIn.asNewcomer(name);
@@ -20,9 +27,9 @@ test.describe("The wiki as a tome", () => {
 
     // The wiki's front page is the closed book, which opens to its title page.
     await tome.goto("/wiki");
-    await expect(tome.page.getByRole("button", { name: /^Rename|^Name the campaign/ })).toHaveCount(
-      0,
-    );
+    await expect(
+      tome.page.getByRole("button", { name: /^Change the cover|^Name the campaign/ }),
+    ).toHaveCount(0);
     await tome.page.getByRole("button", { name: /^Open / }).click();
     await expect(tome.page).toHaveURL("/wiki?open");
     await expect(tome.chapter("Locations")).toBeVisible();
@@ -74,6 +81,15 @@ test.describe("The wiki as a tome", () => {
     await expect(tome.page).toHaveURL("/wiki");
     await expect(tome.page.getByRole("button", { name: /^Open / })).toBeVisible();
 
+    // With a folder chosen as the book, its folders are the chapters and the rest come after.
+    await api.postForm("/wiki?index", { campaignName: "", bookFolder: "Locations" });
+    await tome.goto("/wiki?open");
+    await expect(tome.chapter("Front pages")).toBeVisible();
+    await expect(tome.chapter("Brindleford")).toBeVisible();
+    await expect(tome.chapter("NPCs")).toHaveAttribute("data-outside", "true");
+    await expect(tome.chapter("Secrets")).toHaveCount(0);
+    await api.postForm("/wiki?index", { campaignName: "", bookFolder: "" });
+
     // Back to pages: the plain wiki's sidebar.
     await them.settings.open();
     await them.settings.pickWikiLook("Pages");
@@ -96,5 +112,10 @@ test.describe("The wiki as a tome", () => {
     const player = await openAs("playerOne");
     const response = await player.api.postForm("/wiki?index", { campaignName: "Not theirs" });
     expect(response.status()).toBe(404);
+  });
+
+  test("the book's folder must be one of the vault's folders", async ({ api }) => {
+    const response = await api.postForm("/wiki?index", { campaignName: "", bookFolder: "Nowhere" });
+    expect(response.status()).toBe(400);
   });
 });

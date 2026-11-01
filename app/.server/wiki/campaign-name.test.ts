@@ -27,8 +27,18 @@ describe("CampaignName", () => {
     expect(await CampaignName.inFolder(folder).get()).toHaveLength(CAMPAIGN_NAME_MAX);
   });
 
+  it("keeps which folder is the book beside the name, each cleared when empty", async () => {
+    await CampaignName.inFolder(folder).set("Fixture Campaign", "Fixture Book");
+    expect(await CampaignName.inFolder(folder).book()).toEqual({
+      name: "Fixture Campaign",
+      folder: "Fixture Book",
+    });
+    await CampaignName.inFolder(folder).set("Fixture Campaign", "");
+    expect(await CampaignName.inFolder(folder).book()).toEqual({ name: "Fixture Campaign" });
+  });
+
   it("reads a name it can't understand as none, rather than refusing the file", async () => {
-    await writeFile(path.join(folder, "campaign.json"), '{"version":1,"name":42}');
-    expect(await CampaignName.inFolder(folder).get()).toBeUndefined();
+    await writeFile(path.join(folder, "campaign.json"), '{"version":1,"name":42,"folder":[]}');
+    expect(await CampaignName.inFolder(folder).book()).toEqual({});
   });
 });
