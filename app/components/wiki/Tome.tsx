@@ -167,14 +167,10 @@ export function Tome({
           aria-label="Chapters"
           className="gh-tome-ribbons absolute -top-1 right-4 left-6 z-40 flex gap-1 overflow-x-auto [scrollbar-width:none] md:left-10"
         >
-          {chapters.map((c, i) => (
+          {chapters.map((c) => (
             <button
               key={c.key}
               type="button"
-              // Chapters outside the book's folder hang apart from its own.
-              title={c.outside ? "Outside the book's folder" : undefined}
-              data-outside={c.outside || undefined}
-              data-apart={(c.outside && !chapters[i - 1]?.outside) || undefined}
               aria-pressed={!spell && c.key === chapter?.key}
               onClick={() => openChapter(c.key)}
               className="gh-tome-ribbon shrink-0 px-2.5 pt-2 pb-4 text-xs font-semibold tracking-wide"

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
-  OTHER_NOTES,
   byTitle,
   chapterOf,
   chaptersOf,
+  inBook,
   markQuery,
   notesIn,
   slugOf,
@@ -53,28 +53,31 @@ describe("chaptersOf, with a folder as the book", () => {
     ],
   };
 
-  it("makes the book's folders the chapters, its own notes first, the rest after", () => {
-    expect(
-      chaptersOf(root, "Book").map(({ key, name, outside }) => ({ key, name, outside })),
-    ).toEqual([
-      { key: "Book/", name: TOP_NOTES, outside: undefined },
-      { key: "Book/NPCs", name: "NPCs", outside: undefined },
-      { key: "Book/Places", name: "Places", outside: undefined },
-      { key: "Extras", name: "Extras", outside: true },
-      { key: "/", name: OTHER_NOTES, outside: true },
+  it("makes the book's folders the chapters, its own notes first, and leaves the rest out", () => {
+    expect(chaptersOf(root, "Book").map(({ key, name }) => ({ key, name }))).toEqual([
+      { key: "Book/", name: TOP_NOTES },
+      { key: "Book/NPCs", name: "NPCs" },
+      { key: "Book/Places", name: "Places" },
     ]);
   });
 
-  it("finds a note's chapter in the book, its front pages, or outside it", () => {
+  it("finds a note's chapter in the book or its front pages, and none outside it", () => {
     const chapters = chaptersOf(root, "Book");
     expect(chapterOf("Book/NPCs/Mira", chapters)).toBe("Book/NPCs");
     expect(chapterOf("book/intro", chapters)).toBe("Book/");
-    expect(chapterOf("Extras/Thing", chapters)).toBe("Extras");
-    expect(chapterOf("Loose", chapters)).toBe("/");
+    expect(chapterOf("Extras/Thing", chapters)).toBeUndefined();
+    expect(chapterOf("Loose", chapters)).toBeUndefined();
   });
 
   it("falls back to the top folders when the book folder isn't there", () => {
     expect(chaptersOf(root, "Gone").map(({ key }) => key)).toEqual(["/", "Book", "Extras"]);
+  });
+
+  it("knows which notes are in the book", () => {
+    expect(inBook("Book/NPCs/Mira", "Book")).toBe(true);
+    expect(inBook("book/Intro", "Book")).toBe(true);
+    expect(inBook("Bookish/Thing", "Book")).toBe(false);
+    expect(inBook("Extras/Thing", undefined)).toBe(true);
   });
 });
 

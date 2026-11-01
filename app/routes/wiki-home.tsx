@@ -1,8 +1,10 @@
 import { data, Link, useRouteLoaderData } from "react-router";
 import { requireDm } from "~/.server/not-found";
+import { bookFolderFor } from "~/.server/wiki/book";
+import { inBook } from "~/wiki/tome";
 import { TitlePage } from "~/components/wiki/Cover";
 import { TypeBadge } from "~/components/TypeBadge";
-import { servicesContext, viewerContext } from "~/context";
+import { accountContext, servicesContext, viewerContext } from "~/context";
 import type { SearchHit } from "~/wiki/types";
 import { noteUrl } from "~/wiki/urls";
 import type { Route } from "./+types/wiki-home";
@@ -21,19 +23,29 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const { vault, campaignName } = context.get(servicesContext);
   const viewer = context.get(viewerContext);
   const query = new URL(request.url).searchParams.get("q")?.trim() ?? "";
+  // In the tome, with a book folder picked, only notes in the book are found and counted.
+  const bookFolder = await bookFolderFor(
+    vault.current,
+    campaignName,
+    viewer,
+    context.get(accountContext),
+  );
 
-  const results: SearchHit[] = vault.current.search(query, viewer).map(({ note, snippet }) => ({
-    slug: note.slug,
-    title: note.title,
-    type: note.type,
-    snippet,
-  }));
+  const results: SearchHit[] = vault.current
+    .search(query, viewer)
+    .filter(({ note }) => inBook(note.slug, bookFolder))
+    .map(({ note, snippet }) => ({
+      slug: note.slug,
+      title: note.title,
+      type: note.type,
+      snippet,
+    }));
   const book = await campaignName.book();
   const forDm = viewer.role === "dm";
   return {
     query,
     results,
-    noteCount: vault.current.notes(viewer).length,
+    noteCount: vault.current.notes(viewer).filter((note) => inBook(note.slug, bookFolder)).length,
     campaignName: book.name,
     canName: forDm,
     // For the DM's cover form: which top folder is the book, and the ones to choose from.

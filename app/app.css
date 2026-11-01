@@ -1431,13 +1431,6 @@ it over and leaves it down. */
   &[aria-pressed="true"] {
     padding-bottom: 1.55rem;
   }
-  /* Chapters outside the book's folder: set apart, and a shade quieter. */
-  &[data-apart] {
-    margin-left: 1rem;
-  }
-  &[data-outside] {
-    --ribbon: color-mix(in oklab, var(--hue) 35%, #3a3430);
-  }
 }
 
 /* Spells are written on the page like a list of cantrips, not set on cards. */

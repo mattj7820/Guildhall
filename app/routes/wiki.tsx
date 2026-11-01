@@ -1,7 +1,9 @@
 import { Form, Outlet, useSearchParams } from "react-router";
 import { FolderTree } from "~/components/FolderTree";
+import { bookFolderFor } from "~/.server/wiki/book";
 import { Tome } from "~/components/wiki/Tome";
 import { accountContext, servicesContext, viewerContext } from "~/context";
+import { inBook } from "~/wiki/tome";
 import type { Route } from "./+types/wiki";
 
 export async function loader({ context }: Route.LoaderArgs) {
@@ -10,15 +12,23 @@ export async function loader({ context }: Route.LoaderArgs) {
   const account = context.get(accountContext);
   const tome = account.kind === "member" && account.member.wikiLook === "tome";
   const tree = vault.current.folderTree(viewer);
-  // The tome's chapters come from the book's folder, sent only when this viewer has notes in
-  // it: the name of a folder they can't see is never sent.
-  const { folder } = tome ? await campaignName.book() : {};
+  // In the tome with a book folder picked, the book is all there is: nothing outside it is sent.
+  const bookFolder = await bookFolderFor(vault.current, campaignName, viewer, account);
+  const book = tree.folders.find((top) => top.path === bookFolder);
   return {
-    tree,
+    tree: book ? { ...tree, notes: [], folders: [book] } : tree,
     look: tome ? "tome" : "pages",
-    bookFolder: tree.folders.some((top) => top.path === folder) ? folder : undefined,
-    // Detect Magic, in the tome: every tag on the notes this viewer may see.
-    tags: tome ? vault.current.tags(viewer) : [],
+    bookFolder,
+    // Detect Magic, in the tome: every tag on the notes in the book this viewer may see.
+    tags: tome
+      ? vault.current
+          .tags(viewer)
+          .map(({ tag, notes }) => ({
+            tag,
+            notes: notes.filter((n) => inBook(n.slug, bookFolder)),
+          }))
+          .filter(({ notes }) => notes.length > 0)
+      : [],
   };
 }
 

@@ -81,12 +81,16 @@ test.describe("The wiki as a tome", () => {
     await expect(tome.page).toHaveURL("/wiki");
     await expect(tome.page.getByRole("button", { name: /^Open / })).toBeVisible();
 
-    // With a folder chosen as the book, its folders are the chapters and the rest come after.
+    // With a folder chosen as the book, its folders are the chapters and nothing else is in it.
     await api.postForm("/wiki?index", { campaignName: "", bookFolder: "Locations" });
     await tome.goto("/wiki?open");
     await expect(tome.chapter("Front pages")).toBeVisible();
     await expect(tome.chapter("Brindleford")).toBeVisible();
-    await expect(tome.chapter("NPCs")).toHaveAttribute("data-outside", "true");
+    // Everything outside the book is left out of the tome, spells too.
+    await expect(tome.chapter("NPCs")).toHaveCount(0);
+    await tome.mistyStep("stonehand");
+    await expect(tome.status("No note by that name.")).toBeVisible();
+    await tome.page.keyboard.press("Escape");
     await expect(tome.chapter("Secrets")).toHaveCount(0);
     await api.postForm("/wiki?index", { campaignName: "", bookFolder: "" });
 

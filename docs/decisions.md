@@ -1765,16 +1765,19 @@ brackets, a geometric emblem, the name stamped in gilt): no pictures, nothing in
   keyframes are sampled from one ease). The inside of the cover is the left page, so it lands
   seamlessly. Closing is the same reversed. Phones swing the cover away; reduced motion skips it.
 
-## 88. The tome's chapters can start inside a folder: the DM picks which folder is the book
+## 88. The tome can be one campaign's folder: the DM picks which folder is the book
 
 **Date:** 2026-11-01
 
 **Context.** The owner's vault keeps almost everything in one campaign folder, with a few notes
-beside it, so chapters from the vault's top folders gave two ribbons (one for players).
+beside it that aren't part of this campaign, and may later hold a folder for each campaign. With
+chapters from the vault's top folders, the tome had two ribbons (one for players).
 
 **Decision.** On the cover, beside the name, the DM picks which top folder is the book (kept in
-`campaign.json` with the name). Its folders become the chapters, its own notes are Front pages,
-and the vault's other top folders (and any notes at the top, as Other pages) follow, set apart
-and quieter. Without a choice, or for someone with no notes in that folder, the chapters are
-the top folders as before. The folder's name goes to a browser only when its viewer can see
-notes in it, and the DM can only pick one of the vault's top folders.
+`campaign.json` with the name). Its folders become the chapters and its own notes are Front
+pages; everything outside it is left out of the tome: its contents, the spells (search, Misty
+Step, tags, what links here) and the note counts, worked out on the server so none of it is sent.
+Without a choice, or for someone with no notes in that folder, the tome is the whole vault as
+before. The folder's name reaches a browser only when its viewer can see notes in it, and the DM
+can only pick one of the vault's top folders. This is the tome only: a note outside the book
+still opens from a link, and the rest of the app still reads the whole vault.

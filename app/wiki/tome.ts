@@ -13,47 +13,38 @@ export interface Chapter {
   folder: FolderNode;
   /** Only the folder's own notes, not those in its folders. */
   shallow?: boolean;
-  /** Outside the book's folder: set apart after the book's own chapters. */
-  outside?: boolean;
 }
 
-/** The ribbon for the book's own notes, outside any of its chapters. */
+/** The ribbon for notes outside any chapter: the book's own, or those at the vault's top. */
 export const TOP_NOTES = "Front pages";
-/** With a book folder chosen, the ribbon for notes at the top of the vault, outside it. */
-export const OTHER_NOTES = "Other pages";
 
 /**
- * The tome's chapters. Without a book folder (or one this viewer has nothing in), they're the
- * vault's top folders, with any notes at the top first. With one, they're the book's folders,
- * with its own notes first, then everything outside it, set apart.
+ * The tome's chapters. With a book folder (the DM's pick), they're its folders, its own notes
+ * first; nothing outside it is in the book. Without one (or one the tree doesn't have), they're
+ * the vault's top folders, with any notes at the top first.
  */
 export function chaptersOf(root: FolderNode, bookFolder?: string): Chapter[] {
-  const book = bookFolder ? root.folders.find((folder) => folder.path === bookFolder) : undefined;
-  const whole = (folder: FolderNode, outside?: boolean): Chapter => ({
-    key: folder.path,
-    name: folder.name,
-    folder,
-    ...(outside && { outside }),
-  });
-  const own = (folder: FolderNode, name: string, outside?: boolean): Chapter[] =>
-    folder.notes.length === 0
+  const book = (bookFolder && root.folders.find((folder) => folder.path === bookFolder)) || root;
+  const front: Chapter[] =
+    book.notes.length === 0
       ? []
       : [
           {
-            key: `${folder.path}/`,
-            name,
-            folder: { ...folder, folders: [] },
+            key: `${book.path}/`,
+            name: TOP_NOTES,
+            folder: { ...book, folders: [] },
             shallow: true,
-            ...(outside && { outside }),
           },
         ];
-  if (!book) return [...own(root, TOP_NOTES), ...root.folders.map((folder) => whole(folder))];
   return [
-    ...own(book, TOP_NOTES),
-    ...book.folders.map((folder) => whole(folder)),
-    ...root.folders.filter((folder) => folder !== book).map((folder) => whole(folder, true)),
-    ...own(root, OTHER_NOTES, true),
+    ...front,
+    ...book.folders.map((folder) => ({ key: folder.path, name: folder.name, folder })),
   ];
+}
+
+/** Whether a note is in the book: inside its folder, or anywhere when the book is the vault. */
+export function inBook(slug: string, bookFolder: string | undefined): boolean {
+  return !bookFolder || slug.toLowerCase().startsWith(`${bookFolder.toLowerCase()}/`);
 }
 
 /** The note's slug from a wiki URL, or undefined for the wiki's own pages. */
