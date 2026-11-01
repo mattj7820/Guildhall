@@ -6,10 +6,14 @@ import type { Route } from "./+types/wiki";
 
 export function loader({ context }: Route.LoaderArgs) {
   const { vault } = context.get(servicesContext);
+  const viewer = context.get(viewerContext);
   const account = context.get(accountContext);
+  const tome = account.kind === "member" && account.member.wikiLook === "tome";
   return {
-    tree: vault.current.folderTree(context.get(viewerContext)),
-    look: account.kind === "member" ? (account.member.wikiLook ?? "pages") : "pages",
+    tree: vault.current.folderTree(viewer),
+    look: tome ? "tome" : "pages",
+    // Detect Magic, in the tome: every tag on the notes this viewer may see.
+    tags: tome ? vault.current.tags(viewer) : [],
   };
 }
 
@@ -18,7 +22,7 @@ export default function WikiLayout({ loaderData }: Route.ComponentProps) {
 
   if (loaderData.look === "tome") {
     return (
-      <Tome tree={loaderData.tree}>
+      <Tome tree={loaderData.tree} tags={loaderData.tags}>
         <Outlet />
       </Tome>
     );

@@ -31,6 +31,8 @@ interface RenderedBody {
   hasOwnTitle: boolean;
   /** Attachments the note links to or embeds. */
   assets: string[];
+  /** Paths of the notes it links to. */
+  links: string[];
 }
 
 /**
@@ -46,6 +48,7 @@ export class Vault {
   private readonly renderCache = new Map<string, RenderedBody>();
   private readonly searchIndexes = new Map<Role, SearchIndex>();
   private readonly statblockLists = new Map<Role, NoteStatblock[]>();
+  private readonly linksTo = new Map<Role, Map<string, Note[]>>();
   private playerAssets?: ReadonlySet<string>;
 
   static async load(root: string): Promise<Vault> {
@@ -154,6 +157,42 @@ export class Vault {
     return list;
   }
 
+  /** Each tag on notes the viewer may see, with those notes, in order. */
+  tags(viewer: Viewer): { tag: string; notes: NoteSummary[] }[] {
+    const tagged = new Map<string, NoteSummary[]>();
+    for (const note of this.notes(viewer)) {
+      for (const tag of new Set(note.tags)) {
+        tagged.set(tag, [...(tagged.get(tag) ?? []), summarise(note)]);
+      }
+    }
+    return [...tagged]
+      .map(([tag, notes]) => ({
+        tag,
+        notes: notes.sort((a, b) => byName.compare(a.title, b.title)),
+      }))
+      .sort((a, b) => byName.compare(a.tag, b.tag));
+  }
+
+  /**
+   * The notes that link to this one, among those the viewer may see, by what the viewer may read
+   * of them: a link in a DM part or comment doesn't count for players.
+   */
+  linkedFrom(note: Note, viewer: Viewer): NoteSummary[] {
+    let index = this.linksTo.get(viewer.role);
+    if (!index) {
+      index = new Map();
+      for (const from of this.notes(viewer)) {
+        for (const path of new Set(this.renderCollecting(from, viewer.role).links)) {
+          if (path !== from.path) index.set(path, [...(index.get(path) ?? []), from]);
+        }
+      }
+      this.linksTo.set(viewer.role, index);
+    }
+    return (index.get(note.path) ?? [])
+      .map(summarise)
+      .sort((a, b) => byName.compare(a.title, b.title));
+  }
+
   /** Player characters: notes with `type: pc` that the viewer may see. */
   party(viewer: Viewer): Note[] {
     return this.notes(viewer).filter((note) => note.type === "pc");
@@ -213,13 +252,15 @@ export class Vault {
     if (cached) return cached;
 
     const assets: string[] = [];
+    const links: string[] = [];
     const html = renderMarkdown(note.body, {
       role,
       resolve: (target) => this.resolveTarget(target, note.path),
       canSee: (linked) => canView({ role }, linked.visibility),
       onAsset: (path) => assets.push(path),
+      onNoteLink: (linked) => links.push(linked.path),
     });
-    const rendered = { html, assets, hasOwnTitle: /^\s*<h1[\s>]/.test(html) };
+    const rendered = { html, assets, links, hasOwnTitle: /^\s*<h1[\s>]/.test(html) };
     this.renderCache.set(key, rendered);
     return rendered;
   }

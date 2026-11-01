@@ -14,7 +14,8 @@ interface Picture {
  * the left (or, going back, a copy of the new note turns over onto the old one). The back of the
  * leaf is a copy of the left page, so it lands as the page it covers and goes without a trace.
  * The leaf is only a picture: it's drawn in `layer`, hidden from assistive tech, and removed when
- * it lands. With reduced motion there's no leaf at all.
+ * it lands. A note reached by Misty Step forms out of mist instead. With reduced motion there's
+ * neither.
  */
 export function usePageTurn(
   left: RefObject<HTMLElement | null>,
@@ -24,6 +25,8 @@ export function usePageTurn(
   const { pathname } = useLocation();
   const picture = useRef<Picture | null>(null);
   const shownIdx = useRef<unknown>(undefined);
+  // How the next note arrives: on a turned page, or through mist (Misty Step).
+  const arrival = useRef<"turn" | "mist">("turn");
 
   useEffect(() => {
     shownIdx.current = historyIdx();
@@ -54,9 +57,17 @@ export function usePageTurn(
     const idx = historyIdx();
     const direction = turnDirection(shownIdx.current, idx);
     shownIdx.current = idx;
+    const how = arrival.current;
+    arrival.current = "turn";
     if (!before || !page.current || !layer.current || reducedMotion()) return;
-    turn(layer.current, page.current, left.current, before, direction);
+    if (how === "mist") mist(layer.current, page.current);
+    else turn(layer.current, page.current, left.current, before, direction);
   }, [pathname, left, page, layer]);
+
+  /** Has the next note arrive through mist rather than on a turned page. */
+  return function arriveByMist() {
+    arrival.current = "mist";
+  };
 }
 
 function turn(
@@ -102,11 +113,34 @@ function turn(
   });
 }
 
+function mist(layer: HTMLElement, page: HTMLElement) {
+  const top = scrolledInto(page);
+  layer.style.setProperty("--turn-top", `${top}px`);
+  layer.style.setProperty(
+    "--turn-height",
+    `${Math.min(page.getBoundingClientRect().height - top, window.innerHeight)}px`,
+  );
+  const wisps = part("gh-tome-wisps");
+  layer.replaceChildren(wisps);
+  layer.dataset.turn = "mist";
+  // Restart the page's own fade, in case the last step hasn't finished.
+  page.classList.remove("gh-tome-mist");
+  void page.offsetWidth;
+  page.classList.add("gh-tome-mist");
+  wisps.addEventListener("animationend", () => {
+    if (!layer.contains(wisps)) return;
+    layer.replaceChildren();
+    delete layer.dataset.turn;
+    page.classList.remove("gh-tome-mist");
+  });
+}
+
 /** A still copy of a page, with nothing in it that could clash with the real one. */
 function copyOf(element: HTMLElement): HTMLElement {
   const copy = element.cloneNode(true) as HTMLElement;
   copy.querySelector(".gh-tome-turn")?.remove();
   copy.classList.add("gh-tome-still");
+  copy.classList.remove("gh-tome-mist");
   for (const node of [copy, ...copy.querySelectorAll<HTMLElement>("[id]")])
     node.removeAttribute("id");
   return copy;

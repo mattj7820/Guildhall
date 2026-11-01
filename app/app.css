@@ -1329,7 +1329,7 @@ it over and leaves it down. */
   &[aria-current="page"] {
     color: var(--gh-link);
   }
-  &[aria-current="page"] > :first-child::before {
+  &[aria-current="page"] .gh-tome-title::before {
     content: "\2767  ";
     color: var(--gh-link);
   }
@@ -1607,6 +1607,65 @@ it over and leaves it down. */
   .gh-rune-star,
   .gh-rune-ring,
   .gh-tome-left {
+    transition: none;
+  }
+}
+
+/* Detect Magic's tags, glowing like the spells when picked. */
+.gh-tome-aura {
+  border: 1px solid color-mix(in srgb, var(--tome-glow) 50%, transparent);
+  transition:
+    background-color 200ms,
+    box-shadow 200ms;
+  &:hover {
+    box-shadow: 0 0 10px -3px var(--tome-glow);
+  }
+  &[aria-pressed="true"] {
+    background: var(--tome-glow-soft);
+    box-shadow: 0 0 14px -2px var(--tome-glow);
+  }
+}
+
+/*
+ * Misty Step: the note forms out of mist instead of turning in. Wisps drift across the page and
+ * thin out while the note sharpens beneath them.
+ */
+.gh-tome-mist {
+  animation: tome-mist 560ms ease-out;
+}
+.gh-tome-wisps {
+  --wisp: rgb(255 255 255 / 0.85);
+  @variant dark {
+    --wisp: color-mix(in srgb, var(--gh-ink) 30%, transparent);
+  }
+  background:
+    radial-gradient(ellipse 40% 30% at 25% 35%, var(--wisp), transparent 70%),
+    radial-gradient(ellipse 45% 35% at 70% 55%, var(--wisp), transparent 70%),
+    radial-gradient(ellipse 35% 25% at 45% 80%, var(--wisp), transparent 70%);
+  filter: blur(14px);
+  animation: tome-wisps 640ms ease-out both;
+}
+@keyframes tome-mist {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+  }
+  40% {
+    opacity: 0.6;
+  }
+}
+@keyframes tome-wisps {
+  from {
+    opacity: 0.9;
+    transform: translateX(-4%) scale(1.05);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(4%) scale(1.15);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gh-tome-aura {
     transition: none;
   }
 }

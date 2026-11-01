@@ -1,12 +1,21 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { NavLink, useLocation } from "react-router";
-import { chapterOf, chaptersOf, slugOf, type Chapter } from "~/wiki/tome";
-import type { FolderNode } from "~/wiki/types";
+import { NavLink, useLocation, useRouteLoaderData } from "react-router";
+import {
+  chapterOf,
+  chaptersOf,
+  notesIn,
+  slugOf,
+  SPELLS,
+  type Chapter,
+  type SpellId,
+} from "~/wiki/tome";
+import type { FolderNode, NoteSummary } from "~/wiki/types";
 import { noteUrl } from "~/wiki/urls";
-import { LocateObject } from "./LocateObject";
+import { DetectMagic, LocateObject, MistyStep, Scrying } from "./Spells";
 import { usePageTurn } from "./usePageTurn";
 
-type Spell = "locate";
+/** Each spell's input, focused when it's cast from the keyboard. */
+const WORDS: Partial<Record<SpellId, string>> = { locate: "locate-object", misty: "misty-step" };
 
 /**
  * The wiki as an open book, for those who pick it in Settings: the vault's top folders are
@@ -14,20 +23,31 @@ type Spell = "locate";
  * note, which turns like a page. Only a look: the notes, tree and search are the wiki's own.
  * On phones it's one page, with the left page opened from a bar at the bottom.
  */
-export function Tome({ tree, children }: { tree: FolderNode; children: ReactNode }) {
+export function Tome({
+  tree,
+  tags,
+  children,
+}: {
+  tree: FolderNode;
+  tags: { tag: string; notes: NoteSummary[] }[];
+  children: ReactNode;
+}) {
   const { pathname } = useLocation();
   const chapters = useMemo(() => chaptersOf(tree), [tree]);
+  const allNotes = useMemo(() => notesIn(tree), [tree]);
   const openSlug = slugOf(pathname);
+  const openNote = useRouteLoaderData("routes/wiki-note") as
+    { title: string; linkedFrom: NoteSummary[] } | undefined;
   const [chapterKey, setChapterKey] = useState(
     () => chapterOf(openSlug, chapters) ?? chapters[0]?.key,
   );
-  const [spell, setSpell] = useState<Spell | null>(null);
+  const [spell, setSpell] = useState<SpellId | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const left = useRef<HTMLElement>(null);
   const page = useRef<HTMLDivElement>(null);
   const layer = useRef<HTMLDivElement>(null);
-  const spellButton = useRef<HTMLButtonElement>(null);
-  usePageTurn(left, page, layer);
+  const spellButtons = useRef(new Map<SpellId, HTMLButtonElement>());
+  const arriveByMist = usePageTurn(left, page, layer);
 
   // Opening a note shows its chapter, and on phones closes the left page to read it.
   const [shownSlug, setShownSlug] = useState(openSlug);
@@ -39,16 +59,25 @@ export function Tome({ tree, children }: { tree: FolderNode; children: ReactNode
   }
 
   useEffect(() => {
+    function cast(next: SpellId) {
+      setSpell(next);
+      setSheetOpen(true);
+      const words = WORDS[next];
+      if (words) requestAnimationFrame(() => document.getElementById(words)?.focus());
+    }
     function onKey(event: KeyboardEvent) {
-      if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
-      if (event.key === "/" && !isTyping(event.target)) {
+      if (event.defaultPrevented || event.altKey) return;
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
-        setSpell("locate");
-        setSheetOpen(true);
-        document.getElementById("locate-object")?.focus();
+        cast("misty");
+      } else if (event.ctrlKey || event.metaKey) {
+        return;
+      } else if (event.key === "/" && !isTyping(event.target)) {
+        event.preventDefault();
+        cast("locate");
       } else if (event.key === "Escape") {
         setSpell((casting) => {
-          if (casting) requestAnimationFrame(() => spellButton.current?.focus());
+          if (casting) requestAnimationFrame(() => spellButtons.current.get(casting)?.focus());
           return null;
         });
         setSheetOpen(false);
@@ -59,9 +88,8 @@ export function Tome({ tree, children }: { tree: FolderNode; children: ReactNode
   }, []);
 
   const chapter = chapters.find((c) => c.key === chapterKey) ?? chapters[0];
-  const noteCount = countNotes(tree);
 
-  function cast(next: Spell) {
+  function toggle(next: SpellId) {
     setSpell((casting) => (casting === next ? null : next));
     setSheetOpen(true);
   }
@@ -100,27 +128,48 @@ export function Tome({ tree, children }: { tree: FolderNode; children: ReactNode
             className="gh-tome-page gh-tome-left min-w-0 px-6 pt-12 pb-10 md:px-10"
           >
             <p className="text-muted text-xs font-semibold tracking-[0.14em] uppercase">
-              The wiki · {noteCount} {noteCount === 1 ? "note" : "notes"}
+              The wiki · {allNotes.length} {allNotes.length === 1 ? "note" : "notes"}
             </p>
-            <div role="group" aria-label="Spells" className="mt-3 grid grid-cols-2 gap-2">
-              <button
-                ref={spellButton}
-                type="button"
-                aria-pressed={spell === "locate"}
-                onClick={() => cast("locate")}
-                className="gh-tome-spell flex flex-col gap-0.5 rounded-md px-3 py-2 text-left"
-              >
-                <span className="text-link flex justify-between text-[0.68rem] font-semibold tracking-wider uppercase">
-                  <span>Cantrip</span>
-                  <kbd className="border-line text-muted rounded border px-1 font-sans">/</kbd>
-                </span>
-                <span className="font-display text-title text-lg leading-tight">Locate Object</span>
-                <span className="text-muted text-sm">Search every note</span>
-              </button>
+            <div
+              role="group"
+              aria-label="Spells"
+              className="mt-3 grid grid-cols-2 gap-2 max-md:hidden"
+            >
+              {SPELLS.map((s) => (
+                <button
+                  key={s.id}
+                  ref={(button) => {
+                    if (button) spellButtons.current.set(s.id, button);
+                  }}
+                  type="button"
+                  aria-pressed={spell === s.id}
+                  aria-keyshortcuts={s.key?.replace(" ", "+")}
+                  onClick={() => toggle(s.id)}
+                  className="gh-tome-spell flex flex-col gap-0.5 rounded-md px-3 py-2 text-left"
+                >
+                  <span className="text-link flex justify-between gap-2 text-[0.68rem] font-semibold tracking-wider uppercase">
+                    <span>Cantrip</span>
+                    {s.key && (
+                      <kbd className="border-line text-muted rounded border px-1 font-sans">
+                        {s.key}
+                      </kbd>
+                    )}
+                  </span>
+                  <span className="font-display text-title text-lg leading-tight">{s.name}</span>
+                  <span className="text-muted text-sm">{s.does}</span>
+                </button>
+              ))}
             </div>
-            {spell === "locate" ? (
+            {spell ? (
               <>
-                <LocateObject openSlug={openSlug} />
+                {spell === "locate" && <LocateObject openSlug={openSlug} />}
+                {spell === "misty" && (
+                  <MistyStep notes={allNotes} openSlug={openSlug} onStep={arriveByMist} />
+                )}
+                {spell === "detect" && <DetectMagic tags={tags} openSlug={openSlug} />}
+                {spell === "scry" && (
+                  <Scrying note={openSlug ? openNote : undefined} openSlug={openSlug} />
+                )}
                 <button
                   type="button"
                   onClick={() => setSpell(null)}
@@ -144,41 +193,62 @@ export function Tome({ tree, children }: { tree: FolderNode; children: ReactNode
         <span className="gh-tome-clasp max-md:hidden" aria-hidden="true" />
       </div>
       <nav aria-label="Tome" className="gh-tome-dock fixed inset-x-0 bottom-0 z-40 flex md:hidden">
-        <button
-          type="button"
-          aria-pressed={sheetOpen && !spell}
+        <DockButton
+          pressed={sheetOpen && !spell}
+          name="Contents"
+          plain={chapter?.name ?? ""}
           onClick={() => {
             setSpell(null);
-            setSheetOpen((open) => !(open && !spell));
+            setSheetOpen(!(sheetOpen && !spell));
           }}
-          className="flex flex-1 flex-col items-center py-2"
-        >
-          <span className="font-display text-base">Contents</span>
-          <span className="text-[0.62rem] tracking-wider uppercase opacity-75">
-            {chapter?.name}
-          </span>
-        </button>
-        <button
-          type="button"
-          aria-pressed={sheetOpen && spell === "locate"}
-          onClick={() => {
-            if (sheetOpen && spell === "locate") return setSheetOpen(false);
-            setSpell("locate");
-            setSheetOpen(true);
-          }}
-          className="flex flex-1 flex-col items-center py-2"
-        >
-          <span className="font-display text-base">Locate Object</span>
-          <span className="text-[0.62rem] tracking-wider uppercase opacity-75">Search</span>
-        </button>
+        />
+        {SPELLS.map((s) => (
+          <DockButton
+            key={s.id}
+            pressed={sheetOpen && spell === s.id}
+            name={s.short}
+            plain={s.plain}
+            onClick={() => {
+              if (sheetOpen && spell === s.id) return setSheetOpen(false);
+              setSpell(s.id);
+              setSheetOpen(true);
+            }}
+          />
+        ))}
       </nav>
     </div>
   );
 }
 
+function DockButton({
+  pressed,
+  name,
+  plain,
+  onClick,
+}: {
+  pressed: boolean;
+  name: string;
+  plain: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={pressed}
+      onClick={onClick}
+      className="flex min-w-0 flex-1 flex-col items-center rounded-md px-1 py-2"
+    >
+      <span className="font-display max-w-full truncate text-sm leading-tight">{name}</span>
+      <span className="max-w-full truncate text-[0.62rem] tracking-wider uppercase opacity-75">
+        {plain}
+      </span>
+    </button>
+  );
+}
+
 /** The chapter's notes, with its folders as sections. */
 function Contents({ chapter }: { chapter: Chapter }) {
-  const count = countNotes(chapter.folder);
+  const count = notesIn(chapter.folder).length;
   return (
     <div className="mt-6">
       <h2 className="font-display text-title text-2xl">{chapter.name}</h2>
@@ -199,9 +269,9 @@ function FolderEntries({ folder, depth = 0 }: { folder: FolderNode; depth?: numb
             <li key={note.slug} className="border-line border-b border-dotted">
               <NavLink
                 to={noteUrl(note.slug)}
-                className="gh-tome-entry font-prose text-ink flex items-baseline justify-between gap-3 px-1 py-1.5 text-lg"
+                className="gh-tome-entry font-prose flex items-baseline justify-between gap-3 px-1 py-1.5 text-lg"
               >
-                <span className="min-w-0 truncate">{note.title}</span>
+                <span className="gh-tome-title min-w-0 truncate">{note.title}</span>
                 {note.type && (
                   <span className="text-muted shrink-0 text-xs tracking-wide uppercase">
                     {note.type}
@@ -224,10 +294,6 @@ function FolderEntries({ folder, depth = 0 }: { folder: FolderNode; depth?: numb
       ))}
     </>
   );
-}
-
-function countNotes(folder: FolderNode): number {
-  return folder.notes.length + folder.folders.reduce((sum, child) => sum + countNotes(child), 0);
 }
 
 function isTyping(target: EventTarget | null): boolean {

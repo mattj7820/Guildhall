@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { chapterOf, chaptersOf, markQuery, slugOf, TOP_NOTES, turnDirection } from "./tome";
+import {
+  byTitle,
+  chapterOf,
+  chaptersOf,
+  markQuery,
+  notesIn,
+  slugOf,
+  TOP_NOTES,
+  turnDirection,
+} from "./tome";
 import type { FolderNode } from "./types";
 
 const note = (slug: string) => ({ id: slug, slug, title: slug.split("/").pop()! });
@@ -76,5 +85,29 @@ describe("markQuery", () => {
       { text: "(5", marked: true },
       { text: " gp)", marked: false },
     ]);
+  });
+});
+
+describe("byTitle", () => {
+  const notes = ["Old Mill", "Mill Pond", "Miller", "Brindleford"].map(note);
+
+  it("ranks exact names, then starts, then words, then anywhere", () => {
+    expect(byTitle(notes, " mill ").map((n) => n.title)).toEqual([
+      "Mill Pond",
+      "Miller",
+      "Old Mill",
+    ]);
+    expect(byTitle(notes, "ford").map((n) => n.title)).toEqual(["Brindleford"]);
+  });
+
+  it("lists every note by name when nothing's typed, up to the limit", () => {
+    expect(byTitle(notes, "", 2).map((n) => n.title)).toEqual(["Brindleford", "Mill Pond"]);
+  });
+});
+
+describe("notesIn", () => {
+  it("gathers the notes of a folder and its folders", () => {
+    const root = { ...folder("", ["Home"]), folders: [folder("NPCs", ["NPCs/Mira"])] };
+    expect(notesIn(root).map((n) => n.slug)).toEqual(["Home", "NPCs/Mira"]);
   });
 });
