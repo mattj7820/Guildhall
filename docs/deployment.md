@@ -106,7 +106,8 @@ and dev sign-ins are refused from outside the container anyway.
 ## Backups
 
 The data volume is everything Guildhall knows that the vault doesn't: members, maps, fog,
-tokens, fights and character sheets. The vault itself is safe in Google Drive. The data is backed
+tokens, fights and character sheets. The first campaign's files are at the top of it; each later
+campaign's are in `campaigns/<id>/`. The vault itself is safe in Google Drive. The data is backed
 up with a Dokploy **Volume Backup** to an S3-compatible bucket in an account the DM owns (we use
 Cloudflare R2's free tier), so a lost or rebuilt server doesn't lose the campaign.
 

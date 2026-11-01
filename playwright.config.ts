@@ -29,7 +29,15 @@ export default defineConfig({
     {
       name: "chromium",
       dependencies: ["sign-in"],
+      testIgnore: /campaigns.spec.ts/,
       // SIGNED_IN.dm in tests/e2e/support/sign-in.ts (not imported: this file is built apart).
+      use: { ...devices["Desktop Chrome"], storageState: "test-results/.auth/dm.json" },
+    },
+    // Switching campaigns changes the app for everyone, so it runs alone, after everything else.
+    {
+      name: "campaigns",
+      dependencies: ["chromium"],
+      testMatch: /campaigns.spec.ts/,
       use: { ...devices["Desktop Chrome"], storageState: "test-results/.auth/dm.json" },
     },
   ],

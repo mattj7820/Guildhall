@@ -1781,3 +1781,37 @@ Without a choice, or for someone with no notes in that folder, the tome is the w
 before. The folder's name reaches a browser only when its viewer can see notes in it, and the DM
 can only pick one of the vault's top folders. This is the tome only: a note outside the book
 still opens from a link, and the rest of the app still reads the whole vault.
+
+## 89. One campaign at a time: the whole app is the running campaign's folder
+
+**Date:** 2026-11-01
+
+**Context.** The owner's vault has a folder for the campaign and a few notes beside it that aren't
+part of it, and will gain a folder for each later campaign. Decision 88 left only the tome to the
+campaign's folder. The investigation is `docs/spikes/multi-campaign.md`.
+
+**Decision.** The DM keeps campaigns (a name and one of the vault's top folders each) on a
+DM-only Campaigns page in Settings, and runs one at a time. The owner chose this over campaigns
+side by side with their own players, which would put a campaign into every visibility decision.
+
+- **The whole app is the running campaign.** The vault is read as the campaign's folder only:
+  the snapshot is filtered, so paths, slugs, entity IDs and stored links stay as they are (re-rooting
+  at the folder would have changed every stored ID). Every reader follows, with nothing in the
+  routes: the wiki, search, the party, statblocks, spell and item notes, map images, NPCs' notes and
+  pictures. A link to a note outside is plain text, as for a hidden note.
+- **Each campaign's own data:** maps, fog, tokens, the fight, prepared encounters, sheets and the
+  next session. The first campaign's stay at the top of the data folder, where they always were,
+  so an older image still finds them after a rollback; later campaigns' are in
+  `campaigns/<id>/`. Members, dice, sign-ins and the image cache are everyone's.
+- **`campaign.json` keeps the first campaign's name and folder where they were** (an older image
+  reads them, and would drop the others on writing, as rollbacks do), with the others and which
+  one runs beside them. Nothing in it is ever refused.
+- **Switching is in place:** the services get the campaign's vault and data, and every page with
+  a live connection reloads (a close code of its own); other pages are the new campaign on their
+  next request. Before running a campaign in a folder, the DM sees what its stored data keeps
+  outside it (maps' images and notes, tokens' and sheets' notes), worked out against the whole
+  vault. Nothing is deleted; it comes back if the folder changes back.
+- **Players see only the running campaign,** nothing of the others, and visibility is unchanged.
+- **The sound board** is `SOUNDS_FOLDER` inside the campaign's folder, so each has its own.
+- **The tome's book is the campaign's folder** (decision 88's picker on the cover goes); the cover
+  names the running campaign. A new campaign starts empty. Note URLs keep the folder's name.

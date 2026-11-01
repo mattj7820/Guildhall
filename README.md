@@ -218,6 +218,12 @@ _The same fight as a player sees it: only what the DM has revealed, with their s
   section under a `## DM` heading, a `> [!dm]` callout, or an Obsidian `%%comment%%`. Players never
   receive them (not on the page, in search or in statblocks), while the DM sees them boxed as
   "DM only". The DM can preview the players' view at any time.
+- **Campaigns, one at a time.** Each campaign is a folder of the vault. The DM picks which one
+  Guildhall runs, on a Campaigns page in Settings, and the whole app is that folder: anything
+  beside it in the vault is left out, and its maps, fog, tokens, fight, sheets and next session
+  are its own. The others wait as they were; players only ever see the running one. Before
+  running a campaign in a folder, the DM sees what it keeps outside it. The sound board is the
+  `SOUNDS_FOLDER` inside the campaign's folder.
 - **Sign in with Discord.** Everyone signs in with their Discord account; newcomers wait until the
   DM lets them in on the Members page and says which player they are, which links them to their
   characters. Removing someone signs them out everywhere. Only the Discord name is asked for.

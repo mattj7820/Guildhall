@@ -1,6 +1,9 @@
 # Spike: one campaign folder, and then several campaigns
 
-**Date:** 2026-11-01 · **Prototype:** none; this is a read of the code, nothing built yet
+**Date:** 2026-11-01 · **Prototype:** none; the owner chose option (a), built as decision 89
+
+> Kept as the research behind decision 89. Where this write-up and the code differ, the code and
+> decision 89 are current.
 
 **Question:** decision 88 scoped only the tome to one campaign folder. What would it take to
 scope the whole app to that folder, and then to support more than one campaign?

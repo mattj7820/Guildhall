@@ -1,5 +1,6 @@
 import { test as base, type BrowserContext } from "@playwright/test";
 import { AppPage } from "../pages/app-page";
+import { Campaigns } from "../pages/campaigns";
 import { Characters } from "../pages/characters";
 import { Combat, Prepared } from "../pages/combat";
 import { DiceCollection } from "../pages/dice-collection";
@@ -26,6 +27,7 @@ export class App extends AppPage {
   readonly maps = new Maps(this.page);
   readonly members = new Members(this.page);
   readonly settings = new Settings(this.page);
+  readonly campaigns = new Campaigns(this.page);
   readonly diceCollection = new DiceCollection(this.page);
   readonly signIn = new SignIn(this.page);
 }
