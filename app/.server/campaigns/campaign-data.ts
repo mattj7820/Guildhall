@@ -1,5 +1,6 @@
 import path from "node:path";
 import { FIRST_CAMPAIGN, type Campaign } from "~/campaign/campaigns";
+import { CampaignBoard } from "../board/board";
 import { Characters } from "../characters/characters";
 import { CurrentFight } from "../combat/current-fight";
 import { PreparedEncounters } from "../combat/prepared-encounters";
@@ -20,6 +21,7 @@ export interface CampaignData {
   fogs: MapFogs;
   tokens: MapTokens;
   characters: Characters;
+  board: CampaignBoard;
 }
 
 /**
@@ -40,5 +42,6 @@ export function openCampaignData(dataPath: string, campaign: Pick<Campaign, "id"
     fogs: MapFogs.inFolder(folder),
     tokens: MapTokens.inFolder(folder),
     characters: Characters.inFolder(folder),
+    board: CampaignBoard.inFolder(folder),
   };
 }

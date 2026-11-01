@@ -5,7 +5,7 @@ import { LiveVault } from "../vault/live-vault";
 import { openCampaignData } from "./campaign-data";
 
 type Running = Omit<Services, "live"> & {
-  live: Pick<Services["live"], "allMapsChanged" | "campaignChanged">;
+  live: Pick<Services["live"], "allMapsChanged" | "boardChanged" | "campaignChanged">;
 };
 
 /** Keeps what's made from the vault up to date as it changes. */
@@ -13,6 +13,8 @@ export function watchVault(services: Running): void {
   // A map's notes and image come from the vault, so any open map may look different now.
   services.vault.onReload(() => {
     void services.live.allMapsChanged();
+    // Pinned notes' names, and whether players may see them, come from the vault.
+    void services.live.boardChanged();
     void prepareThumbnails(services);
   });
   void prepareThumbnails(services);

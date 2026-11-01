@@ -3,6 +3,7 @@
  * server sends `ServerMessage`s, each one built on the server for the viewer who gets it.
  */
 import { z } from "zod";
+import type { BoardView } from "~/board/types";
 import type { FightView } from "~/combat/fight";
 import type { StuntEvent } from "~/maps/stunts";
 import type { MapTokensView, TokenId } from "~/maps/tokens/types";
@@ -16,6 +17,9 @@ export const FIGHT_ROOM = "fight";
 
 /** The room for who's here now: the front page's party. */
 export const PARTY_ROOM = "party";
+
+/** The room for the notice board. */
+export const BOARD_ROOM = "board";
 
 /** Who has Guildhall open now: the DM, and party members (by name) whose player does. */
 export interface Presence {
@@ -61,6 +65,8 @@ export type ServerMessage =
   | { type: "fight"; map: typeof FIGHT_ROOM; fight: FightView | null }
   /** Who's here now, as this viewer knows the party, whenever that changes. */
   | { type: "presence"; map: typeof PARTY_ROOM; online: Presence }
+  /** The notice board as this viewer may see it, whenever that changes. */
+  | { type: "board"; map: typeof BOARD_ROOM; board: BoardView }
   /** The DM played a stunt or a sound on the map: play it now (it isn't kept). */
   | { type: "stunt"; map: MapId; stunt: StuntEvent };
 
@@ -80,6 +86,8 @@ export function stateKey(message: ServerMessage): string | undefined {
       return "fight";
     case "presence":
       return "presence";
+    case "board":
+      return "board";
     default:
       return undefined;
   }

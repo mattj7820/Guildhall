@@ -58,8 +58,9 @@ async function createServices(): Promise<Services> {
       }),
     }),
   };
+  const live = new Live(services);
   // One object, changed in place when the DM switches campaigns (see runCampaign).
-  const running: Services = Object.assign(services, { live: new Live(services) });
+  const running: Services = Object.assign(services, { live });
   watchVault(running);
   return running;
 }

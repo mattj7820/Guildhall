@@ -24,7 +24,7 @@ import { noteUrl } from "~/wiki/urls";
  */
 export async function frontPage(services: Services, viewer: Viewer): Promise<FrontPage> {
   const vault = services.vault.current;
-  const [banner, characters, fight, nextSession, online] = await Promise.all([
+  const [banner, characters, fight, nextSession, online, members] = await Promise.all([
     // A data file that can't be read just leaves the banner out; its own page says why.
     loadBanner(services, viewer).catch((error: unknown) => {
       if (error instanceof DataFileError) return undefined;
@@ -34,8 +34,11 @@ export async function frontPage(services: Services, viewer: Viewer): Promise<Fro
     services.fight.get(),
     services.nextSession.get(),
     presenceFor(services, viewer, services.live.online()),
+    viewer.role === "dm" ? services.members.list() : [],
   ]);
-  const party = partyCards(vault, characters, viewer).cards.map((card): PartyMember => ({
+  const { cards } = partyCards(vault, characters, viewer);
+  const own = viewer.role === "player" && cards.find((card) => card.kind === "pc" && card.canOpen);
+  const party = cards.map((card): PartyMember => ({
     name: card.name,
     kind: card.kind,
     ...(card.portraitUrl && { portraitUrl: card.portraitUrl }),
@@ -51,6 +54,10 @@ export async function frontPage(services: Services, viewer: Viewer): Promise<Fro
     ...(session && { latestSession: { title: session.title, url: noteUrl(session.slug) } }),
     ...(nextSession && { nextSession }),
     fight: fight ? fightSummary(await fightView(services, fight, viewer)) : null,
+    ...(own && {
+      you: { name: own.name, ...(own.portraitUrl && { portraitUrl: own.portraitUrl }) },
+    }),
+    waiting: members.filter((member) => member.status === "pending").length,
   };
 }
 

@@ -1,11 +1,11 @@
 # Spike: one campaign folder, and then several campaigns
 
-**Date:** 2026-11-01 · **Prototype:** none; the owner chose option (a), built as decision 89
+**Date:** 2026-11-01 · **Prototype:** none; the owner chose option (a), built as decision 91
 
-> Kept as the research behind decision 89. Where this write-up and the code differ, the code and
-> decision 89 are current.
+> Kept as the research behind decision 91. Where this write-up and the code differ, the code and
+> decision 91 are current.
 
-**Question:** decision 88 scoped only the tome to one campaign folder. What would it take to
+**Question:** decision 89 scoped only the tome to one campaign folder. What would it take to
 scope the whole app to that folder, and then to support more than one campaign?
 
 **Answer:** scoping the whole app is small, because every vault read goes through one `Vault`
@@ -132,7 +132,7 @@ from it later by making the scoping per request instead of per server.
 
 ## Slice plan
 
-One green commit per step, on a branch from the tome's (decision 88 is folded in):
+One green commit per step, on a branch from the tome's (decision 89 is folded in):
 
 1. **A scoped vault.** `Vault.load`/`LiveVault.open` take an optional folder; the snapshot keeps
    only notes and files inside it, with vault-relative paths, so slugs, IDs and links stay as
@@ -151,5 +151,5 @@ One green commit per step, on a branch from the tome's (decision 88 is folded in
 5. **The DM's Campaigns.** A DM-only section (in Settings) to add a campaign (name and a top
    folder), rename it and make one active, with a check before switching that lists what stored
    data points outside the new folder. Players see nothing of it.
-6. **E2E and docs.** A spec for switching (the DM and a player's open page), decision 89,
+6. **E2E and docs.** A spec for switching (the DM and a player's open page), decision 91,
    CLAUDE.md's architecture map and built-so-far line, README and `docs/deployment.md`.

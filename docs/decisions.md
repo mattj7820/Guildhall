@@ -1721,7 +1721,39 @@ bubbles) and `symbols` (token icons, from game-icons.net, in place of a d20's 20
 - **Seven fancy dice** (two rare, three very rare, two legendary) have plain working labels and
   functional descriptions, for the DM to rename.
 
-## 86. The wiki as a tome: an optional look, each member's own
+## 86. The front page is a town map, its art made in the mapgen repo and kept in Guildhall
+
+**Date:** 2026-11-01
+
+**Context.** The owner wanted the UI to feel like a D&D world through its design, and picked a
+town map for the front page from the prototypes: a walled guildhall where each module is a place
+and the viewer's token walks dashed paths between them. Hand-drawn SVG scenery was the prototype;
+the art wanted more than that.
+
+**Decision.** The front page is the town map (`TownMap`), with a plain panel beside it listing
+the same things, so nothing is only found by exploring. It replaces decision 83's banner and
+module cards; what the banner showed is in the panel or drawn in place (the fight in the War
+Room, the party's map in the Chart Tower, the next session on the notice board, who else is here
+in the hall).
+
+- **Coming back, the token walks home** from the place of the page the viewer was on, however
+  they got there: every page records its place (`placeOf`) in the tab's session storage. The top
+  bar and links switch page at once; the walk out plays only for clicks on the map.
+- **Walks take the shortest way along the drawn corridors** (`sharedWay`: back to where two
+  routes part, then out), so a click mid-walk turns the token round rather than sending it home
+  first.
+- **The scenery is a picture per theme**, made in the owner's mapgen repo from Guildhall's
+  geometry (`app/home/town.ts`, and the prompt in `docs/prototypes/hub-map-mapgen-prompt.md`),
+  and drawn as a CSS background so a browser only fetches its own theme's. The app draws only
+  what's interactive or live: labels, people, paths, outlines and the campaign's markers.
+- **The images are committed to Guildhall** (`public/town/`, WebP, under 200 KB each): they're
+  the app's own UI, not campaign content, so they belong with the code and its history, not in
+  the vault or the data folder. They're the first generated images in the repo. Masters stay in
+  the mapgen repo. They hold no text and no lore.
+- **Geometry and art change together**: moving a place or a path in `town.ts` means new art, and
+  the art's layout comes only from `town.ts`.
+
+## 87. The wiki as a tome: an optional look, each member's own
 
 **Date:** 2026-11-01
 
@@ -1746,7 +1778,7 @@ players). Both are sent only to tome readers.
   no turn or mist.
 - **Phones get one page,** with the left page as a sheet opened from a bar of spells.
 
-## 87. The tome closes: a cover as the wiki's front page, with the campaign's name
+## 88. The tome closes: a cover as the wiki's front page, with the campaign's name
 
 **Date:** 2026-11-01
 
@@ -1765,7 +1797,7 @@ brackets, a geometric emblem, the name stamped in gilt): no pictures, nothing in
   keyframes are sampled from one ease). The inside of the cover is the left page, so it lands
   seamlessly. Closing is the same reversed. Phones swing the cover away; reduced motion skips it.
 
-## 88. The tome can be one campaign's folder: the DM picks which folder is the book
+## 89. The tome can be one campaign's folder: the DM picks which folder is the book
 
 **Date:** 2026-11-01
 
@@ -1782,12 +1814,51 @@ before. The folder's name reaches a browser only when its viewer can see notes i
 can only pick one of the vault's top folders. This is the tome only: a note outside the book
 still opens from a link, and the rest of the app still reads the whole vault.
 
-## 89. One campaign at a time: the whole app is the running campaign's folder
+## 90. The notice board is a corkboard: the sessions, the DM's pins, players' short cards, string
+
+**Date:** 2026-11-01
+
+**Context.** The town map's notice board showed the next session's countdown but led nowhere: it
+jumped to the panel beside the map. The owner first asked for a Sessions page, then wanted the
+board to be more than sessions: hints from the DM, things that mattered in past sessions, the
+players' own short notes, and string to tie them together, which is what Guildhall is for
+(interconnection).
+
+**Decision.** The board is `/board`, one for the campaign, and the town map's notice board leads
+there (`placeOf` stands the token at it).
+
+- **The sessions:** the next session (set by the DM there too, through the same action as
+  the front page, `setNextSession`) and the `type: session` notes the viewer may read
+  (`vault.notes(viewer)`), newest first by their titles, as the front page's "Last time" orders
+  them (`newestFirst`). Titles and links only; nothing from a note's body.
+- **A free corkboard** (the owner tried a prototype first and kept it): cards dragged anywhere,
+  in fractions of a board of one shape (16:10), with the same cards as a list on phones. The two
+  sessions cards are always there, and only the DM moves them. Each theme dresses the board
+  (cork, timber, slate) on the `gh-board` hooks.
+- **The DM pins vault notes** by entity ID, with an optional caption, DM only until shown. The
+  DM's own short cards start DM only too. Players see a pin only once it's shown and only if
+  they may read its note; the title and link are the note's as they see it.
+- **Players write short cards** (up to 140 characters), shown to the party at once and signed
+  with their player name. They're kept in the data folder (`board.json`) like sheets, never the
+  vault, which keeps the player-notes spike's reasons for not writing there. Only text: no
+  wikilinks, so nothing a player types can probe for hidden notes. A player without a character
+  may look but not put anything up.
+- **String** ties two cards, optionally labelled: gold for the DM's, red for the party's. Each
+  person moves, takes down and cuts only their own; the DM anything. A string is sent only to
+  those who see both its cards, so it never gives a hidden card away, and a player can't tie to
+  a card they can't see (refused like a missing one).
+- **Like tokens**, every change is a `BoardAction` applied to what's stored now, and everyone's
+  copy is built for them on the server (`boardForViewer`) and pushed live to the board's room.
+  Stored data is read leniently: a card that can't be read is left out, never the file refused.
+- **No written recaps from Guildhall:** cards about past sessions are the DM's own pins and
+  captions.
+
+## 91. One campaign at a time: the whole app is the running campaign's folder
 
 **Date:** 2026-11-01
 
 **Context.** The owner's vault has a folder for the campaign and a few notes beside it that aren't
-part of it, and will gain a folder for each later campaign. Decision 88 left only the tome to the
+part of it, and will gain a folder for each later campaign. Decision 89 left only the tome to the
 campaign's folder. The investigation is `docs/spikes/multi-campaign.md`.
 
 **Decision.** The DM keeps campaigns (a name and one of the vault's top folders each) on a
@@ -1799,8 +1870,8 @@ side by side with their own players, which would put a campaign into every visib
   at the folder would have changed every stored ID). Every reader follows, with nothing in the
   routes: the wiki, search, the party, statblocks, spell and item notes, map images, NPCs' notes and
   pictures. A link to a note outside is plain text, as for a hidden note.
-- **Each campaign's own data:** maps, fog, tokens, the fight, prepared encounters, sheets and the
-  next session. The first campaign's stay at the top of the data folder, where they always were,
+- **Each campaign's own data:** maps, fog, tokens, the fight, prepared encounters, sheets, the
+  next session and the notice board. The first campaign's stay at the top of the data folder, where they always were,
   so an older image still finds them after a rollback; later campaigns' are in
   `campaigns/<id>/`. Members, dice, sign-ins and the image cache are everyone's.
 - **`campaign.json` keeps the first campaign's name and folder where they were** (an older image
@@ -1813,5 +1884,5 @@ side by side with their own players, which would put a campaign into every visib
   vault. Nothing is deleted; it comes back if the folder changes back.
 - **Players see only the running campaign,** nothing of the others, and visibility is unchanged.
 - **The sound board** is `SOUNDS_FOLDER` inside the campaign's folder, so each has its own.
-- **The tome's book is the campaign's folder** (decision 88's picker on the cover goes); the cover
+- **The tome's book is the campaign's folder** (decision 89's picker on the cover goes); the cover
   names the running campaign. A new campaign starts empty. Note URLs keep the folder's name.

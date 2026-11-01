@@ -3,7 +3,7 @@ import { DM_VIEWER, type Viewer } from "~/campaign/types";
 import { fightForViewer, type Fight } from "~/combat/fight";
 import { encounter, inCombat, monster, player } from "~/combat/test-builders";
 import type { Whereabouts } from "~/maps/tokens/types";
-import { bannerMap, fightSummary, latestSession } from "./front-page";
+import { bannerMap, fightSummary, latestSession, newestFirst } from "./front-page";
 
 const at = (name: string, map?: string, theirs = false): Whereabouts => ({
   name,
@@ -75,5 +75,16 @@ describe("latestSession", () => {
 
   it("is nothing without session notes", () => {
     expect(latestSession([])).toBeUndefined();
+  });
+});
+
+describe("newestFirst", () => {
+  it("puts the highest-numbered session first", () => {
+    const sessions = ["Session 2", "Session 10", "Session 9"].map((title) => ({ title }));
+    expect(newestFirst(sessions).map((session) => session.title)).toEqual([
+      "Session 10",
+      "Session 9",
+      "Session 2",
+    ]);
   });
 });

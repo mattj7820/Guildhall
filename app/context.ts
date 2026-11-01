@@ -1,6 +1,7 @@
 import { createContext, type Cookie } from "react-router";
 import type { Account } from "~/.server/auth/account";
 import type { DiscordAuth } from "~/.server/auth/discord";
+import type { CampaignBoard } from "~/.server/board/board";
 import type { Characters } from "~/.server/characters/characters";
 import type { Sessions } from "~/.server/auth/sessions";
 import type { Live } from "~/.server/live/live";
@@ -28,6 +29,8 @@ export interface Services {
   nextSession: NextSession;
   /** The DM's campaigns, and which one the app is running. */
   campaigns: Campaigns;
+  /** The notice board's cards and string, kept in the campaign's data. */
+  board: CampaignBoard;
   /** Combat encounters prepared ahead of a session, kept in the data folder. */
   preparedEncounters: PreparedEncounters;
   /** Interactive maps and their areas, kept in the data folder. */

@@ -17,7 +17,7 @@ beforeEach(async () => {
   services = {
     config: { vaultPath: FIXTURE_VAULT, dataPath },
     vault: await LiveVault.open(FIXTURE_VAULT, { watchForChanges: false }),
-    live: { allMapsChanged: vi.fn(), campaignChanged: vi.fn() },
+    live: { allMapsChanged: vi.fn(), boardChanged: vi.fn(), campaignChanged: vi.fn() },
     ...openCampaignData(dataPath, { id: FIRST_CAMPAIGN }),
   } as unknown as Services;
 });

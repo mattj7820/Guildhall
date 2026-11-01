@@ -4,7 +4,14 @@ import type { Viewer } from "~/campaign/types";
 import { canView } from "~/campaign/visibility";
 import type { Character } from "~/characters/types";
 import type { Services } from "~/context";
-import { FIGHT_ROOM, PARTY_ROOM, type ClientMessage, type ServerMessage } from "~/live/messages";
+import {
+  BOARD_ROOM,
+  FIGHT_ROOM,
+  PARTY_ROOM,
+  type ClientMessage,
+  type ServerMessage,
+} from "~/live/messages";
+import { boardView } from "../board/board-page";
 import type { FogMask } from "~/maps/fog/types";
 import { fightAllowsMove, type Fight } from "~/combat/fight";
 import { canMoveToken } from "~/maps/tokens/permissions";
@@ -50,6 +57,7 @@ export class Live {
       join: async (map, viewer) => {
         if (map === FIGHT_ROOM) return [await fightState(services, viewer)];
         if (map === PARTY_ROOM) return [await this.presenceState(viewer)];
+        if (map === BOARD_ROOM) return [await this.boardState(viewer)];
         const state = await mapState(services, map, viewer);
         if (state.type === "gone") return [state];
         const tokens = await tokensState(services, map, viewer);
@@ -96,6 +104,15 @@ export class Live {
         .filter((map) => map !== FIGHT_ROOM)
         .map((map) => this.publishOnMap(map, (viewer) => tokensState(this.services, map, viewer))),
     );
+  }
+
+  /** The notice board changed: everyone with it open hears it as they may see it. */
+  boardChanged(): Promise<void> {
+    return this.hub.publish(BOARD_ROOM, (viewer) => this.boardState(viewer));
+  }
+
+  private async boardState(viewer: Viewer): Promise<ServerMessage> {
+    return { type: "board", map: BOARD_ROOM, board: await boardView(this.services, viewer) };
   }
 
   /** Who has Guildhall open now, for a page's first look before its connection says. */
