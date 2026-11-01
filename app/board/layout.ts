@@ -4,6 +4,8 @@
  */
 import type { BoardCard, BoardPoint } from "./types";
 
+type Placed = BoardPoint & Pick<BoardCard, "kind">;
+
 /** The board's width over its height. */
 export const BOARD_ASPECT = 16 / 10;
 
@@ -19,7 +21,7 @@ export function clampToBoard(point: BoardPoint, width: number): BoardPoint {
 }
 
 /** Where a card's pin is, which string ties to: the middle of its top edge. */
-export function pinOf(card: BoardCard): BoardPoint {
+export function pinOf(card: Placed): BoardPoint {
   return { x: card.x + cardWidth(card) / 2, y: card.y + 0.012 };
 }
 

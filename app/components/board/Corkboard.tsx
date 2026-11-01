@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { Link } from "react-router";
+import { MOST_OF_A_CARD, MOST_OF_A_LABEL } from "~/board/actions";
 import {
   BOARD_ASPECT,
   cardWidth,
@@ -16,78 +17,43 @@ import {
   stringPath,
   tiltOf,
 } from "~/board/layout";
-import type { BoardAuthor, BoardCard, BoardPage, BoardString } from "~/board/types";
+import type { BoardPage, BoardPoint, CardView } from "~/board/types";
+import { useBoard } from "~/board/useBoard";
 import { NextSession } from "~/components/home/NextSession";
 import { NotePicker } from "~/components/maps/NotePicker";
 import { buttonClass, inputClass, primaryButtonClass } from "~/components/styles";
 import { newId } from "~/shared/ids";
-import { noteUrl } from "~/wiki/urls";
-
-// Prototype: everything here lives in this tab until the board is stored.
-
-/** Short cards stay short. */
-const MOST_OF_A_CARD = 140;
 
 type Tool = "none" | "pin" | "write" | "tie";
 
 /**
  * The notice board as a corkboard: cards dragged anywhere, the DM's pinned notes, everyone's short
- * cards, and string between them. Phones get the same as a list.
+ * cards, and string between them, saved and shared live. Phones get the same as a list.
  */
-export function Corkboard({
-  board,
-  forDm,
-  you,
-}: {
-  board: BoardPage;
-  forDm: boolean;
-  you: string;
-}) {
-  const me: BoardAuthor = forDm ? { dm: true } : { dm: false, name: you };
-  const [cards, setCards] = useState<BoardCard[]>(() => [
-    { id: "next", kind: "next", x: 0.03, y: 0.05 },
-    { id: "sessions", kind: "sessions", x: 0.04, y: 0.42 },
-  ]);
-  const [strings, setStrings] = useState<BoardString[]>([]);
+export function Corkboard({ page, forDm }: { page: BoardPage; forDm: boolean }) {
+  const { board, error, send, drag, drop } = useBoard(page.board);
   const [tool, setTool] = useState<Tool>("none");
   const [tyingFrom, setTyingFrom] = useState<string>();
   const [label, setLabel] = useState("");
   const surface = useRef<HTMLDivElement>(null);
 
-  const byId = new Map(cards.map((card) => [card.id, card]));
-  const mine = (by: BoardAuthor) => forDm || (!by.dm && by.name === you);
+  const byId = new Map(board.cards.map((card) => [card.id, card]));
 
-  function place(id: string, at: { x: number; y: number }) {
-    setCards((all) =>
-      all.map((card) =>
-        card.id === id ? { ...card, ...clampToBoard(at, cardWidth(card)) } : card,
-      ),
-    );
-  }
-
-  function add(card: BoardCard) {
-    setCards((all) => [...all, card]);
-    setTool("none");
-  }
-
-  function remove(id: string) {
-    setCards((all) => all.filter((card) => card.id !== id));
-    setStrings((all) => all.filter((string) => string.from !== id && string.to !== id));
+  async function put(action: Parameters<typeof send>[0]) {
+    if (await send(action)) setTool("none");
   }
 
   function pick(id: string) {
     if (!tyingFrom) return setTyingFrom(id);
     if (tyingFrom !== id) {
-      setStrings((all) => [
-        ...all,
-        {
-          id: newId(),
-          from: tyingFrom,
-          to: id,
-          by: me,
-          ...(label.trim() && { label: label.trim() }),
-        },
-      ]);
+      const text = label.trim();
+      void send({
+        type: "tie",
+        id: newId(),
+        from: tyingFrom,
+        to: id,
+        ...(text && { label: text }),
+      });
     }
     setTyingFrom(undefined);
     setLabel("");
@@ -99,35 +65,30 @@ export function Corkboard({
   }
 
   /** Somewhere free-ish for a new card: across the middle of the board, a step on each time. */
-  const fresh = () => {
-    const step = cards.length - 2;
+  const fresh = (): BoardPoint => {
+    const step = board.cards.length - 2;
     return { x: 0.35 + (step % 3) * 0.2, y: 0.12 + (Math.floor(step / 3) % 4) * 0.2 };
   };
 
-  function content(card: BoardCard): ReactNode {
+  function content(card: CardView): ReactNode {
     switch (card.kind) {
       case "next":
-        return <NextSession at={board.nextSession} forDm={forDm} />;
+        return <NextSession at={page.nextSession} forDm={forDm} />;
       case "sessions":
-        return <SessionsCard sessions={board.sessions} />;
-      case "note": {
-        const note = board.notes.find((each) => each.id === card.noteId);
+        return <SessionsCard sessions={page.sessions} />;
+      case "note":
         return (
           <>
-            {note ? (
-              <Link
-                to={noteUrl(note.slug)}
-                className="font-display text-lg text-link hover:underline"
-              >
-                {note.title}
+            {card.note ? (
+              <Link to={card.note.url} className="font-display text-lg text-link hover:underline">
+                {card.note.title}
               </Link>
             ) : (
-              <span className="text-muted">A note that's gone</span>
+              <span className="text-muted">A note that&rsquo;s gone</span>
             )}
             {card.caption && <p className="mt-1 text-sm">{card.caption}</p>}
           </>
         );
-      }
       case "text":
         return (
           <>
@@ -138,49 +99,77 @@ export function Corkboard({
     }
   }
 
-  return (
-    <div className="mt-4">
-      <div role="toolbar" aria-label="Board tools" className="flex flex-wrap items-center gap-2">
-        {forDm && (
+  function tools(card: CardView): ReactNode {
+    if (!card.mine || (card.kind !== "note" && card.kind !== "text")) return null;
+    return (
+      <>
+        {card.by.dm && (
           <button
             type="button"
-            className={buttonClass}
-            aria-pressed={tool === "pin"}
-            onClick={() => choose("pin")}
+            className="hover:underline"
+            onClick={() => void send({ type: "show", id: card.id, shown: !card.shown })}
           >
-            Pin a note
+            {card.shown ? "Hide from players" : "Show players"}
           </button>
         )}
         <button
           type="button"
-          className={buttonClass}
-          aria-pressed={tool === "write"}
-          onClick={() => choose("write")}
+          className="hover:underline"
+          onClick={() => void send({ type: "takeDown", id: card.id })}
         >
-          Write a card
+          Take down
         </button>
-        <button
-          type="button"
-          className={buttonClass}
-          aria-pressed={tool === "tie"}
-          onClick={() => choose("tie")}
-        >
-          Tie string
-        </button>
-        <span className="text-sm text-muted">Prototype: nothing here is saved yet.</span>
-      </div>
+      </>
+    );
+  }
+
+  return (
+    <div className="mt-4">
+      {page.canWrite && (
+        <div role="toolbar" aria-label="Board tools" className="flex flex-wrap items-center gap-2">
+          {forDm && (
+            <button
+              type="button"
+              className={buttonClass}
+              aria-pressed={tool === "pin"}
+              onClick={() => choose("pin")}
+            >
+              Pin a note
+            </button>
+          )}
+          <button
+            type="button"
+            className={buttonClass}
+            aria-pressed={tool === "write"}
+            onClick={() => choose("write")}
+          >
+            Write a card
+          </button>
+          <button
+            type="button"
+            className={`${buttonClass} hidden md:inline-flex`}
+            aria-pressed={tool === "tie"}
+            onClick={() => choose("tie")}
+          >
+            Tie string
+          </button>
+        </div>
+      )}
+      {error && (
+        <p role="alert" className="mt-2 text-sm text-danger">
+          {error}
+        </p>
+      )}
 
       {tool === "pin" && (
         <PinForm
-          notes={board.notes}
+          notes={page.notes}
           onPin={(noteId, caption) =>
-            add({
+            void put({
+              type: "pin",
               id: newId(),
-              kind: "note",
               noteId,
-              shown: false,
-              by: me,
-              ...fresh(),
+              at: fresh(),
               ...(caption && { caption }),
             })
           }
@@ -189,9 +178,8 @@ export function Corkboard({
       )}
       {tool === "write" && (
         <WriteForm
-          onWrite={(text) =>
-            add({ id: newId(), kind: "text", text, shown: !forDm, by: me, ...fresh() })
-          }
+          forDm={forDm}
+          onWrite={(text) => void put({ type: "write", id: newId(), text, at: fresh() })}
           onCancel={() => setTool("none")}
         />
       )}
@@ -202,15 +190,15 @@ export function Corkboard({
             <input
               className={inputClass}
               value={label}
-              maxLength={40}
+              maxLength={MOST_OF_A_LABEL}
               placeholder="owes money to"
               onChange={(event) => setLabel(event.target.value)}
             />
           </label>
           <p className="text-sm text-muted" role="status">
             {tyingFrom
-              ? `Now pick the card to tie ${titleOf(byId.get(tyingFrom), board)} to.`
-              : "Pick a card, then another. Click a string to cut it."}
+              ? `Now pick the card to tie ${titleOf(byId.get(tyingFrom))} to.`
+              : "Pick a card, then another. Click your own string to cut it."}
           </p>
         </div>
       )}
@@ -221,7 +209,7 @@ export function Corkboard({
         className="gh-board relative mt-4 hidden w-full overflow-hidden rounded-xl border border-line select-none md:block"
         style={{ aspectRatio: BOARD_ASPECT }}
       >
-        {cards.map((card) => (
+        {board.cards.map((card) => (
           <Card
             key={card.id}
             card={card}
@@ -229,35 +217,10 @@ export function Corkboard({
             tying={tool === "tie"}
             picked={tyingFrom === card.id}
             onPick={() => pick(card.id)}
-            onMove={(at) => place(card.id, at)}
-            label={titleOf(card, board)}
-            tools={
-              "by" in card &&
-              mine(card.by) && (
-                <>
-                  {card.by.dm && (
-                    <button
-                      type="button"
-                      className="hover:underline"
-                      onClick={() =>
-                        setCards((all) =>
-                          all.map((each) =>
-                            each.id === card.id && "shown" in each
-                              ? { ...each, shown: !each.shown }
-                              : each,
-                          ),
-                        )
-                      }
-                    >
-                      {card.shown ? "Hide from players" : "Show players"}
-                    </button>
-                  )}
-                  <button type="button" className="hover:underline" onClick={() => remove(card.id)}>
-                    Take down
-                  </button>
-                </>
-              )
-            }
+            onDrag={(at) => drag(card.id, clampToBoard(at, cardWidth(card)))}
+            onDrop={(at) => void drop(card.id, clampToBoard(at, cardWidth(card)))}
+            label={titleOf(card)}
+            tools={tools(card)}
           >
             {content(card)}
           </Card>
@@ -267,28 +230,27 @@ export function Corkboard({
           className="pointer-events-none absolute inset-0 h-full w-full"
           aria-hidden="true"
         >
-          {strings.map((string) => {
+          {board.strings.map((string) => {
             const [from, to] = [byId.get(string.from), byId.get(string.to)];
             if (!from || !to) return null;
             const path = stringPath(pinOf(from), pinOf(to));
-            const cut = tool === "tie" && mine(string.by);
             return (
               <g key={string.id}>
-                <path d={path} className={string.by.dm ? "gh-string-dm" : "gh-string-party"} />
-                {cut && (
+                <path d={path} className={string.dm ? "gh-string-dm" : "gh-string-party"} />
+                {tool === "tie" && string.mine && (
                   <path
                     d={path}
                     className="pointer-events-auto cursor-pointer stroke-transparent"
                     strokeWidth={14}
                     fill="none"
-                    onClick={() => setStrings((all) => all.filter((each) => each.id !== string.id))}
+                    onClick={() => void send({ type: "cut", id: string.id })}
                   />
                 )}
               </g>
             );
           })}
         </svg>
-        {strings.map((string) => {
+        {board.strings.map((string) => {
           const [from, to] = [byId.get(string.from), byId.get(string.to)];
           if (!from || !to || !string.label) return null;
           const middle = stringMiddle(pinOf(from), pinOf(to));
@@ -306,18 +268,21 @@ export function Corkboard({
 
       {/* Phones: the same cards as a list, with what each is tied to. */}
       <ul className="mt-4 grid gap-3 md:hidden">
-        {cards.map((card) => (
+        {board.cards.map((card) => (
           <li key={card.id} className="gh-card rounded-xl border border-line bg-surface p-3">
+            {"shown" in card && !card.shown && (
+              <p className="mb-1 text-xs font-semibold text-dm uppercase">DM only</p>
+            )}
             {content(card)}
-            {strings
+            {board.strings
               .filter((string) => string.from === card.id || string.to === card.id)
               .map((string) => (
                 <p key={string.id} className="mt-1 text-xs text-muted">
-                  Tied to{" "}
-                  {titleOf(byId.get(string.from === card.id ? string.to : string.from), board)}
+                  Tied to {titleOf(byId.get(string.from === card.id ? string.to : string.from))}
                   {string.label && ` (${string.label})`}
                 </p>
               ))}
+            {tools(card) && <div className="mt-2 flex gap-3 text-xs text-muted">{tools(card)}</div>}
           </li>
         ))}
       </ul>
@@ -325,51 +290,66 @@ export function Corkboard({
   );
 }
 
-/** One card on the board: dragged by the pointer anywhere but its links and buttons, or moved by the arrow keys. */
+/**
+ * One card on the board: the viewer's own are dragged by the pointer anywhere but their links and
+ * buttons, or moved by the arrow keys. While tying string, a click picks it.
+ */
 function Card({
   card,
   surface,
   tying,
   picked,
   onPick,
-  onMove,
+  onDrag,
+  onDrop,
   label,
   tools,
   children,
 }: {
-  card: BoardCard;
+  card: CardView;
   surface: React.RefObject<HTMLDivElement | null>;
   tying: boolean;
   picked: boolean;
   onPick: () => void;
-  onMove: (at: { x: number; y: number }) => void;
+  onDrag: (at: BoardPoint) => void;
+  onDrop: (at: BoardPoint) => void;
   label: string;
   tools: ReactNode;
   children: ReactNode;
 }) {
-  const drag = useRef<{ dx: number; dy: number; moved: boolean }>(undefined);
+  const grip = useRef<{ dx: number; dy: number; at?: BoardPoint }>(undefined);
   const hidden = "shown" in card && !card.shown;
+  const movable = card.mine && !tying;
+
+  function where(event: PointerEvent<HTMLDivElement>): BoardPoint {
+    const box = surface.current!.getBoundingClientRect();
+    return {
+      x: (event.clientX - box.left) / box.width - grip.current!.dx,
+      y: (event.clientY - box.top) / box.height - grip.current!.dy,
+    };
+  }
 
   function down(event: PointerEvent<HTMLDivElement>) {
-    if (tying || event.button !== 0) return;
+    if (!movable || event.button !== 0) return;
     if ((event.target as HTMLElement).closest("a, button, input, textarea, form")) return;
     const box = surface.current!.getBoundingClientRect();
-    drag.current = {
+    grip.current = {
       dx: (event.clientX - box.left) / box.width - card.x,
       dy: (event.clientY - box.top) / box.height - card.y,
-      moved: false,
     };
     event.currentTarget.setPointerCapture(event.pointerId);
   }
 
   function move(event: PointerEvent<HTMLDivElement>) {
-    if (!drag.current) return;
-    const box = surface.current!.getBoundingClientRect();
-    drag.current.moved = true;
-    onMove({
-      x: (event.clientX - box.left) / box.width - drag.current.dx,
-      y: (event.clientY - box.top) / box.height - drag.current.dy,
-    });
+    if (!grip.current) return;
+    grip.current.at = where(event);
+    onDrag(grip.current.at);
+  }
+
+  function up() {
+    const at = grip.current?.at;
+    grip.current = undefined;
+    if (at) onDrop(at);
   }
 
   function key(event: KeyboardEvent<HTMLDivElement>) {
@@ -378,6 +358,7 @@ function Card({
       event.preventDefault();
       return onPick();
     }
+    if (!movable) return;
     const step = event.shiftKey ? 0.05 : 0.01;
     const moves: Record<string, [number, number]> = {
       ArrowLeft: [-step, 0],
@@ -388,7 +369,7 @@ function Card({
     const by = moves[event.key];
     if (!by) return;
     event.preventDefault();
-    onMove({ x: card.x + by[0], y: card.y + by[1] });
+    onDrop({ x: card.x + by[0], y: card.y + by[1] });
   }
 
   return (
@@ -398,7 +379,7 @@ function Card({
       aria-label={`${label}${hidden ? " (DM only)" : ""}`}
       aria-pressed={tying ? picked : undefined}
       data-hidden={hidden || undefined}
-      className={`gh-board-card absolute rounded-md border border-line bg-surface p-3 shadow-md ${tying ? "cursor-crosshair" : "cursor-grab active:cursor-grabbing"}`}
+      className={`gh-board-card absolute rounded-md border border-line bg-surface p-3 shadow-md ${tying ? "cursor-crosshair" : movable ? "cursor-grab active:cursor-grabbing" : ""}`}
       style={{
         left: `${card.x * 100}%`,
         top: `${card.y * 100}%`,
@@ -407,7 +388,7 @@ function Card({
       }}
       onPointerDown={down}
       onPointerMove={move}
-      onPointerUp={() => (drag.current = undefined)}
+      onPointerUp={up}
       // While tying string, a click anywhere on a card picks it, links and buttons included.
       onClickCapture={(event) => {
         if (!tying) return;
@@ -491,16 +472,18 @@ function PinForm({
         </button>
       </div>
       <p className="text-xs text-muted sm:col-span-3">
-        Pinned notes start DM only; show them to players when you're ready.
+        Pinned notes start DM only; show them to players when you&rsquo;re ready.
       </p>
     </form>
   );
 }
 
 function WriteForm({
+  forDm,
   onWrite,
   onCancel,
 }: {
+  forDm: boolean;
   onWrite: (text: string) => void;
   onCancel: () => void;
 }) {
@@ -524,13 +507,14 @@ function WriteForm({
           onChange={(event) => setText(event.target.value)}
         />
       </label>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <button className={primaryButtonClass}>Pin it up</button>
         <button type="button" className={buttonClass} onClick={onCancel}>
           Cancel
         </button>
         <span className="text-xs text-muted">
           {text.length} / {MOST_OF_A_CARD}
+          {forDm ? " · DM only until you show it" : " · the party sees it"}
         </span>
       </div>
     </form>
@@ -538,14 +522,14 @@ function WriteForm({
 }
 
 /** What a card is called, for its label and for string. */
-function titleOf(card: BoardCard | undefined, board: BoardPage): string {
+function titleOf(card: CardView | undefined): string {
   switch (card?.kind) {
     case "next":
       return "Next session";
     case "sessions":
       return "Sessions";
     case "note":
-      return board.notes.find((note) => note.id === card.noteId)?.title ?? "A note";
+      return card.note?.title ?? "A note";
     case "text":
       return card.text.length > 30 ? `${card.text.slice(0, 30)}…` : card.text;
     default:

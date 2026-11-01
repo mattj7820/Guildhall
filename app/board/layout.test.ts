@@ -27,7 +27,7 @@ describe("stringMiddle", () => {
 
 describe("pinOf", () => {
   it("is the middle of a card's top edge", () => {
-    expect(pinOf({ id: "a", kind: "sessions", x: 0.1, y: 0.2 }).x).toBeCloseTo(0.185);
+    expect(pinOf({ kind: "sessions", x: 0.1, y: 0.2 }).x).toBeCloseTo(0.185);
   });
 });
 
