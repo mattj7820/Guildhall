@@ -54,3 +54,22 @@ export function tiltOf(id: string): number {
   for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) | 0;
   return ((Math.abs(hash) % 50) - 25) / 10;
 }
+
+/**
+ * Somewhere for a new card: the first spot across the board that no card is near, nudged a little
+ * by the card's ID, so two people putting cards up at once rarely land on the same spot.
+ */
+export function freeSpot(cards: readonly BoardPoint[], id: string): BoardPoint {
+  const spots: BoardPoint[] = [];
+  for (let row = 0; row < 4; row++) {
+    for (let column = 0; column < 4; column++)
+      spots.push({ x: 0.33 + column * 0.16, y: 0.08 + row * 0.22 });
+  }
+  const near = (a: BoardPoint, b: BoardPoint) =>
+    Math.abs(a.x - b.x) < 0.12 && Math.abs(a.y - b.y) < 0.15;
+  const free =
+    spots.find((spot) => !cards.some((card) => near(card, spot))) ??
+    spots[cards.length % spots.length];
+  const nudge = tiltOf(id) / 100;
+  return clampToBoard({ x: free.x + nudge, y: free.y - nudge }, 0.17);
+}

@@ -10,8 +10,9 @@ locations, maps, characters, sessions).
 - **Front page:** a town map of the guildhall, each module a place your token walks to, with the
   campaign as it stands: where the party is, a fight if one is on, the next session with a
   countdown, and who's here now.
-- **Notice board:** the next session and the session notes the viewer may read, from the town
-  map's notice board. Next: DM pins, string between cards, and players' short cards.
+- **Notice board:** a corkboard from the town map's notice board: the next session and the
+  session notes, the DM's pinned notes (shown when the DM is ready), players' short cards, and
+  string between them, shared live.
 - **Campaign wiki (read-only):** browse and search the Obsidian vault, with DM/player preview.
   Shared notes can keep DM-only parts: a `## DM` section or a `> [!dm]` callout.
 - **Combat tracker:** encounters built from vault statblocks (and the SRD's, below) and PC notes, initiative with

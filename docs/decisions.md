@@ -1753,7 +1753,7 @@ in the hall).
 - **Geometry and art change together**: moving a place or a path in `town.ts` means new art, and
   the art's layout comes only from `town.ts`.
 
-## 87. The notice board is a page of its own, growing into the campaign's corkboard
+## 87. The notice board is a corkboard: the sessions, the DM's pins, players' short cards, string
 
 **Date:** 2026-11-01
 
@@ -1766,16 +1766,28 @@ players' own short notes, and string to tie them together, which is what Guildha
 **Decision.** The board is `/board`, one for the campaign, and the town map's notice board leads
 there (`placeOf` stands the token at it).
 
-- **First, the sessions:** the next session (set by the DM there too, through the same action as
+- **The sessions:** the next session (set by the DM there too, through the same action as
   the front page, `setNextSession`) and the `type: session` notes the viewer may read
   (`vault.notes(viewer)`), newest first by their titles, as the front page's "Last time" orders
   them (`newestFirst`). Titles and links only; nothing from a note's body.
-- **To come, in slices** (the owner's answers): a free corkboard, cards dragged anywhere, with a
-  list of cards and their links on phones. The DM pins vault notes by entity ID, each Shown or
-  DM only, with an optional caption. Players pin short cards of their own (a sentence or two):
-  kept in the data folder like sheets, never the vault, which keeps the player-notes spike's
-  reasons for not writing there. String joins two cards, optionally labelled, red for the party
-  and gold for the DM; each removes only their own, the DM any, and a string shows only when the
-  viewer sees both ends, so it never gives away a hidden card. Then live updates.
+- **A free corkboard** (the owner tried a prototype first and kept it): cards dragged anywhere,
+  in fractions of a board of one shape (16:10), with the same cards as a list on phones. The two
+  sessions cards are always there, and only the DM moves them. Each theme dresses the board
+  (cork, timber, slate) on the `gh-board` hooks.
+- **The DM pins vault notes** by entity ID, with an optional caption, DM only until shown. The
+  DM's own short cards start DM only too. Players see a pin only once it's shown and only if
+  they may read its note; the title and link are the note's as they see it.
+- **Players write short cards** (up to 140 characters), shown to the party at once and signed
+  with their player name. They're kept in the data folder (`board.json`) like sheets, never the
+  vault, which keeps the player-notes spike's reasons for not writing there. Only text: no
+  wikilinks, so nothing a player types can probe for hidden notes. A player without a character
+  may look but not put anything up.
+- **String** ties two cards, optionally labelled: gold for the DM's, red for the party's. Each
+  person moves, takes down and cuts only their own; the DM anything. A string is sent only to
+  those who see both its cards, so it never gives a hidden card away, and a player can't tie to
+  a card they can't see (refused like a missing one).
+- **Like tokens**, every change is a `BoardAction` applied to what's stored now, and everyone's
+  copy is built for them on the server (`boardForViewer`) and pushed live to the board's room.
+  Stored data is read leniently: a card that can't be read is left out, never the file refused.
 - **No written recaps from Guildhall:** cards about past sessions are the DM's own pins and
   captions.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampToBoard, pinOf, stringMiddle, stringPath, tiltOf } from "./layout";
+import { clampToBoard, freeSpot, pinOf, stringMiddle, stringPath, tiltOf } from "./layout";
 
 describe("clampToBoard", () => {
   it("keeps a card's whole width on the board", () => {
@@ -35,5 +35,13 @@ describe("tiltOf", () => {
   it("is the same for the same card, and small", () => {
     expect(tiltOf("abc")).toBe(tiltOf("abc"));
     expect(Math.abs(tiltOf("abc"))).toBeLessThanOrEqual(2.5);
+  });
+});
+
+describe("freeSpot", () => {
+  it("finds a spot no card is near", () => {
+    const first = freeSpot([], "a");
+    const second = freeSpot([first], "b");
+    expect(Math.abs(second.x - first.x)).toBeGreaterThan(0.1);
   });
 });

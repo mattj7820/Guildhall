@@ -12,6 +12,7 @@ import {
   BOARD_ASPECT,
   cardWidth,
   clampToBoard,
+  freeSpot,
   pinOf,
   stringMiddle,
   stringPath,
@@ -63,12 +64,6 @@ export function Corkboard({ page, forDm }: { page: BoardPage; forDm: boolean }) 
     setTool((current) => (current === next ? "none" : next));
     setTyingFrom(undefined);
   }
-
-  /** Somewhere free-ish for a new card: across the middle of the board, a step on each time. */
-  const fresh = (): BoardPoint => {
-    const step = board.cards.length - 2;
-    return { x: 0.35 + (step % 3) * 0.2, y: 0.12 + (Math.floor(step / 3) % 4) * 0.2 };
-  };
 
   function content(card: CardView): ReactNode {
     switch (card.kind) {
@@ -164,22 +159,26 @@ export function Corkboard({ page, forDm }: { page: BoardPage; forDm: boolean }) 
       {tool === "pin" && (
         <PinForm
           notes={page.notes}
-          onPin={(noteId, caption) =>
+          onPin={(noteId, caption) => {
+            const id = newId();
             void put({
               type: "pin",
-              id: newId(),
+              id,
               noteId,
-              at: fresh(),
+              at: freeSpot(board.cards, id),
               ...(caption && { caption }),
-            })
-          }
+            });
+          }}
           onCancel={() => setTool("none")}
         />
       )}
       {tool === "write" && (
         <WriteForm
           forDm={forDm}
-          onWrite={(text) => void put({ type: "write", id: newId(), text, at: fresh() })}
+          onWrite={(text) => {
+            const id = newId();
+            void put({ type: "write", id, text, at: freeSpot(board.cards, id) });
+          }}
           onCancel={() => setTool("none")}
         />
       )}
