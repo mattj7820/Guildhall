@@ -23,15 +23,25 @@ export class LiveVault {
 
   private constructor(
     private readonly root: string,
+    /** The campaign's folder, when the app is scoped to one: nothing outside it is read. */
+    readonly folder: string | undefined,
     private snapshot: Vault,
-    private readonly load: (root: string) => Promise<Vault>,
+    private readonly load: (root: string, folder?: string) => Promise<Vault>,
   ) {}
 
   static async open(
     root: string,
-    { watchForChanges = true, load = Vault.load } = {},
+    {
+      folder,
+      watchForChanges = true,
+      load = Vault.load,
+    }: {
+      folder?: string;
+      watchForChanges?: boolean;
+      load?: (root: string, folder?: string) => Promise<Vault>;
+    } = {},
   ): Promise<LiveVault> {
-    const live = new LiveVault(root, await load(root), load);
+    const live = new LiveVault(root, folder, await load(root, folder), load);
     if (watchForChanges) await live.startWatching();
     return live;
   }
@@ -69,7 +79,7 @@ export class LiveVault {
     do {
       this.changedWhileReloading = false;
       try {
-        this.snapshot = await this.load(this.root);
+        this.snapshot = await this.load(this.root, this.folder);
         reloaded = true;
       } catch (error) {
         console.error("[vault] Reload failed; still serving the previous snapshot.", error);

@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -111,5 +111,33 @@ describe("LiveVault reloads", () => {
     expect(heard).toHaveBeenCalledTimes(1);
     stop();
     quiet.mockRestore();
+  });
+});
+
+describe("LiveVault in one folder", () => {
+  let root: string;
+  let live: LiveVault;
+
+  beforeEach(async () => {
+    root = await mkdtemp(path.join(tmpdir(), "guildhall-live-vault-"));
+    await mkdir(path.join(root, "Campaign"));
+    await writeFile(path.join(root, "Campaign", "Inside.md"), "Inside");
+    await writeFile(path.join(root, "Outside.md"), "Outside");
+  });
+
+  afterEach(async () => {
+    await live?.close();
+    await rm(root, { recursive: true, force: true });
+  });
+
+  it("reads only the folder, before and after a reload", async () => {
+    live = await LiveVault.open(root, { folder: "Campaign", watchForChanges: false });
+    expect(live.current.notes(DM_VIEWER).map((note) => note.path)).toEqual(["Campaign/Inside.md"]);
+    await writeFile(path.join(root, "Campaign", "Later.md"), "Later");
+    await live.reload();
+    expect(live.current.notes(DM_VIEWER).map((note) => note.path)).toEqual([
+      "Campaign/Inside.md",
+      "Campaign/Later.md",
+    ]);
   });
 });

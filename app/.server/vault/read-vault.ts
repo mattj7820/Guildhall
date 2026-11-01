@@ -67,6 +67,19 @@ export async function readVault(
   return snapshot;
 }
 
+/**
+ * Only what's inside a folder: a campaign's notes and files, with their vault paths unchanged so
+ * slugs, entity IDs and stored links stay as they are. No folder is the whole vault.
+ */
+export function inFolder(snapshot: VaultSnapshot, folder: string | undefined): VaultSnapshot {
+  if (!folder) return snapshot;
+  const prefix = folder.replace(/\/+$/, "") + "/";
+  return {
+    notes: snapshot.notes.filter((note) => note.path.startsWith(prefix)),
+    assets: snapshot.assets.filter((asset) => asset.startsWith(prefix)),
+  };
+}
+
 async function skipIfGone<T>(read: () => Promise<T>): Promise<T | undefined> {
   try {
     return await read();

@@ -6,7 +6,7 @@ import { createLinkResolver, type LinkResolver } from "./link-resolver";
 import { parseNote, type Note } from "./parse-note";
 import { isMapImage, mediaKind } from "./media";
 import { basename, dirname, isMarkdown } from "./paths";
-import { readVault, type VaultSnapshot } from "./read-vault";
+import { inFolder, readVault, type VaultSnapshot } from "./read-vault";
 import { renderMarkdown } from "./render";
 import type { ResolvedTarget } from "./remark-wikilinks";
 import { SearchIndex, type SearchResult } from "./search";
@@ -51,8 +51,9 @@ export class Vault {
   private readonly linksTo = new Map<Role, Map<string, Note[]>>();
   private playerAssets?: ReadonlySet<string>;
 
-  static async load(root: string): Promise<Vault> {
-    return new Vault(await readVault(root));
+  /** Reads the vault, or only one folder of it (a campaign's), keeping vault paths. */
+  static async load(root: string, folder?: string): Promise<Vault> {
+    return new Vault(inFolder(await readVault(root), folder));
   }
 
   constructor(snapshot: VaultSnapshot) {
