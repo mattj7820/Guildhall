@@ -22,6 +22,7 @@ describe("placeOf", () => {
     expect(placeOf("/characters/x")).toBe("barracks");
     expect(placeOf("/settings/dice")).toBe("treasury");
     expect(placeOf("/members")).toBe("steward");
+    expect(placeOf("/board")).toBe("board");
   });
 
   it("uses the hall for pages without a place, and leaves it be on the front page", () => {

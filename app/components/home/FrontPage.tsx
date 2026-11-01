@@ -38,7 +38,7 @@ export function FrontPage(props: { data: Data; forDm: boolean }) {
     barracks: "/characters",
     treasury: "/settings/dice",
     steward: "/members",
-    board: "#next-session",
+    board: "/board",
   };
   const you = data.you ?? { name: root?.user?.name ?? "You" };
   const others = [
@@ -83,9 +83,7 @@ export function FrontPage(props: { data: Data; forDm: boolean }) {
                   <BannerMap banner={data.banner} />
                 </>
               )}
-              <div id="next-session" tabIndex={-1} className="outline-none">
-                <NextSession at={data.nextSession} forDm={forDm} latest={data.latestSession} />
-              </div>
+              <NextSession at={data.nextSession} forDm={forDm} latest={data.latestSession} />
               <HereNow others={others} />
             </section>
             <nav
@@ -97,7 +95,7 @@ export function FrontPage(props: { data: Data; forDm: boolean }) {
               </h2>
               <ul className="mt-2 divide-y divide-line">
                 {places
-                  .filter((place) => place.id !== "hall" && place.id !== "board")
+                  .filter((place) => place.id !== "hall")
                   .map((place) => (
                     <li key={place.id}>
                       <Link
