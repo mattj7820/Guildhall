@@ -211,12 +211,18 @@ function useOpenedPack(pack: DicePack): Outcome | undefined {
       body: JSON.stringify({ pack: pack.id }),
     })
       .then(async (response) => {
-        const body = (await response.json().catch(() => ({}))) as Partial<Outcome>;
-        if (response.ok && body && "opened" in body && body.opened) {
-          return setOutcome({ opened: body.opened });
-        }
-        const error = body && "error" in body ? body.error : undefined;
-        setOutcome({ error: error ?? "That pack couldn't be opened. Try again in a moment." });
+        // A 404's body is plain text ("Not found"), not an object.
+        const answer: unknown = await response.json().catch(() => undefined);
+        const body = (typeof answer === "object" && answer !== null ? answer : {}) as Partial<
+          { opened: OpenedDie } & { error: string }
+        >;
+        if (response.ok && body.opened) return setOutcome({ opened: body.opened });
+        const error = body.error;
+        // Not theirs to open now: almost always opened already, in another tab.
+        const gone = response.status === 404 && "That pack has already been opened.";
+        setOutcome({
+          error: error ?? (gone || "That pack couldn't be opened. Try again in a moment."),
+        });
       })
       .catch(() => setOutcome({ error: "Guildhall couldn't be reached. Try again in a moment." }));
   }, [pack.id]);
