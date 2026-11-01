@@ -1720,3 +1720,28 @@ bubbles) and `symbols` (token icons, from game-icons.net, in place of a d20's 20
   fallback.
 - **Seven fancy dice** (two rare, three very rare, two legendary) have plain working labels and
   functional descriptions, for the DM to rename.
+
+## 86. The wiki as a tome: an optional look, each member's own
+
+**Date:** 2026-11-01
+
+**Context.** The owner wanted the app's design to feel like a D&D world. Of the ideas prototyped
+as artifacts, they liked the wiki as a wizard's tome, as an option, if the small things (above
+all the page turn) were done well.
+
+**Decision.** Each member picks Pages (the plain wiki, the default) or Tome in Settings, saved on
+their account (`wikiLook`, stored only when it's the tome). The tome is only a look over the same
+loaders: the tree, the wiki's own search, and two additions worked out per viewer on the server,
+the tags on the notes they may see and the notes that link to the open one (`Vault.tags`,
+`Vault.linkedFrom`, built from what that role may read, so a link in a DM part never counts for
+players). Both are sent only to tome readers.
+
+- **Spells keep their SRD names** (Locate Object, Misty Step, Detect Magic, Scrying), each with
+  a plain line saying what it does, so the table knows them and nobody has to guess.
+- **The page turn is a copy of the page, turned in 3D with CSS.** Just before a navigation the
+  right page is copied; once the new note is in, the copy turns over the spine. The back of the
+  leaf is a copy of the left page, so it lands as the page it covers and is removed without a
+  seam. Going back in history turns the other way. Misty Step's notes form out of mist instead.
+  The copies are pictures only (inert, hidden from assistive tech). With reduced motion there's
+  no turn or mist.
+- **Phones get one page,** with the left page as a sheet opened from a bar of spells.

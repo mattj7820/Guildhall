@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { AppPage } from "./app-page";
 
-/** Someone's own Settings page: their theme and their dice. */
+/** Someone's own Settings page: their theme, their wiki and their dice. */
 export class Settings extends AppPage {
   open() {
     return this.goto("/settings");
@@ -35,6 +35,18 @@ export class Settings extends AppPage {
   /** The way to their dice collection, saying how many they've found and have to open. */
   get yourDice() {
     return this.page.getByRole("link", { name: /^Your dice/ });
+  }
+
+  wikiLook(label: string) {
+    return this.page
+      .getByRole("region", { name: "Wiki" })
+      .getByRole("button", { name: new RegExp(`^${label}`) });
+  }
+
+  /** Picks how the wiki looks, and waits until it's saved. */
+  async pickWikiLook(label: string) {
+    await this.wikiLook(label).click();
+    await expect(this.wikiLook(label)).toHaveAttribute("aria-pressed", "true");
   }
 
   async pick(label: string, value: string) {
