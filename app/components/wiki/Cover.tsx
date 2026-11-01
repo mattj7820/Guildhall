@@ -9,15 +9,10 @@ import { useFetcher } from "react-router";
 export function CoverFront({
   name,
   canName,
-  bookFolder,
-  folders,
   onOpen,
 }: {
   name?: string;
   canName: boolean;
-  /** For the DM: which top folder is the book, and those to choose from. */
-  bookFolder?: string;
-  folders: string[];
   onOpen: () => void;
 }) {
   const [naming, setNaming] = useState(false);
@@ -45,12 +40,7 @@ export function CoverFront({
       </button>
       {canName &&
         (naming ? (
-          <NameForm
-            name={name}
-            bookFolder={bookFolder}
-            folders={folders}
-            onDone={() => setNaming(false)}
-          />
+          <NameForm name={name} onDone={() => setNaming(false)} />
         ) : (
           <button type="button" onClick={() => setNaming(true)} className="gh-cover-rename">
             {name ? "Change the cover" : "Name the campaign"}
@@ -60,17 +50,7 @@ export function CoverFront({
   );
 }
 
-function NameForm({
-  name,
-  bookFolder,
-  folders,
-  onDone,
-}: {
-  name?: string;
-  bookFolder?: string;
-  folders: string[];
-  onDone: () => void;
-}) {
+function NameForm({ name, onDone }: { name?: string; onDone: () => void }) {
   const fetcher = useFetcher();
   return (
     <fetcher.Form
@@ -98,17 +78,6 @@ function NameForm({
         }}
         className="gh-cover-input font-display"
       />
-      <label className="flex items-center gap-2 text-sm">
-        <span>The book is</span>
-        <select name="bookFolder" defaultValue={bookFolder ?? ""} className="gh-cover-select">
-          <option value="">the whole vault</option>
-          {folders.map((folder) => (
-            <option key={folder} value={folder}>
-              the {folder} folder
-            </option>
-          ))}
-        </select>
-      </label>
       <span className="flex gap-2">
         <button type="submit" className="gh-cover-rename">
           Save

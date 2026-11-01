@@ -1,3 +1,4 @@
+import { soundsFolderOf } from "~/.server/campaigns/sounds";
 import { notFound } from "~/.server/not-found";
 import { streamVaultFile } from "~/.server/vault/stream-file";
 import { servicesContext } from "~/context";
@@ -9,9 +10,11 @@ import type { Route } from "./+types/sound";
  * can be reached this way.
  */
 export async function loader({ request, params, context }: Route.LoaderArgs) {
-  const { config, vault } = context.get(servicesContext);
-  const vaultPath = `${config.soundsFolder}/${params["*"] ?? ""}`;
-  if (!vault.current.soundsIn(config.soundsFolder).includes(vaultPath)) {
+  const services = context.get(servicesContext);
+  const { config, vault } = services;
+  const folder = soundsFolderOf(services);
+  const vaultPath = `${folder}/${params["*"] ?? ""}`;
+  if (!vault.current.soundsIn(folder).includes(vaultPath)) {
     notFound();
   }
   return streamVaultFile(request, config.vaultPath, vaultPath);

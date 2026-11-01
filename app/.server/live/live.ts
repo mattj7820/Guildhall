@@ -124,6 +124,15 @@ export class Live {
   }
 
   /**
+   * The DM switched campaigns: every page with a live connection reloads, as it's showing the
+   * other campaign's maps, fight or people.
+   */
+  campaignChanged(): void {
+    this.dragContexts.clear();
+    this.hub.campaignChanged();
+  }
+
+  /**
    * Whether someone else is moving a token just now, for a move being saved: the name of whoever
    * has it, or nothing. The DM is never kept out.
    */

@@ -1,3 +1,4 @@
+import { soundsFolderOf } from "~/.server/campaigns/sounds";
 import { isRouteErrorResponse, Link } from "react-router";
 import { partyCards } from "~/.server/characters/load";
 import { combatCatalogue } from "~/.server/combat/catalogue";
@@ -59,8 +60,8 @@ export async function loader({ params, request, context }: Route.LoaderArgs) {
     images: services.vault.current.mapImages(),
     // By their paths inside the sounds folder, as the sounds route takes them.
     sounds: services.vault.current
-      .soundsIn(services.config.soundsFolder)
-      .map((path) => path.slice(services.config.soundsFolder.length + 1)),
+      .soundsIn(soundsFolderOf(services))
+      .map((path) => path.slice(soundsFolderOf(services).length + 1)),
     fight: fight?.forDm ? fight : null,
     catalogue: combatCatalogue(services.vault.current, viewer),
     starting: await startingPrepared(services, request),

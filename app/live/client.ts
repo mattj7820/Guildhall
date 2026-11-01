@@ -3,7 +3,12 @@
  * shared by everything on the page, and reopened when it drops. Browser only.
  */
 import type { MapId } from "~/maps/types";
-import { CLOSE_ACCESS_CHANGED, type ClientMessage, type ServerMessage } from "./messages";
+import {
+  CLOSE_ACCESS_CHANGED,
+  CLOSE_CAMPAIGN_CHANGED,
+  type ClientMessage,
+  type ServerMessage,
+} from "./messages";
 
 export type LiveStatus = "connecting" | "live" | "reconnecting";
 
@@ -33,6 +38,8 @@ type Listener = (message: ServerMessage) => void;
 interface Options {
   createSocket?: (url: string) => SocketLike;
   random?: () => number;
+  /** The DM switched campaigns: the page shows another campaign's things, so it loads afresh. */
+  reload?: () => void;
 }
 
 export class LiveClient {
@@ -45,6 +52,7 @@ export class LiveClient {
   private readonly statusListeners = new Set<() => void>();
   private readonly createSocket: (url: string) => SocketLike;
   private readonly random: () => number;
+  private readonly reload: () => void;
 
   constructor(
     private readonly url: string,
@@ -52,10 +60,12 @@ export class LiveClient {
       // A browser WebSocket's handlers take full events; the client only reads `data` and `code`.
       createSocket = (url) => new WebSocket(url) as unknown as SocketLike,
       random = Math.random,
+      reload = () => location.reload(),
     }: Options = {},
   ) {
     this.createSocket = createSocket;
     this.random = random;
+    this.reload = reload;
   }
 
   getStatus(): LiveStatus {
@@ -120,6 +130,7 @@ export class LiveClient {
     socket.onclose = ({ code }) => {
       if (this.socket !== socket) return;
       this.socket = undefined;
+      if (code === CLOSE_CAMPAIGN_CHANGED) return this.reload();
       this.setStatus("reconnecting");
       // Access changed: sign in again straight away, as whoever they are now.
       if (code === CLOSE_ACCESS_CHANGED) this.attempt = 0;

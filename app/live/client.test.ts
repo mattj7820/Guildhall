@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import { LiveClient, reconnectDelay, type SocketLike } from "./client";
-import type { ServerMessage } from "./messages";
+import { CLOSE_CAMPAIGN_CHANGED, type ServerMessage } from "./messages";
 
 /** Stands in for a browser's WebSocket: a test opens, closes and talks to it by hand. */
 class FakeSocket implements SocketLike {
@@ -32,11 +32,13 @@ class FakeSocket implements SocketLike {
 
 let sockets: FakeSocket[];
 let client: LiveClient;
+let reload: Mock<() => void>;
 const latest = () => sockets.at(-1)!;
 
 beforeEach(() => {
   vi.useFakeTimers();
   sockets = [];
+  reload = vi.fn();
   client = new LiveClient("ws://guildhall.test/live", {
     createSocket: () => {
       const socket = new FakeSocket();
@@ -44,6 +46,7 @@ beforeEach(() => {
       return socket;
     },
     random: () => 0.5,
+    reload,
   });
 });
 
@@ -147,6 +150,15 @@ describe("LiveClient", () => {
     latest().drops(4000);
     vi.advanceTimersByTime(0);
     expect(sockets).toHaveLength(2);
+  });
+
+  it("loads the page afresh, rather than reconnecting, when the DM switches campaigns", () => {
+    client.watch("m", () => {});
+    latest().opens();
+    latest().drops(CLOSE_CAMPAIGN_CHANGED);
+    vi.advanceTimersByTime(60_000);
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(sockets).toHaveLength(1);
   });
 
   it("reopens as someone else when the viewer changes, but not for the same viewer", () => {

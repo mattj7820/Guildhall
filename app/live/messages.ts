@@ -87,3 +87,5 @@ export function stateKey(message: ServerMessage): string | undefined {
 
 /** Closing codes of our own (4000–4999 are for applications). */
 export const CLOSE_ACCESS_CHANGED = 4000;
+/** The DM switched campaigns: everything on the page is another campaign's now. */
+export const CLOSE_CAMPAIGN_CHANGED = 4001;

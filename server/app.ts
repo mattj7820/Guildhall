@@ -6,11 +6,11 @@ import express from "express";
 import { RouterContextProvider } from "react-router";
 import { openCampaignData } from "~/.server/campaigns/campaign-data";
 import { Campaigns } from "~/.server/campaigns/campaigns";
+import { watchVault } from "~/.server/campaigns/run";
 import { loadConfig } from "~/.server/config";
 import { discordAuth } from "~/.server/auth/discord";
 import { createAttemptCookie } from "~/.server/auth/discord-sign-in";
 import { cookieSettings, createSessions } from "~/.server/auth/sessions";
-import { prepareThumbnails } from "~/.server/maps/load";
 import { PlayerImages } from "~/.server/maps/player-image";
 import { FileCache } from "~/.server/data/file-cache";
 import { Live } from "~/.server/live/live";
@@ -58,14 +58,10 @@ async function createServices(): Promise<Services> {
       }),
     }),
   };
-  const live = new Live(services);
-  // A map's notes and image come from the vault, so any open map may look different now.
-  vault.onReload(() => {
-    void live.allMapsChanged();
-    void prepareThumbnails(services);
-  });
-  void prepareThumbnails(services);
-  return { ...services, live };
+  // One object, changed in place when the DM switches campaigns (see runCampaign).
+  const running: Services = Object.assign(services, { live: new Live(services) });
+  watchVault(running);
+  return running;
 }
 
 const globalForServices = globalThis as typeof globalThis & {

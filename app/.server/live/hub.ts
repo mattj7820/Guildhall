@@ -2,6 +2,7 @@ import type { WebSocket } from "ws";
 import type { PlayerId, Viewer } from "~/campaign/types";
 import {
   CLOSE_ACCESS_CHANGED,
+  CLOSE_CAMPAIGN_CHANGED,
   clientMessageSchema,
   stateKey,
   type ClientMessage,
@@ -180,6 +181,14 @@ export class LiveHub {
         }
       }),
     );
+  }
+
+  /** Closes every connection because the DM switched campaigns: their pages load afresh. */
+  campaignChanged(): void {
+    for (const connection of this.open) {
+      connection.socket.close(CLOSE_CAMPAIGN_CHANGED, "Campaign changed");
+    }
+    this.open.clear();
   }
 
   close(): void {

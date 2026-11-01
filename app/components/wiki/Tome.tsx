@@ -51,7 +51,7 @@ export function Tome({
   const closed = pathname === "/wiki" && search === "";
   const cover = useCover(closed);
   const front = useRouteLoaderData("routes/wiki-home") as
-    { campaignName?: string; canName: boolean; bookFolder?: string; folders: string[] } | undefined;
+    { campaignName?: string; canName: boolean } | undefined;
   const chapters = useMemo(() => chaptersOf(tree, bookFolder), [tree, bookFolder]);
   const allNotes = useMemo(() => notesIn(tree), [tree]);
   // The book's order is the chapters' contents one after another, as the ribbons go.
@@ -275,8 +275,6 @@ export function Tome({
             <CoverFront
               name={front?.campaignName}
               canName={front?.canName ?? false}
-              bookFolder={front?.bookFolder}
-              folders={front?.folders ?? []}
               onOpen={() => navigate("/wiki?open")}
             />
             <div ref={coverInside} className="gh-tome-cover-inside" aria-hidden="true" inert />
