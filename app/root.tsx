@@ -17,6 +17,7 @@ import { rollingDice } from "~/.server/dice/bag";
 import { ViewToggle } from "~/components/ViewToggle";
 import { accountContext, servicesContext, viewerContext } from "~/context";
 import { EMPTY_BAG } from "~/dice/bag";
+import { rememberPage } from "~/home/town-position";
 import { moduleOf } from "~/theme/modules";
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -62,6 +63,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     document.documentElement.dataset.hydrated = "";
   }, []);
+
+  // The town map's token stands wherever the viewer last was, however they got there.
+  useEffect(() => rememberPage(pathname), [pathname]);
 
   return (
     <html lang="en" data-theme={data?.theme}>

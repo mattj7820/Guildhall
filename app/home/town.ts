@@ -28,9 +28,6 @@ export interface Place {
 /** Where the viewer's token stands in the Great Hall. */
 export const STAND = { x: 500, y: 365 };
 
-/** Coming in through the gate, the first time in a visit. */
-export const FROM_GATE = "M500,620 L500,470 L500,365";
-
 const PLACES: Place[] = [
   {
     id: "hall",
@@ -109,6 +106,27 @@ const PLACES: Place[] = [
 /** The places a viewer may go: the Steward's Office (Members) is the DM's. */
 export function townPlaces(role: Role): Place[] {
   return PLACES.filter((place) => !place.dmOnly || role === "dm");
+}
+
+/** The pages each place stands for, by the start of their path. */
+const PAGES: [string, PlaceId][] = [
+  ["/wiki", "library"],
+  ["/maps", "tower"],
+  ["/combat", "war"],
+  ["/characters", "barracks"],
+  ["/settings/dice", "treasury"],
+  ["/members", "steward"],
+];
+
+/**
+ * Where the viewer's token stands while they're on a page, however they got there: the place for
+ * its module, the hall for pages without one, and nothing for the front page itself (where it
+ * stays wherever they were last).
+ */
+export function placeOf(pathname: string): PlaceId | undefined {
+  if (pathname === "/") return undefined;
+  const page = PAGES.find(([path]) => pathname === path || pathname.startsWith(`${path}/`));
+  return page?.[1] ?? "hall";
 }
 
 /** Spots in the hall for whoever else is here, clear of the viewer's own. */

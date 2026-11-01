@@ -10,7 +10,6 @@ import { PrefetchPageLinks, useNavigate } from "react-router";
 import { countdown } from "~/home/countdown";
 import type { FightSummary } from "~/home/front-page";
 import {
-  FROM_GATE,
   HALL_SPOTS,
   STAND,
   TREES_INSIDE,
@@ -19,6 +18,7 @@ import {
   type Place,
   type PlaceId,
 } from "~/home/town";
+import { rememberedPlace } from "~/home/town-position";
 
 export interface TownFace {
   name: string;
@@ -47,10 +47,6 @@ export interface PlaceSetter {
   setHot: (id: PlaceId | null) => void;
 }
 
-/** The place the viewer last walked to from here, so coming back walks them home. */
-const CAME_FROM = "guildhall:town-from";
-const ARRIVED = "guildhall:town-arrived";
-
 /**
  * The guildhall as a drawn plan: each module a place, the campaign shown where it happens, and the
  * viewer's token walking the dashed paths when they pick somewhere to go (straight there under
@@ -60,17 +56,21 @@ export function TownMap(props: TownMapProps) {
   const { places, hrefs, fight } = props;
   const navigate = useNavigate();
   const [hot, setHot] = useState<PlaceId | null>(null);
-  const { token, trail, reveal, scroller, walk, walking } = useWalker();
+  const { token, trail, reveal, scroller, walk, walking, standAtEnd } = useWalker();
   const byId = new Map(places.map((place) => [place.id, place]));
 
-  // Coming back: walk home from where they went, or in through the gate on a first visit.
+  // The token is where the viewer last was: the place for the last page they opened.
+  const at = useRef<PlaceId>("hall");
+  const [from, setFrom] = useState<PlaceId>("hall");
   useLayoutEffect(() => {
-    const from = session(CAME_FROM);
-    const place = from ? byId.get(from as PlaceId) : undefined;
-    sessionSet(CAME_FROM, null);
-    if (place?.route) walk(place.route, { backwards: true, fade: true });
-    else if (!session(ARRIVED)) walk(FROM_GATE, { fade: true });
-    sessionSet(ARRIVED, "1");
+    const last = rememberedPlace();
+    const place = last && byId.get(last);
+    if (!place?.route) return;
+    at.current = place.id;
+    standAtEnd(place.route);
+    // Read from the browser once it's here; the server always draws the hall.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFrom(place.id);
     // Once, on arriving.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -84,15 +84,19 @@ export function TownMap(props: TownMapProps) {
         return;
       event.preventDefault();
       const arrive = () => {
-        if (href.startsWith("#")) {
-          document.getElementById(href.slice(1))?.focus();
-          return;
-        }
-        sessionSet(CAME_FROM, id);
-        void navigate(href);
+        at.current = id;
+        setFrom(id);
+        if (href.startsWith("#")) document.getElementById(href.slice(1))?.focus();
+        else void navigate(href);
       };
-      // A second click while walking, or no motion wanted: go now.
-      if (walking() || !walk(place.route, { done: arrive })) arrive();
+      const back = byId.get(at.current)?.route;
+      const there = () =>
+        walk(place.route!, { done: arrive, fade: true, leg: back ? "last" : "only" });
+      // A second click while walking, already there, or no motion wanted: go now.
+      if (walking() || at.current === id) arrive();
+      else if (back) {
+        if (!walk(back, { backwards: true, done: there, leg: "first" })) arrive();
+      } else if (!there()) arrive();
     };
   }
 
@@ -127,7 +131,14 @@ export function TownMap(props: TownMapProps) {
               </PlaceLink>
             ))}
             <Campaign {...props} />
-            {hotPlace?.route && <path d={hotPlace.route} className="gh-town-way" />}
+            {hotPlace?.route && hot !== from && (
+              <>
+                {byId.get(from)?.route && (
+                  <path d={byId.get(from)!.route} className="gh-town-way" />
+                )}
+                <path d={hotPlace.route} className="gh-town-way" />
+              </>
+            )}
             <Others key={props.others.map((face) => face.name).join()} faces={props.others} />
             <path ref={trail} className="gh-town-trail" mask="url(#gh-town-walked)" d="" />
             <mask id="gh-town-walked" maskUnits="userSpaceOnUse">
@@ -394,7 +405,14 @@ function useWalker() {
       backwards = false,
       fade = false,
       done,
-    }: { backwards?: boolean; fade?: boolean; done?: () => void },
+      leg = "only",
+    }: {
+      backwards?: boolean;
+      fade?: boolean;
+      done?: () => void;
+      /** Part of a walk through the hall: quicker, and easing only at the walk's two ends. */
+      leg?: "only" | "first" | "last";
+    },
   ): boolean {
     const path = trail.current;
     const mask = reveal.current;
@@ -410,12 +428,23 @@ function useWalker() {
       mask.style.strokeDashoffset = String(backwards ? -length * (1 - t) : length * (1 - t));
     };
     at(0);
-    const ms = Math.max(500, Math.min(1100, length * 2.4));
+    const ms =
+      leg === "only"
+        ? Math.max(500, Math.min(1100, length * 2.4))
+        : Math.max(350, Math.min(750, length * 1.7));
+    const ease = (t: number) =>
+      leg === "first"
+        ? t * t
+        : leg === "last"
+          ? 1 - (1 - t) ** 2
+          : t < 0.5
+            ? 2 * t * t
+            : 1 - (-2 * t + 2) ** 2 / 2;
     const start = performance.now();
     moving.current = true;
     const step = (now: number) => {
       const t = Math.min(1, (now - start) / ms);
-      at(t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+      at(ease(t));
       if (t < 1) return void requestAnimationFrame(step);
       moving.current = false;
       if (fade) path.classList.add("gh-town-trail-fade");
@@ -425,7 +454,17 @@ function useWalker() {
     return true;
   }
 
-  return { token, trail, reveal, scroller, walk, walking: () => moving.current };
+  /** Stands the token at the far end of a route, without walking it. */
+  function standAtEnd(d: string) {
+    const path = trail.current;
+    if (!path) return;
+    path.setAttribute("d", d);
+    const end = path.getPointAtLength(path.getTotalLength());
+    path.setAttribute("d", "");
+    place(end.x, end.y);
+  }
+
+  return { token, trail, reveal, scroller, walk, walking: () => moving.current, standAtEnd };
 }
 
 function Defs() {
@@ -599,21 +638,4 @@ function slug(name: string): string {
 
 function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-function session(key: string): string | null {
-  try {
-    return sessionStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
-function sessionSet(key: string, value: string | null) {
-  try {
-    if (value === null) sessionStorage.removeItem(key);
-    else sessionStorage.setItem(key, value);
-  } catch {
-    // Without storage, every visit walks in from the gate.
-  }
 }
