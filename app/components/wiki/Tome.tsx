@@ -129,8 +129,9 @@ export function Tome({
   }
 
   return (
-    <div ref={desk} className="gh-tome-desk px-4 pt-6 max-md:px-2 max-md:pt-3">
-      <div className="gh-tome relative mx-auto max-w-6xl">
+    <div ref={desk} className="gh-tome-desk px-4 pt-6 max-md:px-2 max-md:pt-3 xl:px-8">
+      {/* As wide as the screen allows, to a point: big screens get a bigger book. */}
+      <div className="gh-tome relative mx-auto max-w-[112rem]">
         <div
           role="group"
           aria-label="Chapters"
@@ -159,14 +160,14 @@ export function Tome({
             inert={reading || undefined}
             className="gh-tome-page gh-tome-left flex min-w-0 flex-col"
           >
-            <div className="gh-tome-scroll min-h-0 flex-1 overflow-y-auto px-6 pt-12 pb-10 md:px-10">
+            <div className="gh-tome-scroll @container min-h-0 flex-1 overflow-y-auto px-6 pt-12 pb-10 md:px-10">
               <p className="text-muted text-xs font-semibold tracking-[0.14em] uppercase">
                 The wiki · {allNotes.length} {allNotes.length === 1 ? "note" : "notes"}
               </p>
               <div
                 role="group"
                 aria-label="Spells"
-                className="mt-2 grid grid-cols-2 gap-x-6 max-md:hidden"
+                className="mt-2 grid grid-cols-2 gap-x-6 max-md:hidden @3xl:grid-cols-4"
               >
                 {SPELLS.map((s) => (
                   <button
@@ -299,7 +300,10 @@ function Contents({ chapter }: { chapter: Chapter }) {
       <p className="text-muted mt-1 text-sm">
         {count} {count === 1 ? "note" : "notes"} in this chapter.
       </p>
-      <FolderEntries folder={chapter.folder} />
+      {/* A wide page holds a long chapter's contents in two columns; a short one reads better in one. */}
+      <div className={count > 12 ? "gh-tome-contents mt-2" : "mt-2"}>
+        <FolderEntries folder={chapter.folder} />
+      </div>
     </div>
   );
 }

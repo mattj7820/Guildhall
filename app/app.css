@@ -1334,6 +1334,25 @@ it over and leaves it down. */
   mask-image: linear-gradient(to bottom, black calc(100% - 2.5rem), transparent);
 }
 
+/* The note reads larger as the book grows with the screen. */
+.gh-tome-right .prose {
+  font-size: clamp(1rem, 0.7rem + 0.4vw, 1.25rem);
+}
+.gh-tome-contents {
+  columns: 2 20rem;
+  column-gap: 3rem;
+  & li,
+  & h3 {
+    break-inside: avoid;
+  }
+  & h3 {
+    break-after: avoid;
+  }
+  & > ul:first-child {
+    margin-top: 0;
+  }
+}
+
 /* A strap of the same leather holds the book shut when it isn't open. */
 .gh-tome-clasp {
   position: absolute;
@@ -1809,7 +1828,7 @@ it over and leaves it down. */
     &[data-reading] > .gh-tome-right {
       border-radius: 3px;
       .gh-tome-scroll > * {
-        max-width: 46rem;
+        max-width: clamp(46rem, 52vw, 64rem);
         margin-inline: auto;
       }
     }
