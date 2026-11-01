@@ -1752,3 +1752,64 @@ in the hall).
   the mapgen repo. They hold no text and no lore.
 - **Geometry and art change together**: moving a place or a path in `town.ts` means new art, and
   the art's layout comes only from `town.ts`.
+
+## 87. The wiki as a tome: an optional look, each member's own
+
+**Date:** 2026-11-01
+
+**Context.** The owner wanted the app's design to feel like a D&D world. Of the ideas prototyped
+as artifacts, they liked the wiki as a wizard's tome, as an option, if the small things (above
+all the page turn) were done well.
+
+**Decision.** Each member picks Pages (the plain wiki, the default) or Tome in Settings, saved on
+their account (`wikiLook`, stored only when it's the tome). The tome is only a look over the same
+loaders: the tree, the wiki's own search, and two additions worked out per viewer on the server,
+the tags on the notes they may see and the notes that link to the open one (`Vault.tags`,
+`Vault.linkedFrom`, built from what that role may read, so a link in a DM part never counts for
+players). Both are sent only to tome readers.
+
+- **Spells keep their SRD names** (Locate Object, Misty Step, Detect Magic, Scrying), each with
+  a plain line saying what it does, so the table knows them and nobody has to guess.
+- **The page turn is a copy of the page, turned in 3D with CSS.** Just before a navigation the
+  right page is copied; once the new note is in, the copy turns over the spine. The back of the
+  leaf is a copy of the left page, so it lands as the page it covers and is removed without a
+  seam. Going back in history turns the other way. Misty Step's notes form out of mist instead.
+  The copies are pictures only (inert, hidden from assistive tech). With reduced motion there's
+  no turn or mist.
+- **Phones get one page,** with the left page as a sheet opened from a bar of spells.
+
+## 88. The tome closes: a cover as the wiki's front page, with the campaign's name
+
+**Date:** 2026-11-01
+
+**Context.** The owner wanted to close the tome and see its front cover, titled with the
+campaign's name, as a landing page.
+
+**Decision.** In the tome, `/wiki` is the closed book; it opens to a title page at `/wiki?open`,
+and Close on the open book goes back to the cover. The cover is drawn (tooled border, corner
+brackets, a geometric emblem, the name stamped in gilt): no pictures, nothing invented.
+
+- **The name is the DM's,** set on the cover and kept in `campaign.json` in the data folder
+  (`CampaignName`), not the vault, since it's Guildhall's own setting. A name that can't be read
+  is none; without one the cover says "Campaign wiki". The plain wiki's front page uses it too.
+- **Opening is one motion:** the cover swings over its hinge while the book slides across from
+  the middle to where it lies open, and the book is revealed just behind the cover's edge (the
+  keyframes are sampled from one ease). The inside of the cover is the left page, so it lands
+  seamlessly. Closing is the same reversed. Phones swing the cover away; reduced motion skips it.
+
+## 89. The tome can be one campaign's folder: the DM picks which folder is the book
+
+**Date:** 2026-11-01
+
+**Context.** The owner's vault keeps almost everything in one campaign folder, with a few notes
+beside it that aren't part of this campaign, and may later hold a folder for each campaign. With
+chapters from the vault's top folders, the tome had two ribbons (one for players).
+
+**Decision.** On the cover, beside the name, the DM picks which top folder is the book (kept in
+`campaign.json` with the name). Its folders become the chapters and its own notes are Front
+pages; everything outside it is left out of the tome: its contents, the spells (search, Misty
+Step, tags, what links here) and the note counts, worked out on the server so none of it is sent.
+Without a choice, or for someone with no notes in that folder, the tome is the whole vault as
+before. The folder's name reaches a browser only when its viewer can see notes in it, and the DM
+can only pick one of the vault's top folders. This is the tome only: a note outside the book
+still opens from a link, and the rest of the app still reads the whole vault.

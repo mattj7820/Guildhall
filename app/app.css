@@ -1018,6 +1018,1200 @@ it over and leaves it down. */
 }
 
 /*
+ * The wiki as a tome (app/components/wiki/Tome.tsx), for those who pick it in Settings: an old
+ * book, leather over boards, with aged paper. Its colours come from the theme's own (the paper is
+ * the statblocks' page, the leather the top bar, the gilt the trim); the grain is drawn noise, so
+ * no images are needed. It keeps one size from note to note, filling the window below the top
+ * bar, and long notes scroll inside their page.
+ */
+.gh-tome-desk {
+  /* A turning leaf never grows the page, so the window never gains a scrollbar mid-turn. */
+  overflow: clip;
+  --tome-paper: color-mix(in oklab, var(--gh-statblock-page) 82%, var(--gh-surface));
+  --tome-paper-edge: color-mix(in oklab, var(--tome-paper) 86%, black);
+  --tome-leather: color-mix(in oklab, var(--gh-bar) 70%, #2b1d14);
+  --tome-ink: var(--gh-ink);
+  --tome-rubric: var(--gh-link);
+  --tome-glow: color-mix(in oklab, var(--gh-trim) 70%, var(--gh-ink));
+  --tome-glow-soft: color-mix(in srgb, var(--gh-trim) 22%, transparent);
+  --tome-turn: 620ms;
+  /* Fine fibres, and the larger blotches of age, in the paper. */
+  --tome-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .32 0 0 0 0 .22 0 0 0 0 .1 0 0 0 .16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --tome-age: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.01' numOctaves='4' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .3 0 0 0 0 .12 0 0 0 .32 -.12'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Pebbled leather. */
+  --tome-hide: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .5 -.08'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* The book fills the window below the top bar, measured into --tome-top. */
+  --tome-height: max(26rem, calc(100dvh - var(--tome-top, 4rem) - 2.75rem));
+  @variant dark {
+    --tome-paper: color-mix(in oklab, var(--gh-statblock-page) 88%, var(--gh-surface));
+    --tome-paper-edge: color-mix(in oklab, var(--tome-paper) 80%, white);
+    --tome-leather: color-mix(in oklab, var(--gh-bar) 55%, #1a120e);
+  }
+  @variant gem {
+    --tome-leather: color-mix(in oklab, var(--gh-bar) 85%, #050b16);
+  }
+  @media (width < 48rem) {
+    /* Room for the bar of spells at the bottom. */
+    --tome-height: max(22rem, calc(100dvh - var(--tome-top, 4rem) - 5rem));
+  }
+}
+
+/* The cover: leather over boards, with a tooled line inside its edge. */
+.gh-tome {
+  height: var(--tome-height);
+  padding: 12px 14px 16px;
+  border-radius: 10px 14px 14px 10px;
+  background-color: var(--tome-leather);
+  background-image:
+    var(--tome-hide), radial-gradient(ellipse at 30% 15%, rgb(255 255 255 / 0.1), transparent 55%),
+    radial-gradient(ellipse at 80% 100%, rgb(0 0 0 / 0.35), transparent 60%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    inset 0 0 0 1px rgb(0 0 0 / 0.45),
+    inset 0 0 18px rgb(0 0 0 / 0.45),
+    0 1px 2px rgb(0 0 0 / 0.4),
+    0 10px 18px -8px rgb(0 0 0 / 0.45),
+    0 34px 60px -26px rgb(0 0 0 / 0.55);
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 5px;
+    border-radius: 7px 10px 10px 7px;
+    border: 1px solid rgb(0 0 0 / 0.35);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.06);
+    pointer-events: none;
+  }
+  @variant gem {
+    &::before {
+      border-color: color-mix(in srgb, var(--gh-trim) 30%, transparent);
+    }
+  }
+  @media (width < 48rem) {
+    padding: 8px 8px 10px;
+  }
+}
+
+.gh-tome-spread {
+  border-radius: 3px;
+}
+/* Paper: grain, the blotches of age, and edges a shade darker than the middle. */
+.gh-tome-page {
+  position: relative;
+  background-color: var(--tome-paper);
+  background-image: var(--tome-grain), var(--tome-age);
+  @variant dark {
+    background-image: var(--tome-grain);
+  }
+}
+.gh-tome-page::after {
+  /* The light falls across the open book; the outer edges have yellowed. */
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 40px rgb(110 70 20 / 0.14);
+  @variant dark {
+    box-shadow: inset 0 0 50px rgb(0 0 0 / 0.4);
+  }
+}
+/*
+ * Each page curves down into the gutter: a soft shadow where it meets the spine, a band of light
+ * where the curve catches it, then flat paper. The stack of pages beneath shows at its outer and
+ * bottom edges.
+ */
+.gh-tome-left {
+  border-radius: 3px 1px 1px 3px;
+  box-shadow:
+    -1px 1px 0 var(--tome-paper-edge),
+    -2px 2px 0 var(--tome-paper),
+    -3px 3px 0 var(--tome-paper-edge),
+    -4px 4px 0 var(--tome-paper),
+    -5px 5px 0 var(--tome-paper-edge),
+    -6px 6px 6px rgb(0 0 0 / 0.35);
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 4.5rem;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(
+      to left,
+      rgb(0 0 0 / 0.32),
+      rgb(0 0 0 / 0.12) 0.7rem,
+      rgb(255 255 255 / 0.07) 2rem,
+      transparent 4.5rem
+    );
+  }
+}
+.gh-tome-right {
+  border-radius: 1px 3px 3px 1px;
+  box-shadow:
+    1px 1px 0 var(--tome-paper-edge),
+    2px 2px 0 var(--tome-paper),
+    3px 3px 0 var(--tome-paper-edge),
+    4px 4px 0 var(--tome-paper),
+    5px 5px 0 var(--tome-paper-edge),
+    6px 6px 6px rgb(0 0 0 / 0.35);
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4.5rem;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(
+      to right,
+      rgb(0 0 0 / 0.36),
+      rgb(0 0 0 / 0.14) 0.7rem,
+      rgb(255 255 255 / 0.07) 2rem,
+      transparent 4.5rem
+    );
+  }
+}
+/* Text fades into the paper at the foot of a page that scrolls, as if it carried on over. */
+.gh-tome-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--gh-ink) 25%, transparent) transparent;
+  overscroll-behavior: contain;
+  mask-image: linear-gradient(to bottom, black calc(100% - 2.5rem), transparent);
+}
+
+/* The note reads larger as the book grows with the screen. */
+.gh-tome-right .prose {
+  font-size: clamp(1rem, 0.7rem + 0.4vw, 1.25rem);
+}
+.gh-tome-contents {
+  columns: 2 20rem;
+  column-gap: 3rem;
+  & li,
+  & h3 {
+    break-inside: avoid;
+  }
+  & h3 {
+    break-after: avoid;
+  }
+  & > ul:first-child {
+    margin-top: 0;
+  }
+}
+
+/* A strap of the same leather holds the book shut when it isn't open. */
+.gh-tome-clasp {
+  position: absolute;
+  right: -12px;
+  top: 50%;
+  width: 30px;
+  height: 64px;
+  translate: 0 -50%;
+  border-radius: 6px 2px 2px 6px;
+  background-color: var(--tome-leather);
+  background-image:
+    radial-gradient(
+      circle at 11px 50%,
+      var(--gh-trim) 0 3px,
+      rgb(0 0 0 / 0.5) 3.5px,
+      transparent 4.5px
+    ),
+    var(--tome-hide);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    inset 0 0 0 1px rgb(0 0 0 / 0.4),
+    2px 2px 4px rgb(0 0 0 / 0.35);
+}
+
+/* Ribbons: silk bookmarks for the chapters, each the next of the theme's colours, muted. */
+.gh-tome-ribbons {
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.35));
+  /* The strip spans the book's top; only the ribbons themselves take clicks. */
+  pointer-events: none;
+  & > * {
+    pointer-events: auto;
+  }
+}
+.gh-tome-ribbon {
+  --hue: var(--gh-info);
+  --ribbon: color-mix(in oklab, var(--hue) 62%, #2a2420);
+  color: rgb(255 255 255 / 0.88);
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+  background-color: var(--ribbon);
+  /* The sheen of silk, across its width. */
+  background-image: linear-gradient(
+    90deg,
+    rgb(0 0 0 / 0.22),
+    rgb(255 255 255 / 0.14) 28%,
+    rgb(255 255 255 / 0.02) 55%,
+    rgb(0 0 0 / 0.18)
+  );
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 86%, 0 100%);
+  cursor: pointer;
+  transition: padding-bottom 220ms ease-out;
+  &:nth-child(7n + 2) {
+    --hue: var(--gh-good);
+  }
+  &:nth-child(7n + 3) {
+    --hue: var(--gh-module-combat);
+  }
+  &:nth-child(7n + 4) {
+    --hue: var(--gh-module-characters);
+  }
+  &:nth-child(7n + 5) {
+    --hue: var(--gh-warn);
+  }
+  &:nth-child(7n + 6) {
+    --hue: var(--gh-link);
+  }
+  &:nth-child(7n) {
+    --hue: var(--gh-accent);
+  }
+  @variant dark {
+    --ribbon: color-mix(in oklab, var(--hue) 45%, #1c1714);
+  }
+  &:hover {
+    padding-bottom: 1.2rem;
+  }
+  &[aria-pressed="true"] {
+    padding-bottom: 1.55rem;
+  }
+}
+
+/* Spells are written on the page like a list of cantrips, not set on cards. */
+.gh-tome-spell {
+  border-bottom: 1px solid color-mix(in srgb, var(--gh-ink) 14%, transparent);
+  .gh-tome-spell-name {
+    color: var(--gh-title);
+    transition: color 150ms;
+  }
+  &:hover .gh-tome-spell-name {
+    color: var(--tome-rubric);
+  }
+  &[aria-pressed="true"] {
+    border-bottom-color: var(--tome-glow);
+    .gh-tome-spell-name {
+      color: var(--tome-rubric);
+    }
+    .gh-tome-spell-name::before {
+      content: "\2767  ";
+    }
+  }
+}
+.gh-tome-words {
+  color: var(--gh-ink);
+  border-bottom: 1px solid color-mix(in srgb, var(--gh-ink) 35%, transparent);
+  outline: none;
+  transition: border-color 200ms;
+  &::placeholder {
+    color: var(--gh-faint);
+  }
+  &:focus-visible {
+    border-bottom: 2px solid var(--tome-glow);
+    margin-bottom: -1px;
+  }
+}
+.gh-tome-entry {
+  transition: color 150ms;
+  &:hover,
+  &[aria-current="page"] {
+    color: var(--tome-rubric);
+  }
+  &[aria-current="page"] .gh-tome-title::before {
+    content: "\2767  ";
+  }
+}
+.gh-tome-mark {
+  color: inherit;
+  background: var(--tome-glow-soft);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+/* Results ink onto the page as they arrive. */
+.gh-tome-ink {
+  animation: tome-ink 500ms ease-out both;
+}
+@keyframes tome-ink {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+  }
+}
+/* Detect Magic's tags. */
+.gh-tome-aura {
+  border: 1px solid color-mix(in srgb, var(--gh-ink) 25%, transparent);
+  transition:
+    background-color 200ms,
+    border-color 200ms;
+  &:hover {
+    border-color: var(--tome-glow);
+  }
+  &[aria-pressed="true"] {
+    border-color: var(--tome-glow);
+    background: var(--tome-glow-soft);
+  }
+}
+
+/* The rune circle (RuneCircle.tsx), drawn in ink. Strokes have a path length of 1. */
+.gh-rune-circle {
+  color: var(--tome-glow);
+  overflow: visible;
+  transition: filter 400ms;
+  &[data-answered] {
+    filter: drop-shadow(0 0 3px var(--tome-glow-soft));
+  }
+}
+.gh-rune-draw,
+.gh-rune,
+.gh-rune-star {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.gh-rune-draw {
+  animation: rune-draw 700ms ease-out forwards;
+}
+.gh-rune-later {
+  animation-delay: 150ms;
+}
+.gh-rune-ring,
+.gh-rune-pulse {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+}
+.gh-rune-ring {
+  transition: transform 450ms cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+.gh-rune {
+  transition: stroke-dashoffset 350ms ease-out;
+  &[data-lit] {
+    stroke-dashoffset: 0;
+  }
+}
+.gh-rune-star {
+  opacity: 0.8;
+  transition: stroke-dashoffset 600ms ease-out;
+  [data-answered] & {
+    stroke-dashoffset: 0;
+  }
+}
+.gh-rune-pulse {
+  animation: rune-pulse 600ms ease-out forwards;
+}
+@keyframes rune-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes rune-pulse {
+  from {
+    opacity: 0.5;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.14);
+  }
+}
+
+/*
+ * The page turn (usePageTurn.ts). The leaf is a chain of hinged strips: the first turns about the
+ * spine, and each of the others bends a little against the one before, so the leaf curls. Lifted
+ * by its edge, the outer strips lead; in the air, they trail; as it lands, it flattens. Forward,
+ * the old page lifts off the new note and lands on the left page; back is the same turn reversed.
+ */
+.gh-tome-turn {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  /* As deep for a wide page (reading, phones) as for one of a spread. */
+  perspective: calc(var(--leaf, 580px) * 7.2);
+  perspective-origin: 0 50%;
+  &[data-turn="back"] *,
+  &[data-turn="back"] *::after {
+    animation-direction: reverse;
+  }
+}
+.gh-tome-under,
+.gh-tome-turn-shade {
+  position: absolute;
+  inset: 0;
+}
+.gh-tome-under {
+  overflow: hidden;
+}
+.gh-tome-leaf,
+.gh-tome-strip {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  transform-origin: 0 50%;
+  transform-style: preserve-3d;
+}
+.gh-tome-leaf {
+  left: 0;
+  width: var(--strip);
+  will-change: transform;
+  animation: tome-leaf var(--tome-turn) linear both;
+}
+.gh-tome-strip {
+  /* A pixel wider than its share, under the next, so no light shows between strips as they bend. */
+  left: var(--strip);
+  width: calc(var(--strip) + 1px);
+  animation: tome-curl var(--tome-turn) linear both;
+}
+.gh-tome-leaf-front,
+.gh-tome-leaf-back {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  backface-visibility: hidden;
+  & > * {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    box-shadow: none;
+  }
+}
+.gh-tome-under > * {
+  position: absolute;
+  inset: 0;
+  box-shadow: none;
+}
+/*
+ * Turning away from the light, the leaf darkens, most where it curls at its edge; its back is in
+ * shadow until it's nearly down, so it lands as clean as the page it covers.
+ */
+.gh-tome-leaf-front::after,
+.gh-tome-leaf-back::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  animation: tome-shade-front var(--tome-turn) linear both;
+  background: linear-gradient(to right, rgb(0 0 0 / 0.06), rgb(0 0 0 / 0.3)) var(--front-at) 0 /
+    var(--leaf) 100% no-repeat;
+}
+.gh-tome-leaf-back {
+  transform: rotateY(180deg);
+  background-color: var(--tome-paper);
+  background-image: var(--tome-grain);
+  &::after {
+    animation-name: tome-shade-back;
+    background: linear-gradient(to left, rgb(0 0 0 / 0.06), rgb(0 0 0 / 0.3)) var(--back-at) 0 /
+      var(--leaf) 100% no-repeat;
+  }
+}
+/* On phones there's no left page to land on, so a blank back fades as it goes. */
+.gh-tome-leaf-blank .gh-tome-leaf-back {
+  animation: tome-settle var(--tome-turn) linear both;
+}
+/* Copies on a leaf show the page as it is, without replaying its animations. */
+.gh-tome-still,
+.gh-tome-still * {
+  animation: none !important;
+  transition: none !important;
+  scrollbar-width: none;
+  & .gh-rune-draw {
+    stroke-dashoffset: 0;
+  }
+}
+.gh-tome-turn-shade {
+  transform-origin: 0 50%;
+  background: linear-gradient(to right, rgb(0 0 0 / 0.3), rgb(0 0 0 / 0.08) 60%, transparent);
+  animation: tome-shade-under var(--tome-turn) linear both;
+}
+/* A slow lift, a quick swing over, and a soft landing: it ends when the leaf is down. */
+@keyframes tome-leaf {
+  0% {
+    transform: rotateY(0deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.75, 0.3);
+  }
+  20% {
+    transform: rotateY(-18deg);
+    animation-timing-function: cubic-bezier(0.3, 0.25, 0.4, 1);
+  }
+  88% {
+    transform: rotateY(-178.5deg);
+    animation-timing-function: ease-out;
+  }
+  100% {
+    transform: rotateY(-180deg);
+  }
+}
+/* Lifted by its edge, the outer strips lead; in the air they trail; landing, they flatten. */
+@keyframes tome-curl {
+  0% {
+    transform: rotateY(0deg);
+    animation-timing-function: ease-out;
+  }
+  16% {
+    transform: rotateY(-6deg);
+    animation-timing-function: ease-in-out;
+  }
+  50% {
+    transform: rotateY(8deg);
+    animation-timing-function: ease-in-out;
+  }
+  82% {
+    transform: rotateY(1.5deg);
+    animation-timing-function: ease-out;
+  }
+  100% {
+    transform: rotateY(0deg);
+  }
+}
+@keyframes tome-shade-front {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes tome-shade-back {
+  50% {
+    opacity: 1;
+  }
+  82%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes tome-settle {
+  86% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes tome-shade-under {
+  0% {
+    opacity: 0;
+    transform: scaleX(1);
+  }
+  15% {
+    opacity: 1;
+  }
+  55% {
+    opacity: 0.5;
+    transform: scaleX(0.04);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+}
+
+/* Misty Step: the note forms out of mist instead of turning in. */
+.gh-tome-mist {
+  animation: tome-mist 560ms ease-out;
+}
+.gh-tome-wisps {
+  --wisp: rgb(255 255 255 / 0.85);
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 40% 30% at 25% 35%, var(--wisp), transparent 70%),
+    radial-gradient(ellipse 45% 35% at 70% 55%, var(--wisp), transparent 70%),
+    radial-gradient(ellipse 35% 25% at 45% 80%, var(--wisp), transparent 70%);
+  filter: blur(14px);
+  animation: tome-wisps 640ms ease-out both;
+  @variant dark {
+    --wisp: color-mix(in srgb, var(--gh-ink) 30%, transparent);
+  }
+}
+@keyframes tome-mist {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+  }
+  40% {
+    opacity: 0.6;
+  }
+}
+@keyframes tome-wisps {
+  from {
+    opacity: 0.9;
+    transform: translateX(-4%) scale(1.05);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(4%) scale(1.15);
+  }
+}
+
+/*
+ * Two pages side by side; for long reads (useReading.ts) the left page folds away under the right
+ * and the note has the book's width, its text kept to a readable measure.
+ */
+@media (width >= 48rem) {
+  .gh-tome-spread {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    transition: grid-template-columns 420ms cubic-bezier(0.4, 0, 0.2, 1);
+    &[data-reading] {
+      grid-template-columns: minmax(0, 0fr) minmax(0, 1fr);
+    }
+    container-type: inline-size;
+    & > .gh-tome-left {
+      overflow: hidden;
+      transition: opacity 260ms 120ms;
+      /* Its writing keeps its width, so folding slides it under the right page, unsqueezed. */
+      & > .gh-tome-scroll {
+        min-width: 50cqw;
+      }
+    }
+    /* It slides under the right page as its column closes, fading only at the end. */
+    &[data-reading] > .gh-tome-left {
+      opacity: 0;
+      visibility: hidden;
+      transition:
+        opacity 140ms 280ms,
+        visibility 0s 420ms;
+    }
+    &[data-reading] > .gh-tome-right {
+      border-radius: 3px;
+      .gh-tome-scroll > * {
+        max-width: clamp(46rem, 52vw, 64rem);
+        margin-inline: auto;
+      }
+    }
+  }
+}
+.gh-tome-read {
+  color: var(--gh-muted);
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+  border: 1px solid transparent;
+  transition:
+    color 150ms,
+    border-color 150ms;
+  &:hover {
+    color: var(--tome-rubric);
+    border-color: color-mix(in srgb, var(--gh-ink) 20%, transparent);
+  }
+}
+
+/* Phones: one page. The left page is a sheet over the note, opened from the bar. */
+.gh-tome-dock {
+  background-color: var(--tome-leather);
+  background-image: var(--tome-hide);
+  border-top: 1px solid rgb(0 0 0 / 0.5);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  color: var(--gh-on-bar-strong);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  & button[aria-pressed="true"] {
+    background: rgb(255 255 255 / 0.1);
+    box-shadow: inset 0 -2px 0 var(--gh-trim);
+  }
+}
+@media (width < 48rem) {
+  .gh-tome-left {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 35;
+    max-height: 78dvh;
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -16px 36px rgb(0 0 0 / 0.35);
+    transform: translateY(105%);
+    visibility: hidden;
+    transition:
+      transform 300ms ease,
+      visibility 0s 300ms;
+    &::before {
+      display: none;
+    }
+    &[data-open] {
+      transform: none;
+      visibility: visible;
+      transition: transform 300ms ease;
+    }
+  }
+  .gh-tome-right {
+    border-radius: 3px;
+    &::before {
+      width: 1.5rem;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gh-tome-turn {
+    display: none;
+  }
+  .gh-tome-ink,
+  .gh-rune-draw,
+  .gh-rune-pulse,
+  .gh-tome-mist {
+    animation: none;
+  }
+  .gh-rune-draw {
+    stroke-dashoffset: 0;
+  }
+  .gh-rune-pulse {
+    display: none;
+  }
+  .gh-rune,
+  .gh-rune-star,
+  .gh-rune-ring,
+  .gh-tome-left,
+  .gh-tome-ribbon,
+  .gh-tome-aura,
+  .gh-tome-spread,
+  .gh-tome-spread > .gh-tome-left {
+    transition: none !important;
+  }
+}
+
+/*
+ * The closed book (Cover.tsx), the wiki's front page: one board's width, in the middle, the
+ * cover over the right half of the open book. Opening, the cover swings over on its hinge and
+ * lands as the left half (its inside is the left page), while the book slides across to where it
+ * lies open. Gilt is the theme's trim warmed towards gold; Gemlight keeps its own silver-blue.
+ */
+.gh-tome-desk {
+  --tome-gilt: color-mix(in oklab, var(--gh-trim) 55%, #dcb865);
+  --tome-cover-turn: 950ms;
+  @variant gem {
+    --tome-gilt: var(--gh-trim);
+  }
+}
+.gh-tome[data-cover] {
+  perspective: 3200px;
+  perspective-origin: 50% 45%;
+}
+.gh-tome[data-cover="shut"] {
+  clip-path: inset(-60px -60px -60px 50%);
+  translate: -25% 0;
+}
+.gh-tome[data-cover="opening"] {
+  animation: tome-book-open var(--tome-cover-turn) linear both;
+}
+.gh-tome[data-cover="closing"] {
+  animation: tome-book-open var(--tome-cover-turn) linear reverse both;
+}
+.gh-tome[data-cover="shut"] ~ .gh-tome-dock {
+  display: none;
+}
+/* The ribbons are tucked away while the cover moves, and come out once the book is open. */
+.gh-tome-ribbons {
+  transition: opacity 300ms;
+  [data-cover] > & {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+.gh-tome-cover {
+  position: absolute;
+  inset: 0 0 0 50%;
+  z-index: 45;
+  transform-origin: 0 50%;
+  transform-style: preserve-3d;
+  [data-cover="opening"] > & {
+    animation: tome-cover-swing var(--tome-cover-turn) linear both;
+  }
+  [data-cover="closing"] > & {
+    animation: tome-cover-swing var(--tome-cover-turn) linear reverse both;
+  }
+}
+.gh-tome-cover-front,
+.gh-tome-cover-inside {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+/* Inside the cover: the left board with the left page on it, as the open book has them. */
+.gh-tome-cover-inside {
+  transform: rotateY(180deg);
+  padding: 12px 0 16px 14px;
+  border-radius: 10px 0 0 10px;
+  background-color: var(--tome-leather);
+  background-image: var(--tome-hide);
+  & > * {
+    position: relative;
+    height: 100%;
+  }
+}
+.gh-tome-cover-front {
+  color: var(--tome-gilt);
+  border-radius: 3px 14px 14px 3px;
+  background-color: var(--tome-leather);
+  background-image:
+    var(--tome-hide), radial-gradient(ellipse at 40% 30%, rgb(255 255 255 / 0.1), transparent 60%),
+    radial-gradient(ellipse at 90% 100%, rgb(0 0 0 / 0.35), transparent 60%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    inset 0 0 0 1px rgb(0 0 0 / 0.45),
+    inset 0 0 24px rgb(0 0 0 / 0.45),
+    0 1px 2px rgb(0 0 0 / 0.4),
+    0 18px 40px -16px rgb(0 0 0 / 0.55);
+  /* The groove where the cover bends at the spine. */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 26px;
+    border-radius: 3px 0 0 3px;
+    pointer-events: none;
+    background: linear-gradient(
+      to right,
+      rgb(0 0 0 / 0.5),
+      rgb(255 255 255 / 0.07) 45%,
+      rgb(0 0 0 / 0.28) 70%,
+      transparent
+    );
+  }
+}
+.gh-cover-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1rem, 3vh, 2rem);
+  padding: 4rem 3.5rem;
+  cursor: pointer;
+  border-radius: inherit;
+  transition: filter 300ms;
+  &:hover {
+    filter: brightness(1.08);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--tome-gilt);
+    outline-offset: -10px;
+  }
+}
+/* A tooled double frame, with a bracket in each corner. */
+.gh-cover-frame {
+  position: absolute;
+  inset: clamp(18px, 3vw, 30px);
+  border: 2px solid color-mix(in srgb, var(--tome-gilt) 75%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--tome-gilt) 45%, transparent);
+  outline-offset: 7px;
+  border-radius: 3px;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.55));
+}
+.gh-cover-corner {
+  position: absolute;
+  width: clamp(48px, 6vw, 76px);
+  height: clamp(48px, 6vw, 76px);
+}
+.gh-cover-corner-tl {
+  top: 6px;
+  left: 6px;
+}
+.gh-cover-corner-tr {
+  top: 6px;
+  right: 6px;
+}
+.gh-cover-corner-bl {
+  bottom: 6px;
+  left: 6px;
+}
+.gh-cover-corner-br {
+  bottom: 6px;
+  right: 6px;
+}
+/* The title, stamped in gilt: lighter on its upper edge, pressed into the leather. */
+.gh-cover-title {
+  max-width: 85%;
+  font-size: clamp(2.4rem, 4.6vw, 5.2rem);
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-wrap: balance;
+  color: transparent;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--tome-gilt) 55%, white),
+    var(--tome-gilt) 45%,
+    color-mix(in oklab, var(--tome-gilt) 70%, black)
+  );
+  background-clip: text;
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.6)) drop-shadow(0 -1px 0 rgb(255 255 255 / 0.06));
+}
+.gh-cover-rule {
+  width: clamp(9rem, 16vw, 15rem);
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.55));
+}
+.gh-cover-emblem {
+  width: clamp(6.5rem, 11vw, 11rem);
+  opacity: 0.9;
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.55));
+}
+.gh-cover-hint {
+  position: absolute;
+  bottom: clamp(4.6rem, 10vh, 6rem);
+  font-size: 0.8rem;
+  font-variant: small-caps;
+  letter-spacing: 0.18em;
+  opacity: 0.7;
+}
+[data-naming] .gh-cover-hint {
+  visibility: hidden;
+}
+.gh-cover-rename {
+  color: var(--tome-gilt);
+  font-size: 0.8rem;
+  font-variant: small-caps;
+  letter-spacing: 0.1em;
+  opacity: 0.75;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
+    background: rgb(0 0 0 / 0.25);
+  }
+}
+.gh-tome-cover-front > .gh-cover-rename,
+.gh-cover-naming {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(2.8rem, 6vh, 3.6rem);
+  translate: -50% 0;
+}
+.gh-cover-naming {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  width: min(80%, 26rem);
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  background: rgb(0 0 0 / 0.45);
+}
+.gh-cover-select {
+  color: var(--tome-gilt);
+  background: rgb(0 0 0 / 0.35);
+  border: 1px solid color-mix(in srgb, var(--tome-gilt) 45%, transparent);
+  border-radius: 3px;
+  padding: 0.1rem 0.3rem;
+}
+.gh-cover-input {
+  width: 100%;
+  font-size: 1.4rem;
+  text-align: center;
+  color: var(--tome-gilt);
+  background: transparent;
+  border-bottom: 1px solid color-mix(in srgb, var(--tome-gilt) 60%, transparent);
+  outline: none;
+  &::placeholder {
+    color: color-mix(in srgb, var(--tome-gilt) 50%, transparent);
+  }
+  &:focus-visible {
+    border-bottom-color: var(--tome-gilt);
+  }
+}
+/* The open book's title page. */
+.gh-title-page .gh-cover-rule {
+  margin-top: 1.25rem;
+  color: var(--tome-glow);
+  filter: none;
+}
+
+/* Phones: the book is one page, so the cover covers it all and swings away to the left. */
+@media (width < 48rem) {
+  .gh-tome[data-cover="shut"],
+  .gh-tome[data-cover="opening"],
+  .gh-tome[data-cover="closing"] {
+    clip-path: none;
+    translate: none;
+    animation: none;
+  }
+  .gh-tome-cover {
+    inset: 0;
+    [data-cover="opening"] > & {
+      animation-name: tome-cover-away;
+    }
+    [data-cover="closing"] > & {
+      animation-name: tome-cover-away;
+    }
+  }
+  .gh-tome-cover-inside {
+    display: none;
+  }
+  .gh-cover-face {
+    padding: 3rem 2rem;
+  }
+}
+@keyframes tome-cover-away {
+  0% {
+    transform: rotateY(0deg);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.6, 1);
+  }
+  100% {
+    transform: rotateY(-100deg);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gh-tome[data-cover],
+  .gh-tome-cover {
+    animation: none !important;
+  }
+  .gh-cover-face {
+    transition: none;
+  }
+}
+
+/* Sampled from one ease, so the book is revealed just behind the cover's edge as it swings. */
+@keyframes tome-cover-swing {
+  0% {
+    transform: rotateY(0deg);
+  }
+  5% {
+    transform: rotateY(-0.1deg);
+  }
+  10% {
+    transform: rotateY(-0.7deg);
+  }
+  15% {
+    transform: rotateY(-2.4deg);
+  }
+  20% {
+    transform: rotateY(-5.8deg);
+  }
+  25% {
+    transform: rotateY(-11.3deg);
+  }
+  30% {
+    transform: rotateY(-19.4deg);
+  }
+  35% {
+    transform: rotateY(-30.9deg);
+  }
+  40% {
+    transform: rotateY(-46.1deg);
+  }
+  45% {
+    transform: rotateY(-65.6deg);
+  }
+  50% {
+    transform: rotateY(-90deg);
+  }
+  55% {
+    transform: rotateY(-114.4deg);
+  }
+  60% {
+    transform: rotateY(-133.9deg);
+  }
+  65% {
+    transform: rotateY(-149.1deg);
+  }
+  70% {
+    transform: rotateY(-160.6deg);
+  }
+  75% {
+    transform: rotateY(-168.8deg);
+  }
+  80% {
+    transform: rotateY(-174.2deg);
+  }
+  85% {
+    transform: rotateY(-177.6deg);
+  }
+  90% {
+    transform: rotateY(-179.3deg);
+  }
+  95% {
+    transform: rotateY(-179.9deg);
+  }
+  100% {
+    transform: rotateY(-180deg);
+  }
+}
+@keyframes tome-book-open {
+  0% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -25% 0;
+  }
+  5% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -24.99% 0;
+  }
+  10% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -24.9% 0;
+  }
+  15% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -24.66% 0;
+  }
+  20% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -24.2% 0;
+  }
+  25% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -23.44% 0;
+  }
+  30% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -22.3% 0;
+  }
+  35% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -20.71% 0;
+  }
+  40% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -18.6% 0;
+  }
+  45% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -15.89% 0;
+  }
+  50% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -12.5% 0;
+  }
+  55% {
+    clip-path: inset(-60px -60px -60px 26.4%);
+    translate: -9.11% 0;
+  }
+  60% {
+    clip-path: inset(-60px -60px -60px 12.3%);
+    translate: -6.4% 0;
+  }
+  65% {
+    clip-path: inset(-60px -60px -60px 4.1%);
+    translate: -4.29% 0;
+  }
+  70% {
+    clip-path: inset(-60px -60px -60px 0%);
+    translate: -2.7% 0;
+  }
+  75% {
+    clip-path: inset(-60px -60px -60px 0%);
+    translate: -1.56% 0;
+  }
+  80% {
+    clip-path: inset(-60px -60px -60px 0%);
+    translate: -0.8% 0;
+  }
+  85% {
+    clip-path: inset(-60px -60px -60px 0%);
+    translate: -0.34% 0;
+  }
+  90% {
+    clip-path: inset(-60px -60px -60px 0%);
+    translate: -0.1% 0;
+  }
+  95% {
+    clip-path: inset(-60px -60px -60px 0%);
+    translate: -0.01% 0;
+  }
+  100% {
+    clip-path: inset(-60px -60px -60px 0%);
+    translate: 0% 0;
+  }
+}
+
+/*
  * The front page's town map (TownMap): a picture per theme under the plan (hand-drawn in
  * Storybook, dark stone in Iron and Ember, a glowing plan in Gemlight), as a background so a
  * browser only fetches its own theme's. The app draws only labels, people, paths and what's live.

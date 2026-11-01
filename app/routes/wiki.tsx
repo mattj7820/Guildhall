@@ -1,15 +1,47 @@
 import { Form, Outlet, useSearchParams } from "react-router";
 import { FolderTree } from "~/components/FolderTree";
-import { servicesContext, viewerContext } from "~/context";
+import { bookFolderFor } from "~/.server/wiki/book";
+import { Tome } from "~/components/wiki/Tome";
+import { accountContext, servicesContext, viewerContext } from "~/context";
+import { inBook } from "~/wiki/tome";
 import type { Route } from "./+types/wiki";
 
-export function loader({ context }: Route.LoaderArgs) {
-  const { vault } = context.get(servicesContext);
-  return { tree: vault.current.folderTree(context.get(viewerContext)) };
+export async function loader({ context }: Route.LoaderArgs) {
+  const { vault, campaignName } = context.get(servicesContext);
+  const viewer = context.get(viewerContext);
+  const account = context.get(accountContext);
+  const tome = account.kind === "member" && account.member.wikiLook === "tome";
+  const tree = vault.current.folderTree(viewer);
+  // In the tome with a book folder picked, the book is all there is: nothing outside it is sent.
+  const bookFolder = await bookFolderFor(vault.current, campaignName, viewer, account);
+  const book = tree.folders.find((top) => top.path === bookFolder);
+  return {
+    tree: book ? { ...tree, notes: [], folders: [book] } : tree,
+    look: tome ? "tome" : "pages",
+    bookFolder,
+    // Detect Magic, in the tome: every tag on the notes in the book this viewer may see.
+    tags: tome
+      ? vault.current
+          .tags(viewer)
+          .map(({ tag, notes }) => ({
+            tag,
+            notes: notes.filter((n) => inBook(n.slug, bookFolder)),
+          }))
+          .filter(({ notes }) => notes.length > 0)
+      : [],
+  };
 }
 
 export default function WikiLayout({ loaderData }: Route.ComponentProps) {
   const [searchParams] = useSearchParams();
+
+  if (loaderData.look === "tome") {
+    return (
+      <Tome tree={loaderData.tree} tags={loaderData.tags} bookFolder={loaderData.bookFolder}>
+        <Outlet />
+      </Tome>
+    );
+  }
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-6 md:flex-row">

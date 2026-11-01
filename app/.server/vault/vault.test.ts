@@ -156,6 +156,38 @@ describe("Vault", () => {
     });
   });
 
+  describe("tags", () => {
+    it("lists each tag with the notes the viewer may see that carry it", () => {
+      const tags = vault.tags(PLAYER_VIEWER);
+      expect(tags.find((t) => t.tag === "brindleford")?.notes.map((n) => n.slug)).toEqual([
+        "NPCs/Mira Stonehand",
+      ]);
+      expect(tags.map((t) => t.tag)).toEqual([...tags.map((t) => t.tag)].sort());
+    });
+  });
+
+  describe("linkedFrom", () => {
+    const linkedFrom = (slug: string, viewer = DM_VIEWER) =>
+      slugs(vault.linkedFrom(vault.getNote(slug, DM_VIEWER)!, viewer));
+
+    it("lists the notes that link to a note, by title", () => {
+      expect(linkedFrom("Locations/Brindleford", PLAYER_VIEWER)).toEqual([
+        "NPCs/Fixture Informant",
+        "Locations/Fixture Town",
+        "Home",
+        "NPCs/Mira Stonehand",
+      ]);
+    });
+
+    it("never counts a link players can't read, or a note they can't see", () => {
+      expect(linkedFrom("Locations/Old Mill")).toContain("NPCs/Fixture Informant");
+      expect(linkedFrom("Locations/Old Mill", PLAYER_VIEWER)).not.toContain(
+        "NPCs/Fixture Informant",
+      );
+      expect(linkedFrom("NPCs/Captain Voss", PLAYER_VIEWER)).toEqual([]);
+    });
+  });
+
   describe("statblocks", () => {
     const names = (viewer = DM_VIEWER) =>
       vault.statblocks(viewer).map(({ statblock }) => statblock.name);

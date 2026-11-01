@@ -1,6 +1,11 @@
-import { Link } from "react-router";
+import { data, Link, useRouteLoaderData } from "react-router";
+import { requireDm } from "~/.server/not-found";
+import { bookFolderFor } from "~/.server/wiki/book";
+import { inBook } from "~/wiki/tome";
+import { TitlePage } from "~/components/wiki/Cover";
 import { TypeBadge } from "~/components/TypeBadge";
-import { servicesContext, viewerContext } from "~/context";
+import { accountContext, servicesContext, viewerContext } from "~/context";
+import type { SearchHit } from "~/wiki/types";
 import { noteUrl } from "~/wiki/urls";
 import type { Route } from "./+types/wiki-home";
 
@@ -10,28 +15,78 @@ export function meta({ loaderData }: Route.MetaArgs) {
   ];
 }
 
-/** The wiki landing page, which doubles as search results when `?q=` is present. */
-export function loader({ request, context }: Route.LoaderArgs) {
-  const { vault } = context.get(servicesContext);
+/**
+ * The wiki landing page, which doubles as search results when `?q=` is present. In the tome it's
+ * the closed book's cover, and once opened its title page.
+ */
+export async function loader({ request, context }: Route.LoaderArgs) {
+  const { vault, campaignName } = context.get(servicesContext);
   const viewer = context.get(viewerContext);
   const query = new URL(request.url).searchParams.get("q")?.trim() ?? "";
+  // In the tome, with a book folder picked, only notes in the book are found and counted.
+  const bookFolder = await bookFolderFor(
+    vault.current,
+    campaignName,
+    viewer,
+    context.get(accountContext),
+  );
 
-  const results = vault.current.search(query, viewer).map(({ note, snippet }) => ({
-    slug: note.slug,
-    title: note.title,
-    type: note.type,
-    snippet,
-  }));
-  return { query, results, noteCount: vault.current.notes(viewer).length };
+  const results: SearchHit[] = vault.current
+    .search(query, viewer)
+    .filter(({ note }) => inBook(note.slug, bookFolder))
+    .map(({ note, snippet }) => ({
+      slug: note.slug,
+      title: note.title,
+      type: note.type,
+      snippet,
+    }));
+  const book = await campaignName.book();
+  const forDm = viewer.role === "dm";
+  return {
+    query,
+    results,
+    noteCount: vault.current.notes(viewer).filter((note) => inBook(note.slug, bookFolder)).length,
+    campaignName: book.name,
+    canName: forDm,
+    // For the DM's cover form: which top folder is the book, and the ones to choose from.
+    bookFolder: forDm ? book.folder : undefined,
+    folders: forDm ? vault.current.folderTree(viewer).folders.map((folder) => folder.path) : [],
+  };
+}
+
+/**
+ * The DM names the campaign and picks which top folder is the book, on the tome's cover. An
+ * empty name or folder clears it; a form without a folder leaves it as it was.
+ */
+export async function action({ request, context }: Route.ActionArgs) {
+  const viewer = context.get(viewerContext);
+  requireDm(viewer);
+  const { vault, campaignName } = context.get(servicesContext);
+  const form = await request.formData();
+  const name = String(form.get("campaignName") ?? "");
+  const folder = form.has("bookFolder")
+    ? String(form.get("bookFolder"))
+    : ((await campaignName.book()).folder ?? "");
+  const folders = vault.current.folderTree(viewer).folders.map((top) => top.path);
+  if (form.has("bookFolder") && folder && !folders.includes(folder)) {
+    return data({ error: "That isn't one of the vault's folders." }, 400);
+  }
+  await campaignName.set(name, folder);
+  return { ok: true };
 }
 
 export default function WikiHome({ loaderData }: Route.ComponentProps) {
-  const { query, results, noteCount } = loaderData;
+  const { query, results, noteCount, campaignName } = loaderData;
+  const wiki = useRouteLoaderData("routes/wiki") as { look: string } | undefined;
+
+  if (!query && wiki?.look === "tome") {
+    return <TitlePage name={campaignName} noteCount={noteCount} />;
+  }
 
   if (!query) {
     return (
       <main>
-        <h1 className="font-serif text-3xl font-bold">Campaign wiki</h1>
+        <h1 className="font-serif text-3xl font-bold">{campaignName ?? "Campaign wiki"}</h1>
         <p className="mt-2 text-muted">{noteCount} notes. Pick one from the sidebar, or search.</p>
       </main>
     );

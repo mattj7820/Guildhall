@@ -19,7 +19,8 @@ test.describe("Hub home page", () => {
   test("walks to the Library on the town map, which opens the wiki", async ({ page, wiki }) => {
     await page.getByRole("link", { name: "Library: Wiki" }).click();
     await expect(page).toHaveURL("/wiki");
-    await expect(wiki.heading("Campaign wiki")).toBeVisible();
+    // Titled with the campaign's name once the DM gives one (wiki-tome.spec.ts).
+    await expect(wiki.sidebar).toBeVisible();
   });
 
   test("keeps the Steward's Office (Members) from players", async ({ page, openAs }) => {

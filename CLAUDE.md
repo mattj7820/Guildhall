@@ -10,7 +10,9 @@ campaign model (NPCs, locations, maps, characters, sessions). See `docs/roadmap.
 Built so far: a front page drawn as a town map of the guildhall, each module a place your token
 walks to, with the campaign as it stands in place and in a panel beside it (where the party is, a
 fight, the next session with a countdown, who's here now), read-only Obsidian wiki with a DM preview of the players'
-view, a combat tracker (one fight for the table, kept in the data folder and pushed live; players
+view (or, as each person's pick in Settings, the wiki as a tome: a closed book with the campaign's
+name as its front page, the DM's chosen folder as its chapters, searching as spells, pages that
+turn), a combat tracker (one fight for the table, kept in the data folder and pushed live; players
 follow it and end their own turn; run beside a map, with monsters' tokens and quick damage for
 picked monsters; fights started from tokens picked on the map, each monster the same marker all
 through; prepared encounters, which can start on a map; every SRD monster from both the 2014 and
@@ -285,7 +287,17 @@ First e2e run needs `npx playwright install chromium`.
 - `app/.server/read-json.ts`: `readJson(request, schema)`, a JSON body checked with zod (a body
   that isn't JSON fails the check: a 400, never a 500). `app/.server/not-found.ts`: `notFound()`
   and `requireDm(viewer)`, the one 404 for missing and not-yours alike.
-- `app/wiki/`: URL helpers and types shared with the browser.
+- `app/wiki/`: URL helpers and types shared with the browser; `looks.ts` (`WIKI_LOOKS`: pages or
+  tome) and `tome.ts` (the tome's chapters from the book folder, `chapterOf`, `inBook`,
+  `turnDirection`, `SPELLS`, `markQuery`; pure). `app/.server/wiki/`: `campaign-name.ts`
+  (`CampaignName`, over `campaign.json`: the campaign's name and which top folder is the book) and
+  `book.ts` (`bookFolderFor`: a tome reader's book folder, only if they have notes in it). Wiki
+  queries also give `Vault.tags` and `Vault.linkedFrom` (from what each role may read).
+  `app/components/wiki/`: `Tome` (the open book: ribbons, the left page's spells and contents,
+  the note on the right, phones' bar; `useCover`, `useBookHeight`), `Cover` (the front cover,
+  the DM's naming form, the title page), `Spells` (Locate Object, Misty Step, Detect Magic,
+  Scrying), `NoteList`, `RuneCircle`, `usePageTurn` (a leaf of hinged strips, copies of the
+  pages, turned in CSS 3D) and `useReading` (reading mode, in the browser).
 - `app/home/`: the front page (isomorphic): `front-page.ts` (`FrontPage`, `bannerMap`: the map
   where the party is for one viewer, `fightSummary`, `latestSession`), `countdown.ts`, `town.ts`
   (the town map's places and routes in plan units: `townPlaces`, `placeOf` (a page's place),
@@ -297,7 +309,8 @@ First e2e run needs `npx playwright install chromium`.
   party-card names). `app/components/home/`: `FrontPage`, `TownMap` (the plan
   over its art, the walks, the campaign drawn in place), `BannerMap`, `NextSession`, `PartyStrip`.
 - `app/routes/`: `home` (the front page; the DM sets the next session), `wiki` (layout + sidebar),
-  `wiki-home` (landing page + `?q=` search), `wiki-note` (`/wiki/*`), `combat` (the DM's tracker, or
+  `wiki-home` (landing page + `?q=` search; the tome's cover and title page; the DM's naming
+  action), `wiki-note` (`/wiki/*`), `combat` (the DM's tracker, or
   a player's view of the fight; a hydrating `clientLoader` adds a fight left in the browser from
   before; `?start=<id>` starts a prepared encounter), `combat-fight` (JSON: GET the fight as the
   viewer may see it; POST the DM's saves, free movement and ending, and a player's end of turn),
@@ -318,7 +331,7 @@ First e2e run needs `npx playwright install chromium`.
   preview toggle), `login` (sign-in page; dev sign-in action), `logout` (POST), `auth-discord`
   (starts Discord sign-in) and `auth-discord-callback`, `waiting` (for newcomers), `members`
   (DM-only: approve, assign, remove, give packs and dice), `settings` (each member's own: their
-  theme and dice switches), `settings-dice` (`/settings/dice`: their collection, favourites and
+  theme, wiki look and dice switches), `settings-dice` (`/settings/dice`: their collection, favourites and
   packs), `dice-open` (JSON: POST opens one of their packs), `characters` (the
   party; start, relink and delete actions), `character` (`/characters/:id`, a sheet or companion),
   `character-changes` (JSON: GET the stored character, POST a batch of actions),

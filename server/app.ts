@@ -6,6 +6,7 @@ import express from "express";
 import { RouterContextProvider } from "react-router";
 import { CurrentFight } from "~/.server/combat/current-fight";
 import { NextSession } from "~/.server/home/next-session";
+import { CampaignName } from "~/.server/wiki/campaign-name";
 import { PreparedEncounters } from "~/.server/combat/prepared-encounters";
 import { loadConfig } from "~/.server/config";
 import { discordAuth } from "~/.server/auth/discord";
@@ -48,6 +49,7 @@ async function createServices(): Promise<Services> {
     vault,
     fight: CurrentFight.inFolder(config.dataPath),
     nextSession: NextSession.inFolder(config.dataPath),
+    campaignName: CampaignName.inFolder(config.dataPath),
     preparedEncounters: PreparedEncounters.inFolder(config.dataPath),
     maps: CampaignMaps.inFolder(config.dataPath),
     fogs: MapFogs.inFolder(config.dataPath),
