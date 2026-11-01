@@ -80,7 +80,12 @@ export function fightSummary(view: FightView | null): FightSummary | null {
 
 const byTitle = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
-/** The latest session note, by its title: "Session 10" comes after "Session 9". */
+/** Session notes newest first, by their titles: "Session 10" comes before "Session 9". */
+export function newestFirst<T extends { title: string }>(sessions: readonly T[]): T[] {
+  return [...sessions].sort((a, b) => byTitle.compare(b.title, a.title));
+}
+
+/** The latest session note, by its title. */
 export function latestSession<T extends { title: string }>(sessions: readonly T[]): T | undefined {
-  return [...sessions].sort((a, b) => byTitle.compare(a.title, b.title)).at(-1);
+  return newestFirst(sessions)[0];
 }

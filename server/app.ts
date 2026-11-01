@@ -6,6 +6,7 @@ import express from "express";
 import { RouterContextProvider } from "react-router";
 import { CurrentFight } from "~/.server/combat/current-fight";
 import { NextSession } from "~/.server/home/next-session";
+import { CampaignBoard } from "~/.server/board/board";
 import { CampaignName } from "~/.server/wiki/campaign-name";
 import { PreparedEncounters } from "~/.server/combat/prepared-encounters";
 import { loadConfig } from "~/.server/config";
@@ -49,6 +50,7 @@ async function createServices(): Promise<Services> {
     vault,
     fight: CurrentFight.inFolder(config.dataPath),
     nextSession: NextSession.inFolder(config.dataPath),
+    board: CampaignBoard.inFolder(config.dataPath),
     campaignName: CampaignName.inFolder(config.dataPath),
     preparedEncounters: PreparedEncounters.inFolder(config.dataPath),
     maps: CampaignMaps.inFolder(config.dataPath),
@@ -71,6 +73,8 @@ async function createServices(): Promise<Services> {
   // A map's notes and image come from the vault, so any open map may look different now.
   vault.onReload(() => {
     void live.allMapsChanged();
+    // Pinned notes' names, and whether players may see them, come from the vault.
+    void live.boardChanged();
     void prepareThumbnails(services);
   });
   void prepareThumbnails(services);

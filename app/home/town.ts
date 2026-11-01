@@ -90,7 +90,7 @@ const PLACES: Place[] = [
   {
     id: "board",
     name: "Notice board",
-    module: "Next session",
+    module: "Sessions",
     shape: "M555,506 h66 v40 h-66 z",
     label: { x: 588, y: 562 },
     route: "M500,365 L500,470 L556,536",
@@ -128,6 +128,7 @@ const PAGES: [string, PlaceId][] = [
   ["/characters", "barracks"],
   ["/settings/dice", "treasury"],
   ["/members", "steward"],
+  ["/board", "board"],
 ];
 
 /**

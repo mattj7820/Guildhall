@@ -77,10 +77,7 @@ export function TownMap(props: TownMapProps) {
       if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
         return;
       event.preventDefault();
-      const arrive = () => {
-        if (href.startsWith("#")) document.getElementById(href.slice(1))?.focus();
-        else void navigate(href);
-      };
+      const arrive = () => void navigate(href);
       // A second click on where it's already heading goes now; anywhere else turns it around.
       if (walker.heading() === id || !walker.go(id, { done: arrive })) arrive();
     };
@@ -138,7 +135,7 @@ export function TownMap(props: TownMapProps) {
         </div>
         {props.below}
       </div>
-      {prefetch && !prefetch.startsWith("#") && <PrefetchPageLinks page={prefetch} />}
+      {prefetch && <PrefetchPageLinks page={prefetch} />}
       {props.panel(walkTo, { hot, setHot })}
     </div>
   );
