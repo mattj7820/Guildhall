@@ -1919,3 +1919,441 @@ it over and leaves it down. */
     transition: none !important;
   }
 }
+
+/*
+ * The closed book (Cover.tsx), the wiki's front page: one board's width, in the middle, the
+ * cover over the right half of the open book. Opening, the cover swings over on its hinge and
+ * lands as the left half (its inside is the left page), while the book slides across to where it
+ * lies open. Gilt is the theme's trim warmed towards gold; Gemlight keeps its own silver-blue.
+ */
+.gh-tome-desk {
+  --tome-gilt: color-mix(in oklab, var(--gh-trim) 55%, #dcb865);
+  --tome-cover-turn: 950ms;
+  @variant gem {
+    --tome-gilt: var(--gh-trim);
+  }
+}
+.gh-tome[data-cover] {
+  perspective: 3200px;
+  perspective-origin: 50% 45%;
+}
+.gh-tome[data-cover="shut"] {
+  clip-path: inset(-60px -60px -60px 50%);
+  translate: -25% 0;
+}
+.gh-tome[data-cover="opening"] {
+  animation: tome-book-open var(--tome-cover-turn) linear both;
+}
+.gh-tome[data-cover="closing"] {
+  animation: tome-book-open var(--tome-cover-turn) linear reverse both;
+}
+.gh-tome[data-cover="shut"] ~ .gh-tome-dock {
+  display: none;
+}
+/* The ribbons are tucked away while the cover moves, and come out once the book is open. */
+.gh-tome-ribbons {
+  transition: opacity 300ms;
+  [data-cover] > & {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+.gh-tome-cover {
+  position: absolute;
+  inset: 0 0 0 50%;
+  z-index: 45;
+  transform-origin: 0 50%;
+  transform-style: preserve-3d;
+  [data-cover="opening"] > & {
+    animation: tome-cover-swing var(--tome-cover-turn) linear both;
+  }
+  [data-cover="closing"] > & {
+    animation: tome-cover-swing var(--tome-cover-turn) linear reverse both;
+  }
+}
+.gh-tome-cover-front,
+.gh-tome-cover-inside {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+/* Inside the cover: the left board with the left page on it, as the open book has them. */
+.gh-tome-cover-inside {
+  transform: rotateY(180deg);
+  padding: 12px 0 16px 14px;
+  border-radius: 10px 0 0 10px;
+  background-color: var(--tome-leather);
+  background-image: var(--tome-hide);
+  & > * {
+    position: relative;
+    height: 100%;
+  }
+}
+.gh-tome-cover-front {
+  color: var(--tome-gilt);
+  border-radius: 3px 14px 14px 3px;
+  background-color: var(--tome-leather);
+  background-image:
+    var(--tome-hide), radial-gradient(ellipse at 40% 30%, rgb(255 255 255 / 0.1), transparent 60%),
+    radial-gradient(ellipse at 90% 100%, rgb(0 0 0 / 0.35), transparent 60%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    inset 0 0 0 1px rgb(0 0 0 / 0.45),
+    inset 0 0 24px rgb(0 0 0 / 0.45),
+    0 1px 2px rgb(0 0 0 / 0.4),
+    0 18px 40px -16px rgb(0 0 0 / 0.55);
+  /* The groove where the cover bends at the spine. */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 26px;
+    border-radius: 3px 0 0 3px;
+    pointer-events: none;
+    background: linear-gradient(
+      to right,
+      rgb(0 0 0 / 0.5),
+      rgb(255 255 255 / 0.07) 45%,
+      rgb(0 0 0 / 0.28) 70%,
+      transparent
+    );
+  }
+}
+.gh-cover-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1rem, 3vh, 2rem);
+  padding: 4rem 3.5rem;
+  cursor: pointer;
+  border-radius: inherit;
+  transition: filter 300ms;
+  &:hover {
+    filter: brightness(1.08);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--tome-gilt);
+    outline-offset: -10px;
+  }
+}
+/* A tooled double frame, with a bracket in each corner. */
+.gh-cover-frame {
+  position: absolute;
+  inset: clamp(18px, 3vw, 30px);
+  border: 2px solid color-mix(in srgb, var(--tome-gilt) 75%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--tome-gilt) 45%, transparent);
+  outline-offset: 7px;
+  border-radius: 3px;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.55));
+}
+.gh-cover-corner {
+  position: absolute;
+  width: clamp(48px, 6vw, 76px);
+  height: clamp(48px, 6vw, 76px);
+}
+.gh-cover-corner-tl {
+  top: 6px;
+  left: 6px;
+}
+.gh-cover-corner-tr {
+  top: 6px;
+  right: 6px;
+}
+.gh-cover-corner-bl {
+  bottom: 6px;
+  left: 6px;
+}
+.gh-cover-corner-br {
+  bottom: 6px;
+  right: 6px;
+}
+/* The title, stamped in gilt: lighter on its upper edge, pressed into the leather. */
+.gh-cover-title {
+  max-width: 85%;
+  font-size: clamp(2.4rem, 4.6vw, 5.2rem);
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-wrap: balance;
+  color: transparent;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--tome-gilt) 55%, white),
+    var(--tome-gilt) 45%,
+    color-mix(in oklab, var(--tome-gilt) 70%, black)
+  );
+  background-clip: text;
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.6)) drop-shadow(0 -1px 0 rgb(255 255 255 / 0.06));
+}
+.gh-cover-rule {
+  width: clamp(9rem, 16vw, 15rem);
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.55));
+}
+.gh-cover-emblem {
+  width: clamp(6.5rem, 11vw, 11rem);
+  opacity: 0.9;
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.55));
+}
+.gh-cover-hint {
+  position: absolute;
+  bottom: clamp(4.6rem, 10vh, 6rem);
+  font-size: 0.8rem;
+  font-variant: small-caps;
+  letter-spacing: 0.18em;
+  opacity: 0.7;
+}
+.gh-cover-rename {
+  color: var(--tome-gilt);
+  font-size: 0.8rem;
+  font-variant: small-caps;
+  letter-spacing: 0.1em;
+  opacity: 0.75;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
+    background: rgb(0 0 0 / 0.25);
+  }
+}
+.gh-tome-cover-front > .gh-cover-rename,
+.gh-cover-naming {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(2.8rem, 6vh, 3.6rem);
+  translate: -50% 0;
+}
+.gh-cover-naming {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  width: min(80%, 26rem);
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  background: rgb(0 0 0 / 0.45);
+}
+.gh-cover-input {
+  width: 100%;
+  font-size: 1.4rem;
+  text-align: center;
+  color: var(--tome-gilt);
+  background: transparent;
+  border-bottom: 1px solid color-mix(in srgb, var(--tome-gilt) 60%, transparent);
+  outline: none;
+  &::placeholder {
+    color: color-mix(in srgb, var(--tome-gilt) 50%, transparent);
+  }
+  &:focus-visible {
+    border-bottom-color: var(--tome-gilt);
+  }
+}
+/* The open book's title page. */
+.gh-title-page .gh-cover-rule {
+  margin-top: 1.25rem;
+  color: var(--tome-glow);
+  filter: none;
+}
+
+/* Phones: the book is one page, so the cover covers it all and swings away to the left. */
+@media (width < 48rem) {
+  .gh-tome[data-cover="shut"],
+  .gh-tome[data-cover="opening"],
+  .gh-tome[data-cover="closing"] {
+    clip-path: none;
+    translate: none;
+    animation: none;
+  }
+  .gh-tome-cover {
+    inset: 0;
+    [data-cover="opening"] > & {
+      animation-name: tome-cover-away;
+    }
+    [data-cover="closing"] > & {
+      animation-name: tome-cover-away;
+    }
+  }
+  .gh-tome-cover-inside {
+    display: none;
+  }
+  .gh-cover-face {
+    padding: 3rem 2rem;
+  }
+}
+@keyframes tome-cover-away {
+  0% {
+    transform: rotateY(0deg);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.6, 1);
+  }
+  100% {
+    transform: rotateY(-100deg);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gh-tome[data-cover],
+  .gh-tome-cover {
+    animation: none !important;
+  }
+  .gh-cover-face {
+    transition: none;
+  }
+}
+
+/* Sampled from one ease, so the book is revealed just behind the cover's edge as it swings. */
+@keyframes tome-cover-swing {
+  0% {
+    transform: rotateY(0deg);
+  }
+  5% {
+    transform: rotateY(-0.1deg);
+  }
+  10% {
+    transform: rotateY(-0.7deg);
+  }
+  15% {
+    transform: rotateY(-2.4deg);
+  }
+  20% {
+    transform: rotateY(-5.8deg);
+  }
+  25% {
+    transform: rotateY(-11.3deg);
+  }
+  30% {
+    transform: rotateY(-19.4deg);
+  }
+  35% {
+    transform: rotateY(-30.9deg);
+  }
+  40% {
+    transform: rotateY(-46.1deg);
+  }
+  45% {
+    transform: rotateY(-65.6deg);
+  }
+  50% {
+    transform: rotateY(-90deg);
+  }
+  55% {
+    transform: rotateY(-114.4deg);
+  }
+  60% {
+    transform: rotateY(-133.9deg);
+  }
+  65% {
+    transform: rotateY(-149.1deg);
+  }
+  70% {
+    transform: rotateY(-160.6deg);
+  }
+  75% {
+    transform: rotateY(-168.8deg);
+  }
+  80% {
+    transform: rotateY(-174.2deg);
+  }
+  85% {
+    transform: rotateY(-177.6deg);
+  }
+  90% {
+    transform: rotateY(-179.3deg);
+  }
+  95% {
+    transform: rotateY(-179.9deg);
+  }
+  100% {
+    transform: rotateY(-180deg);
+  }
+}
+@keyframes tome-book-open {
+  0% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -25% 0;
+  }
+  5% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -24.99% 0;
+  }
+  10% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -24.9% 0;
+  }
+  15% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -24.66% 0;
+  }
+  20% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -24.2% 0;
+  }
+  25% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -23.44% 0;
+  }
+  30% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -22.3% 0;
+  }
+  35% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -20.71% 0;
+  }
+  40% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -18.6% 0;
+  }
+  45% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -15.89% 0;
+  }
+  50% {
+    clip-path: inset(-60px -60px -60px 50%);
+    translate: -12.5% 0;
+  }
+  55% {
+    clip-path: inset(-60px -60px -60px 26.4%);
+    translate: -9.11% 0;
+  }
+  60% {
+    clip-path: inset(-60px -60px -60px 12.3%);
+    translate: -6.4% 0;
+  }
+  65% {
+    clip-path: inset(-60px -60px -60px 4.1%);
+    translate: -4.29% 0;
+  }
+  70% {
+    clip-path: inset(-60px -60px -60px 0%);
+    translate: -2.7% 0;
+  }
+  75% {
+    clip-path: inset(-60px -60px -60px 0%);
+    translate: -1.56% 0;
+  }
+  80% {
+    clip-path: inset(-60px -60px -60px 0%);
+    translate: -0.8% 0;
+  }
+  85% {
+    clip-path: inset(-60px -60px -60px 0%);
+    translate: -0.34% 0;
+  }
+  90% {
+    clip-path: inset(-60px -60px -60px 0%);
+    translate: -0.1% 0;
+  }
+  95% {
+    clip-path: inset(-60px -60px -60px 0%);
+    translate: -0.01% 0;
+  }
+  100% {
+    clip-path: inset(-60px -60px -60px 0%);
+    translate: 0% 0;
+  }
+}

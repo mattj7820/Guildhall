@@ -1,4 +1,6 @@
-import { Link } from "react-router";
+import { Link, useRouteLoaderData } from "react-router";
+import { requireDm } from "~/.server/not-found";
+import { TitlePage } from "~/components/wiki/Cover";
 import { TypeBadge } from "~/components/TypeBadge";
 import { servicesContext, viewerContext } from "~/context";
 import type { SearchHit } from "~/wiki/types";
@@ -11,9 +13,12 @@ export function meta({ loaderData }: Route.MetaArgs) {
   ];
 }
 
-/** The wiki landing page, which doubles as search results when `?q=` is present. */
-export function loader({ request, context }: Route.LoaderArgs) {
-  const { vault } = context.get(servicesContext);
+/**
+ * The wiki landing page, which doubles as search results when `?q=` is present. In the tome it's
+ * the closed book's cover, and once opened its title page.
+ */
+export async function loader({ request, context }: Route.LoaderArgs) {
+  const { vault, campaignName } = context.get(servicesContext);
   const viewer = context.get(viewerContext);
   const query = new URL(request.url).searchParams.get("q")?.trim() ?? "";
 
@@ -23,16 +28,35 @@ export function loader({ request, context }: Route.LoaderArgs) {
     type: note.type,
     snippet,
   }));
-  return { query, results, noteCount: vault.current.notes(viewer).length };
+  return {
+    query,
+    results,
+    noteCount: vault.current.notes(viewer).length,
+    campaignName: await campaignName.get(),
+    canName: viewer.role === "dm",
+  };
+}
+
+/** The DM names the campaign, for the tome's cover (an empty name clears it). */
+export async function action({ request, context }: Route.ActionArgs) {
+  requireDm(context.get(viewerContext));
+  const name = String((await request.formData()).get("campaignName") ?? "");
+  await context.get(servicesContext).campaignName.set(name);
+  return { ok: true };
 }
 
 export default function WikiHome({ loaderData }: Route.ComponentProps) {
-  const { query, results, noteCount } = loaderData;
+  const { query, results, noteCount, campaignName } = loaderData;
+  const wiki = useRouteLoaderData("routes/wiki") as { look: string } | undefined;
+
+  if (!query && wiki?.look === "tome") {
+    return <TitlePage name={campaignName} noteCount={noteCount} />;
+  }
 
   if (!query) {
     return (
       <main>
-        <h1 className="font-serif text-3xl font-bold">Campaign wiki</h1>
+        <h1 className="font-serif text-3xl font-bold">{campaignName ?? "Campaign wiki"}</h1>
         <p className="mt-2 text-muted">{noteCount} notes. Pick one from the sidebar, or search.</p>
       </main>
     );

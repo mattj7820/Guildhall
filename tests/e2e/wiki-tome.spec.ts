@@ -18,6 +18,15 @@ test.describe("The wiki as a tome", () => {
     await them.settings.pickWikiLook("Tome");
     const { tome } = them;
 
+    // The wiki's front page is the closed book, which opens to its title page.
+    await tome.goto("/wiki");
+    await expect(tome.page.getByRole("button", { name: /^Rename|^Name the campaign/ })).toHaveCount(
+      0,
+    );
+    await tome.page.getByRole("button", { name: /^Open / }).click();
+    await expect(tome.page).toHaveURL("/wiki?open");
+    await expect(tome.chapter("Locations")).toBeVisible();
+
     await tome.goto("/wiki/Locations/Brindleford");
     await expect(tome.chapter("Locations")).toHaveAttribute("aria-pressed", "true");
     await expect(tome.chapter("Secrets")).toHaveCount(0);
@@ -60,10 +69,32 @@ test.describe("The wiki as a tome", () => {
     await tome.page.keyboard.press("r");
     await expect(tome.spell("Locate Object")).toBeVisible();
 
+    // Closing the book goes back to its cover.
+    await tome.page.getByRole("link", { name: "Close", exact: true }).click();
+    await expect(tome.page).toHaveURL("/wiki");
+    await expect(tome.page.getByRole("button", { name: /^Open / })).toBeVisible();
+
     // Back to pages: the plain wiki's sidebar.
     await them.settings.open();
     await them.settings.pickWikiLook("Pages");
     await them.wiki.open();
     await expect(them.wiki.sidebar).toBeVisible();
+  });
+
+  test("the DM names the campaign, and everyone's wiki shows it", async ({ api, openAs }) => {
+    await api.postForm("/wiki?index", { campaignName: "Fixture Campaign" });
+    const player = await openAs("playerOne");
+    await player.goto("/wiki");
+    // The plain wiki shows the name too; in the tome it's on the cover.
+    await expect(
+      player.page.getByRole("heading", { level: 1, name: "Fixture Campaign" }),
+    ).toBeVisible();
+    await api.postForm("/wiki?index", { campaignName: "" });
+  });
+
+  test("players can't name the campaign", async ({ openAs }) => {
+    const player = await openAs("playerOne");
+    const response = await player.api.postForm("/wiki?index", { campaignName: "Not theirs" });
+    expect(response.status()).toBe(404);
   });
 });

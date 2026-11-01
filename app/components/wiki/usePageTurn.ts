@@ -27,6 +27,8 @@ export function usePageTurn(
   layer: RefObject<HTMLElement | null>,
   /** Every note's slug in the book's order, to turn towards where a linked note is. */
   order: readonly string[],
+  /** The book is shut (or shutting): the cover moves instead. */
+  shut: boolean,
 ) {
   const { pathname } = useLocation();
   const navigation = useNavigationType();
@@ -77,7 +79,7 @@ export function usePageTurn(
     shownPath.current = pathname;
     const how = arrival.current;
     arrival.current = "turn";
-    if (!before || !page.current || !layer.current || reducedMotion()) return;
+    if (!before || shut || !page.current || !layer.current || reducedMotion()) return;
     if (how === "mist") mist(layer.current, page.current);
     else turn(layer.current, page.current, left.current, before, direction);
     // Only a new page turns; the book's order or the navigation type changing alone doesn't.
@@ -175,7 +177,7 @@ function sliceOf(picture: Picture, from: number, width: number): HTMLElement {
 }
 
 /** A still copy of a page, with nothing in it that could clash with the real one. */
-function copyOf(element: HTMLElement): HTMLElement {
+export function copyOf(element: HTMLElement): HTMLElement {
   const copy = element.cloneNode(true) as HTMLElement;
   copy.querySelector(".gh-tome-turn")?.remove();
   copy.classList.add("gh-tome-still");
@@ -185,7 +187,8 @@ function copyOf(element: HTMLElement): HTMLElement {
   return copy;
 }
 
-function scrollOf(page: HTMLElement): number {
+/** How far down its page a page (or its copy) is scrolled. */
+export function scrollOf(page: HTMLElement): number {
   return page.querySelector<HTMLElement>(".gh-tome-scroll")?.scrollTop ?? 0;
 }
 
@@ -199,6 +202,6 @@ function historyIdx(): unknown {
   return (window.history.state as { idx?: unknown } | null)?.idx;
 }
 
-function reducedMotion(): boolean {
+export function reducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }

@@ -19,7 +19,8 @@ test.describe("Hub home page", () => {
   test("opens the wiki module", async ({ page, wiki }) => {
     await page.getByRole("link", { name: /Campaign wiki/ }).click();
     await expect(page).toHaveURL("/wiki");
-    await expect(wiki.heading("Campaign wiki")).toBeVisible();
+    // Titled with the campaign's name once the DM gives one (wiki-tome.spec.ts).
+    await expect(wiki.sidebar).toBeVisible();
   });
 
   test("the DM sets the next session, and players see it but can't change it", async ({

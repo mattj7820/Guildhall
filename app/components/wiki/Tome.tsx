@@ -7,7 +7,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { NavLink, useLocation, useRouteLoaderData } from "react-router";
+import { Link, NavLink, useLocation, useNavigate, useRouteLoaderData } from "react-router";
 import {
   chapterOf,
   chaptersOf,
@@ -20,7 +20,8 @@ import {
 import type { FolderNode, NoteSummary } from "~/wiki/types";
 import { noteUrl } from "~/wiki/urls";
 import { DetectMagic, LocateObject, MistyStep, Scrying } from "./Spells";
-import { usePageTurn } from "./usePageTurn";
+import { CoverFront } from "./Cover";
+import { copyOf, reducedMotion, scrollOf, usePageTurn } from "./usePageTurn";
 import { useReading } from "./useReading";
 
 /** Each spell's input, focused when it's cast from the keyboard. */
@@ -41,7 +42,13 @@ export function Tome({
   tags: { tag: string; notes: NoteSummary[] }[];
   children: ReactNode;
 }) {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+  const navigate = useNavigate();
+  // The wiki's front page is the closed book; it opens to its title page (`?open`).
+  const closed = pathname === "/wiki" && search === "";
+  const cover = useCover(closed);
+  const front = useRouteLoaderData("routes/wiki-home") as
+    { campaignName?: string; canName: boolean } | undefined;
   const chapters = useMemo(() => chaptersOf(tree), [tree]);
   const allNotes = useMemo(() => notesIn(tree), [tree]);
   // The book's order is the chapters' contents one after another, as the ribbons go.
@@ -64,7 +71,22 @@ export function Tome({
   const desk = useRef<HTMLDivElement>(null);
   useBookHeight(desk);
   const spellButtons = useRef(new Map<SpellId, HTMLButtonElement>());
-  const arriveByMist = usePageTurn(left, page, scroller, layer, order);
+  const arriveByMist = usePageTurn(left, page, scroller, layer, order, closed);
+  const closedNow = useRef(closed);
+  useEffect(() => {
+    closedNow.current = closed;
+  }, [closed]);
+  // The inside of the cover is the left page, so it lands as the page beneath it.
+  const coverInside = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const inside = coverInside.current;
+    if (!inside || !left.current || (cover.phase !== "opening" && cover.phase !== "closing"))
+      return;
+    const copy = copyOf(left.current);
+    inside.replaceChildren(copy);
+    const scroll = copy.querySelector<HTMLElement>(".gh-tome-scroll");
+    if (scroll) scroll.scrollTop = scrollOf(left.current);
+  }, [cover.phase]);
   const [reading, setReading] = useReading();
   const readingNow = useRef(reading);
   useEffect(() => {
@@ -83,6 +105,8 @@ export function Tome({
   useEffect(() => {
     function cast(next: SpellId) {
       setReading(false);
+      // A spell cast at the cover opens the book.
+      if (closedNow.current) navigate("/wiki?open");
       setSpell(next);
       setSheetOpen(true);
       const words = WORDS[next];
@@ -111,7 +135,7 @@ export function Tome({
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [setReading]);
+  }, [setReading, navigate]);
 
   const chapter = chapters.find((c) => c.key === chapterKey) ?? chapters[0];
 
@@ -131,7 +155,10 @@ export function Tome({
   return (
     <div ref={desk} className="gh-tome-desk px-4 pt-6 max-md:px-2 max-md:pt-3 xl:px-8">
       {/* As wide as the screen allows, to a point: big screens get a bigger book. */}
-      <div className="gh-tome relative mx-auto max-w-[112rem]">
+      <div
+        data-cover={cover.phase === "open" ? undefined : cover.phase}
+        className="gh-tome relative mx-auto max-w-[112rem]"
+      >
         <div
           role="group"
           aria-label="Chapters"
@@ -151,6 +178,7 @@ export function Tome({
         </div>
         <div
           data-reading={reading || undefined}
+          inert={cover.phase === "shut" || undefined}
           className="gh-tome-spread relative grid h-full grid-rows-[minmax(0,1fr)]"
         >
           <section
@@ -215,15 +243,20 @@ export function Tome({
             </div>
           </section>
           <div ref={page} className="gh-tome-page gh-tome-right relative flex min-w-0 flex-col">
-            {/* Long reads: the left page folds away and the note has the book's width. */}
-            <button
-              type="button"
-              aria-keyshortcuts="R"
-              onClick={() => setReading(!reading)}
-              className="gh-tome-read absolute top-3 right-4 z-20 rounded px-2 py-0.5 text-sm max-md:hidden"
-            >
-              {reading ? "Contents" : "Read"}
-            </button>
+            <div className="absolute top-3 right-4 z-20 flex gap-1 text-sm max-md:top-auto max-md:bottom-2">
+              {/* Long reads: the left page folds away and the note has the book's width. */}
+              <button
+                type="button"
+                aria-keyshortcuts="R"
+                onClick={() => setReading(!reading)}
+                className="gh-tome-read rounded px-2 py-0.5 max-md:hidden"
+              >
+                {reading ? "Contents" : "Read"}
+              </button>
+              <Link to="/wiki" className="gh-tome-read rounded px-2 py-0.5">
+                Close
+              </Link>
+            </div>
             <div
               ref={scroller}
               className="gh-tome-scroll min-h-0 flex-1 overflow-y-auto px-6 pt-12 pb-12 md:px-12"
@@ -234,6 +267,16 @@ export function Tome({
           </div>
         </div>
         <span className="gh-tome-clasp max-md:hidden" aria-hidden="true" />
+        {cover.phase !== "open" && (
+          <div className="gh-tome-cover" onAnimationEnd={cover.settle}>
+            <CoverFront
+              name={front?.campaignName}
+              canName={front?.canName ?? false}
+              onOpen={() => navigate("/wiki?open")}
+            />
+            <div ref={coverInside} className="gh-tome-cover-inside" aria-hidden="true" inert />
+          </div>
+        )}
       </div>
       <nav aria-label="Tome" className="gh-tome-dock fixed inset-x-0 bottom-0 z-40 flex md:hidden">
         <DockButton
@@ -343,6 +386,30 @@ function FolderEntries({ folder, depth = 0 }: { folder: FolderNode; depth?: numb
       ))}
     </>
   );
+}
+
+type CoverPhase = "shut" | "opening" | "closing" | "open";
+
+/**
+ * Where the cover is: shut on the wiki's front page, swinging open or closed as someone comes or
+ * goes, or out of the way. With reduced motion it's simply shut or open.
+ */
+function useCover(closed: boolean) {
+  const [phase, setPhase] = useState<CoverPhase>(closed ? "shut" : "open");
+  const [wasClosed, setWasClosed] = useState(closed);
+  if (closed !== wasClosed) {
+    setWasClosed(closed);
+    const still = typeof window === "undefined" || reducedMotion();
+    setPhase(closed ? (still ? "shut" : "closing") : still ? "open" : "opening");
+  }
+  return {
+    phase,
+    /** The swing has ended: the cover is open or shut. */
+    settle(event: { target: EventTarget; currentTarget: EventTarget }) {
+      if (event.target !== event.currentTarget) return;
+      setPhase((now) => (now === "opening" ? "open" : now === "closing" ? "shut" : now));
+    },
+  };
 }
 
 /**

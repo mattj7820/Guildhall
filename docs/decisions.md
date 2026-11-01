@@ -1745,3 +1745,22 @@ players). Both are sent only to tome readers.
   The copies are pictures only (inert, hidden from assistive tech). With reduced motion there's
   no turn or mist.
 - **Phones get one page,** with the left page as a sheet opened from a bar of spells.
+
+## 87. The tome closes: a cover as the wiki's front page, with the campaign's name
+
+**Date:** 2026-11-01
+
+**Context.** The owner wanted to close the tome and see its front cover, titled with the
+campaign's name, as a landing page.
+
+**Decision.** In the tome, `/wiki` is the closed book; it opens to a title page at `/wiki?open`,
+and Close on the open book goes back to the cover. The cover is drawn (tooled border, corner
+brackets, a geometric emblem, the name stamped in gilt): no pictures, nothing invented.
+
+- **The name is the DM's,** set on the cover and kept in `campaign.json` in the data folder
+  (`CampaignName`), not the vault, since it's Guildhall's own setting. A name that can't be read
+  is none; without one the cover says "Campaign wiki". The plain wiki's front page uses it too.
+- **Opening is one motion:** the cover swings over its hinge while the book slides across from
+  the middle to where it lies open, and the book is revealed just behind the cover's edge (the
+  keyframes are sampled from one ease). The inside of the cover is the left page, so it lands
+  seamlessly. Closing is the same reversed. Phones swing the cover away; reduced motion skips it.
