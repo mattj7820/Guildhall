@@ -6,7 +6,7 @@ import type { Sessions } from "~/.server/auth/sessions";
 import type { Live } from "~/.server/live/live";
 import type { CurrentFight } from "~/.server/combat/current-fight";
 import type { NextSession } from "~/.server/home/next-session";
-import type { CampaignName } from "~/.server/wiki/campaign-name";
+import type { Campaigns } from "~/.server/campaigns/campaigns";
 import type { PreparedEncounters } from "~/.server/combat/prepared-encounters";
 import type { Config } from "~/.server/config";
 import type { CampaignMaps } from "~/.server/maps/campaign-maps";
@@ -26,8 +26,8 @@ export interface Services {
   fight: CurrentFight;
   /** When the table next meets, set by the DM, kept in the data folder. */
   nextSession: NextSession;
-  /** The campaign's name, on the tome's cover. */
-  campaignName: CampaignName;
+  /** The DM's campaigns, and which one the app is running. */
+  campaigns: Campaigns;
   /** Combat encounters prepared ahead of a session, kept in the data folder. */
   preparedEncounters: PreparedEncounters;
   /** Interactive maps and their areas, kept in the data folder. */

@@ -20,13 +20,13 @@ export function meta({ loaderData }: Route.MetaArgs) {
  * the closed book's cover, and once opened its title page.
  */
 export async function loader({ request, context }: Route.LoaderArgs) {
-  const { vault, campaignName } = context.get(servicesContext);
+  const { vault, campaigns } = context.get(servicesContext);
   const viewer = context.get(viewerContext);
   const query = new URL(request.url).searchParams.get("q")?.trim() ?? "";
   // In the tome, with a book folder picked, only notes in the book are found and counted.
   const bookFolder = await bookFolderFor(
     vault.current,
-    campaignName,
+    campaigns,
     viewer,
     context.get(accountContext),
   );
@@ -40,7 +40,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
       type: note.type,
       snippet,
     }));
-  const book = await campaignName.book();
+  const book = await campaigns.active();
   const forDm = viewer.role === "dm";
   return {
     query,
@@ -61,17 +61,19 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 export async function action({ request, context }: Route.ActionArgs) {
   const viewer = context.get(viewerContext);
   requireDm(viewer);
-  const { vault, campaignName } = context.get(servicesContext);
+  const { vault, campaigns } = context.get(servicesContext);
   const form = await request.formData();
   const name = String(form.get("campaignName") ?? "");
   const folder = form.has("bookFolder")
     ? String(form.get("bookFolder"))
-    : ((await campaignName.book()).folder ?? "");
+    : ((await campaigns.active()).folder ?? "");
   const folders = vault.current.folderTree(viewer).folders.map((top) => top.path);
   if (form.has("bookFolder") && folder && !folders.includes(folder)) {
     return data({ error: "That isn't one of the vault's folders." }, 400);
   }
-  await campaignName.set(name, folder);
+  const { id } = await campaigns.active();
+  await campaigns.rename(id, name);
+  await campaigns.setFolder(id, folder);
   return { ok: true };
 }
 

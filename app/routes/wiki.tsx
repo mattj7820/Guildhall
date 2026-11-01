@@ -7,13 +7,13 @@ import { inBook } from "~/wiki/tome";
 import type { Route } from "./+types/wiki";
 
 export async function loader({ context }: Route.LoaderArgs) {
-  const { vault, campaignName } = context.get(servicesContext);
+  const { vault, campaigns } = context.get(servicesContext);
   const viewer = context.get(viewerContext);
   const account = context.get(accountContext);
   const tome = account.kind === "member" && account.member.wikiLook === "tome";
   const tree = vault.current.folderTree(viewer);
   // In the tome with a book folder picked, the book is all there is: nothing outside it is sent.
-  const bookFolder = await bookFolderFor(vault.current, campaignName, viewer, account);
+  const bookFolder = await bookFolderFor(vault.current, campaigns, viewer, account);
   const book = tree.folders.find((top) => top.path === bookFolder);
   return {
     tree: book ? { ...tree, notes: [], folders: [book] } : tree,
