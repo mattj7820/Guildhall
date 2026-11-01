@@ -1,15 +1,28 @@
 import { Form, Outlet, useSearchParams } from "react-router";
 import { FolderTree } from "~/components/FolderTree";
-import { servicesContext, viewerContext } from "~/context";
+import { Tome } from "~/components/wiki/Tome";
+import { accountContext, servicesContext, viewerContext } from "~/context";
 import type { Route } from "./+types/wiki";
 
 export function loader({ context }: Route.LoaderArgs) {
   const { vault } = context.get(servicesContext);
-  return { tree: vault.current.folderTree(context.get(viewerContext)) };
+  const account = context.get(accountContext);
+  return {
+    tree: vault.current.folderTree(context.get(viewerContext)),
+    look: account.kind === "member" ? (account.member.wikiLook ?? "pages") : "pages",
+  };
 }
 
 export default function WikiLayout({ loaderData }: Route.ComponentProps) {
   const [searchParams] = useSearchParams();
+
+  if (loaderData.look === "tome") {
+    return (
+      <Tome tree={loaderData.tree}>
+        <Outlet />
+      </Tome>
+    );
+  }
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-6 md:flex-row">

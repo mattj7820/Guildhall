@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { TypeBadge } from "~/components/TypeBadge";
 import { servicesContext, viewerContext } from "~/context";
+import type { SearchHit } from "~/wiki/types";
 import { noteUrl } from "~/wiki/urls";
 import type { Route } from "./+types/wiki-home";
 
@@ -16,7 +17,7 @@ export function loader({ request, context }: Route.LoaderArgs) {
   const viewer = context.get(viewerContext);
   const query = new URL(request.url).searchParams.get("q")?.trim() ?? "";
 
-  const results = vault.current.search(query, viewer).map(({ note, snippet }) => ({
+  const results: SearchHit[] = vault.current.search(query, viewer).map(({ note, snippet }) => ({
     slug: note.slug,
     title: note.title,
     type: note.type,

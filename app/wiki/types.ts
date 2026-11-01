@@ -14,3 +14,11 @@ export interface FolderNode {
   folders: FolderNode[];
   notes: NoteSummary[];
 }
+
+/** One note found by a search, with a piece of its text around what matched. */
+export interface SearchHit {
+  slug: string;
+  title: string;
+  type?: string;
+  snippet: string;
+}
