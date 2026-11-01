@@ -118,3 +118,35 @@ from it later by making the scoping per request instead of per server.
    encounters be copied from another?
 5. Note URLs: keep the campaign folder in them (`/wiki/<Campaign>/NPCs/…`, nothing to do), or drop
    it?
+
+## The owner's answers (2026-11-01)
+
+1. One active campaign at a time, option (a).
+2. Players see nothing of dormant campaigns; only the DM sees the list.
+3. The sound board's folder is inside each campaign: `SOUNDS_FOLDER` is read relative to the
+   active campaign's folder.
+4. A new campaign starts empty, and note URLs keep the campaign folder.
+
+## Slice plan
+
+One green commit per step, on a branch from the tome's (decision 88 is folded in):
+
+1. **A scoped vault.** `Vault.load`/`LiveVault.open` take an optional folder; the snapshot keeps
+   only notes and files inside it, with vault-relative paths, so slugs, IDs and links stay as
+   stored. Fixture notes outside a fixture campaign folder, each saying what it tests; unit tests
+   that they're absent from notes, search, statblocks, party, assets, map images and links.
+2. **The list of campaigns.** `campaign.json` read as campaigns: its existing `name` and `folder`
+   are the first campaign's, plus an optional list of others and which is active, all with
+   defaults; an old file reads exactly as before.
+3. **Each campaign's data.** The per-campaign repositories (maps, fog, tokens, fight, prepared
+   encounters, characters, next session) opened for a campaign: the first in `DATA_PATH` as now,
+   others in `DATA_PATH/campaigns/<id>/`. Members, dice, sessions and the cache stay global.
+4. **The active campaign runs the app.** The services build the vault scoped to the active
+   campaign's folder and its repositories; switching rebuilds both, and `Live` tells every open
+   page to reload. The sound board reads `SOUNDS_FOLDER` inside the campaign folder. The tome's
+   book is the campaign's folder (the cover's folder picker goes).
+5. **The DM's Campaigns.** A DM-only section (in Settings) to add a campaign (name and a top
+   folder), rename it and make one active, with a check before switching that lists what stored
+   data points outside the new folder. Players see nothing of it.
+6. **E2E and docs.** A spec for switching (the DM and a player's open page), decision 89,
+   CLAUDE.md's architecture map and built-so-far line, README and `docs/deployment.md`.
