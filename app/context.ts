@@ -7,6 +7,7 @@ import type { Sessions } from "~/.server/auth/sessions";
 import type { Live } from "~/.server/live/live";
 import type { CurrentFight } from "~/.server/combat/current-fight";
 import type { NextSession } from "~/.server/home/next-session";
+import type { CampaignName } from "~/.server/wiki/campaign-name";
 import type { PreparedEncounters } from "~/.server/combat/prepared-encounters";
 import type { Config } from "~/.server/config";
 import type { CampaignMaps } from "~/.server/maps/campaign-maps";
@@ -28,6 +29,8 @@ export interface Services {
   nextSession: NextSession;
   /** The notice board's cards and string, kept in the data folder. */
   board: CampaignBoard;
+  /** The campaign's name, on the tome's cover. */
+  campaignName: CampaignName;
   /** Combat encounters prepared ahead of a session, kept in the data folder. */
   preparedEncounters: PreparedEncounters;
   /** Interactive maps and their areas, kept in the data folder. */

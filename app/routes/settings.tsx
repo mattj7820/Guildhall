@@ -7,13 +7,14 @@ import { DieIcon } from "~/components/dice/DieIcon";
 import { accountContext, servicesContext } from "~/context";
 import { EMPTY_COLLECTION } from "~/dice/collection";
 import { THEME_INFO, THEMES, type Theme } from "~/theme/themes";
+import { WIKI_LOOK_INFO, WIKI_LOOKS, type WikiLook } from "~/wiki/looks";
 import type { Route } from "./+types/settings";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Settings · Guildhall" }];
 }
 
-/** Each person's own settings: their theme and their dice. */
+/** Each person's own settings: their theme, how they read the wiki, and their dice. */
 export async function loader({ context }: Route.LoaderArgs) {
   const account = context.get(accountContext);
   if (account.kind !== "member") notFound();
@@ -27,6 +28,7 @@ export async function loader({ context }: Route.LoaderArgs) {
   const owned = usableDice(collection, dice?.given, account.isDm);
   return {
     theme: account.member.theme,
+    wikiLook: account.member.wikiLook ?? "pages",
     dice: {
       on: !dice?.off,
       sound: !dice?.quiet,
@@ -38,6 +40,7 @@ export async function loader({ context }: Route.LoaderArgs) {
 
 const settingsSchema = z.union([
   z.object({ theme: z.enum(THEMES) }),
+  z.object({ wikiLook: z.enum(WIKI_LOOKS) }),
   z.object({ dice: z.enum(["on", "off"]) }),
   z.object({ diceSound: z.enum(["on", "off"]) }),
 ]);
@@ -50,6 +53,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   const { members } = context.get(servicesContext);
   const { discordId } = account.member;
   if ("theme" in parsed.data) await members.setTheme(discordId, parsed.data.theme);
+  else if ("wikiLook" in parsed.data) await members.setWikiLook(discordId, parsed.data.wikiLook);
   else if ("dice" in parsed.data) await members.setDiceOn(discordId, parsed.data.dice === "on");
   else await members.setDiceSound(discordId, parsed.data.diceSound === "on");
   return { ok: true };
@@ -82,6 +86,7 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
           ))}
         </Form>
       </section>
+      <WikiSettings current={loaderData.wikiLook} />
       <DiceSettings {...loaderData.dice} />
     </main>
   );
@@ -113,6 +118,45 @@ function ThemeChoice({ theme, chosen }: { theme: Theme; chosen: boolean }) {
       <span className="text-muted text-sm">{info.description}</span>
       <span className="text-link text-sm font-semibold">{chosen ? "Your theme" : "Use this"}</span>
     </button>
+  );
+}
+
+/** How the wiki is laid out for them: each look is its own button, saved when picked. */
+function WikiSettings({ current }: { current: WikiLook }) {
+  return (
+    <section aria-labelledby="wiki-heading" className="flex flex-col gap-3">
+      <div>
+        <h2 id="wiki-heading" className="font-display text-title text-2xl">
+          Wiki
+        </h2>
+        <p className="text-muted mt-1">
+          How the wiki looks for you. The notes are the same either way.
+        </p>
+      </div>
+      <Form method="post" className="grid gap-4 sm:grid-cols-3">
+        {WIKI_LOOKS.map((look) => {
+          const chosen = look === current;
+          return (
+            <button
+              key={look}
+              type="submit"
+              name="wikiLook"
+              value={look}
+              aria-pressed={chosen}
+              className={`gh-card bg-surface hover:border-accent flex flex-col gap-2 rounded-lg border p-4 text-left ${
+                chosen ? "border-accent ring-accent ring-2" : "border-line"
+              }`}
+            >
+              <span className="text-title text-lg font-semibold">{WIKI_LOOK_INFO[look].label}</span>
+              <span className="text-muted text-sm">{WIKI_LOOK_INFO[look].description}</span>
+              <span className="text-link text-sm font-semibold">
+                {chosen ? "Your wiki" : "Use this"}
+              </span>
+            </button>
+          );
+        })}
+      </Form>
+    </section>
   );
 }
 

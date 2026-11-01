@@ -138,6 +138,17 @@ describe("Members", () => {
     expect(await members.get(discordId)).toMatchObject({ name: "Renamed", theme: "ember" });
   });
 
+  it("shows the wiki as pages until someone picks the tome", async () => {
+    const members = store();
+    const { discordId } = await signedIn(members, profile(1), { approve: true });
+    expect((await members.get(discordId))?.wikiLook).toBeUndefined();
+    await members.setWikiLook(discordId, "tome");
+    expect((await members.get(discordId))?.wikiLook).toBe("tome");
+    await members.setWikiLook(discordId, "pages");
+    expect(await members.get(discordId)).not.toHaveProperty("wikiLook");
+    expect(await members.setWikiLook("100000000000000999", "tome")).toBeUndefined();
+  });
+
   it("throws dice for everyone until they turn them off", async () => {
     const members = store();
     const { discordId } = await signedIn(members, profile(1), { approve: true });
@@ -187,10 +198,12 @@ describe("Members", () => {
     const filePath = path.join(folder, "members.json");
     const onDisk = JSON.parse(await readFile(filePath, "utf8"));
     onDisk.members[0].theme = "a look from the future";
+    onDisk.members[0].wikiLook = "a scroll";
     await writeFile(filePath, JSON.stringify(onDisk));
     const member = await store().get(discordId);
     expect(member).toMatchObject({ discordId, status: "approved" });
     expect(member?.theme).toBeUndefined();
+    expect(member?.wikiLook).toBeUndefined();
   });
 
   it("keeps members in the data folder, so they survive a restart", async () => {

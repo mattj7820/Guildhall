@@ -1,6 +1,7 @@
 /** zod schemas for member data that crosses a trust boundary: the data file. */
 import { z } from "zod";
 import { THEMES } from "~/theme/themes";
+import { WIKI_LOOKS } from "~/wiki/looks";
 import type { Member } from "./types";
 
 /** Discord IDs are 17 to 20 digits. */
@@ -18,6 +19,7 @@ export const memberSchema: z.ZodType<Member> = z.object({
   lastSignInAt: z.iso.datetime(),
   // A look that's gone (or a typo) falls back to the default rather than refusing the file.
   theme: z.enum(THEMES).optional().catch(undefined),
+  wikiLook: z.enum(WIKI_LOOKS).optional().catch(undefined),
   // Damaged dice settings fall back to the defaults (dice on), never refusing the file.
   dice: z
     .object({

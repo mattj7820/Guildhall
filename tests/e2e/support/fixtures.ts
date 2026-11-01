@@ -8,6 +8,7 @@ import { Maps } from "../pages/maps";
 import { Members } from "../pages/members";
 import { Settings } from "../pages/settings";
 import { SignIn } from "../pages/sign-in";
+import { Tome } from "../pages/tome";
 import { Wiki } from "../pages/wiki";
 import { Api } from "./api";
 import { SIGNED_IN, SIGNED_OUT } from "./sign-in";
@@ -20,6 +21,7 @@ export class App extends AppPage {
   readonly api = new Api(this.page.request);
   readonly wiki = new Wiki(this.page);
   readonly board = new Board(this.page);
+  readonly tome = new Tome(this.page);
   readonly characters = new Characters(this.page);
   readonly combat = new Combat(this.page);
   readonly prepared = new Prepared(this.page);

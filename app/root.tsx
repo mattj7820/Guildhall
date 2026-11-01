@@ -77,7 +77,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body data-module={moduleOf(pathname)} className="gh-page bg-page text-ink min-h-screen">
         <header className="gh-bar bg-bar text-on-bar border-line border-b">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
+          <div className="mx-auto flex max-w-[112rem] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 xl:px-8">
             <Link to="/" className="gh-brand font-display text-brand text-2xl leading-none">
               Guildhall
             </Link>

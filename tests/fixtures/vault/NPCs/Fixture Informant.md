@@ -13,7 +13,7 @@ Fixture: a player-visible note with a DM callout and a DM section. Players see t
 with the keyword persimmon, and nothing marked DM.
 
 > [!dm] Who they really work for
-> Fixture: a DM callout. Keyword: loquat.
+> Fixture: a DM callout. Keyword: loquat. Its link to [[Locations/Old Mill]] is no link for players.
 
 The informant drinks at the [[Brindleford]] market.
 

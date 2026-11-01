@@ -4,6 +4,7 @@
  */
 import type { PlayerId } from "~/campaign/types";
 import type { Theme } from "~/theme/themes";
+import type { WikiLook } from "~/wiki/looks";
 
 /** A Discord user's ID ("snowflake"): a long number, kept as a string. */
 export type DiscordId = string;
@@ -27,6 +28,8 @@ export interface Member {
   lastSignInAt: string;
   /** The look they picked; without one, Guildhall follows their device's light or dark mode. */
   theme?: Theme;
+  /** How they read the wiki; without one, it's plain pages. */
+  wikiLook?: WikiLook;
   /** Their 3D dice settings. The dice themselves are in `dice.json` (`DiceCollections`). */
   dice?: MemberDice;
 }

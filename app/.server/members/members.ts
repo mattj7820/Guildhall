@@ -5,6 +5,7 @@ import { memberSchema } from "~/members/schema";
 import type { DiscordId, DiscordProfile, Member } from "~/members/types";
 import { newId } from "~/shared/ids";
 import type { Theme } from "~/theme/themes";
+import type { WikiLook } from "~/wiki/looks";
 import { JsonFile } from "../data/json-store";
 
 const fileSchema = z.object({
@@ -122,6 +123,15 @@ export class Members {
   /** Saves the look someone picked. */
   setTheme(discordId: DiscordId, theme: Theme): Promise<Member | undefined> {
     return this.change(discordId, (member) => ({ ...member, theme }));
+  }
+
+  /** Saves how someone reads the wiki. Pages, the default, is stored as no pick. */
+  setWikiLook(discordId: DiscordId, look: WikiLook): Promise<Member | undefined> {
+    return this.change(discordId, (member) => {
+      const changed = { ...member };
+      delete changed.wikiLook;
+      return look === "pages" ? changed : { ...changed, wikiLook: look };
+    });
   }
 
   /** Turns someone's 3D dice on or off. */

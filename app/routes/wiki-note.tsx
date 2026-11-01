@@ -1,9 +1,11 @@
 import { isRouteErrorResponse, Link } from "react-router";
 import { DataFileError } from "~/.server/data/json-store";
 import { notFound } from "~/.server/not-found";
+import { bookFolderFor } from "~/.server/wiki/book";
+import { inBook } from "~/wiki/tome";
 import type { CampaignMaps } from "~/.server/maps/campaign-maps";
 import { TypeBadge } from "~/components/TypeBadge";
-import { servicesContext, viewerContext } from "~/context";
+import { accountContext, servicesContext, viewerContext } from "~/context";
 import { mapUrl } from "~/maps/urls";
 import { useWikilinkNavigation } from "~/wiki/useWikilinkNavigation";
 import type { Route } from "./+types/wiki-note";
@@ -13,9 +15,17 @@ export function meta({ loaderData }: Route.MetaArgs) {
 }
 
 export async function loader({ params, context }: Route.LoaderArgs) {
-  const { vault, maps } = context.get(servicesContext);
+  const { vault, maps, campaignName } = context.get(servicesContext);
   const viewer = context.get(viewerContext);
+  const account = context.get(accountContext);
   const note = vault.current.getNote(params["*"] ?? "", viewer);
+  // Only notes in the tome's book count, when a book folder is picked.
+  const linkedFromBook = async () => {
+    const bookFolder = await bookFolderFor(vault.current, campaignName, viewer, account);
+    return note
+      ? vault.current.linkedFrom(note, viewer).filter((n) => inBook(n.slug, bookFolder))
+      : [];
+  };
 
   // Hidden notes get the same 404 as missing ones, so the player view doesn't reveal they exist.
   if (!note) notFound("Note not found");
@@ -30,6 +40,9 @@ export async function loader({ params, context }: Route.LoaderArgs) {
     hasOwnTitle: vault.current.hasOwnTitle(note, viewer),
     html: vault.current.render(note, viewer),
     showVisibility: viewer.role === "dm",
+    /** Scrying, in the tome: the notes that link here, as this viewer may read them. */
+    linkedFrom:
+      account.kind === "member" && account.member.wikiLook === "tome" ? await linkedFromBook() : [],
     /** Maps of this place. DM-only, like the maps themselves for now. */
     maps: viewer.role === "dm" ? await mapsOf(maps, note.id) : [],
   };
