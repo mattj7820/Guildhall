@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { DM_VIEWER, PLAYER_VIEWER } from "~/campaign/types";
 import { FIXTURE_VAULT } from "../../../tests/support/fixture-vault";
-import { readVault } from "./read-vault";
+import { readVault, topFolders } from "./read-vault";
 import type { FolderNode } from "~/wiki/types";
 import { Vault } from "./vault";
 
@@ -404,5 +404,23 @@ describe("a vault scoped to one folder", () => {
     );
     expect(scoped.render(informant, DM_VIEWER)).not.toMatch(/<a[^>]*>Brindleford<\/a>/);
     expect(scoped.render(informant, DM_VIEWER)).toContain("Brindleford");
+  });
+});
+
+describe("topFolders", () => {
+  it("lists the vault's top folders a campaign can be, without hidden ones", async () => {
+    expect(await topFolders(FIXTURE_VAULT)).toEqual([
+      "Attachments",
+      "Bestiary",
+      "Items",
+      "Locations",
+      "Maps",
+      "NPCs",
+      "Party",
+      "Secrets",
+      "Sessions",
+      "Sounds",
+      "Spells",
+    ]);
   });
 });

@@ -4,7 +4,7 @@ import { DataFileError } from "~/.server/data/json-store";
 import { usableDice } from "~/.server/dice/collections";
 import { notFound } from "~/.server/not-found";
 import { DieIcon } from "~/components/dice/DieIcon";
-import { accountContext, servicesContext } from "~/context";
+import { accountContext, servicesContext, viewerContext } from "~/context";
 import { EMPTY_COLLECTION } from "~/dice/collection";
 import { THEME_INFO, THEMES, type Theme } from "~/theme/themes";
 import { WIKI_LOOK_INFO, WIKI_LOOKS, type WikiLook } from "~/wiki/looks";
@@ -27,6 +27,8 @@ export async function loader({ context }: Route.LoaderArgs) {
   }
   const owned = usableDice(collection, dice?.given, account.isDm);
   return {
+    // The DM's campaigns, not while previewing as a player.
+    campaigns: context.get(viewerContext).role === "dm",
     theme: account.member.theme,
     wikiLook: account.member.wikiLook ?? "pages",
     dice: {
@@ -88,6 +90,7 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
       </section>
       <WikiSettings current={loaderData.wikiLook} />
       <DiceSettings {...loaderData.dice} />
+      {loaderData.campaigns && <CampaignSettings />}
     </main>
   );
 }
@@ -199,6 +202,28 @@ function DiceSettings({
             {packs > 0 && `, ${packs === 1 ? "1 pack" : `${packs} packs`} to open`}
           </span>
         </span>
+      </Link>
+    </section>
+  );
+}
+
+/** The way to the DM's campaigns. */
+function CampaignSettings() {
+  return (
+    <section aria-labelledby="campaigns-heading" className="flex flex-col gap-3">
+      <div>
+        <h2 id="campaigns-heading" className="font-display text-title text-2xl">
+          Campaigns
+        </h2>
+        <p className="text-muted mt-1">
+          Which folder of the vault is the campaign, and which campaign Guildhall is running.
+        </p>
+      </div>
+      <Link
+        to="/settings/campaigns"
+        className="gh-card bg-surface border-line hover:border-accent self-start rounded-lg border p-3"
+      >
+        <span className="text-title font-semibold">Your campaigns</span>
       </Link>
     </section>
   );
