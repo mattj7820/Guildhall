@@ -1720,3 +1720,32 @@ bubbles) and `symbols` (token icons, from game-icons.net, in place of a d20's 20
   fallback.
 - **Seven fancy dice** (two rare, three very rare, two legendary) have plain working labels and
   functional descriptions, for the DM to rename.
+
+## 86. The front page is a town map, its art made in the mapgen repo and kept in Guildhall
+
+**Date:** 2026-11-01
+
+**Context.** The owner wanted the UI to feel like a D&D world through its design, and picked a
+town map for the front page from the prototypes: a walled guildhall where each module is a place
+and the viewer's token walks dashed paths between them. Hand-drawn SVG scenery was the prototype;
+the art wanted more than that.
+
+**Decision.** The front page is the town map (`TownMap`), with a plain panel beside it listing
+the same things, so nothing is only found by exploring. It replaces decision 83's banner and
+module cards; what the banner showed is in the panel or drawn in place (the fight in the War
+Room, the party's map in the Chart Tower, the next session on the notice board, who else is here
+in the hall).
+
+- **The token stands where the viewer last was**, however they got there: every page records its
+  place (`placeOf`) in the tab's session storage. Only clicks on the map walk; the top bar and
+  links switch page at once.
+- **The scenery is a picture per theme**, made in the owner's mapgen repo from Guildhall's
+  geometry (`app/home/town.ts`, and the prompt in `docs/prototypes/hub-map-mapgen-prompt.md`),
+  and drawn as a CSS background so a browser only fetches its own theme's. The app draws only
+  what's interactive or live: labels, people, paths, outlines and the campaign's markers.
+- **The images are committed to Guildhall** (`public/town/`, WebP, under 200 KB each): they're
+  the app's own UI, not campaign content, so they belong with the code and its history, not in
+  the vault or the data folder. They're the first generated images in the repo. Masters stay in
+  the mapgen repo. They hold no text and no lore.
+- **Geometry and art change together**: moving a place or a path in `town.ts` means new art, and
+  the art's layout comes only from `town.ts`.

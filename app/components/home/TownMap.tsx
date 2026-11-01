@@ -12,8 +12,6 @@ import type { FightSummary } from "~/home/front-page";
 import {
   HALL_SPOTS,
   STAND,
-  TREES_INSIDE,
-  TREES_OUTSIDE,
   VIEW,
   type Place,
   type PlaceId,
@@ -109,14 +107,10 @@ export function TownMap(props: TownMapProps) {
         <div className="overflow-x-auto overscroll-x-contain" ref={scroller}>
           <svg
             viewBox={`0 0 ${VIEW.width} ${VIEW.height}`}
-            className="block h-auto w-full min-w-[600px]"
+            className="gh-town-art block h-auto w-full min-w-[600px]"
             role="group"
             aria-label="The guildhall: pick a place to go there"
           >
-            <Defs />
-            <Grounds />
-            <Buildings places={places} />
-            <Furnishings />
             {places.map((place) => (
               <PlaceLink
                 key={place.id}
@@ -228,7 +222,6 @@ function Campaign({ places, fight, partyMap, packs, waiting }: TownMapProps) {
       {/* Braziers by the War Room's door, and a flag over the Chart Tower. */}
       <circle cx={722} cy={312} r={4} className="gh-town-brazier" />
       <circle cx={722} cy={350} r={4} className="gh-town-brazier" />
-      <rect x={500} y={52} width={2.5} height={30} className="gh-town-pole" />
       <path d="M502,52 l26,7 l-26,7 z" className="gh-town-flag" />
       {partyMap && (
         <>
@@ -289,14 +282,7 @@ function NoticeBoard({ at }: { at?: string }) {
   const label = at && now ? countdown(new Date(at), now) : undefined;
   return (
     <>
-      <g className="gh-town-board">
-        <rect x={560} y={474} width={56} height={30} rx={2} />
-        <rect x={566} y={480} width={18} height={18} className="gh-town-paper" />
-        <rect x={589} y={479} width={20} height={14} className="gh-town-paper" />
-        <rect x={566} y={504} width={4} height={10} />
-        <rect x={606} y={504} width={4} height={10} />
-      </g>
-      <text x={588} y={530} className="gh-town-label gh-town-on-pave" style={{ fontSize: 15 }}>
+      <text x={588} y={562} className="gh-town-label" style={{ fontSize: 15 }}>
         {label ? `Next session: ${label}` : "Notice board"}
       </text>
     </>
@@ -465,159 +451,6 @@ function useWalker() {
   }
 
   return { token, trail, reveal, scroller, walk, walking: () => moving.current, standAtEnd };
-}
-
-function Defs() {
-  return (
-    <defs>
-      <filter id="gh-town-rough" x="-5%" y="-5%" width="110%" height="110%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves={2} seed={4} />
-        <feDisplacementMap in="SourceGraphic" scale={5} />
-      </filter>
-      <filter id="gh-town-wash">
-        <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves={3} seed={9} />
-        <feColorMatrix values="0 0 0 0 0.35  0 0 0 0 0.45  0 0 0 0 0.2  0 0 0 0.35 0" />
-        <feComposite in2="SourceGraphic" operator="in" />
-      </filter>
-      <pattern id="gh-town-floor" width={22} height={22} patternUnits="userSpaceOnUse">
-        <rect width={22} height={22} className="gh-town-floor-base" />
-        <path d="M0 11h22M0 0h22M8 0v11M17 11v11" className="gh-town-floor-seam" />
-      </pattern>
-      <pattern id="gh-town-paving" width={18} height={16} patternUnits="userSpaceOnUse">
-        <rect width={18} height={16} className="gh-town-pave-base" />
-        <circle cx={5} cy={5} r={3.6} className="gh-town-pave-stone" />
-        <circle cx={14} cy={12} r={3.6} className="gh-town-pave-stone" />
-      </pattern>
-    </defs>
-  );
-}
-
-function Grounds() {
-  return (
-    <g aria-hidden>
-      <rect width={VIEW.width} height={VIEW.height} className="gh-town-ground" />
-      <rect
-        width={VIEW.width}
-        height={VIEW.height}
-        filter="url(#gh-town-wash)"
-        className="gh-town-wash"
-      />
-      <ellipse cx={140} cy={640} rx={120} ry={44} className="gh-town-grass" />
-      <ellipse cx={900} cy={640} rx={140} ry={50} className="gh-town-grass" />
-      <ellipse cx={175} cy={645} rx={62} ry={24} className="gh-town-water" />
-      <path
-        d="M470,712 C420,676 572,656 522,622 C496,604 504,596 500,586"
-        className="gh-town-road"
-      />
-      <Trees at={TREES_OUTSIDE} />
-      <text x={420} y={690} className="gh-town-outside">
-        The approach
-      </text>
-      <text x={175} y={690} className="gh-town-outside">
-        Pond
-      </text>
-      <text x={900} y={600} className="gh-town-outside">
-        The grounds
-      </text>
-      <path
-        d="M560,586 L895,540 L925,340 L890,150 L740,78 L500,58 L260,80 L110,140 L80,340 L120,550 L440,586"
-        className="gh-town-curtain gh-town-rough"
-      />
-      <path d="M440,586 L560,586" className="gh-town-gap" />
-      <ellipse cx={345} cy={128} rx={58} ry={30} className="gh-town-grass" />
-      <g className="gh-town-towers gh-town-rough">
-        {[
-          [110, 140, 22],
-          [890, 150, 22],
-          [895, 540, 22],
-          [120, 550, 22],
-          [80, 340, 18],
-          [925, 340, 18],
-          [440, 590, 18],
-          [560, 590, 18],
-        ].map(([x, y, r]) => (
-          <circle key={`${x},${y}`} cx={x} cy={y} r={r} />
-        ))}
-      </g>
-      <text x={500} y={622} className="gh-town-outside gh-town-on-road">
-        Gate
-      </text>
-    </g>
-  );
-}
-
-/** Walls first, then floors over them, so rooms and their corridors join up. */
-function Buildings({ places }: { places: Place[] }) {
-  const rooms = places.filter((place) => place.id !== "board");
-  const layer = (className: string) => (
-    <g className={className}>
-      {rooms.map((place) => (
-        <path key={place.id} d={place.shape} />
-      ))}
-      {rooms.map(
-        (place) =>
-          place.corridor && (
-            <path key={`${place.id}-way`} d={place.corridor} className="gh-town-cor" />
-          ),
-      )}
-    </g>
-  );
-  return (
-    <g aria-hidden>
-      {layer("gh-town-walls gh-town-rough")}
-      {layer("gh-town-stones")}
-      {layer("gh-town-floors gh-town-rough")}
-      {/* The hall's door onto the courtyard. */}
-      <rect x={478} y={410} width={44} height={20} className="gh-town-door" />
-    </g>
-  );
-}
-
-function Furnishings() {
-  return (
-    <g aria-hidden>
-      <g className="gh-town-detail">
-        <rect x={420} y={368} width={160} height={16} rx={3} />
-        <rect x={470} y={256} width={60} height={12} className="gh-town-solid" />
-        <path d="M120,215 h40 M118,240 h22 M150,350 h60 M250,180 h30 M276,262 v50" />
-        <circle cx={500} cy={128} r={24} />
-        <path d="M500,108 v40 M480,128 h40" />
-        <circle cx={790} cy={345} r={26} />
-        <path d="M180,420 h28 v14 h-28z M180,505 h28 v14 h-28z M262,420 h28 v14 h-28z" />
-        <path d="M745,465 l14,-8 l14,8 v14 h-28z M800,470 h26 v18 h-26z" />
-        <path d="M730,170 h40" />
-      </g>
-      <Trees at={TREES_INSIDE} />
-      <circle cx={415} cy={500} r={15} className="gh-town-well" />
-      <circle cx={415} cy={500} r={7} className="gh-town-water" />
-      <text x={415} y={537} className="gh-town-outside gh-town-on-pave" style={{ fontSize: 13 }}>
-        Well
-      </text>
-      <text x={500} y={458} className="gh-town-outside gh-town-on-pave">
-        Courtyard
-      </text>
-      <text x={345} y={156} className="gh-town-outside gh-town-on-pave" style={{ fontSize: 13 }}>
-        Garden
-      </text>
-    </g>
-  );
-}
-
-function Trees({ at }: { at: [number, number][] }) {
-  return (
-    <g>
-      {at.map(([x, y]) => (
-        // Drawn out rather than <use>d, so the theme's colours reach them.
-        <g
-          key={`${x},${y}`}
-          transform={`translate(${x},${y}) scale(${0.8 + ((x * 7 + y) % 5) / 10})`}
-        >
-          <circle r={17} className="gh-town-tree-dark" />
-          <circle r={12} cx={-3} cy={-3} className="gh-town-tree-light" />
-        </g>
-      ))}
-    </g>
-  );
 }
 
 function pennantWidth(text: string): number {
