@@ -12,6 +12,7 @@ export default [
   route("combat/statblock", "routes/combat-statblock.ts"),
   route("combat/prepared", "routes/combat-prepared.tsx"),
   route("combat/prepared/:id", "routes/combat-prepared-edit.tsx"),
+  route("board", "routes/board.tsx"),
   route("maps", "routes/maps.tsx"),
   route("maps/:id", "routes/map-view.tsx"),
   route("maps/:id/edit", "routes/map-edit.tsx"),
