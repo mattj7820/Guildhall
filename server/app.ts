@@ -4,19 +4,13 @@ import type { Duplex } from "node:stream";
 import { createRequestHandler } from "@react-router/express";
 import express from "express";
 import { RouterContextProvider } from "react-router";
-import { CurrentFight } from "~/.server/combat/current-fight";
-import { NextSession } from "~/.server/home/next-session";
+import { openCampaignData } from "~/.server/campaigns/campaign-data";
 import { Campaigns } from "~/.server/campaigns/campaigns";
-import { PreparedEncounters } from "~/.server/combat/prepared-encounters";
 import { loadConfig } from "~/.server/config";
 import { discordAuth } from "~/.server/auth/discord";
 import { createAttemptCookie } from "~/.server/auth/discord-sign-in";
 import { cookieSettings, createSessions } from "~/.server/auth/sessions";
-import { Characters } from "~/.server/characters/characters";
-import { CampaignMaps } from "~/.server/maps/campaign-maps";
 import { prepareThumbnails } from "~/.server/maps/load";
-import { MapFogs } from "~/.server/maps/map-fogs";
-import { MapTokens } from "~/.server/maps/map-tokens";
 import { PlayerImages } from "~/.server/maps/player-image";
 import { FileCache } from "~/.server/data/file-cache";
 import { Live } from "~/.server/live/live";
@@ -34,7 +28,10 @@ import { prepareApp } from "./http";
  */
 async function createServices(): Promise<Services> {
   const config = loadConfig();
-  const vault = await LiveVault.open(config.vaultPath);
+  const campaigns = Campaigns.inFolder(config.dataPath);
+  // The app is the active campaign: only its folder of the vault, and its own data.
+  const campaign = await campaigns.active();
+  const vault = await LiveVault.open(config.vaultPath, { folder: campaign.folder });
   console.log(`[vault] Serving ${vault.current.notes({ role: "dm" }).length} notes (read-only)`);
   console.log(`[data] Keeping Guildhall's own data in ${config.dataPath}`);
   if (config.devLogin) {
@@ -47,15 +44,9 @@ async function createServices(): Promise<Services> {
   const services: Omit<Services, "live"> = {
     config,
     vault,
-    fight: CurrentFight.inFolder(config.dataPath),
-    nextSession: NextSession.inFolder(config.dataPath),
-    campaigns: Campaigns.inFolder(config.dataPath),
-    preparedEncounters: PreparedEncounters.inFolder(config.dataPath),
-    maps: CampaignMaps.inFolder(config.dataPath),
-    fogs: MapFogs.inFolder(config.dataPath),
-    tokens: MapTokens.inFolder(config.dataPath),
+    ...openCampaignData(config.dataPath, campaign),
+    campaigns,
     playerImages: new PlayerImages(new FileCache(path.join(config.dataPath, "cache", "map-tiles"))),
-    characters: Characters.inFolder(config.dataPath),
     members: Members.inFolder(config.dataPath),
     dice: DiceCollections.inFolder(config.dataPath),
     sessions: createSessions(cookies),
