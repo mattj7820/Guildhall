@@ -1173,3 +1173,441 @@ it over and leaves it down. */
     animation: preview-in 300ms ease-out both;
   }
 }
+
+/*
+ * The front page's town map (TownMap): hand-drawn in Storybook, dark stone in Iron and Ember, a
+ * glowing plan in Gemlight. Its own colours, set here per theme; the SVG only names its parts.
+ */
+.gh-town {
+  --town-ground: #cfdcae;
+  --town-grass: #b7cc8f;
+  --town-pave: #e6dcc2;
+  --town-pave-stone: #ddd0b0;
+  --town-floor: #f8f0da;
+  --town-floor-seam: #e7d9b6;
+  --town-wall: #5b4330;
+  --town-label: #2c241b;
+  --town-sub: #6d5a44;
+  --town-road: #e2d0a2;
+  --town-water: #9cc7c9;
+  --town-tree: #7fa267;
+  --town-tree-dark: #5f8550;
+  --town-lit: #d9a640;
+  --town-lit-soft: rgb(217 166 64 / 0.28);
+  --town-you: #1e5a5e;
+  --town-on-you: #ffffff;
+  --town-flag: #a3366a;
+  --town-fire: #f4c26b;
+  --town-fire-glow: #f0a830;
+  --town-board: #8a5a34;
+  background: var(--town-ground);
+  @variant storybook {
+    border: 3px solid var(--gh-trim);
+    box-shadow: 0 16px 40px -20px rgb(60 40 10 / 0.5);
+  }
+  @variant ember {
+    --town-ground: #1b1815;
+    --town-grass: #221e1a;
+    --town-pave: #1d1a17;
+    --town-pave-stone: #24201c;
+    --town-floor: #2e2824;
+    --town-floor-seam: #1a1614;
+    --town-wall: #57493f;
+    --town-label: #efe5d6;
+    --town-sub: #a39686;
+    --town-road: #3a312b;
+    --town-water: #1c2f3a;
+    --town-tree: #34402b;
+    --town-tree-dark: #262f20;
+    --town-lit: #ff8a3d;
+    --town-lit-soft: rgb(255 138 61 / 0.22);
+    --town-you: #c94a1c;
+    --town-flag: #ff7050;
+    --town-fire: #ffb067;
+    --town-fire-glow: #ff6a1f;
+    --town-board: #6b4a30;
+    border-radius: 0;
+    border-top: 2px solid var(--gh-trim);
+  }
+  @variant gem {
+    --town-ground: #08111f;
+    --town-grass: #0b1830;
+    --town-pave: #0d1a30;
+    --town-pave-stone: #13233d;
+    --town-floor: #11223e;
+    --town-floor-seam: #1e3a62;
+    --town-wall: #8fd3ff;
+    --town-label: #f2f8ff;
+    --town-sub: #9fb2cc;
+    --town-road: #13243f;
+    --town-water: #123a5a;
+    --town-tree: #0f3a33;
+    --town-tree-dark: #0b2a26;
+    --town-lit: #7cc8ff;
+    --town-lit-soft: rgb(124 200 255 / 0.22);
+    --town-you: #8fd3ff;
+    --town-on-you: #071120;
+    --town-flag: #8fd3ff;
+    --town-fire: #bfe6ff;
+    --town-fire-glow: #7cc8ff;
+    --town-board: #3a5580;
+    box-shadow: 0 0 40px -12px rgb(143 211 255 / 0.5);
+  }
+
+  .gh-town-rough {
+    @variant storybook {
+      filter: url(#gh-town-rough);
+    }
+  }
+  .gh-town-ground {
+    fill: var(--town-ground);
+  }
+  .gh-town-wash {
+    opacity: 0.5;
+    @variant dark {
+      display: none;
+    }
+  }
+  .gh-town-grass {
+    fill: var(--town-grass);
+  }
+  .gh-town-water {
+    fill: var(--town-water);
+  }
+  .gh-town-road {
+    fill: none;
+    stroke: var(--town-road);
+    stroke-width: 34;
+    stroke-linecap: round;
+  }
+  .gh-town-tree-dark {
+    fill: var(--town-tree-dark);
+  }
+  .gh-town-tree-light {
+    fill: var(--town-tree);
+  }
+  .gh-town-floor-base {
+    fill: var(--town-floor);
+  }
+  .gh-town-floor-seam {
+    fill: none;
+    stroke: var(--town-floor-seam);
+    stroke-width: 1.2;
+  }
+  .gh-town-pave-base {
+    fill: var(--town-pave);
+  }
+  .gh-town-pave-stone {
+    fill: var(--town-pave-stone);
+  }
+  .gh-town-curtain {
+    fill: url(#gh-town-paving);
+    stroke: var(--town-wall);
+    stroke-width: 16;
+    stroke-linejoin: round;
+    @variant gem {
+      stroke: #3a5580;
+    }
+  }
+  .gh-town-gap {
+    stroke: var(--town-road);
+    stroke-width: 20;
+  }
+  .gh-town-towers circle,
+  .gh-town-well {
+    fill: var(--town-floor);
+    stroke: var(--town-wall);
+    stroke-width: 7;
+  }
+  .gh-town-well {
+    stroke-width: 5;
+  }
+  .gh-town-walls * {
+    fill: var(--town-wall);
+    stroke: var(--town-wall);
+    stroke-width: 15;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+  .gh-town-walls {
+    @variant gem {
+      filter: drop-shadow(0 0 4px rgb(143 211 255 / 0.8));
+    }
+  }
+  .gh-town-walls .gh-town-cor {
+    fill: none;
+    stroke-width: 34;
+  }
+  /* Iron and Ember's walls are laid stone. */
+  .gh-town-stones {
+    display: none;
+    fill: none;
+    stroke: #2b231f;
+    stroke-width: 15;
+    stroke-dasharray: 9 3;
+    stroke-linejoin: round;
+    @variant ember {
+      display: inline;
+    }
+  }
+  .gh-town-stones .gh-town-cor {
+    stroke-width: 34;
+  }
+  .gh-town-floors * {
+    fill: url(#gh-town-floor);
+    stroke: none;
+  }
+  .gh-town-floors .gh-town-cor {
+    fill: none;
+    stroke: var(--town-floor);
+    stroke-width: 20;
+    stroke-linecap: round;
+  }
+  .gh-town-door {
+    fill: url(#gh-town-floor);
+  }
+  .gh-town-detail {
+    fill: none;
+    stroke: var(--town-sub);
+    stroke-width: 2;
+    opacity: 0.6;
+  }
+  .gh-town-detail .gh-town-solid {
+    fill: var(--town-sub);
+    stroke: none;
+    opacity: 0.35;
+  }
+
+  /* Words on the plan, haloed in what's under them. */
+  .gh-town-label {
+    font: 400 21px var(--gh-font-display);
+    fill: var(--town-label);
+    text-anchor: middle;
+    paint-order: stroke;
+    stroke: var(--town-floor);
+    stroke-width: 5px;
+    stroke-linejoin: round;
+    pointer-events: none;
+  }
+  .gh-town-sub {
+    font:
+      600 12px "Jost",
+      system-ui,
+      sans-serif;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    fill: var(--town-sub);
+    text-anchor: middle;
+    paint-order: stroke;
+    stroke: var(--town-floor);
+    stroke-width: 4px;
+    pointer-events: none;
+  }
+  .gh-town-outside {
+    font: italic 15px var(--gh-font-prose);
+    fill: var(--town-sub);
+    text-anchor: middle;
+    paint-order: stroke;
+    stroke: var(--town-ground);
+    stroke-width: 4px;
+    pointer-events: none;
+  }
+  .gh-town-on-pave {
+    stroke: var(--town-pave);
+  }
+  .gh-town-on-road {
+    stroke: var(--town-road);
+  }
+
+  /* Places: lit when pointed at or focused. */
+  .gh-town-place {
+    cursor: pointer;
+    outline: none;
+  }
+  .gh-town-hit {
+    fill: transparent;
+    stroke: transparent;
+    stroke-width: 4;
+    transition:
+      fill 0.2s,
+      stroke 0.2s;
+  }
+  .gh-town-hot .gh-town-hit,
+  .gh-town-place:focus-visible .gh-town-hit {
+    fill: var(--town-lit-soft);
+    stroke: var(--town-lit);
+    @variant gem {
+      filter: drop-shadow(0 0 10px #7cc8ff);
+    }
+  }
+  .gh-town-place:focus-visible .gh-town-hit {
+    stroke-width: 5;
+  }
+  .gh-town-fight .gh-town-hit {
+    fill: color-mix(in srgb, var(--gh-danger) 14%, transparent);
+    stroke: var(--gh-danger);
+    stroke-width: 3;
+  }
+
+  /* The way to where the pointer is, and the trail drawn out behind a walk. */
+  .gh-town-way {
+    fill: none;
+    stroke: var(--town-you);
+    stroke-width: 2.5;
+    stroke-dasharray: 2 9;
+    stroke-linecap: round;
+    opacity: 0.45;
+    pointer-events: none;
+  }
+  .gh-town-trail {
+    fill: none;
+    stroke: var(--town-you);
+    stroke-width: 3.5;
+    stroke-dasharray: 2 8;
+    stroke-linecap: round;
+    opacity: 0.9;
+    pointer-events: none;
+  }
+  .gh-town-trail-fade {
+    opacity: 0;
+    transition: opacity 1.2s ease-in 0.4s;
+  }
+  .gh-town-reveal {
+    fill: none;
+    stroke: #ffffff;
+    stroke-width: 12;
+  }
+
+  /* The campaign, where it happens. */
+  .gh-town-pulse {
+    fill: var(--gh-danger);
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: gh-town-pulse 1.6s ease-in-out infinite;
+  }
+  .gh-town-pennant rect {
+    fill: var(--gh-danger);
+  }
+  .gh-town-pennant text {
+    font:
+      600 12px "Jost",
+      system-ui,
+      sans-serif;
+    fill: var(--gh-page);
+    text-anchor: middle;
+  }
+  .gh-town-brazier {
+    fill: var(--town-fire);
+    filter: drop-shadow(0 0 6px var(--town-fire-glow));
+    animation: gh-town-flicker 2.3s ease-in-out infinite alternate;
+  }
+  .gh-town-pole {
+    fill: var(--town-wall);
+  }
+  .gh-town-flag {
+    fill: var(--town-flag);
+    transform-box: fill-box;
+    transform-origin: left center;
+    animation: gh-town-wave 3s ease-in-out infinite;
+  }
+  .gh-town-pin {
+    fill: var(--town-flag);
+    stroke: var(--town-floor);
+    stroke-width: 2;
+  }
+  .gh-town-glint {
+    fill: var(--town-lit);
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: gh-town-glint 2.4s ease-in-out infinite;
+  }
+  .gh-town-badge rect {
+    fill: var(--town-lit);
+  }
+  .gh-town-badge text {
+    font:
+      700 11px "Jost",
+      system-ui,
+      sans-serif;
+    fill: #1a140c;
+    text-anchor: middle;
+  }
+  .gh-town-board rect {
+    fill: var(--town-board);
+  }
+  .gh-town-board .gh-town-paper {
+    fill: #fbf3dd;
+  }
+
+  /* People: the viewer's token, and whoever else is here. */
+  .gh-town-face circle {
+    fill: var(--gh-module-characters);
+    stroke: var(--town-floor);
+    stroke-width: 3;
+  }
+  .gh-town-face text {
+    font:
+      700 12px "Jost",
+      system-ui,
+      sans-serif;
+    fill: var(--town-on-you);
+    text-anchor: middle;
+    pointer-events: none;
+  }
+  .gh-town-you circle {
+    fill: var(--town-you);
+    stroke: #ffffff;
+    filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.45));
+  }
+  .gh-town-other {
+    transition: transform 1.4s ease-in-out;
+  }
+  .gh-town-other circle {
+    stroke: var(--gh-good);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    .gh-town-hit {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+}
+
+@keyframes gh-town-pulse {
+  50% {
+    opacity: 0.35;
+    transform: scale(1.6);
+  }
+}
+@keyframes gh-town-flicker {
+  0% {
+    opacity: 1;
+  }
+  40% {
+    opacity: 0.6;
+  }
+  70% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0.75;
+  }
+}
+@keyframes gh-town-wave {
+  50% {
+    transform: skewY(6deg) scaleX(0.9);
+  }
+}
+@keyframes gh-town-glint {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(0.6) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(45deg);
+  }
+}

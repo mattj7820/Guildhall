@@ -17,6 +17,10 @@ export interface FrontPage {
   /** When the table next meets: an instant (ISO 8601), shown in each browser's time zone. */
   nextSession?: string;
   fight: FightSummary | null;
+  /** A player's own character, for their token on the town map. */
+  you?: PartyFace;
+  /** The DM's: how many people are waiting to be let in. */
+  waiting: number;
 }
 
 export interface Banner {
