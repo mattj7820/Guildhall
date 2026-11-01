@@ -37,6 +37,8 @@ _The same fight as a player sees it: only what the DM has revealed, with their s
   their faces where their tokens are; the next session's date, set by the DM, with a countdown in
   each person's own time zone, and a link to the latest session note; whoever else is here now,
   in the hall; and the party, with whoever has Guildhall open glowing.
+- **A notice board:** the next session's date and countdown, and the session notes you may read,
+  newest first.
 - **Campaign wiki**, read straight from an Obsidian vault folder, which stays the source of truth:
   - Obsidian-flavoured markdown: frontmatter, `[[wikilinks]]` (aliases, heading links, Obsidian's
     shortest-path resolution), `![[image]]` embeds with sizes, GitHub-flavoured markdown.
@@ -351,6 +353,7 @@ app/
                    shared fight and what each person sees of it (isomorphic)
   dice/            Dice expressions and rolling, with injectable randomness (isomorphic)
   home/            The front page: the town map, where the party is, the fight, the next session (isomorphic)
+  board/           The notice board's shapes, shared with the browser
   wiki/            Wiki types and URL helpers shared by server and browser
   maps/            Interactive maps model: areas, geometry, pan and zoom, the editor (isomorphic)
     fog/           Fog of war: the mask, reveals and hides, undo, pixels and tiles (isomorphic)

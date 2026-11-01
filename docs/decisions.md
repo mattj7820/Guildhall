@@ -1752,3 +1752,30 @@ in the hall).
   the mapgen repo. They hold no text and no lore.
 - **Geometry and art change together**: moving a place or a path in `town.ts` means new art, and
   the art's layout comes only from `town.ts`.
+
+## 87. The notice board is a page of its own, growing into the campaign's corkboard
+
+**Date:** 2026-11-01
+
+**Context.** The town map's notice board showed the next session's countdown but led nowhere: it
+jumped to the panel beside the map. The owner first asked for a Sessions page, then wanted the
+board to be more than sessions: hints from the DM, things that mattered in past sessions, the
+players' own short notes, and string to tie them together, which is what Guildhall is for
+(interconnection).
+
+**Decision.** The board is `/board`, one for the campaign, and the town map's notice board leads
+there (`placeOf` stands the token at it).
+
+- **First, the sessions:** the next session (set by the DM there too, through the same action as
+  the front page, `setNextSession`) and the `type: session` notes the viewer may read
+  (`vault.notes(viewer)`), newest first by their titles, as the front page's "Last time" orders
+  them (`newestFirst`). Titles and links only; nothing from a note's body.
+- **To come, in slices** (the owner's answers): a free corkboard, cards dragged anywhere, with a
+  list of cards and their links on phones. The DM pins vault notes by entity ID, each Shown or
+  DM only, with an optional caption. Players pin short cards of their own (a sentence or two):
+  kept in the data folder like sheets, never the vault, which keeps the player-notes spike's
+  reasons for not writing there. String joins two cards, optionally labelled, red for the party
+  and gold for the DM; each removes only their own, the DM any, and a string shows only when the
+  viewer sees both ends, so it never gives away a hidden card. Then live updates.
+- **No written recaps from Guildhall:** cards about past sessions are the DM's own pins and
+  captions.

@@ -1,5 +1,6 @@
 import { test as base, type BrowserContext } from "@playwright/test";
 import { AppPage } from "../pages/app-page";
+import { Board } from "../pages/board";
 import { Characters } from "../pages/characters";
 import { Combat, Prepared } from "../pages/combat";
 import { DiceCollection } from "../pages/dice-collection";
@@ -18,6 +19,7 @@ import { SIGNED_IN, SIGNED_OUT } from "./sign-in";
 export class App extends AppPage {
   readonly api = new Api(this.page.request);
   readonly wiki = new Wiki(this.page);
+  readonly board = new Board(this.page);
   readonly characters = new Characters(this.page);
   readonly combat = new Combat(this.page);
   readonly prepared = new Prepared(this.page);
@@ -36,6 +38,7 @@ export interface Fixtures {
   /** Requests as the test's own browser (the DM's, by default). */
   api: Api;
   wiki: Wiki;
+  board: Board;
   characters: Characters;
   combat: Combat;
   prepared: Prepared;
@@ -54,6 +57,7 @@ export const test = base.extend<Fixtures>({
   app: async ({ page }, use) => use(new App(page)),
   api: async ({ app }, use) => use(app.api),
   wiki: async ({ app }, use) => use(app.wiki),
+  board: async ({ app }, use) => use(app.board),
   characters: async ({ app }, use) => use(app.characters),
   combat: async ({ app }, use) => use(app.combat),
   prepared: async ({ app }, use) => use(app.prepared),
