@@ -7,14 +7,10 @@ import { uniqueName } from "./support/test-data";
  * that the spells only ever find what players may read.
  */
 test.describe("The wiki as a tome", () => {
-  // They share the campaign's name and book folder, so they take turns.
+  // They share the campaign's name, so they take turns.
   test.describe.configure({ mode: "serial" });
 
-  test("someone picks the tome and finds notes with its spells", async ({
-    api,
-    members,
-    openAs,
-  }) => {
+  test("someone picks the tome and finds notes with its spells", async ({ members, openAs }) => {
     const them = await openAs("signedOut");
     const name = uniqueName("Tome reader");
     await them.signIn.asNewcomer(name);
@@ -81,19 +77,6 @@ test.describe("The wiki as a tome", () => {
     await expect(tome.page).toHaveURL("/wiki");
     await expect(tome.page.getByRole("button", { name: /^Open / })).toBeVisible();
 
-    // With a folder chosen as the book, its folders are the chapters and nothing else is in it.
-    await api.postForm("/wiki?index", { campaignName: "", bookFolder: "Locations" });
-    await tome.goto("/wiki?open");
-    await expect(tome.chapter("Front pages")).toBeVisible();
-    await expect(tome.chapter("Brindleford")).toBeVisible();
-    // Everything outside the book is left out of the tome, spells too.
-    await expect(tome.chapter("NPCs")).toHaveCount(0);
-    await tome.mistyStep("stonehand");
-    await expect(tome.status("No note by that name.")).toBeVisible();
-    await tome.page.keyboard.press("Escape");
-    await expect(tome.chapter("Secrets")).toHaveCount(0);
-    await api.postForm("/wiki?index", { campaignName: "", bookFolder: "" });
-
     // Back to pages: the plain wiki's sidebar.
     await them.settings.open();
     await them.settings.pickWikiLook("Pages");
@@ -116,10 +99,5 @@ test.describe("The wiki as a tome", () => {
     const player = await openAs("playerOne");
     const response = await player.api.postForm("/wiki?index", { campaignName: "Not theirs" });
     expect(response.status()).toBe(404);
-  });
-
-  test("the book's folder must be one of the vault's folders", async ({ api }) => {
-    const response = await api.postForm("/wiki?index", { campaignName: "", bookFolder: "Nowhere" });
-    expect(response.status()).toBe(400);
   });
 });

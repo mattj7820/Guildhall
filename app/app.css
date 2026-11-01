@@ -1983,13 +1983,6 @@ it over and leaves it down. */
   border-radius: 6px;
   background: rgb(0 0 0 / 0.45);
 }
-.gh-cover-select {
-  color: var(--tome-gilt);
-  background: rgb(0 0 0 / 0.35);
-  border: 1px solid color-mix(in srgb, var(--tome-gilt) 45%, transparent);
-  border-radius: 3px;
-  padding: 0.1rem 0.3rem;
-}
 .gh-cover-input {
   width: 100%;
   font-size: 1.4rem;

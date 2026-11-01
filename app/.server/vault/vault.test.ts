@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { DM_VIEWER, PLAYER_VIEWER } from "~/campaign/types";
 import { FIXTURE_VAULT } from "../../../tests/support/fixture-vault";
-import { readVault } from "./read-vault";
+import { readVault, topFolders } from "./read-vault";
 import type { FolderNode } from "~/wiki/types";
 import { Vault } from "./vault";
 
@@ -371,5 +371,56 @@ describe("Vault", () => {
       const untitled = vault.getNote("Secrets/Broken Frontmatter", DM_VIEWER)!;
       expect(vault.hasOwnTitle(untitled, DM_VIEWER)).toBe(false);
     });
+  });
+});
+
+describe("a vault scoped to one folder", () => {
+  let scoped: Vault;
+  beforeAll(async () => {
+    scoped = await Vault.load(FIXTURE_VAULT, "NPCs");
+  });
+
+  it("has only the folder's notes, at their vault paths", () => {
+    const paths = scoped.notes(DM_VIEWER).map((note) => note.path);
+    expect(paths.length).toBeGreaterThan(0);
+    expect(paths.every((path) => path.startsWith("NPCs/"))).toBe(true);
+    expect(scoped.getNote("NPCs/Mira Stonehand", DM_VIEWER)?.id).toBe(
+      vault.getNote("NPCs/Mira Stonehand", DM_VIEWER)?.id,
+    );
+  });
+
+  it("leaves out everything outside it: party, statblocks, files and map images", () => {
+    expect(scoped.party(DM_VIEWER)).toEqual([]);
+    expect(scoped.getAsset("Attachments/dm-map.png", DM_VIEWER)).toBeUndefined();
+    expect(scoped.mapImages()).toEqual([]);
+    expect(scoped.soundsIn("Sounds")).toEqual([]);
+    expect(scoped.search("loquat", DM_VIEWER).length).toBeGreaterThan(0);
+  });
+
+  it("turns links to notes outside it into plain text", () => {
+    const informant = scoped.getNote("NPCs/Fixture Informant", DM_VIEWER)!;
+    expect(vault.render(vault.getNote("NPCs/Fixture Informant", DM_VIEWER)!, DM_VIEWER)).toMatch(
+      /<a[^>]*>Brindleford<\/a>/,
+    );
+    expect(scoped.render(informant, DM_VIEWER)).not.toMatch(/<a[^>]*>Brindleford<\/a>/);
+    expect(scoped.render(informant, DM_VIEWER)).toContain("Brindleford");
+  });
+});
+
+describe("topFolders", () => {
+  it("lists the vault's top folders a campaign can be, without hidden ones", async () => {
+    expect(await topFolders(FIXTURE_VAULT)).toEqual([
+      "Attachments",
+      "Bestiary",
+      "Items",
+      "Locations",
+      "Maps",
+      "NPCs",
+      "Party",
+      "Secrets",
+      "Sessions",
+      "Sounds",
+      "Spells",
+    ]);
   });
 });

@@ -2,7 +2,12 @@ import { EventEmitter } from "node:events";
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import type { WebSocket } from "ws";
 import { DM_VIEWER, type Viewer } from "~/campaign/types";
-import { CLOSE_ACCESS_CHANGED, type ClientMessage, type ServerMessage } from "~/live/messages";
+import {
+  CLOSE_ACCESS_CHANGED,
+  CLOSE_CAMPAIGN_CHANGED,
+  type ClientMessage,
+  type ServerMessage,
+} from "~/live/messages";
 import type { Member } from "~/members/types";
 import { LiveHub, stillLetIn, type Connection } from "./hub";
 import type { Admitted } from "./sockets";
@@ -240,6 +245,13 @@ describe("LiveHub", () => {
     expect(hub.online()).toEqual({ dm: true, players: new Set(["player one"]) });
     theirs.close(1000);
     expect(hub.online().players).toEqual(new Set(["player one"]));
+  });
+
+  it("closes everyone's connection when the DM switches campaigns", () => {
+    const [theirs, mine] = [connect(player()), connect(dm())];
+    hub.campaignChanged();
+    expect([theirs.closed, mine.closed]).toEqual([CLOSE_CAMPAIGN_CHANGED, CLOSE_CAMPAIGN_CHANGED]);
+    expect(hub.size).toBe(0);
   });
 
   it("answers one connection only when replying", async () => {

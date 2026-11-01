@@ -67,6 +67,31 @@ export async function readVault(
   return snapshot;
 }
 
+/** The vault's top folders, by name, sorted: the folders a campaign can be. */
+export async function topFolders(
+  root: string,
+  files: Pick<VaultFiles, "readdir"> = { readdir },
+): Promise<string[]> {
+  const entries = await files.readdir(path.resolve(root), { withFileTypes: true });
+  return entries
+    .filter((entry) => entry.isDirectory() && !isIgnored(entry.name))
+    .map((entry) => entry.name)
+    .sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Only what's inside a folder: a campaign's notes and files, with their vault paths unchanged so
+ * slugs, entity IDs and stored links stay as they are. No folder is the whole vault.
+ */
+export function inFolder(snapshot: VaultSnapshot, folder: string | undefined): VaultSnapshot {
+  if (!folder) return snapshot;
+  const prefix = folder.replace(/\/+$/, "") + "/";
+  return {
+    notes: snapshot.notes.filter((note) => note.path.startsWith(prefix)),
+    assets: snapshot.assets.filter((asset) => asset.startsWith(prefix)),
+  };
+}
+
 async function skipIfGone<T>(read: () => Promise<T>): Promise<T | undefined> {
   try {
     return await read();

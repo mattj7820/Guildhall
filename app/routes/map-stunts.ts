@@ -1,3 +1,4 @@
+import { soundsFolderOf } from "~/.server/campaigns/sounds";
 import { z } from "zod";
 import { notFound } from "~/.server/not-found";
 import { readJson } from "~/.server/read-json";
@@ -23,8 +24,9 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     return Response.json({ error: "That stunt couldn't be read." }, { status: 400 });
   const { stunt } = body.data;
   if (stunt.kind === "sound") {
-    const path = `${services.config.soundsFolder}/${stunt.sound}`;
-    if (!services.vault.current.soundsIn(services.config.soundsFolder).includes(path)) {
+    const folder = soundsFolderOf(services);
+    const path = `${folder}/${stunt.sound}`;
+    if (!services.vault.current.soundsIn(folder).includes(path)) {
       return Response.json({ error: "That sound isn't in the sounds folder." }, { status: 400 });
     }
   }

@@ -15,13 +15,13 @@ export function meta({ loaderData }: Route.MetaArgs) {
 }
 
 export async function loader({ params, context }: Route.LoaderArgs) {
-  const { vault, maps, campaignName } = context.get(servicesContext);
+  const { vault, maps } = context.get(servicesContext);
   const viewer = context.get(viewerContext);
   const account = context.get(accountContext);
   const note = vault.current.getNote(params["*"] ?? "", viewer);
   // Only notes in the tome's book count, when a book folder is picked.
   const linkedFromBook = async () => {
-    const bookFolder = await bookFolderFor(vault.current, campaignName, viewer, account);
+    const bookFolder = bookFolderFor(vault, viewer, account);
     return note
       ? vault.current.linkedFrom(note, viewer).filter((n) => inBook(n.slug, bookFolder))
       : [];
