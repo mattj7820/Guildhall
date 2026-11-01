@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { placeOf, STAND, townPlaces } from "./town";
+import { placeOf, routeOf, sharedWay, STAND, townPlaces } from "./town";
 
 describe("townPlaces", () => {
   it("keeps the Steward's Office (Members) for the DM", () => {
@@ -29,5 +29,22 @@ describe("placeOf", () => {
     expect(placeOf("/credits")).toBe("hall");
     expect(placeOf("/wikipedia")).toBe("hall");
     expect(placeOf("/")).toBeUndefined();
+  });
+});
+
+describe("sharedWay", () => {
+  const route = (id: string) => routeOf(townPlaces("dm").find((place) => place.id === id)!);
+
+  it("turns off in the courtyard between the Barracks and the Treasury", () => {
+    expect(sharedWay(route("barracks"), route("treasury"))).toBe("M500,365 L500,470");
+  });
+
+  it("goes from the War Room to the Steward's Office without the hall", () => {
+    expect(sharedWay(route("war"), route("steward"))).toMatch(/712,330$/);
+  });
+
+  it("goes through the hall between rooms that only meet there", () => {
+    expect(sharedWay(route("library"), route("barracks"))).toBe("M500,365");
+    expect(sharedWay(route("library"), route("hall"))).toBe("M500,365");
   });
 });

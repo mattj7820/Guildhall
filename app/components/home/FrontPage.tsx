@@ -48,7 +48,7 @@ export function FrontPage(props: { data: Data; modules: HubLink[]; forDm: boolea
   ];
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-6">
+    <main className="mx-auto max-w-[100rem] px-4 py-6 lg:px-8">
       <h1 className="sr-only">Guildhall</h1>
       <TownMap
         places={places}
@@ -128,9 +128,8 @@ export function FrontPage(props: { data: Data; modules: HubLink[]; forDm: boolea
             </nav>
           </aside>
         )}
+        below={<PartyStrip party={data.party} online={online} />}
       />
-
-      <PartyStrip party={data.party} online={online} />
     </main>
   );
 }

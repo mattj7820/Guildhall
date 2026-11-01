@@ -1736,9 +1736,12 @@ module cards; what the banner showed is in the panel or drawn in place (the figh
 Room, the party's map in the Chart Tower, the next session on the notice board, who else is here
 in the hall).
 
-- **The token stands where the viewer last was**, however they got there: every page records its
-  place (`placeOf`) in the tab's session storage. Only clicks on the map walk; the top bar and
-  links switch page at once.
+- **Coming back, the token walks home** from the place of the page the viewer was on, however
+  they got there: every page records its place (`placeOf`) in the tab's session storage. The top
+  bar and links switch page at once; the walk out plays only for clicks on the map.
+- **Walks take the shortest way along the drawn corridors** (`sharedWay`: back to where two
+  routes part, then out), so a click mid-walk turns the token round rather than sending it home
+  first.
 - **The scenery is a picture per theme**, made in the owner's mapgen repo from Guildhall's
   geometry (`app/home/town.ts`, and the prompt in `docs/prototypes/hub-map-mapgen-prompt.md`),
   and drawn as a CSS background so a browser only fetches its own theme's. The app draws only

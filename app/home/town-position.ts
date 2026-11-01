@@ -8,7 +8,11 @@ const KEY = "guildhall:town-at";
 
 export function rememberPage(pathname: string) {
   const place = placeOf(pathname);
-  if (!place) return;
+  if (place) rememberPlace(place);
+}
+
+/** Where the token now is: a page's place, or the hall once it's walked home. */
+export function rememberPlace(place: PlaceId) {
   try {
     sessionStorage.setItem(KEY, place);
   } catch {

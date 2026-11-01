@@ -97,6 +97,24 @@ const PLACES: Place[] = [
   },
 ];
 
+/** The way from where the viewer stands in the hall to a place (none for the hall itself). */
+export function routeOf(place: Pick<Place, "route">): string {
+  return place.route ?? `M${STAND.x},${STAND.y}`;
+}
+
+/**
+ * The start two routes share: where a walk from one place turns off for the other, so it goes
+ * the shortest way along the corridors rather than always back through the hall.
+ */
+export function sharedWay(from: string, to: string): string {
+  const steps = (route: string) => route.match(/[MLC][^MLC]*/g)?.map((step) => step.trim()) ?? [];
+  const a = steps(from);
+  const b = steps(to);
+  let shared = 0;
+  while (shared < a.length && shared < b.length && a[shared] === b[shared]) shared += 1;
+  return a.slice(0, shared).join(" ");
+}
+
 /** The places a viewer may go: the Steward's Office (Members) is the DM's. */
 export function townPlaces(role: Role): Place[] {
   return PLACES.filter((place) => !place.dmOnly || role === "dm");
