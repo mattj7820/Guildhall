@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { NavLink, useLocation, useRouteLoaderData } from "react-router";
 import {
   chapterOf,
@@ -46,8 +54,11 @@ export function Tome({
   const left = useRef<HTMLElement>(null);
   const page = useRef<HTMLDivElement>(null);
   const layer = useRef<HTMLDivElement>(null);
+  const scroller = useRef<HTMLDivElement>(null);
+  const desk = useRef<HTMLDivElement>(null);
+  useBookHeight(desk);
   const spellButtons = useRef(new Map<SpellId, HTMLButtonElement>());
-  const arriveByMist = usePageTurn(left, page, layer);
+  const arriveByMist = usePageTurn(left, page, scroller, layer);
 
   // Opening a note shows its chapter, and on phones closes the left page to read it.
   const [shownSlug, setShownSlug] = useState(openSlug);
@@ -101,12 +112,12 @@ export function Tome({
   }
 
   return (
-    <div className="gh-tome-desk px-4 pt-8 pb-10 max-md:pt-6 max-md:pb-28">
+    <div ref={desk} className="gh-tome-desk px-4 pt-6 max-md:px-2 max-md:pt-3">
       <div className="gh-tome relative mx-auto max-w-6xl">
         <div
           role="group"
           aria-label="Chapters"
-          className="absolute -top-1 right-4 left-6 z-40 flex gap-1.5 overflow-x-auto [scrollbar-width:none] md:left-10"
+          className="gh-tome-ribbons absolute -top-1 right-4 left-6 z-40 flex gap-1 overflow-x-auto [scrollbar-width:none] md:left-10"
         >
           {chapters.map((c) => (
             <button
@@ -114,79 +125,80 @@ export function Tome({
               type="button"
               aria-pressed={!spell && c.key === chapter?.key}
               onClick={() => openChapter(c.key)}
-              className="gh-tome-ribbon shrink-0 px-2 pt-2 pb-4 text-xs font-semibold tracking-wide"
+              className="gh-tome-ribbon shrink-0 px-2.5 pt-2 pb-4 text-xs font-semibold tracking-wide"
             >
               {c.name}
             </button>
           ))}
         </div>
-        <div className="gh-tome-spread relative grid md:grid-cols-2">
+        <div className="gh-tome-spread relative grid h-full grid-rows-[minmax(0,1fr)] md:grid-cols-2">
           <section
             ref={left}
             aria-label="Spells and contents"
             data-open={sheetOpen || undefined}
-            className="gh-tome-page gh-tome-left min-w-0 px-6 pt-12 pb-10 md:px-10"
+            className="gh-tome-page gh-tome-left flex min-w-0 flex-col"
           >
-            <p className="text-muted text-xs font-semibold tracking-[0.14em] uppercase">
-              The wiki · {allNotes.length} {allNotes.length === 1 ? "note" : "notes"}
-            </p>
-            <div
-              role="group"
-              aria-label="Spells"
-              className="mt-3 grid grid-cols-2 gap-2 max-md:hidden"
-            >
-              {SPELLS.map((s) => (
-                <button
-                  key={s.id}
-                  ref={(button) => {
-                    if (button) spellButtons.current.set(s.id, button);
-                  }}
-                  type="button"
-                  aria-pressed={spell === s.id}
-                  aria-keyshortcuts={s.key?.replace(" ", "+")}
-                  onClick={() => toggle(s.id)}
-                  className="gh-tome-spell flex flex-col gap-0.5 rounded-md px-3 py-2 text-left"
-                >
-                  <span className="text-link flex justify-between gap-2 text-[0.68rem] font-semibold tracking-wider uppercase">
-                    <span>Cantrip</span>
-                    {s.key && (
-                      <kbd className="border-line text-muted rounded border px-1 font-sans">
-                        {s.key}
-                      </kbd>
-                    )}
-                  </span>
-                  <span className="font-display text-title text-lg leading-tight">{s.name}</span>
-                  <span className="text-muted text-sm">{s.does}</span>
-                </button>
-              ))}
+            <div className="gh-tome-scroll min-h-0 flex-1 overflow-y-auto px-6 pt-12 pb-10 md:px-10">
+              <p className="text-muted text-xs font-semibold tracking-[0.14em] uppercase">
+                The wiki · {allNotes.length} {allNotes.length === 1 ? "note" : "notes"}
+              </p>
+              <div
+                role="group"
+                aria-label="Spells"
+                className="mt-2 grid grid-cols-2 gap-x-6 max-md:hidden"
+              >
+                {SPELLS.map((s) => (
+                  <button
+                    key={s.id}
+                    ref={(button) => {
+                      if (button) spellButtons.current.set(s.id, button);
+                    }}
+                    type="button"
+                    aria-pressed={spell === s.id}
+                    aria-keyshortcuts={s.key?.replace(" ", "+")}
+                    onClick={() => toggle(s.id)}
+                    className="gh-tome-spell flex flex-col py-1.5 text-left"
+                  >
+                    <span className="flex items-baseline justify-between gap-2">
+                      <span className="gh-tome-spell-name font-display text-lg leading-tight">
+                        {s.name}
+                      </span>
+                      {s.key && <kbd className="text-muted font-sans text-[0.68rem]">{s.key}</kbd>}
+                    </span>
+                    <span className="text-muted text-sm italic">{s.does}</span>
+                  </button>
+                ))}
+              </div>
+              {spell ? (
+                <>
+                  {spell === "locate" && <LocateObject openSlug={openSlug} />}
+                  {spell === "misty" && (
+                    <MistyStep notes={allNotes} openSlug={openSlug} onStep={arriveByMist} />
+                  )}
+                  {spell === "detect" && <DetectMagic tags={tags} openSlug={openSlug} />}
+                  {spell === "scry" && (
+                    <Scrying note={openSlug ? openNote : undefined} openSlug={openSlug} />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setSpell(null)}
+                    className="text-link mt-4 text-sm underline underline-offset-4"
+                  >
+                    End the spell (Esc)
+                  </button>
+                </>
+              ) : (
+                chapter && <Contents chapter={chapter} />
+              )}
             </div>
-            {spell ? (
-              <>
-                {spell === "locate" && <LocateObject openSlug={openSlug} />}
-                {spell === "misty" && (
-                  <MistyStep notes={allNotes} openSlug={openSlug} onStep={arriveByMist} />
-                )}
-                {spell === "detect" && <DetectMagic tags={tags} openSlug={openSlug} />}
-                {spell === "scry" && (
-                  <Scrying note={openSlug ? openNote : undefined} openSlug={openSlug} />
-                )}
-                <button
-                  type="button"
-                  onClick={() => setSpell(null)}
-                  className="text-link mt-4 text-sm underline underline-offset-4"
-                >
-                  End the spell (Esc)
-                </button>
-              </>
-            ) : (
-              chapter && <Contents chapter={chapter} />
-            )}
           </section>
-          <div
-            ref={page}
-            className="gh-tome-page gh-tome-right relative min-w-0 px-6 pt-12 pb-12 md:px-12"
-          >
-            {children}
+          <div ref={page} className="gh-tome-page gh-tome-right relative flex min-w-0 flex-col">
+            <div
+              ref={scroller}
+              className="gh-tome-scroll min-h-0 flex-1 overflow-y-auto px-6 pt-12 pb-12 md:px-12"
+            >
+              {children}
+            </div>
             <div ref={layer} className="gh-tome-turn" aria-hidden="true" inert />
           </div>
         </div>
@@ -269,6 +281,7 @@ function FolderEntries({ folder, depth = 0 }: { folder: FolderNode; depth?: numb
             <li key={note.slug} className="border-line border-b border-dotted">
               <NavLink
                 to={noteUrl(note.slug)}
+                end
                 className="gh-tome-entry font-prose flex items-baseline justify-between gap-3 px-1 py-1.5 text-lg"
               >
                 <span className="gh-tome-title min-w-0 truncate">{note.title}</span>
@@ -294,6 +307,32 @@ function FolderEntries({ folder, depth = 0 }: { folder: FolderNode; depth?: numb
       ))}
     </>
   );
+}
+
+/**
+ * The book fills the window below the top bar and keeps that size from note to note, so the
+ * page turn never resizes it: long notes scroll inside their page. The top bar's height varies
+ * (it wraps, and the DM's preview adds a line), so it's measured.
+ */
+function useBookHeight(desk: RefObject<HTMLElement | null>) {
+  useLayoutEffect(() => {
+    const element = desk.current;
+    if (!element) return;
+    const measure = () =>
+      element.style.setProperty(
+        "--tome-top",
+        `${element.getBoundingClientRect().top + window.scrollY}px`,
+      );
+    measure();
+    const header = document.querySelector("body > header");
+    const observer = new ResizeObserver(measure);
+    if (header) observer.observe(header);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [desk]);
 }
 
 function isTyping(target: EventTarget | null): boolean {

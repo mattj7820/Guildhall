@@ -2,24 +2,28 @@ import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
 import { useLocation } from "react-router";
 import { turnDirection, type TurnDirection } from "~/wiki/tome";
 
+/** How many hinged strips a leaf is made of: enough for it to curl as it turns. */
+const STRIPS = 6;
+
 interface Picture {
   page: HTMLElement;
-  /** How far down the page the reader had scrolled, so the leaf shows what they last saw. */
+  /** How far down its page the reader had scrolled, so the leaf shows what they last saw. */
   scrolled: number;
 }
 
 /**
  * Turns the tome's right page whenever the note changes. Just before a navigation replaces the
  * page, a copy of it is kept; once the new note is in, the copy is the leaf that turns over to
- * the left (or, going back, a copy of the new note turns over onto the old one). The back of the
- * leaf is a copy of the left page, so it lands as the page it covers and goes without a trace.
- * The leaf is only a picture: it's drawn in `layer`, hidden from assistive tech, and removed when
- * it lands. A note reached by Misty Step forms out of mist instead. With reduced motion there's
- * neither.
+ * the left (or, going back, a copy of the new note turns over onto the old one). The leaf is a
+ * row of hinged strips, each a slice of the page, so it curls like paper as it turns. Its back is
+ * the left page, so it lands as the page it covers and goes without a trace. The leaf is only a
+ * picture: it's drawn in `layer`, hidden from assistive tech, and removed when it lands. A note
+ * reached by Misty Step forms out of mist instead. With reduced motion there's neither.
  */
 export function usePageTurn(
   left: RefObject<HTMLElement | null>,
   page: RefObject<HTMLElement | null>,
+  scroller: RefObject<HTMLElement | null>,
   layer: RefObject<HTMLElement | null>,
 ) {
   const { pathname } = useLocation();
@@ -32,7 +36,7 @@ export function usePageTurn(
     shownIdx.current = historyIdx();
     function keep() {
       if (!page.current) return;
-      picture.current = { page: copyOf(page.current), scrolled: scrolledInto(page.current) };
+      picture.current = { page: copyOf(page.current), scrolled: scroller.current?.scrollTop ?? 0 };
     }
     // Clicks are seen before the router's own handlers, while the old page is still there.
     function onClick(event: MouseEvent) {
@@ -49,9 +53,11 @@ export function usePageTurn(
       document.removeEventListener("click", onClick, true);
       window.removeEventListener("popstate", keep);
     };
-  }, [page]);
+  }, [page, scroller]);
 
   useLayoutEffect(() => {
+    // A new note starts at its top, inside the page.
+    scroller.current?.scrollTo({ top: 0 });
     const before = picture.current;
     picture.current = null;
     const idx = historyIdx();
@@ -62,7 +68,7 @@ export function usePageTurn(
     if (!before || !page.current || !layer.current || reducedMotion()) return;
     if (how === "mist") mist(layer.current, page.current);
     else turn(layer.current, page.current, left.current, before, direction);
-  }, [pathname, left, page, layer]);
+  }, [pathname, left, page, scroller, layer]);
 
   /** Has the next note arrive through mist rather than on a turned page. */
   return function arriveByMist() {
@@ -77,35 +83,45 @@ function turn(
   before: Picture,
   direction: TurnDirection,
 ) {
-  // The leaf covers what's on screen of the page, no taller than the window.
-  const top = scrolledInto(page);
-  const height = Math.min(page.getBoundingClientRect().height - top, window.innerHeight);
-  if (height <= 0) return;
-
-  const leaf = part("gh-tome-leaf");
-  const front = part("gh-tome-leaf-front");
-  const back = part("gh-tome-leaf-back");
+  const width = page.clientWidth;
+  const strip = width / STRIPS;
   // Forward, the old page lifts off the new one; back, the new page comes down over the old.
   const under: HTMLElement[] = [];
-  if (direction === "forward") {
-    front.append(shifted(before.page, before.scrolled));
-  } else {
+  let front: Picture = before;
+  if (direction === "back") {
     const old = part("gh-tome-under");
-    old.append(shifted(before.page, before.scrolled));
+    old.append(sliceOf(before, 0, width));
     under.push(old);
-    front.append(shifted(copyOf(page), top));
+    front = { page: copyOf(page), scrolled: scrollOf(page) };
   }
   // On phones the left page is a sheet kept off screen, so the leaf's back is left blank.
-  if (left && getComputedStyle(left).position !== "fixed") {
-    back.append(shifted(copyOf(left), scrolledInto(left)));
-  } else {
-    back.classList.add("gh-tome-leaf-blank");
+  const onLeft =
+    left && getComputedStyle(left).position !== "fixed"
+      ? { page: copyOf(left), scrolled: scrollOf(left) }
+      : undefined;
+
+  const leaf = part("gh-tome-leaf");
+  let hinge = leaf;
+  for (let i = 0; i < STRIPS; i++) {
+    const piece = i === 0 ? leaf : part("gh-tome-strip");
+    const face = part("gh-tome-leaf-front");
+    face.append(sliceOf(front, i * strip, width));
+    const back = part("gh-tome-leaf-back");
+    // A strip lands mirrored: its slice of the front covers that much of the left page's far side.
+    if (onLeft) back.append(sliceOf(onLeft, width - (i + 1) * strip, width));
+    piece.append(face, back);
+    if (i > 0) hinge.append(piece);
+    hinge = piece;
   }
-  leaf.append(front, back);
+  if (!onLeft) leaf.classList.add("gh-tome-leaf-blank");
+  layer.style.setProperty("--strip", `${strip}px`);
   layer.replaceChildren(...under, part("gh-tome-turn-shade"), leaf);
-  layer.style.setProperty("--turn-top", `${top}px`);
-  layer.style.setProperty("--turn-height", `${height}px`);
   layer.dataset.turn = direction;
+  // Copies only scroll once they're on the page.
+  for (const copy of layer.querySelectorAll<HTMLElement>("[data-scrolled]")) {
+    const inside = copy.querySelector<HTMLElement>(".gh-tome-scroll");
+    if (inside) inside.scrollTop = Number(copy.dataset.scrolled);
+  }
   leaf.addEventListener("animationend", (event) => {
     if (event.target !== leaf || event.pseudoElement || !layer.contains(leaf)) return;
     layer.replaceChildren();
@@ -114,12 +130,6 @@ function turn(
 }
 
 function mist(layer: HTMLElement, page: HTMLElement) {
-  const top = scrolledInto(page);
-  layer.style.setProperty("--turn-top", `${top}px`);
-  layer.style.setProperty(
-    "--turn-height",
-    `${Math.min(page.getBoundingClientRect().height - top, window.innerHeight)}px`,
-  );
   const wisps = part("gh-tome-wisps");
   layer.replaceChildren(wisps);
   layer.dataset.turn = "mist";
@@ -135,6 +145,15 @@ function mist(layer: HTMLElement, page: HTMLElement) {
   });
 }
 
+/** One strip's view of a page: a copy of it, moved so the strip shows from `from` across. */
+function sliceOf(picture: Picture, from: number, width: number): HTMLElement {
+  const copy = picture.page.cloneNode(true) as HTMLElement;
+  copy.style.left = `${-from}px`;
+  copy.style.width = `${width}px`;
+  copy.dataset.scrolled = String(picture.scrolled);
+  return copy;
+}
+
 /** A still copy of a page, with nothing in it that could clash with the real one. */
 function copyOf(element: HTMLElement): HTMLElement {
   const copy = element.cloneNode(true) as HTMLElement;
@@ -146,13 +165,8 @@ function copyOf(element: HTMLElement): HTMLElement {
   return copy;
 }
 
-function shifted(copy: HTMLElement, by: number): HTMLElement {
-  copy.style.marginTop = `${-by}px`;
-  return copy;
-}
-
-function scrolledInto(element: HTMLElement): number {
-  return Math.max(0, -element.getBoundingClientRect().top);
+function scrollOf(page: HTMLElement): number {
+  return page.querySelector<HTMLElement>(".gh-tome-scroll")?.scrollTop ?? 0;
 }
 
 function part(className: string): HTMLDivElement {
